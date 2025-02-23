@@ -109,9 +109,9 @@ The API will be available at `http://localhost:8000`
 You can connect to the database using these credentials:
 - Host: localhost
 - Port: 3306
-- Database: laravel
-- Username: laravel
-- Password: secret
+- Database: db_padel_events
+- Username: db_user
+- Password: db_pass
 
 ### Troubleshooting
 
