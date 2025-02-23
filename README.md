@@ -80,7 +80,7 @@ docker-compose up -d --build
 docker-compose logs -f
 
 # Access MySQL CLI
-docker exec -it laravel_db mysql -u laravel -p
+docker exec -it laravel_db mysql -u db_user -p
 
 # Run artisan commands
 docker exec -it laravel_app php artisan [command]
