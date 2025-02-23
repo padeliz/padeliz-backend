@@ -9,56 +9,144 @@
 
 ## About Laravel
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+## Development Setup (Windows)
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+### Prerequisites
 
-## Learning Laravel
+- [Git](https://git-scm.com/downloads)
+- [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/)
+- WSL2 enabled (Windows Subsystem for Linux)
+- A code editor (recommended: [VS Code](https://code.visualstudio.com/))
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework.
+### Getting Started
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains over 1500 video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+1. **Clone the repository**
+   ```bash
+   git clone https://github.com/arshavinel/app-padel-events-back.git
+   cd app-padel-events-back
+   ```
 
-## Laravel Sponsors
+2. **Environment Setup**
+   ```bash
+   # Copy the environment file
+   copy .env.example .env
+   ```
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the Laravel [Patreon page](https://patreon.com/taylorotwell).
+3. **Start Docker containers**
+   ```bash
+   # Build and start the containers
+   docker-compose up -d
 
-### Premium Partners
+   # View logs (optional)
+   docker-compose logs -f
+   ```
 
-- **[Vehikl](https://vehikl.com/)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Cubet Techno Labs](https://cubettech.com)**
-- **[Cyber-Duck](https://cyber-duck.co.uk)**
-- **[Many](https://www.many.co.uk)**
-- **[Webdock, Fast VPS Hosting](https://www.webdock.io/en)**
-- **[DevSquad](https://devsquad.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel/)**
-- **[OP.GG](https://op.gg)**
-- **[WebReinvent](https://webreinvent.com/?utm_source=laravel&utm_medium=github&utm_campaign=patreon-sponsors)**
-- **[Lendio](https://lendio.com)**
+4. **Install Dependencies**
+   ```bash
+   # Enter the app container
+   docker exec -it laravel_app bash
 
-## Contributing
+   # Install PHP dependencies
+   composer install
 
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
+   # Generate application key
+   php artisan key:generate
+   ```
 
-## Code of Conduct
+5. **Database Setup**
+   ```bash
+   # Run migrations
+   docker exec -it laravel_app php artisan migrate
 
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
+   # Seed the database (if available)
+   docker exec -it laravel_app php artisan db:seed
+   ```
 
-## Security Vulnerabilities
+### Useful Commands
 
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
+```bash
+# Start containers
+docker-compose up -d
+
+# Stop containers
+docker-compose down
+
+# Rebuild containers
+docker-compose up -d --build
+
+# View logs
+docker-compose logs -f
+
+# Access MySQL CLI
+docker exec -it laravel_db mysql -u laravel -p
+
+# Run artisan commands
+docker exec -it laravel_app php artisan [command]
+
+# Run tests
+docker exec -it laravel_app php artisan test
+```
+
+### Project Structure
+
+```
+├── app/                 # Application core code
+├── database/           # Migrations and seeders
+├── docker/            # Docker configuration files
+├── routes/            # API routes
+├── tests/            # Test files
+└── docker-compose.yml # Docker services configuration
+```
+
+### Available Endpoints
+
+The API will be available at `http://localhost:8000`
+
+### Database Access
+
+You can connect to the database using these credentials:
+- Host: localhost
+- Port: 3306
+- Database: laravel
+- Username: laravel
+- Password: secret
+
+### Troubleshooting
+
+1. **Port Conflicts**
+   - If port 8000 or 3306 is already in use, modify the ports in `docker-compose.yml`
+
+2. **Docker Issues**
+   - Ensure Docker Desktop is running
+   - Try restarting Docker Desktop
+   - Check WSL2 is properly installed: `wsl --status`
+
+3. **Permission Issues**
+   - Run Docker Desktop as administrator
+   - Ensure proper file permissions in WSL
+
+### Contributing
+
+1. Create a new branch for your feature
+   ```bash
+   git checkout -b feature/your-feature-name
+   ```
+
+2. Make your changes and commit
+   ```bash
+   git add .
+   git commit -m "Description of changes"
+   ```
+
+3. Push to your branch
+   ```bash
+   git push origin feature/your-feature-name
+   ```
+
+4. Create a Pull Request on GitHub
 
 ## License
 
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+This project is private. All rights reserved.
