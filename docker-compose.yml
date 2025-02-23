@@ -40,6 +40,20 @@ services:
     networks:
       - padel_network
 
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: db_user
+      PMA_PASSWORD: db_pass
+    depends_on:
+      - db
+    networks:
+      - padel_network
+
 networks:
   padel_network:
     driver: bridge

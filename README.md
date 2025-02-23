@@ -61,6 +61,8 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
    docker exec -it laravel_app php artisan migrate
 
    # Seed the database (if available)
+   ⚠️ **WARNING**: Never run seeders in production! They will erase all existing data.
+
    docker exec -it laravel_app php artisan db:seed
    ```
 
