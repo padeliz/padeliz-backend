@@ -8,10 +8,36 @@ use Illuminate\Http\Request;
 
 class PrizeController extends Controller
 {
+    /**
+     * @OA\Get(
+     *     path="/api/prizes",
+     *     summary="Get paginated list of prizes",
+     *     tags={"Prizes"},
+     *     @OA\Parameter(ref="#/components/parameters/page"),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="array",
+     *                         @OA\Items(ref="#/components/schemas/Prize")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     )
+     * )
+     */
     public function index()
     {
-        $prizes = Prize::with('clubPrizes.club')->get();
-        return response()->json($prizes);
+        return response()->json(
+            Prize::orderBy('name')
+            ->paginate($this->paginationLimit)
+        );
     }
 
     public function show(Prize $prize)

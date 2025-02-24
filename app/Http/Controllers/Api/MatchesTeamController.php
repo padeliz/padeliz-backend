@@ -18,20 +18,35 @@ class MatchesTeamController extends Controller
     /**
      * @OA\Get(
      *     path="/api/matches/teams",
-     *     summary="Get list of teams",
+     *     summary="Get paginated list of matches teams",
      *     tags={"Matches Teams"},
      *     security={{"sanctum":{}}},
+     *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
-     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/MatchesTeam"))
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="array",
+     *                         @OA\Items(ref="#/components/schemas/MatchesTeam")
+     *                     )
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function index()
     {
-        $teams = MatchesTeam::with(['player1', 'player2'])->get();
-        return response()->json($teams);
+        return response()->json(
+            MatchesTeam::with(['player1', 'player2'])
+            ->orderBy('id_matches_team', 'desc')
+            ->paginate($this->paginationLimit)
+        );
     }
 
     /**

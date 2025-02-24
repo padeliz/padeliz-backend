@@ -17,19 +17,34 @@ class PrizeFromClubController extends Controller
     /**
      * @OA\Get(
      *     path="/api/prizes-from-clubs",
-     *     summary="Get list of prizes from clubs",
+     *     summary="Get paginated list of prizes from clubs",
      *     tags={"Prizes From Clubs"},
+     *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
-     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/PrizeFromClub"))
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="array",
+     *                         @OA\Items(ref="#/components/schemas/PrizeFromClub")
+     *                     )
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function index()
     {
-        $prizesFromClubs = PrizeFromClub::with(['club', 'prize'])->get();
-        return response()->json($prizesFromClubs);
+        return response()->json(
+            PrizeFromClub::with(['club', 'prize'])
+            ->orderBy('id_prize_from_club', 'desc')
+            ->paginate($this->paginationLimit)
+        );
     }
 
     /**

@@ -21,8 +21,36 @@ use Illuminate\Routing\Controller as BaseController;
  *     url="/",
  *     description="API Server"
  * )
+ *
+ * @OA\Schema(
+ *     schema="PaginatedResponse",
+ *     description="Generic paginated response",
+ *     @OA\Property(property="current_page", type="integer"),
+ *     @OA\Property(property="data", type="array", @OA\Items(type="object")),
+ *     @OA\Property(property="first_page_url", type="string"),
+ *     @OA\Property(property="from", type="integer"),
+ *     @OA\Property(property="last_page", type="integer"),
+ *     @OA\Property(property="last_page_url", type="string"),
+ *     @OA\Property(property="next_page_url", type="string"),
+ *     @OA\Property(property="path", type="string"),
+ *     @OA\Property(property="per_page", type="integer"),
+ *     @OA\Property(property="prev_page_url", type="string"),
+ *     @OA\Property(property="to", type="integer"),
+ *     @OA\Property(property="total", type="integer")
+ * )
+ *
+ * @OA\Parameter(
+ *     parameter="page",
+ *     name="page",
+ *     in="query",
+ *     description="Page number",
+ *     required=false,
+ *     @OA\Schema(type="integer", default=1)
+ * )
  */
 class Controller extends BaseController
 {
     use AuthorizesRequests, DispatchesJobs, ValidatesRequests;
+
+    protected $paginationLimit = 10; // You can adjust this number
 }

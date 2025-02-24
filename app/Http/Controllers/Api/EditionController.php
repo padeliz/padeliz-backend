@@ -18,51 +18,91 @@ class EditionController extends Controller
     /**
      * @OA\Get(
      *     path="/api/editions",
-     *     summary="Get list of editions",
+     *     summary="Get paginated list of editions",
      *     tags={"Editions"},
+     *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
-     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/Edition"))
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="array",
+     *                         @OA\Items(ref="#/components/schemas/Edition")
+     *                     )
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function index()
     {
-        $editions = Edition::with(['location', 'divisions'])->get();
-        return response()->json($editions);
+        return response()->json(
+            Edition::with(['location', 'divisions'])
+            ->orderBy('date', 'desc')
+            ->paginate($this->paginationLimit)
+        );
     }
 
     /**
      * @OA\Get(
      *     path="/api/editions/upcoming",
-     *     summary="Get upcoming editions",
+     *     summary="Get paginated list of upcoming editions",
      *     tags={"Editions"},
+     *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
-     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/Edition"))
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="array",
+     *                         @OA\Items(ref="#/components/schemas/Edition")
+     *                     )
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function upcoming()
     {
-        $editions = Edition::with(['location', 'divisions'])
+        return response()->json(
+            Edition::with(['location', 'divisions'])
             ->where('date', '>', Carbon::now())
-            ->orderBy('date', 'desc')
-            ->get();
-        return response()->json($editions);
+                ->orderBy('date', 'desc')
+            ->paginate($this->paginationLimit)
+        );
     }
 
     /**
      * @OA\Get(
      *     path="/api/editions/ongoing",
-     *     summary="Get ongoing editions",
+     *     summary="Get paginated list of ongoing editions",
      *     tags={"Editions"},
+     *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
-     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/Edition"))
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="array",
+     *                         @OA\Items(ref="#/components/schemas/Edition")
+     *                     )
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
@@ -72,35 +112,48 @@ class EditionController extends Controller
         $today = $now->format('Y-m-d');
         $currentTime = $now->format('H:i:s');
 
-        $editions = Edition::with(['location', 'divisions'])
-        ->whereDate('date', $today)
+        return response()->json(
+            Edition::with(['location', 'divisions'])
+            ->whereDate('date', $today)
             ->where('arriving_time', '<=', $currentTime)
-            ->where('closing_time', '>=', $currentTime)
-            ->orderBy('date', 'desc')
-            ->get();
-
-        return response()->json($editions);
+                ->where('closing_time', '>=', $currentTime)
+                ->orderBy('date', 'desc')
+            ->paginate($this->paginationLimit)
+        );
     }
 
     /**
      * @OA\Get(
      *     path="/api/editions/past",
-     *     summary="Get past editions",
+     *     summary="Get paginated list of past editions",
      *     tags={"Editions"},
+     *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
-     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/Edition"))
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="array",
+     *                         @OA\Items(ref="#/components/schemas/Edition")
+     *                     )
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function past()
     {
-        $editions = Edition::with(['location', 'divisions'])
+        return response()->json(
+            Edition::with(['location', 'divisions'])
             ->where('date', '<', Carbon::now())
-            ->orderBy('date', 'desc')
-            ->get();
-        return response()->json($editions);
+                ->orderBy('date', 'desc')
+            ->paginate($this->paginationLimit)
+        );
     }
 
     /**

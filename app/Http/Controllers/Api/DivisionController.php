@@ -17,19 +17,33 @@ class DivisionController extends Controller
     /**
      * @OA\Get(
      *     path="/api/divisions",
-     *     summary="Get list of divisions",
+     *     summary="Get paginated list of divisions",
      *     tags={"Divisions"},
+     *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
-     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/Division"))
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="array",
+     *                         @OA\Items(ref="#/components/schemas/Division")
+     *                     )
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function index()
     {
-        $divisions = Division::all();
-        return response()->json($divisions);
+        return response()->json(
+            Division::orderBy('name')
+            ->paginate($this->paginationLimit)
+        );
     }
 
     /**

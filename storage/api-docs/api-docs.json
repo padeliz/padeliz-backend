@@ -20,18 +20,35 @@
                 "tags": [
                     "Clubs"
                 ],
-                "summary": "Get list of clubs",
+                "summary": "Get paginated list of clubs",
                 "operationId": "9122c16a9b733efef97ccebc63a8548c",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/page"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Successful operation",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Club"
-                                    }
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/PaginatedResponse"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Club"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
                                 }
                             }
                         }
@@ -114,7 +131,7 @@
                 "tags": [
                     "Clubs"
                 ],
-                "summary": "Get club prizes",
+                "summary": "Get paginated list of club prizes",
                 "operationId": "39b5a7ef4a9161dd19c6332e066a36fa",
                 "parameters": [
                     {
@@ -125,6 +142,9 @@
                         "schema": {
                             "type": "integer"
                         }
+                    },
+                    {
+                        "$ref": "#/components/parameters/page"
                     }
                 ],
                 "responses": {
@@ -133,10 +153,22 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/PrizeFromClub"
-                                    }
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/PaginatedResponse"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/PrizeFromClub"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
                                 }
                             }
                         }
@@ -149,18 +181,35 @@
                 "tags": [
                     "Divisions"
                 ],
-                "summary": "Get list of divisions",
+                "summary": "Get paginated list of divisions",
                 "operationId": "38b143faa0b684d5978ff5200d60a9cb",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/page"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Successful operation",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Division"
-                                    }
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/PaginatedResponse"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Division"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
                                 }
                             }
                         }
@@ -204,18 +253,35 @@
                 "tags": [
                     "Editions"
                 ],
-                "summary": "Get list of editions",
+                "summary": "Get paginated list of editions",
                 "operationId": "b64d043ab6ffcba51b8aea9da1a152cd",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/page"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Successful operation",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Edition"
-                                    }
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/PaginatedResponse"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Edition"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
                                 }
                             }
                         }
@@ -228,18 +294,35 @@
                 "tags": [
                     "Editions"
                 ],
-                "summary": "Get upcoming editions",
+                "summary": "Get paginated list of upcoming editions",
                 "operationId": "198c8f46e8b5f7e234cf8ce6bc72da2c",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/page"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Successful operation",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Edition"
-                                    }
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/PaginatedResponse"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Edition"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
                                 }
                             }
                         }
@@ -252,18 +335,35 @@
                 "tags": [
                     "Editions"
                 ],
-                "summary": "Get ongoing editions",
+                "summary": "Get paginated list of ongoing editions",
                 "operationId": "13e1be99e388ff307f225e4f3b971818",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/page"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Successful operation",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Edition"
-                                    }
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/PaginatedResponse"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Edition"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
                                 }
                             }
                         }
@@ -276,18 +376,35 @@
                 "tags": [
                     "Editions"
                 ],
-                "summary": "Get past editions",
+                "summary": "Get paginated list of past editions",
                 "operationId": "f499e9e66a5f8b36f5b7e40e9ac3f53f",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/page"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Successful operation",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Edition"
-                                    }
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/PaginatedResponse"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Edition"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
                                 }
                             }
                         }
@@ -433,18 +550,35 @@
                 "tags": [
                     "Edition Divisions"
                 ],
-                "summary": "Get list of edition divisions",
+                "summary": "Get paginated list of edition divisions",
                 "operationId": "ad186540dfa854c20d008c69baaef3ff",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/page"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Successful operation",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/EditionDivision"
-                                    }
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/PaginatedResponse"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/EditionDivision"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
                                 }
                             }
                         }
@@ -642,18 +776,35 @@
                 "tags": [
                     "Locations"
                 ],
-                "summary": "Get list of locations",
+                "summary": "Get paginated list of locations",
                 "operationId": "4a95f25c1e13530115fd3fd6961b92de",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/page"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Successful operation",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Location"
-                                    }
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/PaginatedResponse"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Location"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
                                 }
                             }
                         }
@@ -697,7 +848,7 @@
                 "tags": [
                     "Locations"
                 ],
-                "summary": "Get location editions",
+                "summary": "Get paginated list of location editions",
                 "operationId": "64c956173446e75211205a57da157651",
                 "parameters": [
                     {
@@ -707,6 +858,9 @@
                         "schema": {
                             "type": "integer"
                         }
+                    },
+                    {
+                        "$ref": "#/components/parameters/page"
                     }
                 ],
                 "responses": {
@@ -715,10 +869,22 @@
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/Edition"
-                                    }
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/PaginatedResponse"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Edition"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
                                 }
                             }
                         }
@@ -731,18 +897,35 @@
                 "tags": [
                     "Matches Teams"
                 ],
-                "summary": "Get list of teams",
+                "summary": "Get paginated list of matches teams",
                 "operationId": "8f987592e70c3d5d1f3e255e3871ddee",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/page"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Successful operation",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/MatchesTeam"
-                                    }
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/PaginatedResponse"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/MatchesTeam"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
                                 }
                             }
                         }
@@ -951,23 +1134,81 @@
                 ]
             }
         },
-        "/api/prizes-from-clubs": {
+        "/api/prizes": {
             "get": {
                 "tags": [
-                    "Prizes From Clubs"
+                    "Prizes"
                 ],
-                "summary": "Get list of prizes from clubs",
-                "operationId": "b15988715c4ecb43d26569877c4e1348",
+                "summary": "Get paginated list of prizes",
+                "operationId": "d9e727f2004dc2a3b27bfbf504572221",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/page"
+                    }
+                ],
                 "responses": {
                     "200": {
                         "description": "Successful operation",
                         "content": {
                             "application/json": {
                                 "schema": {
-                                    "type": "array",
-                                    "items": {
-                                        "$ref": "#/components/schemas/PrizeFromClub"
-                                    }
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/PaginatedResponse"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/Prize"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/prizes-from-clubs": {
+            "get": {
+                "tags": [
+                    "Prizes From Clubs"
+                ],
+                "summary": "Get paginated list of prizes from clubs",
+                "operationId": "b15988715c4ecb43d26569877c4e1348",
+                "parameters": [
+                    {
+                        "$ref": "#/components/parameters/page"
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "allOf": [
+                                        {
+                                            "$ref": "#/components/schemas/PaginatedResponse"
+                                        },
+                                        {
+                                            "properties": {
+                                                "data": {
+                                                    "type": "array",
+                                                    "items": {
+                                                        "$ref": "#/components/schemas/PrizeFromClub"
+                                                    }
+                                                }
+                                            },
+                                            "type": "object"
+                                        }
+                                    ]
                                 }
                             }
                         }
@@ -1009,6 +1250,51 @@
     },
     "components": {
         "schemas": {
+            "PaginatedResponse": {
+                "description": "Generic paginated response",
+                "properties": {
+                    "current_page": {
+                        "type": "integer"
+                    },
+                    "data": {
+                        "type": "array",
+                        "items": {
+                            "type": "object"
+                        }
+                    },
+                    "first_page_url": {
+                        "type": "string"
+                    },
+                    "from": {
+                        "type": "integer"
+                    },
+                    "last_page": {
+                        "type": "integer"
+                    },
+                    "last_page_url": {
+                        "type": "string"
+                    },
+                    "next_page_url": {
+                        "type": "string"
+                    },
+                    "path": {
+                        "type": "string"
+                    },
+                    "per_page": {
+                        "type": "integer"
+                    },
+                    "prev_page_url": {
+                        "type": "string"
+                    },
+                    "to": {
+                        "type": "integer"
+                    },
+                    "total": {
+                        "type": "integer"
+                    }
+                },
+                "type": "object"
+            },
             "Club": {
                 "required": [
                     "name",
@@ -1547,6 +1833,18 @@
                 },
                 "type": "object"
             }
+        },
+        "parameters": {
+            "page": {
+                "name": "page",
+                "in": "query",
+                "description": "Page number",
+                "required": false,
+                "schema": {
+                    "type": "integer",
+                    "default": 1
+                }
+            }
         }
     },
     "tags": [
@@ -1585,6 +1883,10 @@
         {
             "name": "Prizes From Clubs",
             "description": "API Endpoints for prizes from clubs"
+        },
+        {
+            "name": "Prizes",
+            "description": "Prizes"
         }
     ]
 }

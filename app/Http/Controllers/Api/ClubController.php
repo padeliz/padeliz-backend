@@ -17,22 +17,34 @@ class ClubController extends Controller
     /**
      * @OA\Get(
      *     path="/api/clubs",
-     *     summary="Get list of clubs",
+     *     summary="Get paginated list of clubs",
      *     tags={"Clubs"},
+     *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
      *         @OA\JsonContent(
-     *             type="array",
-     *             @OA\Items(ref="#/components/schemas/Club")
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="array",
+     *                         @OA\Items(ref="#/components/schemas/Club")
+     *                     )
+     *                 )
+     *             }
      *         )
      *     )
      * )
      */
     public function index()
     {
-        $clubs = Club::with('locations')->get();
-        return response()->json($clubs);
+        return response()->json(
+            Club::with('locations')
+            ->orderBy('name')
+            ->paginate($this->paginationLimit)
+        );
     }
 
     /**
@@ -93,7 +105,7 @@ class ClubController extends Controller
     /**
      * @OA\Get(
      *     path="/api/clubs/{club}/prizes",
-     *     summary="Get club prizes",
+     *     summary="Get paginated list of club prizes",
      *     tags={"Clubs"},
      *     @OA\Parameter(
      *         name="club",
@@ -102,18 +114,31 @@ class ClubController extends Controller
      *         description="Club ID",
      *         @OA\Schema(type="integer")
      *     ),
+     *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
      *         @OA\JsonContent(
-     *             type="array",
-     *             @OA\Items(ref="#/components/schemas/PrizeFromClub")
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="array",
+     *                         @OA\Items(ref="#/components/schemas/PrizeFromClub")
+     *                     )
+     *                 )
+     *             }
      *         )
      *     )
      * )
      */
     public function prizes(Club $club)
     {
-        return response()->json($club->prizes()->with('prize')->get());
+        return response()->json(
+            $club->prizes()
+                ->with('prize')
+                ->paginate($this->paginationLimit)
+        );
     }
 }

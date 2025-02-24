@@ -17,19 +17,34 @@ class LocationController extends Controller
     /**
      * @OA\Get(
      *     path="/api/locations",
-     *     summary="Get list of locations",
+     *     summary="Get paginated list of locations",
      *     tags={"Locations"},
+     *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
-     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/Location"))
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="array",
+     *                         @OA\Items(ref="#/components/schemas/Location")
+     *                     )
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function index()
     {
-        $locations = Location::with('club')->get();
-        return response()->json($locations);
+        return response()->json(
+            Location::with('club')
+            ->orderBy('name')
+            ->paginate($this->paginationLimit)
+        );
     }
 
     /**
@@ -58,7 +73,7 @@ class LocationController extends Controller
     /**
      * @OA\Get(
      *     path="/api/locations/{location}/editions",
-     *     summary="Get location editions",
+     *     summary="Get paginated list of location editions",
      *     tags={"Locations"},
      *     @OA\Parameter(
      *         name="location",
@@ -66,15 +81,32 @@ class LocationController extends Controller
      *         required=true,
      *         @OA\Schema(type="integer")
      *     ),
+     *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
-     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/Edition"))
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="array",
+     *                         @OA\Items(ref="#/components/schemas/Edition")
+     *                     )
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function editions(Location $location)
     {
-        return response()->json($location->editions()->with(['divisions', 'location'])->get());
+        return response()->json(
+            $location->editions()
+                ->with(['divisions', 'location'])
+                ->orderBy('date', 'desc')
+                ->paginate($this->paginationLimit)
+        );
     }
 }

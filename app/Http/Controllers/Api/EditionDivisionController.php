@@ -18,19 +18,34 @@ class EditionDivisionController extends Controller
     /**
      * @OA\Get(
      *     path="/api/edition-divisions",
-     *     summary="Get list of edition divisions",
+     *     summary="Get paginated list of edition divisions",
      *     tags={"Edition Divisions"},
+     *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
-     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/EditionDivision"))
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="array",
+     *                         @OA\Items(ref="#/components/schemas/EditionDivision")
+     *                     )
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function index()
     {
-        $editionDivisions = EditionDivision::with(['edition', 'division'])->get();
-        return response()->json($editionDivisions);
+        return response()->json(
+            EditionDivision::with(['edition', 'division'])
+            ->orderBy('id_edition_division', 'desc')
+            ->paginate($this->paginationLimit)
+        );
     }
 
     /**
