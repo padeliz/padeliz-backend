@@ -5,6 +5,29 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @OA\Schema(
+ *     schema="EditionDivision",
+ *     required={"edition_id", "division_id"},
+ *     @OA\Property(property="id_edition_division", type="integer", format="int64"),
+ *     @OA\Property(property="edition_id", type="integer", format="int64"),
+ *     @OA\Property(property="division_id", type="integer", format="int64"),
+ *     @OA\Property(property="players_limit", type="integer"),
+ *     @OA\Property(property="court", type="string"),
+ *     @OA\Property(property="playing_start_time", type="string", format="time"),
+ *     @OA\Property(property="playing_end_time", type="string", format="time"),
+ *     @OA\Property(property="player_opponents_nr", type="integer"),
+ *     @OA\Property(property="player_matches_repeat", type="integer"),
+ *     @OA\Property(property="include_scores", type="boolean"),
+ *     @OA\Property(property="has_demonstrative_match", type="boolean"),
+ *     @OA\Property(property="fixed_teams", type="boolean"),
+ *     @OA\Property(
+ *         property="division",
+ *         ref="#/components/schemas/Division"
+ *     )
+ * )
+ */
+
 class EditionDivision extends Model
 {
     use HasFactory;

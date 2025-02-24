@@ -5,6 +5,19 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @OA\Schema(
+ *     schema="Division",
+ *     required={"name", "color"},
+ *     @OA\Property(property="id_division", type="integer", format="int64"),
+ *     @OA\Property(property="name", type="string", maxLength=255),
+ *     @OA\Property(property="color", type="string", maxLength=7),
+ *     @OA\Property(property="is_students_only", type="boolean"),
+ *     @OA\Property(property="created_at", type="string", format="date-time"),
+ *     @OA\Property(property="updated_at", type="string", format="date-time")
+ * )
+ */
+
 class Division extends Model
 {
     use HasFactory;

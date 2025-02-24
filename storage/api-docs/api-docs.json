@@ -1,0 +1,1566 @@
+{
+    "openapi": "3.0.0",
+    "info": {
+        "title": "Padel Events API Documentation",
+        "description": "API documentation for Padel Events application",
+        "contact": {
+            "email": "arshavin@padel-events.ro"
+        },
+        "version": "1.0.0"
+    },
+    "servers": [
+        {
+            "url": "/",
+            "description": "API Server"
+        }
+    ],
+    "paths": {
+        "/api/clubs": {
+            "get": {
+                "tags": [
+                    "Clubs"
+                ],
+                "summary": "Get list of clubs",
+                "operationId": "9122c16a9b733efef97ccebc63a8548c",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Club"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/clubs/{club}": {
+            "get": {
+                "tags": [
+                    "Clubs"
+                ],
+                "summary": "Get club details",
+                "operationId": "9ea9ddb54b36b5f3e7ea88743b650409",
+                "parameters": [
+                    {
+                        "name": "club",
+                        "in": "path",
+                        "description": "Club ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Club"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "Club not found"
+                    }
+                }
+            }
+        },
+        "/api/clubs/{club}/locations": {
+            "get": {
+                "tags": [
+                    "Clubs"
+                ],
+                "summary": "Get club locations",
+                "operationId": "d20168f6122670a0c67c5d7aa8dd62fa",
+                "parameters": [
+                    {
+                        "name": "club",
+                        "in": "path",
+                        "description": "Club ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Location"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/clubs/{club}/prizes": {
+            "get": {
+                "tags": [
+                    "Clubs"
+                ],
+                "summary": "Get club prizes",
+                "operationId": "39b5a7ef4a9161dd19c6332e066a36fa",
+                "parameters": [
+                    {
+                        "name": "club",
+                        "in": "path",
+                        "description": "Club ID",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/PrizeFromClub"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/divisions": {
+            "get": {
+                "tags": [
+                    "Divisions"
+                ],
+                "summary": "Get list of divisions",
+                "operationId": "38b143faa0b684d5978ff5200d60a9cb",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Division"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/divisions/{division}": {
+            "get": {
+                "tags": [
+                    "Divisions"
+                ],
+                "summary": "Get division details",
+                "operationId": "f15c59df48ceaf35b2d44167b6ff0dec",
+                "parameters": [
+                    {
+                        "name": "division",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Division"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/editions": {
+            "get": {
+                "tags": [
+                    "Editions"
+                ],
+                "summary": "Get list of editions",
+                "operationId": "b64d043ab6ffcba51b8aea9da1a152cd",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Edition"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/editions/upcoming": {
+            "get": {
+                "tags": [
+                    "Editions"
+                ],
+                "summary": "Get upcoming editions",
+                "operationId": "198c8f46e8b5f7e234cf8ce6bc72da2c",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Edition"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/editions/past": {
+            "get": {
+                "tags": [
+                    "Editions"
+                ],
+                "summary": "Get past editions",
+                "operationId": "f499e9e66a5f8b36f5b7e40e9ac3f53f",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Edition"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/editions/{edition}": {
+            "get": {
+                "tags": [
+                    "Editions"
+                ],
+                "summary": "Get edition details",
+                "operationId": "5ae70f49903114e496a7bc60df1922cd",
+                "parameters": [
+                    {
+                        "name": "edition",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Edition"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/editions/{edition}/divisions": {
+            "get": {
+                "tags": [
+                    "Editions"
+                ],
+                "summary": "Get edition divisions",
+                "operationId": "96b87c6e792064c7e8b02b5a32171c37",
+                "parameters": [
+                    {
+                        "name": "edition",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/EditionDivision"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/editions/{edition}/participants": {
+            "get": {
+                "tags": [
+                    "Editions"
+                ],
+                "summary": "Get edition participants",
+                "operationId": "00bcba69ee6036e904a9a97147aff8db",
+                "parameters": [
+                    {
+                        "name": "edition",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/EditionParticipation"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/editions/{edition}/lotteries": {
+            "get": {
+                "tags": [
+                    "Editions"
+                ],
+                "summary": "Get edition lotteries",
+                "operationId": "9b527afcb54fb05f73c8c270febb87af",
+                "parameters": [
+                    {
+                        "name": "edition",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/EditionLottery"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/edition-divisions": {
+            "get": {
+                "tags": [
+                    "Edition Divisions"
+                ],
+                "summary": "Get list of edition divisions",
+                "operationId": "ad186540dfa854c20d008c69baaef3ff",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/EditionDivision"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/edition-divisions/{editionDivision}": {
+            "get": {
+                "tags": [
+                    "Edition Divisions"
+                ],
+                "summary": "Get edition division details",
+                "operationId": "149a36ad974b1fdaa359ec3634163526",
+                "parameters": [
+                    {
+                        "name": "editionDivision",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EditionDivision"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/edition-divisions/{editionDivision}/participants": {
+            "get": {
+                "tags": [
+                    "Edition Divisions"
+                ],
+                "summary": "Get participants in this division",
+                "operationId": "4e81ce029ca3739432a18f09f0b9900f",
+                "parameters": [
+                    {
+                        "name": "editionDivision",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/EditionParticipation"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/editions/{edition}/participate": {
+            "post": {
+                "tags": [
+                    "Edition Participations"
+                ],
+                "summary": "Register for an edition",
+                "operationId": "ab490eb8a983a15465559eaf37449310",
+                "parameters": [
+                    {
+                        "name": "edition",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "division_id",
+                                    "player_id"
+                                ],
+                                "properties": {
+                                    "division_id": {
+                                        "type": "integer"
+                                    },
+                                    "player_id": {
+                                        "type": "integer"
+                                    },
+                                    "is_minor": {
+                                        "type": "boolean"
+                                    },
+                                    "is_student": {
+                                        "type": "boolean"
+                                    },
+                                    "discount": {
+                                        "type": "number"
+                                    },
+                                    "payment": {
+                                        "type": "number"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Participation created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/EditionParticipation"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/editions/{edition}/withdraw": {
+            "delete": {
+                "tags": [
+                    "Edition Participations"
+                ],
+                "summary": "Withdraw from an edition",
+                "operationId": "fff61f05f287d6761f957c37514e3fb9",
+                "parameters": [
+                    {
+                        "name": "edition",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "player_id"
+                                ],
+                                "properties": {
+                                    "player_id": {
+                                        "type": "integer"
+                                    },
+                                    "absence_reason": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Withdrawn successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/locations": {
+            "get": {
+                "tags": [
+                    "Locations"
+                ],
+                "summary": "Get list of locations",
+                "operationId": "4a95f25c1e13530115fd3fd6961b92de",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Location"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/locations/{location}": {
+            "get": {
+                "tags": [
+                    "Locations"
+                ],
+                "summary": "Get location details",
+                "operationId": "f167a429e4fe99e390b7f6e5fb2a0b0e",
+                "parameters": [
+                    {
+                        "name": "location",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Location"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/locations/{location}/editions": {
+            "get": {
+                "tags": [
+                    "Locations"
+                ],
+                "summary": "Get location editions",
+                "operationId": "64c956173446e75211205a57da157651",
+                "parameters": [
+                    {
+                        "name": "location",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Edition"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/matches/teams": {
+            "get": {
+                "tags": [
+                    "Matches Teams"
+                ],
+                "summary": "Get list of teams",
+                "operationId": "8f987592e70c3d5d1f3e255e3871ddee",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/MatchesTeam"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "post": {
+                "tags": [
+                    "Matches Teams"
+                ],
+                "summary": "Create a new team",
+                "operationId": "eec8c37f2c191e56d712dfbe07d69629",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "player_1",
+                                    "player_2"
+                                ],
+                                "properties": {
+                                    "player_1": {
+                                        "type": "integer"
+                                    },
+                                    "player_2": {
+                                        "type": "integer"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Team created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/MatchesTeam"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Team already exists"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/players": {
+            "post": {
+                "tags": [
+                    "Players"
+                ],
+                "summary": "Create a new player",
+                "operationId": "6362c1d174a02a1f76f4a0f14e45a417",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "name",
+                                    "email",
+                                    "phone"
+                                ],
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "phone": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Player created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Player"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/players/{player}": {
+            "get": {
+                "tags": [
+                    "Players"
+                ],
+                "summary": "Get player details",
+                "operationId": "753058ae7d72de85534f268f74e7b39c",
+                "parameters": [
+                    {
+                        "name": "player",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Player"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "put": {
+                "tags": [
+                    "Players"
+                ],
+                "summary": "Update player details",
+                "operationId": "fcb01a8ce1826b3f407cc8a62fb33c44",
+                "parameters": [
+                    {
+                        "name": "player",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "requestBody": {
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "properties": {
+                                    "name": {
+                                        "type": "string"
+                                    },
+                                    "email": {
+                                        "type": "string",
+                                        "format": "email"
+                                    },
+                                    "phone": {
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Player updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Player"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/prizes-from-clubs": {
+            "get": {
+                "tags": [
+                    "Prizes From Clubs"
+                ],
+                "summary": "Get list of prizes from clubs",
+                "operationId": "b15988715c4ecb43d26569877c4e1348",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/PrizeFromClub"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
+        "/api/prizes-from-clubs/{prizeFromClub}": {
+            "get": {
+                "tags": [
+                    "Prizes From Clubs"
+                ],
+                "summary": "Get prize from club details",
+                "operationId": "c5f7af1df3d19c9727e80f2a98560c88",
+                "parameters": [
+                    {
+                        "name": "prizeFromClub",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "integer"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PrizeFromClub"
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    },
+    "components": {
+        "schemas": {
+            "Club": {
+                "required": [
+                    "name",
+                    "city"
+                ],
+                "properties": {
+                    "id_club": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "city": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "locations": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/Location"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "Division": {
+                "required": [
+                    "name",
+                    "color"
+                ],
+                "properties": {
+                    "id_division": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "color": {
+                        "type": "string",
+                        "maxLength": 7
+                    },
+                    "is_students_only": {
+                        "type": "boolean"
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    }
+                },
+                "type": "object"
+            },
+            "Edition": {
+                "required": [
+                    "name",
+                    "date",
+                    "location_id"
+                ],
+                "properties": {
+                    "id_edition": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "location_id": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "date": {
+                        "type": "string",
+                        "format": "date"
+                    },
+                    "entry_fee": {
+                        "type": "number"
+                    },
+                    "students_entry_fee": {
+                        "type": "number"
+                    },
+                    "arriving_time": {
+                        "type": "string",
+                        "format": "time"
+                    },
+                    "closing_time": {
+                        "type": "string",
+                        "format": "time"
+                    },
+                    "location": {
+                        "$ref": "#/components/schemas/Location"
+                    },
+                    "divisions": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/EditionDivision"
+                        }
+                    },
+                    "participations": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/EditionParticipation"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "EditionDivision": {
+                "required": [
+                    "edition_id",
+                    "division_id"
+                ],
+                "properties": {
+                    "id_edition_division": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "edition_id": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "division_id": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "players_limit": {
+                        "type": "integer"
+                    },
+                    "court": {
+                        "type": "string"
+                    },
+                    "playing_start_time": {
+                        "type": "string",
+                        "format": "time"
+                    },
+                    "playing_end_time": {
+                        "type": "string",
+                        "format": "time"
+                    },
+                    "player_opponents_nr": {
+                        "type": "integer"
+                    },
+                    "player_matches_repeat": {
+                        "type": "integer"
+                    },
+                    "include_scores": {
+                        "type": "boolean"
+                    },
+                    "has_demonstrative_match": {
+                        "type": "boolean"
+                    },
+                    "fixed_teams": {
+                        "type": "boolean"
+                    },
+                    "division": {
+                        "$ref": "#/components/schemas/Division"
+                    }
+                },
+                "type": "object"
+            },
+            "EditionLottery": {
+                "required": [
+                    "edition_id",
+                    "prize_id"
+                ],
+                "properties": {
+                    "id_lottery": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "edition_id": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "division_id": {
+                        "type": "integer",
+                        "format": "int64",
+                        "nullable": true
+                    },
+                    "prize_id": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "orderliness": {
+                        "type": "integer"
+                    },
+                    "total_draws_nr": {
+                        "type": "integer"
+                    },
+                    "prize": {
+                        "$ref": "#/components/schemas/Prize"
+                    },
+                    "division": {
+                        "$ref": "#/components/schemas/Division"
+                    },
+                    "luckyOnes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/EditionLuckyOne"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "EditionLuckyOne": {
+                "required": [
+                    "lottery_id",
+                    "drawn_participation_id"
+                ],
+                "properties": {
+                    "id_lucky_one": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "lottery_id": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "drawn_participation_id": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "drawn_at": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "available_at": {
+                        "type": "integer",
+                        "format": "int64",
+                        "nullable": true
+                    },
+                    "announced_at": {
+                        "type": "integer",
+                        "format": "int64",
+                        "nullable": true
+                    },
+                    "accepted_at": {
+                        "type": "integer",
+                        "format": "int64",
+                        "nullable": true
+                    },
+                    "rejected_at": {
+                        "type": "integer",
+                        "format": "int64",
+                        "nullable": true
+                    },
+                    "drawnParticipation": {
+                        "$ref": "#/components/schemas/EditionParticipation"
+                    }
+                },
+                "type": "object"
+            },
+            "EditionParticipation": {
+                "required": [
+                    "edition_id",
+                    "player_id",
+                    "division_id"
+                ],
+                "properties": {
+                    "id_participation": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "edition_id": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "player_id": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "division_id": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "is_minor": {
+                        "type": "boolean"
+                    },
+                    "is_student": {
+                        "type": "boolean"
+                    },
+                    "discount": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "payment": {
+                        "type": "number",
+                        "nullable": true
+                    },
+                    "absence_reason": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "ban_reason": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "player": {
+                        "$ref": "#/components/schemas/Player"
+                    },
+                    "division": {
+                        "$ref": "#/components/schemas/Division"
+                    }
+                },
+                "type": "object"
+            },
+            "Location": {
+                "required": [
+                    "name",
+                    "club_id"
+                ],
+                "properties": {
+                    "id_location": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "club_id": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "address": {
+                        "type": "string",
+                        "maxLength": 255,
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "club": {
+                        "$ref": "#/components/schemas/Club"
+                    }
+                },
+                "type": "object"
+            },
+            "MatchesTeam": {
+                "required": [
+                    "player_1",
+                    "player_2"
+                ],
+                "properties": {
+                    "id_team": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "player_1": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "player_2": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "player1": {
+                        "$ref": "#/components/schemas/Player"
+                    },
+                    "player2": {
+                        "$ref": "#/components/schemas/Player"
+                    }
+                },
+                "type": "object"
+            },
+            "Player": {
+                "required": [
+                    "name",
+                    "email",
+                    "phone"
+                ],
+                "properties": {
+                    "id_player": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "email": {
+                        "type": "string",
+                        "format": "email"
+                    },
+                    "phone": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "participations": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/EditionParticipation"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "Prize": {
+                "required": [
+                    "name"
+                ],
+                "properties": {
+                    "id_prize": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "name": {
+                        "type": "string",
+                        "maxLength": 255
+                    },
+                    "image": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "box_1_text": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "box_1_bg_color": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "box_1_text_color": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "box_2_text": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "box_2_bg_color": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "box_2_text_color": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "clubPrizes": {
+                        "type": "array",
+                        "items": {
+                            "$ref": "#/components/schemas/PrizeFromClub"
+                        }
+                    }
+                },
+                "type": "object"
+            },
+            "PrizeFromClub": {
+                "required": [
+                    "club_id",
+                    "prize_id"
+                ],
+                "properties": {
+                    "id_prize_from_club": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "club_id": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "prize_id": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "image": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "box_1_text": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "box_1_bg_color": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "box_1_text_color": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "box_2_text": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "box_2_bg_color": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "box_2_text_color": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "created_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "updated_at": {
+                        "type": "string",
+                        "format": "date-time"
+                    },
+                    "club": {
+                        "$ref": "#/components/schemas/Club"
+                    },
+                    "prize": {
+                        "$ref": "#/components/schemas/Prize"
+                    }
+                },
+                "type": "object"
+            }
+        }
+    },
+    "tags": [
+        {
+            "name": "Clubs",
+            "description": "API Endpoints for clubs"
+        },
+        {
+            "name": "Divisions",
+            "description": "API Endpoints for divisions"
+        },
+        {
+            "name": "Editions",
+            "description": "API Endpoints for editions"
+        },
+        {
+            "name": "Edition Divisions",
+            "description": "API Endpoints for edition divisions"
+        },
+        {
+            "name": "Edition Participations",
+            "description": "API Endpoints for edition participations"
+        },
+        {
+            "name": "Locations",
+            "description": "API Endpoints for locations"
+        },
+        {
+            "name": "Matches Teams",
+            "description": "API Endpoints for matches teams"
+        },
+        {
+            "name": "Players",
+            "description": "API Endpoints for players"
+        },
+        {
+            "name": "Prizes From Clubs",
+            "description": "API Endpoints for prizes from clubs"
+        }
+    ]
+}

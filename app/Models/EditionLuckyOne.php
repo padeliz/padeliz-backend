@@ -5,6 +5,25 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
+/**
+ * @OA\Schema(
+ *     schema="EditionLuckyOne",
+ *     required={"lottery_id", "drawn_participation_id"},
+ *     @OA\Property(property="id_lucky_one", type="integer", format="int64"),
+ *     @OA\Property(property="lottery_id", type="integer", format="int64"),
+ *     @OA\Property(property="drawn_participation_id", type="integer", format="int64"),
+ *     @OA\Property(property="drawn_at", type="integer", format="int64"),
+ *     @OA\Property(property="available_at", type="integer", format="int64", nullable=true),
+ *     @OA\Property(property="announced_at", type="integer", format="int64", nullable=true),
+ *     @OA\Property(property="accepted_at", type="integer", format="int64", nullable=true),
+ *     @OA\Property(property="rejected_at", type="integer", format="int64", nullable=true),
+ *     @OA\Property(
+ *         property="drawnParticipation",
+ *         ref="#/components/schemas/EditionParticipation"
+ *     )
+ * )
+ */
+
 class EditionLuckyOne extends Model
 {
     use HasFactory;

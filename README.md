@@ -149,6 +149,53 @@ You can connect to the database using these credentials:
 
 4. Create a Pull Request on GitHub
 
+## API Documentation
+
+The API documentation is generated using L5-Swagger (OpenAPI). To access it:
+
+1. Install dependencies:
+```bash
+composer install
+```
+
+2. Generate the Swagger documentation:
+```bash
+php artisan l5-swagger:generate
+```
+
+3. Access the Swagger UI at:
+```
+http://localhost:8000/api/documentation
+```
+
+Note: If you're using a different port or host, adjust the URL accordingly.
+
+### Regenerating Documentation
+
+If you make changes to the API endpoints or models, regenerate the documentation:
+```bash
+php artisan l5-swagger:generate
+```
+
+### Troubleshooting
+
+If you can't access the documentation:
+
+1. Make sure storage directory is writable:
+```bash
+chmod -R 777 storage/
+```
+
+2. Clear Laravel cache:
+```bash
+php artisan cache:clear
+```
+
+3. Verify L5-Swagger is properly installed:
+```bash
+php artisan vendor:publish --provider "L5Swagger\L5SwaggerServiceProvider"
+```
+
 ## License
 
 This project is private. All rights reserved.

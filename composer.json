@@ -1,11 +1,12 @@
 {
-    "name": "laravel/laravel",
-    "type": "project",
-    "description": "The Laravel Framework.",
-    "keywords": ["framework", "laravel"],
-    "license": "MIT",
+    "name": "arshavinel/app-padel-events-back",
+    "type": "application",
+    "description": "Service API for https://padel-events.ro",
+    "keywords": ["padel", "events", "api"],
+    "license": "proprietary",
     "require": {
         "php": "^7.3|^8.0",
+        "darkaonline/l5-swagger": "^8.6",
         "fruitcake/laravel-cors": "^2.0",
         "guzzlehttp/guzzle": "^7.0.1",
         "laravel/framework": "^8.75",
