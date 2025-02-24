@@ -49,8 +49,36 @@ class EditionController extends Controller
     {
         $editions = Edition::with(['location', 'divisions'])
             ->where('date', '>', Carbon::now())
-            ->orderBy('date')
+            ->orderBy('date', 'desc')
             ->get();
+        return response()->json($editions);
+    }
+
+    /**
+     * @OA\Get(
+     *     path="/api/editions/ongoing",
+     *     summary="Get ongoing editions",
+     *     tags={"Editions"},
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation",
+     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/Edition"))
+     *     )
+     * )
+     */
+    public function ongoing()
+    {
+        $now = Carbon::now();
+        $today = $now->format('Y-m-d');
+        $currentTime = $now->format('H:i:s');
+
+        $editions = Edition::with(['location', 'divisions'])
+        ->whereDate('date', $today)
+            ->where('arriving_time', '<=', $currentTime)
+            ->where('closing_time', '>=', $currentTime)
+            ->orderBy('date', 'desc')
+            ->get();
+
         return response()->json($editions);
     }
 
@@ -69,8 +97,8 @@ class EditionController extends Controller
     public function past()
     {
         $editions = Edition::with(['location', 'divisions'])
-            ->where('date', '<=', Carbon::now())
-            ->orderByDesc('date')
+            ->where('date', '<', Carbon::now())
+            ->orderBy('date', 'desc')
             ->get();
         return response()->json($editions);
     }

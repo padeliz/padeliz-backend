@@ -39,7 +39,7 @@ class Club extends Model
         return $this->hasMany(Location::class, 'club_id');
     }
 
-    public function prizesFromClubs()
+    public function prizes()
     {
         return $this->hasMany(PrizeFromClub::class, 'club_id');
     }

@@ -247,6 +247,30 @@
                 }
             }
         },
+        "/api/editions/ongoing": {
+            "get": {
+                "tags": [
+                    "Editions"
+                ],
+                "summary": "Get ongoing editions",
+                "operationId": "13e1be99e388ff307f225e4f3b971818",
+                "responses": {
+                    "200": {
+                        "description": "Successful operation",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "type": "array",
+                                    "items": {
+                                        "$ref": "#/components/schemas/Edition"
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+        },
         "/api/editions/past": {
             "get": {
                 "tags": [

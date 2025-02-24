@@ -54,6 +54,7 @@ Route::prefix('divisions')->group(function () {
 Route::prefix('editions')->group(function () {
     Route::get('/', [EditionController::class, 'index']);
     Route::get('upcoming', [EditionController::class, 'upcoming']);
+    Route::get('ongoing', [EditionController::class, 'ongoing']);
     Route::get('past', [EditionController::class, 'past']);
     Route::get('{edition}', [EditionController::class, 'show']);
     Route::get('{edition}/divisions', [EditionController::class, 'divisions']);

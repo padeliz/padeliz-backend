@@ -34,6 +34,8 @@ class DatabaseSeeder extends Seeder
             return;
         }
 
+        $this->command->error(Carbon::now()->format('Y-m-d H:i:s'));
+
         $faker = Faker::create();
 
         $this->command->info('Clearing existing data...');
@@ -80,14 +82,19 @@ class DatabaseSeeder extends Seeder
             Division::factory()->create(['name' => 'Adults Learners', 'color' => '#89bdce', 'is_students_only' => 0]),
         ]);
 
+        $this->command->error(Carbon::now()->format('Y-m-d H:i:s'));
+
         $this->command->info('Creating players...');
         $players = Player::factory()->count(rand(15, 20))->create();
 
         $this->command->info('Creating past editions...');
         $pastEditions = $this->createEditions(0, rand(10, 20), Carbon::now()->subMonths(16), Carbon::now());
 
+        $this->command->info('Creating ongoing editions...');
+        $ongoingEditions = $this->createEditions($pastEditions->count(), rand(1, 2), Carbon::now(), Carbon::now());
+
         $this->command->info('Creating future editions...');
-        $futureEditions = $this->createEditions($pastEditions->count() + 1, rand(6, 10), Carbon::now(), Carbon::now()->addMonths(3));
+        $futureEditions = $this->createEditions($ongoingEditions->count() + $pastEditions->count(), rand(6, 10), Carbon::now(), Carbon::now()->addMonths(3));
 
         $this->command->info('Creating prizes and club prizes...');
         $prizes = Prize::factory()->count(5)->create();
@@ -131,15 +138,16 @@ class DatabaseSeeder extends Seeder
             return [];
         }
 
-        for ($i = $index_nr; $i < $count; $i++) {
-            $editions[] = Edition::factory()->create([
-                'name' => '#' . ($i + 1),
+        for ($i = 0; $i < $count; $i++) {
+            $arriving_time = Carbon::createFromTime(rand(12, 19), 30);
+
+            $editions[] = Edition::factory()->create(['name' => '#' . ($index_nr + $i + 1),
                 'date' => Carbon::parse($startDate)->addDays(rand(0, Carbon::parse($endDate)->diffInDays($startDate))),
                 'location_id' => $locations->random()->id_location, // Changed from id to id_location
                 'entry_fee' => rand(45, 55),
                 'students_entry_fee' => rand(35, 45),
-                'arriving_time' => Carbon::createFromTime(rand(12, 19), 30)->format('H:i:s'),
-                'closing_time' => Carbon::createFromTime(rand(16, 21), 30)->format('H:i:s'),
+                'arriving_time' => $arriving_time->format('H:i:s'),
+                'closing_time' => $arriving_time->addHours(rand(2, 4))->format('H:i:s'),
             ]);
         }
 

@@ -65,7 +65,7 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 
 ```bash
 # Start containers
-docker-compose up -d
+docker-compose up -d # without -d it will show logs
 
 # Stop containers
 docker-compose down
@@ -76,7 +76,7 @@ docker-compose up -d --build
 # View logs
 docker-compose logs -f
 
-# Access MySQL CLI
+# Access MySQL CLI (password is in the .env file)
 docker exec -it laravel_db mysql -u db_user -p
 
 # Run artisan commands
@@ -88,14 +88,14 @@ docker exec -it laravel_app php artisan test
 
 ### Project Structure
 
-```
-├── app/                 # Application core code
-├── database/           # Migrations and seeders
-├── docker/            # Docker configuration files
-├── routes/            # API routes
-├── tests/            # Test files
-└── docker-compose.yml # Docker services configuration
-```
+  ```bash
+  ├── app/               # Application core code
+  ├── database/          # Migrations and seeders
+  ├── docker/            # Docker configuration files
+  ├── routes/            # API routes
+  ├── tests/             # Test files
+  └── docker-compose.yml # Docker services configuration
+  ```
 
 ### Available Endpoints
 
@@ -149,47 +149,45 @@ You can connect to the database using these credentials:
 The API documentation is generated using L5-Swagger (OpenAPI). To access it:
 
 1. Install dependencies:
-```bash
-composer install
-```
+    ```bash
+    composer install
+    ```
 
 2. Generate the Swagger documentation:
-```bash
-php artisan l5-swagger:generate
-```
+    ```bash
+    php artisan l5-swagger:generate
+    ```
 
 3. Access the Swagger UI at:
-```
-http://localhost:8000/api/documentation
-```
+    ```bash
+    http://localhost:8000/api/documentation
 
-Note: If you're using a different port or host, adjust the URL accordingly.
+    # ⚠️ Note: If you're using a different port or host, adjust the URL accordingly.
+    ```
 
-### Regenerating Documentation
-
-If you make changes to the API endpoints or models, regenerate the documentation:
-```bash
-php artisan l5-swagger:generate
-```
+3. If you make changes to the API endpoints or models, regenerate the documentation:
+    ```bash
+    php artisan l5-swagger:generate
+    ```
 
 ### Troubleshooting
 
 If you can't access the documentation:
 
 1. Make sure storage directory is writable:
-```bash
-chmod -R 777 storage/
-```
+    ```bash
+    chmod -R 777 storage/
+    ```
 
 2. Clear Laravel cache:
-```bash
-php artisan cache:clear
-```
+    ```bash
+    php artisan cache:clear
+    ```
 
 3. Verify L5-Swagger is properly installed:
-```bash
-php artisan vendor:publish --provider "L5Swagger\L5SwaggerServiceProvider"
-```
+    ```bash
+    php artisan vendor:publish --provider "L5Swagger\L5SwaggerServiceProvider"
+    ```
 
 ## License
 
