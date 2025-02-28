@@ -17,4 +17,4 @@ yarn-error.log
 /.vscode
 
 # L5-Swagger
-/storage/api-docs/api-docs.json
+/storage/api-docs

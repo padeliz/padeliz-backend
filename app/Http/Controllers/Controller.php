@@ -19,6 +19,11 @@ use Illuminate\Routing\Controller as BaseController;
  *     description="API Server"
  * )
  *
+ * @OA\Tag(
+ *     name="[DEV ONLY]",
+ *     description="‼️ These endpoints are not available in production."
+ * )
+ *
  * @OA\Schema(
  *     schema="PaginatedResponse",
  *     description="Generic paginated response",
@@ -50,11 +55,6 @@ use Illuminate\Routing\Controller as BaseController;
  *     scheme="bearer",
  *     bearerFormat="JWT",
  *     securityScheme="sanctum"
- * )
- *
- * @OA\Tag(
- *     name="[DEV ONLY]",
- *     description="‼️ These endpoints are not available in production."
  * )
  */
 class Controller extends BaseController

@@ -97,6 +97,8 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::post('/', [PlayerController::class, 'store']);
         Route::get('{player}', [PlayerController::class, 'show']);
         Route::put('{player}', [PlayerController::class, 'update']);
+        Route::post('/image', [PlayerController::class, 'uploadImage']);
+        Route::delete('/image/{filename}', [PlayerController::class, 'deleteImage']);
     });
 
     Route::prefix('editions/{edition}')->group(function () {

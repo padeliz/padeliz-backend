@@ -5,7 +5,6 @@ namespace App\Http\Controllers\Api;
 use App\Http\Controllers\Controller;
 use App\Models\Player;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 
 /**
  * @OA\Tag(
@@ -142,5 +141,80 @@ class PlayerController extends Controller
         $player->update($validatedData);
 
         return response()->json($player);
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/players/image",
+     *     summary="Upload a profile image",
+     *     tags={"Players"},
+     *     security={{"sanctum":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\MediaType(
+     *             mediaType="multipart/form-data",
+     *             @OA\Schema(
+     *                 @OA\Property(property="image", type="file", format="binary")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=201, description="Image uploaded successfully"),
+     *     @OA\Response(response=422, description="Validation error or too many images")
+     * )
+     */
+    public function uploadImage(Request $request)
+    {
+        $request->validate([
+            'image' => 'required|image|max:2048' // 2MB max
+        ]);
+
+        $player = $request->user();
+        $currentImages = $player->getUploadedFiles('images');
+
+        if (count($currentImages) >= 3) {
+            return response()->json([
+                'message' => 'Maximum number of profile images (3) reached. Delete an existing image first.'
+            ], 422);
+        }
+
+        $player->saveUploadedFile($request->file('image'), 'images');
+
+        return response()->json([
+            'message' => 'Image uploaded successfully',
+            'urls' => $player->getUploadedUrls('images')
+        ], 201);
+    }
+
+    /**
+     * @OA\Delete(
+     *     path="/api/players/image/{filename}",
+     *     summary="Delete a profile image",
+     *     tags={"Players"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="filename",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Response(response=200, description="Image deleted successfully"),
+     *     @OA\Response(response=404, description="Image not found")
+     * )
+     */
+    public function deleteImage(Request $request, string $filename)
+    {
+        /** @var Player $player  */
+        $player = $request->user();
+
+        if (!$player->deleteUploadedFile($filename, 'images')) {
+            return response()->json([
+                'message' => 'Image not found'
+            ], 404);
+        }
+
+        return response()->json([
+            'message' => 'Image deleted successfully',
+            'urls' => $player->getUploadedUrls('images')
+        ]);
     }
 }

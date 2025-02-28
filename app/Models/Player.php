@@ -17,7 +17,7 @@ use App\Traits\HasUploadedFiles;
  *     @OA\Property(property="google_id", type="string"),
  *     @OA\Property(property="google_name", type="string"),
  *     @OA\Property(property="google_email", type="string"),
- *     @OA\Property(property="google_avatar", type="string", nullable=true),
+ *     @OA\Property(property="google_avatar", type="string"),
  *     @OA\Property(property="skill_division", type="number", format="float", nullable=true, maximum=9.9),
  *     @OA\Property(property="first_name", type="string", maxLength=50, nullable=true),
  *     @OA\Property(property="middle_name", type="string", maxLength=50, nullable=true),
@@ -28,7 +28,11 @@ use App\Traits\HasUploadedFiles;
  *     @OA\Property(property="rankedin_id", type="string", maxLength=15, nullable=true),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp"),
- *     @OA\Property(property="uploaded_profile_url", type="string", nullable=true),
+ *     @OA\Property(
+ *         property="uploaded_profile_urls",
+ *         type="array",
+ *         @OA\Items(type="string")
+ *     ),
  *     @OA\Property(
  *         property="participations",
  *         type="array",
@@ -71,7 +75,7 @@ class Player extends Authenticatable
         'remember_token'
     ];
 
-    protected $appends = ['uploaded_profile_url'];
+    protected $appends = ['uploaded_profile_urls'];
 
     /**
      * The attributes that should be cast.
@@ -91,8 +95,8 @@ class Player extends Authenticatable
         return $this->hasMany(EditionParticipation::class, 'player_id');
     }
 
-    public function getUploadedProfileUrlAttribute(): ?string
+    public function getUploadedProfileUrlsAttribute(): array
     {
-        return $this->getFileUrl('avatar');
+        return $this->getUploadedUrls('images');
     }
 }

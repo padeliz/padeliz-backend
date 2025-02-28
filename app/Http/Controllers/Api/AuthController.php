@@ -155,15 +155,7 @@ class AuthController extends Controller
             abort(404);
         }
 
-        $player = Player::firstOrCreate(
-            ['google_email' => 'dev@example.com'],
-            [
-                'name' => 'Dev User',
-                'google_id' => 'dev_' . rand(1000, 9999),
-                'google_name' => 'Dev User',
-                'google_avatar' => 'https://via.placeholder.com/150'
-            ]
-        );
+        $player = Player::inRandomOrder()->first();
 
         $token = $player->createToken('dev-token')->plainTextToken;
 

@@ -3,6 +3,7 @@
 namespace App\Traits;
 
 use Illuminate\Support\Facades\File;
+use Illuminate\Http\UploadedFile;
 
 trait HasUploadedFiles
 {
@@ -20,33 +21,56 @@ trait HasUploadedFiles
         );
     }
 
-    public function getFirstFile(string $type, string $lang = 'en', string $size = 'medium'): ?string
+    public function getUploadedFiles($type, string $lang = 'en', string $size = 'medium'): array
     {
         $path = $this->getUploadPath($type, $lang, $size);
+
         if (!File::exists($path)) {
-            return null;
+            return [];
         }
 
         $files = File::files($path);
-        return !empty($files) ? basename($files[0]) : null;
+
+        return array_map(function ($file) {
+            return $file->getBasename();
+        }, $files);
     }
 
-    public function getFileUrl(string $type, string $lang = 'en', string $size = 'medium'): ?string
+    public function getUploadedUrls(string $type, string $lang = 'en', string $size = 'medium'): array
     {
-        $file = $this->getFirstFile($type, $lang, $size);
-        if (!$file) {
-            return null;
+        return array_map(function ($file) use ($type, $lang, $size) {
+            return sprintf(
+                '%s/.%s/%s/%s/%s/%s/%s',
+                config('uploads.base_path'),
+                strtolower(class_basename($this)),
+                $this->getKey(),
+                $type,
+                $lang,
+                $size,
+                $file
+            );
+        }, $this->getUploadedFiles($type, $lang, $size));
+    }
+
+    public function saveUploadedFile(UploadedFile $file, string $type, string $lang = 'en', string $size = 'medium'): string
+    {
+        $filename = $type . '-' . time() . '.' . $file->getClientOriginalExtension();
+        $path = $this->getUploadPath($type, $lang, $size);
+
+        File::makeDirectory($path, 0755, true, true);
+        $file->move($path, $filename);
+
+        return $filename;
+    }
+
+    public function deleteUploadedFile(string $filename, string $type, string $lang = 'en', string $size = 'medium'): bool
+    {
+        $path = $this->getUploadPath($type, $lang, $size) . '/' . $filename;
+
+        if (!File::exists($path)) {
+            return false;
         }
 
-        return sprintf(
-            '%s/.%s/%s/%s/%s/%s/%s',
-            config('uploads.base_path'),
-            strtolower(class_basename($this)),
-            $this->getKey(),
-            $type,
-            $lang,
-            $size,
-            $file
-        );
+        return File::delete($path);
     }
 }
