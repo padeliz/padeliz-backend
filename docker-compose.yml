@@ -34,7 +34,7 @@ services:
       MYSQL_USER: ${DB_USERNAME}
       MYSQL_PASSWORD: ${DB_PASSWORD}
     volumes:
-      - dbdata:/var/lib/mysql
+      - mysql_data:/var/lib/mysql
     ports:
       - "3306:3306"
     networks:
@@ -47,8 +47,8 @@ services:
     environment:
       PMA_HOST: db
       PMA_PORT: 3306
-      PMA_USER: db_user
-      PMA_PASSWORD: db_pass
+      PMA_USER: ${DB_USERNAME}
+      PMA_PASSWORD: ${DB_PASSWORD}
     depends_on:
       - db
     networks:
@@ -59,4 +59,4 @@ networks:
     driver: bridge
 
 volumes:
-  dbdata:
+  mysql_data:

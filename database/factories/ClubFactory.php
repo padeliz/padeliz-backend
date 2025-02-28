@@ -12,8 +12,8 @@ class ClubFactory extends Factory
     public function definition()
     {
         return [
-            'name' => $this->faker->unique()->company(),
-            'city' => $this->faker->randomElement(['Bucharest', 'Cluj', 'Timisoara', 'Iasi']),
+            'name' => substr($this->faker->company(), 0, 30),
+            'city' => substr($this->faker->city(), 0, 30),
         ];
     }
 }

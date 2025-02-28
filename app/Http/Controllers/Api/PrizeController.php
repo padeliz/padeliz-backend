@@ -34,14 +34,17 @@ class PrizeController extends Controller
      */
     public function index()
     {
-        return response()->json(
-            Prize::orderBy('name')
-            ->paginate($this->paginationLimit)
-        );
+        $prizes = Prize::query()
+            ->orderByRaw('LOWER(name) ASC, name ASC')  // Case-insensitive + consistent tie-breaking
+            ->paginate($this->paginationLimit);
+
+        return response()->json($prizes);
     }
 
     public function show(Prize $prize)
     {
-        return response()->json($prize->load('clubPrizes.club'));
+        return response()->json(
+            $prize->load(['clubPrizes.club'])
+        );
     }
 }

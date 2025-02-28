@@ -38,7 +38,7 @@ class Edition extends Model
 {
     use HasFactory;
 
-    protected $table = 'pm_editions';
+    protected $table = 'editions';
     protected $primaryKey = 'id_edition';
     public $timestamps = false;
 

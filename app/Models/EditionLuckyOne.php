@@ -28,7 +28,7 @@ class EditionLuckyOne extends Model
 {
     use HasFactory;
 
-    protected $table = 'pm_edition_lucky_ones';
+    protected $table = 'edition_lucky_ones';
     protected $primaryKey = 'id_lucky_one';
     public $timestamps = false;
 

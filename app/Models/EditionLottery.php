@@ -34,7 +34,7 @@ class EditionLottery extends Model
 {
     use HasFactory;
 
-    protected $table = 'pm_edition_lotteries';
+    protected $table = 'edition_lotteries';
     protected $primaryKey = 'id_lottery';
     public $timestamps = false;
 

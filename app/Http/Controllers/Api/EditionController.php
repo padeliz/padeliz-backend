@@ -75,9 +75,8 @@ class EditionController extends Controller
     public function upcoming()
     {
         return response()->json(
-            Edition::with(['location', 'divisions'])
-            ->where('date', '>', Carbon::now())
-                ->orderBy('date', 'desc')
+            Edition::where('date', '>', Carbon::now())
+                ->orderBy('date', 'asc')
             ->paginate($this->paginationLimit)
         );
     }
@@ -108,16 +107,9 @@ class EditionController extends Controller
      */
     public function ongoing()
     {
-        $now = Carbon::now();
-        $today = $now->format('Y-m-d');
-        $currentTime = $now->format('H:i:s');
-
         return response()->json(
-            Edition::with(['location', 'divisions'])
-            ->whereDate('date', $today)
-            ->where('arriving_time', '<=', $currentTime)
-                ->where('closing_time', '>=', $currentTime)
-                ->orderBy('date', 'desc')
+            Edition::whereDate('date', Carbon::today())
+                ->orderBy('date', 'asc')
             ->paginate($this->paginationLimit)
         );
     }
@@ -149,8 +141,7 @@ class EditionController extends Controller
     public function past()
     {
         return response()->json(
-            Edition::with(['location', 'divisions'])
-            ->where('date', '<', Carbon::now())
+            Edition::where('date', '<', Carbon::today())
                 ->orderBy('date', 'desc')
             ->paginate($this->paginationLimit)
         );

@@ -11,10 +11,7 @@ use Illuminate\Routing\Controller as BaseController;
  * @OA\Info(
  *     version="1.0.0",
  *     title="Padel Events API Documentation",
- *     description="API documentation for Padel Events application",
- *     @OA\Contact(
- *         email="arshavin@padel-events.ro"
- *     )
+ *     description="API endpoints documentation for Padel Events application"
  * )
  *
  * @OA\Server(
@@ -46,6 +43,18 @@ use Illuminate\Routing\Controller as BaseController;
  *     description="Page number",
  *     required=false,
  *     @OA\Schema(type="integer", default=1)
+ * )
+ *
+ * @OA\SecurityScheme(
+ *     type="http",
+ *     scheme="bearer",
+ *     bearerFormat="JWT",
+ *     securityScheme="sanctum"
+ * )
+ *
+ * @OA\Tag(
+ *     name="[DEV ONLY]",
+ *     description="‼️ These endpoints are not available in production."
  * )
  */
 class Controller extends BaseController

@@ -20,7 +20,7 @@ class MatchesTeamController extends Controller
      *     path="/api/matches/teams",
      *     summary="Get paginated list of matches teams",
      *     tags={"Matches Teams"},
-     *     security={{"sanctum":{}}},
+     *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
      *         response=200,
@@ -37,6 +37,10 @@ class MatchesTeamController extends Controller
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated"
      *     )
      * )
      */
@@ -44,7 +48,7 @@ class MatchesTeamController extends Controller
     {
         return response()->json(
             MatchesTeam::with(['player1', 'player2'])
-            ->orderBy('id_matches_team', 'desc')
+            ->orderBy('id_team', 'desc')
             ->paginate($this->paginationLimit)
         );
     }
@@ -77,8 +81,8 @@ class MatchesTeamController extends Controller
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'player_1' => 'required|exists:pm_players,id_player',
-            'player_2' => 'required|exists:pm_players,id_player|different:player_1',
+            'player_1' => 'required|exists:players,id_player',
+            'player_2' => 'required|exists:players,id_player|different:player_1',
         ]);
 
         // Check if team already exists
@@ -94,7 +98,13 @@ class MatchesTeamController extends Controller
             return response()->json(['message' => 'Team already exists'], 422);
         }
 
-        $team = MatchesTeam::create($validated);
+        $team = new MatchesTeam();
+        $team->player_1 = $validated['player_1'];
+        $team->player_2 = $validated['player_2'];
+        $team->inserted_at = now()->timestamp;
+        $team->updated_at = now()->timestamp;
+        $team->save();
+
         return response()->json($team->load(['player1', 'player2']), 201);
     }
 }

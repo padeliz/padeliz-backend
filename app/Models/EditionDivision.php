@@ -32,7 +32,7 @@ class EditionDivision extends Model
 {
     use HasFactory;
 
-    protected $table = 'pm_edition_divisions';
+    protected $table = 'edition_divisions';
     protected $primaryKey = 'id_edition_division';
     public $timestamps = false;
 

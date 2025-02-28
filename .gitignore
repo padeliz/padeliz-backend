@@ -1,9 +1,11 @@
 /node_modules
 /public/hot
 /public/storage
+/public/uploads
 /storage/*.key
 /vendor
-.env
+.env.local
+.env.*.local
 .env.backup
 .phpunit.result.cache
 docker-compose.override.yml
@@ -13,3 +15,6 @@ npm-debug.log
 yarn-error.log
 /.idea
 /.vscode
+
+# L5-Swagger
+/storage/api-docs/api-docs.json

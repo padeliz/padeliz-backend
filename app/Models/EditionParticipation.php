@@ -34,7 +34,7 @@ class EditionParticipation extends Model
 {
     use HasFactory;
 
-    protected $table = 'pm_edition_participations';
+    protected $table = 'edition_participations';
     protected $primaryKey = 'id_participation';
     public $timestamps = false;
 

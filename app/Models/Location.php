@@ -25,7 +25,7 @@ class Location extends Model
 {
     use HasFactory;
 
-    protected $table = 'pm_locations';
+    protected $table = 'locations';
     protected $primaryKey = 'id_location';
     public $timestamps = false;
 

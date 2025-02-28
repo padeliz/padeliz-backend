@@ -42,7 +42,7 @@ class PrizeFromClubController extends Controller
     {
         return response()->json(
             PrizeFromClub::with(['club', 'prize'])
-            ->orderBy('id_prize_from_club', 'desc')
+            ->orderBy('id_club_prize', 'desc')
             ->paginate($this->paginationLimit)
         );
     }

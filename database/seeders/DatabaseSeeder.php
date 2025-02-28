@@ -19,6 +19,7 @@ use App\Models\EditionLuckyOne;
 use Carbon\Carbon;
 use Faker\Factory as Faker;
 use App\Models\MatchesTeam;
+use Illuminate\Support\Facades\File;
 
 class DatabaseSeeder extends Seeder
 {
@@ -29,7 +30,7 @@ class DatabaseSeeder extends Seeder
      */
     public function run()
     {
-        if (App::environment('production')) {
+        if (App::environment() == 'production') {
             $this->command->error('Seeding is not allowed in production!');
             return;
         }
@@ -54,6 +55,12 @@ class DatabaseSeeder extends Seeder
         Club::truncate();
 
         DB::statement('SET FOREIGN_KEY_CHECKS=1');
+
+        // Ensure uploads directory exists
+        $uploadsPath = public_path('uploads');
+        if (!File::exists($uploadsPath)) {
+            File::makeDirectory($uploadsPath, 0755, true);
+        }
 
         $this->command->info('Creating clubs...');
         $clubs = collect([

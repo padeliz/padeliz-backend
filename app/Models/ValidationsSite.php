@@ -9,7 +9,7 @@ class ValidationsSite extends Model
 {
     use HasFactory;
 
-    protected $table = 'pm_validations_site';
+    protected $table = 'validations_site';
     protected $primaryKey = 'error';
     public $incrementing = false;
     protected $keyType = 'string';

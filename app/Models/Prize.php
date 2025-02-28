@@ -30,7 +30,7 @@ class Prize extends Model
 {
     use HasFactory;
 
-    protected $table = 'pm_prizes';
+    protected $table = 'prizes';
     protected $primaryKey = 'id_prize';
     public $timestamps = false;
 
@@ -45,9 +45,9 @@ class Prize extends Model
         'box_2_text_color',
     ];
 
-    public function prizesFromClubs()
+    public function clubPrizes()
     {
-        return $this->hasMany(PrizeFromClub::class, 'prize_id');
+        return $this->hasMany(PrizeFromClub::class, 'prize_id', 'id_prize');
     }
 
     public function lotteries()

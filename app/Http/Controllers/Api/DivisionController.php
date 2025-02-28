@@ -41,8 +41,9 @@ class DivisionController extends Controller
     public function index()
     {
         return response()->json(
-            Division::orderBy('name')
-            ->paginate($this->paginationLimit)
+            Division::query()
+                ->orderByRaw('name ASC')
+                ->paginate($this->paginationLimit)
         );
     }
 

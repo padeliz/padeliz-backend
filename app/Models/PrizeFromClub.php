@@ -9,7 +9,7 @@ use Illuminate\Database\Eloquent\Model;
  * @OA\Schema(
  *     schema="PrizeFromClub",
  *     required={"club_id", "prize_id"},
- *     @OA\Property(property="id_prize_from_club", type="integer", format="int64"),
+ *     @OA\Property(property="id_club_prize", type="integer", format="int64"),
  *     @OA\Property(property="club_id", type="integer", format="int64"),
  *     @OA\Property(property="prize_id", type="integer", format="int64"),
  *     @OA\Property(property="image", type="string", nullable=true),
@@ -35,7 +35,7 @@ class PrizeFromClub extends Model
 {
     use HasFactory;
 
-    protected $table = 'pm_prizes_from_clubs';
+    protected $table = 'prizes_from_clubs';
     protected $primaryKey = 'id_club_prize';
     public $timestamps = false;
 

@@ -22,7 +22,7 @@ class Division extends Model
 {
     use HasFactory;
 
-    protected $table = 'pm_divisions';
+    protected $table = 'divisions';
     protected $primaryKey = 'id_division';
     public $timestamps = false;
 
@@ -31,6 +31,15 @@ class Division extends Model
         'color',
         'is_students_only',
         'its_first_edition_id',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'is_students_only' => 'boolean',
     ];
 
     public function editionDivisions()

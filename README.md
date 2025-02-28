@@ -131,7 +131,13 @@ You can connect to the database using these credentials:
    git checkout -b feature/your-feature-name
    ```
 
-2. Make your changes and commit
+2. Make your changes and test them
+   ```bash
+   docker exec -it laravel_app php artisan test
+   ```
+
+
+3. Commit
    ```bash
    git add .
    git commit -m "Description of changes"

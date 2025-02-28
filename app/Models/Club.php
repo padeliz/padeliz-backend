@@ -25,7 +25,7 @@ class Club extends Model
 {
     use HasFactory;
 
-    protected $table = 'pm_clubs';
+    protected $table = 'clubs';
     protected $primaryKey = 'id_club';
     public $timestamps = false;
 

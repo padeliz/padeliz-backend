@@ -14,8 +14,11 @@ use App\Http\Controllers\Api\{
     PrizeFromClubController,
     EditionLotteryController,
     EditionLuckyOneController,
-    MatchesTeamController
+    MatchesTeamController,
+    AuthController,
+    EligibilityController,
 };
+use Illuminate\Support\Facades\App;
 
 /*
 |--------------------------------------------------------------------------
@@ -105,4 +108,19 @@ Route::middleware('auth:sanctum')->group(function () {
         Route::get('/', [MatchesTeamController::class, 'index']);
         Route::post('/', [MatchesTeamController::class, 'store']);
     });
+
+    Route::post('auth/logout', [AuthController::class, 'logout']);
+    Route::get('auth/me', [AuthController::class, 'me']);
+
+    Route::get('/eligibility/approved', [EligibilityController::class, 'approved']);
+    Route::get('/eligibility/pending', [EligibilityController::class, 'pending']);
+    Route::get('/eligibility/rejected', [EligibilityController::class, 'rejected']);
+    Route::patch('/eligibility', [EligibilityController::class, 'update']);
+    Route::post('/eligibility', [EligibilityController::class, 'store']);
 });
+
+Route::post('auth/google', [AuthController::class, 'googleCallback']);
+
+if (App::environment() != 'production') {
+    Route::post('/dev/auth/login', [AuthController::class, 'devLogin']);
+}

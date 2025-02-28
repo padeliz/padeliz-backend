@@ -14,8 +14,8 @@ class LocationFactory extends Factory
     {
         return [
             'club_id' => Club::factory(),
-            'name' => $this->faker->unique()->company() . ' ' . $this->faker->unique()->streetName(),
-            'address' => $this->faker->address(),
+            'name' => substr($this->faker->company(), 0, 12) . ' ' . substr($this->faker->unique()->streetName(), 0, 12),
+            'address' => substr($this->faker->address(), 0, 200),
             'total_indoors_courts' => $this->faker->numberBetween(3, 6),
             'total_outdoor_courts' => $this->faker->numberBetween(3, 6),
         ];
