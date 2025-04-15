@@ -2,10 +2,7 @@
     "openapi": "3.0.0",
     "info": {
         "title": "Padel Events API Documentation",
-        "description": "API documentation for Padel Events application",
-        "contact": {
-            "email": "arshavin@padel-events.ro"
-        },
+        "description": "API endpoints documentation for Padel Events application",
         "version": "1.0.0"
     },
     "servers": [
@@ -15,6 +12,112 @@
         }
     ],
     "paths": {
+        "/api/auth/google": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Authenticate user with Google",
+                "operationId": "f20142b72a5fef43f00404447dc5666f",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "application/json": {
+                            "schema": {
+                                "required": [
+                                    "token"
+                                ],
+                                "properties": {
+                                    "token": {
+                                        "description": "Google OAuth token",
+                                        "type": "string"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "200": {
+                        "description": "Successful authentication"
+                    }
+                }
+            }
+        },
+        "/api/auth/logout": {
+            "post": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Logout current user",
+                "operationId": "df9bdc6c7a6d9f20b983526b2ec0f698",
+                "responses": {
+                    "200": {
+                        "description": "Successfully logged out",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "properties": {
+                                        "message": {
+                                            "type": "string",
+                                            "example": "Logged out successfully"
+                                        }
+                                    },
+                                    "type": "object"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/auth/me": {
+            "get": {
+                "tags": [
+                    "Authentication"
+                ],
+                "summary": "Get authenticated user details",
+                "operationId": "b5de204f5e452ef51327c691aa99e77c",
+                "responses": {
+                    "200": {
+                        "description": "Current user details",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/Player"
+                                }
+                            }
+                        }
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/dev/auth/login": {
+            "post": {
+                "tags": [
+                    "[DEV ONLY]"
+                ],
+                "summary": "[DEV ONLY] Login without token",
+                "description": "This endpoint is only available in non-production environments",
+                "operationId": "baafa3d56c49716793c5af1e5053a813",
+                "responses": {
+                    "200": {
+                        "description": "Login successful"
+                    }
+                }
+            }
+        },
         "/api/clubs": {
             "get": {
                 "tags": [
@@ -654,7 +757,7 @@
         "/api/editions/{edition}/participate": {
             "post": {
                 "tags": [
-                    "Edition Participations"
+                    "Editions"
                 ],
                 "summary": "Register for an edition",
                 "operationId": "ab490eb8a983a15465559eaf37449310",
@@ -674,27 +777,11 @@
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "division_id",
-                                    "player_id"
+                                    "division_id"
                                 ],
                                 "properties": {
                                     "division_id": {
                                         "type": "integer"
-                                    },
-                                    "player_id": {
-                                        "type": "integer"
-                                    },
-                                    "is_minor": {
-                                        "type": "boolean"
-                                    },
-                                    "is_student": {
-                                        "type": "boolean"
-                                    },
-                                    "discount": {
-                                        "type": "number"
-                                    },
-                                    "payment": {
-                                        "type": "number"
                                     }
                                 },
                                 "type": "object"
@@ -704,14 +791,13 @@
                 },
                 "responses": {
                     "201": {
-                        "description": "Participation created successfully",
-                        "content": {
-                            "application/json": {
-                                "schema": {
-                                    "$ref": "#/components/schemas/EditionParticipation"
-                                }
-                            }
-                        }
+                        "description": "Successfully registered"
+                    },
+                    "403": {
+                        "description": "Player not eligible for this edition"
+                    },
+                    "422": {
+                        "description": "Validation error or past edition"
                     }
                 },
                 "security": [
@@ -724,7 +810,7 @@
         "/api/editions/{edition}/withdraw": {
             "delete": {
                 "tags": [
-                    "Edition Participations"
+                    "Editions"
                 ],
                 "summary": "Withdraw from an edition",
                 "operationId": "fff61f05f287d6761f957c37514e3fb9",
@@ -738,20 +824,123 @@
                         }
                     }
                 ],
+                "responses": {
+                    "200": {
+                        "description": "Withdrawn successfully"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/eligibility/approved": {
+            "get": {
+                "tags": [
+                    "Eligibility"
+                ],
+                "summary": "Get user's last approved eligibility",
+                "operationId": "913113ac7397c556dc6ede366e7d8866",
+                "responses": {
+                    "200": {
+                        "description": "Last approved eligibility",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlayerEligibility"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No approved eligibility found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/eligibility/pending": {
+            "get": {
+                "tags": [
+                    "Eligibility"
+                ],
+                "summary": "Get user's pending eligibility",
+                "operationId": "2950f39cc93cdf0c864404af9113c267",
+                "responses": {
+                    "200": {
+                        "description": "Pending eligibility",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlayerEligibility"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No pending eligibility found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/eligibility/rejected": {
+            "get": {
+                "tags": [
+                    "Eligibility"
+                ],
+                "summary": "Get user's last rejected eligibility",
+                "operationId": "6c0dc11ae9bd534a4867229c49e3d7a6",
+                "responses": {
+                    "200": {
+                        "description": "Last rejected eligibility",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlayerEligibility"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No rejected eligibility found"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/eligibility": {
+            "post": {
+                "tags": [
+                    "Eligibility"
+                ],
+                "summary": "Create new eligibility",
+                "operationId": "dfb46a645e97c150216eb741f3fa7d99",
                 "requestBody": {
                     "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "required": [
-                                    "player_id"
+                                    "edition_id"
                                 ],
                                 "properties": {
-                                    "player_id": {
+                                    "edition_id": {
                                         "type": "integer"
-                                    },
-                                    "absence_reason": {
-                                        "type": "string"
                                     }
                                 },
                                 "type": "object"
@@ -760,8 +949,45 @@
                     }
                 },
                 "responses": {
+                    "201": {
+                        "description": "Eligibility created successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlayerEligibility"
+                                }
+                            }
+                        }
+                    },
+                    "422": {
+                        "description": "Validation error or pending eligibility exists or past edition"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            },
+            "patch": {
+                "tags": [
+                    "Eligibility"
+                ],
+                "summary": "Update pending eligibility with current player data",
+                "operationId": "cb3ead5ec1f6dc0129f9cd27d7febe61",
+                "responses": {
                     "200": {
-                        "description": "Withdrawn successfully"
+                        "description": "Eligibility updated successfully",
+                        "content": {
+                            "application/json": {
+                                "schema": {
+                                    "$ref": "#/components/schemas/PlayerEligibility"
+                                }
+                            }
+                        }
+                    },
+                    "404": {
+                        "description": "No pending eligibility found"
                     }
                 },
                 "security": [
@@ -929,11 +1155,14 @@
                                 }
                             }
                         }
+                    },
+                    "401": {
+                        "description": "Unauthenticated"
                     }
                 },
                 "security": [
                     {
-                        "sanctum": []
+                        "bearerAuth": []
                     }
                 ]
             },
@@ -1078,12 +1307,12 @@
                     }
                 ]
             },
-            "put": {
+            "patch": {
                 "tags": [
                     "Players"
                 ],
                 "summary": "Update player details",
-                "operationId": "fcb01a8ce1826b3f407cc8a62fb33c44",
+                "operationId": "5067fecf24bb37dab15f10602bb436ce",
                 "parameters": [
                     {
                         "name": "player",
@@ -1095,19 +1324,59 @@
                     }
                 ],
                 "requestBody": {
+                    "required": true,
                     "content": {
                         "application/json": {
                             "schema": {
                                 "properties": {
                                     "name": {
-                                        "type": "string"
-                                    },
-                                    "email": {
                                         "type": "string",
-                                        "format": "email"
+                                        "maxLength": 255
                                     },
                                     "phone": {
-                                        "type": "string"
+                                        "type": "string",
+                                        "maxLength": 255
+                                    },
+                                    "skill_division": {
+                                        "type": "number",
+                                        "format": "float",
+                                        "maximum": 9.9
+                                    },
+                                    "first_name": {
+                                        "type": "string",
+                                        "maxLength": 50
+                                    },
+                                    "middle_name": {
+                                        "type": "string",
+                                        "maxLength": 50
+                                    },
+                                    "last_name": {
+                                        "type": "string",
+                                        "maxLength": 50
+                                    },
+                                    "year_of_birth": {
+                                        "type": "integer",
+                                        "maximum": 9999,
+                                        "minimum": 1900
+                                    },
+                                    "being_student": {
+                                        "type": "boolean"
+                                    },
+                                    "playtomic_id": {
+                                        "type": "string",
+                                        "maxLength": 10
+                                    },
+                                    "rankedin_id": {
+                                        "type": "string",
+                                        "maxLength": 15
+                                    },
+                                    "instagram_username": {
+                                        "type": "string",
+                                        "maxLength": 50
+                                    },
+                                    "facebook_username": {
+                                        "type": "string",
+                                        "maxLength": 50
                                     }
                                 },
                                 "type": "object"
@@ -1125,6 +1394,79 @@
                                 }
                             }
                         }
+                    },
+                    "403": {
+                        "description": "Unauthorized to update this player"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/players/image": {
+            "post": {
+                "tags": [
+                    "Players"
+                ],
+                "summary": "Upload a profile image",
+                "operationId": "57a1c51238f4a99329b87ddd2abdf4ac",
+                "requestBody": {
+                    "required": true,
+                    "content": {
+                        "multipart/form-data": {
+                            "schema": {
+                                "properties": {
+                                    "image": {
+                                        "type": "file",
+                                        "format": "binary"
+                                    }
+                                },
+                                "type": "object"
+                            }
+                        }
+                    }
+                },
+                "responses": {
+                    "201": {
+                        "description": "Image uploaded successfully"
+                    },
+                    "422": {
+                        "description": "Validation error or too many images"
+                    }
+                },
+                "security": [
+                    {
+                        "sanctum": []
+                    }
+                ]
+            }
+        },
+        "/api/players/image/{filename}": {
+            "delete": {
+                "tags": [
+                    "Players"
+                ],
+                "summary": "Delete a profile image",
+                "operationId": "23173abc1dbbe129bb2e65d920f8aaa8",
+                "parameters": [
+                    {
+                        "name": "filename",
+                        "in": "path",
+                        "required": true,
+                        "schema": {
+                            "type": "string"
+                        }
+                    }
+                ],
+                "responses": {
+                    "200": {
+                        "description": "Image deleted successfully"
+                    },
+                    "404": {
+                        "description": "Image not found"
                     }
                 },
                 "security": [
@@ -1683,7 +2025,6 @@
             "Player": {
                 "required": [
                     "name",
-                    "email",
                     "phone"
                 ],
                 "properties": {
@@ -1695,27 +2036,176 @@
                         "type": "string",
                         "maxLength": 255
                     },
-                    "email": {
-                        "type": "string",
-                        "format": "email"
-                    },
                     "phone": {
                         "type": "string",
                         "maxLength": 255
                     },
-                    "created_at": {
+                    "google_id": {
+                        "type": "string"
+                    },
+                    "google_name": {
+                        "type": "string"
+                    },
+                    "google_email": {
+                        "type": "string"
+                    },
+                    "google_avatar": {
+                        "type": "string"
+                    },
+                    "skill_division": {
+                        "type": "number",
+                        "format": "float",
+                        "maximum": 9.9,
+                        "nullable": true
+                    },
+                    "first_name": {
                         "type": "string",
-                        "format": "date-time"
+                        "maxLength": 50,
+                        "nullable": true
+                    },
+                    "middle_name": {
+                        "type": "string",
+                        "maxLength": 50,
+                        "nullable": true
+                    },
+                    "last_name": {
+                        "type": "string",
+                        "maxLength": 50,
+                        "nullable": true
+                    },
+                    "year_of_birth": {
+                        "type": "integer",
+                        "maximum": 9999,
+                        "minimum": 1900,
+                        "nullable": true
+                    },
+                    "being_student": {
+                        "type": "boolean",
+                        "default": false
+                    },
+                    "playtomic_id": {
+                        "type": "string",
+                        "maxLength": 10,
+                        "nullable": true
+                    },
+                    "rankedin_id": {
+                        "type": "string",
+                        "maxLength": 15,
+                        "nullable": true
+                    },
+                    "inserted_at": {
+                        "type": "integer",
+                        "format": "timestamp"
                     },
                     "updated_at": {
-                        "type": "string",
-                        "format": "date-time"
+                        "type": "integer",
+                        "format": "timestamp"
+                    },
+                    "uploaded_profile_urls": {
+                        "type": "array",
+                        "items": {
+                            "type": "string"
+                        }
                     },
                     "participations": {
                         "type": "array",
                         "items": {
                             "$ref": "#/components/schemas/EditionParticipation"
                         }
+                    }
+                },
+                "type": "object"
+            },
+            "PlayerEligibility": {
+                "properties": {
+                    "id_eligibility": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "edition_id": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "player_id": {
+                        "type": "integer",
+                        "format": "int64"
+                    },
+                    "name": {
+                        "type": "string"
+                    },
+                    "phone": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "skill_division": {
+                        "type": "number",
+                        "format": "float",
+                        "nullable": true
+                    },
+                    "first_name": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "middle_name": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "last_name": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "year_of_birth": {
+                        "type": "integer",
+                        "nullable": true
+                    },
+                    "being_student": {
+                        "type": "boolean"
+                    },
+                    "playtomic_id": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "rankedin_id": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "instagram_username": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "facebook_username": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "reviewed_at": {
+                        "type": "integer",
+                        "format": "timestamp",
+                        "nullable": true
+                    },
+                    "review_status": {
+                        "type": "string",
+                        "enum": [
+                            "pending",
+                            "approved",
+                            "rejected"
+                        ]
+                    },
+                    "review_message": {
+                        "type": "string",
+                        "nullable": true
+                    },
+                    "inserted_at": {
+                        "type": "integer",
+                        "format": "timestamp"
+                    },
+                    "updated_at": {
+                        "type": "integer",
+                        "format": "timestamp"
+                    },
+                    "resubmitted_at": {
+                        "type": "integer",
+                        "format": "timestamp",
+                        "nullable": true
                     }
                 },
                 "type": "object"
@@ -1776,7 +2266,7 @@
                     "prize_id"
                 ],
                 "properties": {
-                    "id_prize_from_club": {
+                    "id_club_prize": {
                         "type": "integer",
                         "format": "int64"
                     },
@@ -1845,9 +2335,20 @@
                     "default": 1
                 }
             }
+        },
+        "securitySchemes": {
+            "sanctum": {
+                "type": "http",
+                "bearerFormat": "JWT",
+                "scheme": "bearer"
+            }
         }
     },
     "tags": [
+        {
+            "name": "Authentication",
+            "description": "API Endpoints for authentication"
+        },
         {
             "name": "Clubs",
             "description": "API Endpoints for clubs"
@@ -1865,8 +2366,8 @@
             "description": "API Endpoints for edition divisions"
         },
         {
-            "name": "Edition Participations",
-            "description": "API Endpoints for edition participations"
+            "name": "Eligibility",
+            "description": "API Endpoints for player eligibility"
         },
         {
             "name": "Locations",
@@ -1883,6 +2384,10 @@
         {
             "name": "Prizes From Clubs",
             "description": "API Endpoints for prizes from clubs"
+        },
+        {
+            "name": "[DEV ONLY]",
+            "description": "‼️ These endpoints are not available in production."
         },
         {
             "name": "Prizes",

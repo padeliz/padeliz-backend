@@ -17,7 +17,7 @@ class EditionParticipationFactory extends Factory
         return [
             'edition_id' => Edition::factory(),
             'player_id' => Player::factory(),
-            'division_id' => Division::factory(),
+            'division_id' => Division::factory()->create()->id_division,
             'is_minor' => $this->faker->boolean(20),
             'is_student' => $this->faker->boolean(30),
             'discount' => $this->faker->optional()->numberBetween(5, 20),

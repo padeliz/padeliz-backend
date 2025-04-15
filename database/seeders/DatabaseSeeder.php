@@ -35,8 +35,6 @@ class DatabaseSeeder extends Seeder
             return;
         }
 
-        $this->command->error(Carbon::now()->format('Y-m-d H:i:s'));
-
         $faker = Faker::create();
 
         $this->command->info('Clearing existing data...');
@@ -56,10 +54,14 @@ class DatabaseSeeder extends Seeder
 
         DB::statement('SET FOREIGN_KEY_CHECKS=1');
 
-        // Ensure uploads directory exists
+        // Ensure uploads directory exists and is empty
         $uploadsPath = public_path('uploads');
         if (!File::exists($uploadsPath)) {
+            $this->command->info('Create uploads/ folder...');
             File::makeDirectory($uploadsPath, 0755, true);
+        } else {
+            $this->command->info('Empty uploads/ folder...');
+            File::cleanDirectory($uploadsPath);
         }
 
         $this->command->info('Creating clubs...');
@@ -88,8 +90,6 @@ class DatabaseSeeder extends Seeder
             Division::factory()->create(['name' => 'Adults Explorers', 'color' => '#7ab857', 'is_students_only' => 0]),
             Division::factory()->create(['name' => 'Adults Learners', 'color' => '#89bdce', 'is_students_only' => 0]),
         ]);
-
-        $this->command->error(Carbon::now()->format('Y-m-d H:i:s'));
 
         $this->command->info('Creating players...');
         $players = Player::factory()->count(rand(15, 20))->create();

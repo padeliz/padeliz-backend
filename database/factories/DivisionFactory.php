@@ -12,7 +12,7 @@ class DivisionFactory extends Factory
     public function definition()
     {
         return [
-            'name' => $this->faker->unique()->word(),
+            'name' => substr($this->faker->unique()->words(2, true), 0, 25),
             'color' => $this->faker->hexColor(),
             'is_students_only' => $this->faker->boolean(),
             'its_first_edition_id' => $this->faker->numberBetween(1, 10),
