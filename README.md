@@ -1,10 +1,12 @@
 <img src="https://github.com/user-attachments/assets/6ea788c4-f033-45b8-8701-bae663d57119" width="400">
 
-## Padel Events API
+## App Padeliz Back
 
-Service API for https://padel-events.ro
+Service API Laravel-based for https://padeliz.ro
 
 ## Development Setup (Windows)
+
+Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling.
 
 ### Prerequisites
 
@@ -13,23 +15,25 @@ Service API for https://padel-events.ro
 - WSL2 enabled (Windows Subsystem for Linux)
 - A code editor (recommended: [VS Code](https://code.visualstudio.com/))
 
-### Getting Started
+### First-time setup
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling.
+1. **Install VS Code + “PHP Intelephense” extension**
 
-1. **Clone the repository**
+2. **Clone the repository**
    ```bash
-   git clone https://github.com/arshavinel/app-padel-events-back.git
-   cd app-padel-events-back
+   ## in the VSCode terminal
+   git clone https://github.com/padeliz/app-padeliz-back.git
    ```
 
-2. **Environment Setup**
+3. **Open the repository folder in VS Code**
+
+3. **Environment Setup**
    ```bash
    # Copy the environment file
    copy .env.example .env
    ```
 
-3. **Start Docker containers**
+4. **Start Docker containers**
    ```bash
    # Build and start the containers
    docker-compose up -d
@@ -38,7 +42,7 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
    docker-compose logs -f
    ```
 
-4. **Install Dependencies**
+5. **Install Dependencies**
    ```bash
    # Enter the app container
    docker exec -it laravel_app bash
@@ -50,7 +54,7 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
    php artisan key:generate
    ```
 
-5. **Database Setup**
+6. **Database Setup**
    ```bash
    # Run migrations
    docker exec -it laravel_app php artisan migrate
@@ -64,7 +68,7 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 ### Useful Commands
 
 ```bash
-# Start containers
+# Start containers (run the app)
 docker-compose up -d # without -d it will show logs
 
 # Stop containers
@@ -99,14 +103,16 @@ docker exec -it laravel_app php artisan test
 
 ### Available Endpoints
 
-The API will be available at `http://localhost:8000`
+The API are available at `http://localhost:8000`
+
+Its Swagger docs are available at `http://localhost:8000/api/documentation`
 
 ### Database Access
 
 You can connect to the database using these credentials:
 - Host: localhost
 - Port: 3306
-- Database: db_padel_events
+- Database: db_padeliz
 - Username: db_user
 - Password: db_pass
 

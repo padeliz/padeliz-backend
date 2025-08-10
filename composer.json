@@ -1,8 +1,8 @@
 {
-    "name": "arshavinel/app-padel-events-back",
+    "name": "padeliz/app-padeliz-back",
     "type": "application",
-    "description": "Service API for https://padel-events.ro",
-    "keywords": ["padel", "events", "api"],
+    "description": "Service API Laravel-based for https://padeliz.ro",
+    "keywords": ["padel", "events", "padeliz", "api"],
     "license": "proprietary",
     "require": {
         "php": "^7.3|^8.0",

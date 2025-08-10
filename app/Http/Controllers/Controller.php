@@ -10,8 +10,8 @@ use Illuminate\Routing\Controller as BaseController;
 /**
  * @OA\Info(
  *     version="1.0.0",
- *     title="Padel Events API Documentation",
- *     description="API endpoints documentation for Padel Events application"
+ *     title="Padeliz API Documentation",
+ *     description="API endpoints documentation for Padeliz application"
  * )
  *
  * @OA\Server(
