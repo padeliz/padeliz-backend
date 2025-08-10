@@ -2,7 +2,7 @@
 
 ## App Padeliz Back
 
-Service API Laravel-based for https://padeliz.ro
+Service Laravel-based API for https://padeliz.ro
 
 ## Development Setup (Windows)
 
@@ -59,9 +59,8 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
    # Run migrations
    docker exec -it laravel_app php artisan migrate
 
-   # Seed the database (if available)
-   ⚠️ **WARNING**: Never run seeders in production! They will erase all existing data.
-
+   # Seed the database
+   # ⚠️ WARNING: Never run seeders in production! They will erase all existing data.
    docker exec -it laravel_app php artisan db:seed
    ```
 
@@ -103,9 +102,9 @@ docker exec -it laravel_app php artisan test
 
 ### Available Endpoints
 
-The API are available at `http://localhost:8000`
+The API is available at `http://localhost:8000`
 
-Its Swagger docs are available at `http://localhost:8000/api/documentation`
+Its Swagger docs is available at `http://localhost:8000/api/documentation`
 
 ### Database Access
 
