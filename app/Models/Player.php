@@ -67,7 +67,8 @@ class Player extends Authenticatable
         'year_of_birth',
         'being_student',
         'playtomic_id',
-        'rankedin_id'
+        'rankedin_id',
+        'user_types'
     ];
 
     protected $hidden = [
@@ -88,6 +89,7 @@ class Player extends Authenticatable
         'being_student' => 'boolean',
         'year_of_birth' => 'integer',
         'skill_division' => 'float',
+        'user_types' => 'array',
     ];
 
     public function participations()
@@ -98,5 +100,61 @@ class Player extends Authenticatable
     public function getUploadedProfileUrlsAttribute(): array
     {
         return $this->getUploadedUrls('images');
+    }
+
+    /**
+     * Check if the player has a specific user type
+     */
+    public function hasUserType(string $userType): bool
+    {
+        return in_array($userType, $this->user_types ?? []);
+    }
+
+    /**
+     * Check if the player is a manager
+     */
+    public function isManager(): bool
+    {
+        return $this->hasUserType('manager');
+    }
+
+    /**
+     * Check if the player is an admin
+     */
+    public function isAdmin(): bool
+    {
+        return $this->hasUserType('admin');
+    }
+
+    /**
+     * Check if the player is a regular player
+     */
+    public function isPlayer(): bool
+    {
+        return $this->hasUserType('player');
+    }
+
+    /**
+     * Add a user type to the player
+     */
+    public function addUserType(string $userType): void
+    {
+        $userTypes = $this->user_types ?? [];
+        if (!in_array($userType, $userTypes)) {
+            $userTypes[] = $userType;
+            $this->user_types = $userTypes;
+            $this->save();
+        }
+    }
+
+    /**
+     * Remove a user type from the player
+     */
+    public function removeUserType(string $userType): void
+    {
+        $userTypes = $this->user_types ?? [];
+        $userTypes = array_filter($userTypes, fn($type) => $type !== $userType);
+        $this->user_types = array_values($userTypes);
+        $this->save();
     }
 }

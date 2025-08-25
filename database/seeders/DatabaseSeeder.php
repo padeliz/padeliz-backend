@@ -92,7 +92,25 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->command->info('Creating players...');
-        $players = Player::factory()->count(rand(15, 20))->create();
+        $players = collect();
+
+        // Create regular players (70% of total)
+        $regularPlayersCount = (int) (rand(15, 20) * 0.7);
+        $players = $players->merge(
+            Player::factory()->count($regularPlayersCount)->playerOnly()->create()
+        );
+
+        // Create managers (20% of total)
+        $managersCount = (int) (rand(15, 20) * 0.2);
+        $players = $players->merge(
+            Player::factory()->count($managersCount)->manager()->create()
+        );
+
+        // Create admins (10% of total)
+        $adminsCount = max(1, (int) (rand(15, 20) * 0.1));
+        $players = $players->merge(
+            Player::factory()->count($adminsCount)->admin()->create()
+        );
 
         $this->command->info('Creating past editions...');
         $pastEditions = $this->createEditions(0, rand(10, 20), Carbon::now()->subMonths(16), Carbon::now());

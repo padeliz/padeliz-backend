@@ -141,7 +141,6 @@ You can connect to the database using these credentials:
    docker exec -it laravel_app php artisan test
    ```
 
-
 3. Commit
    ```bash
    git add .
@@ -155,31 +154,21 @@ You can connect to the database using these credentials:
 
 4. Create a Pull Request on GitHub
 
-## API Documentation
+### Generating Documentation
 
-The API documentation is generated using L5-Swagger (OpenAPI). To access it:
+The API documentation is automatically generated for each version and is available at: `http://localhost:8000/api/documentation`
 
-1. Install dependencies:
-    ```bash
-    composer install
-    ```
+```bash
+# to generate documentation for all API versions:
+php artisan api:docs:generate-all
 
-2. Generate the Swagger documentation:
-    ```bash
-    php artisan l5-swagger:generate
-    ```
+# to generate documentation for a specific version:
+php artisan l5-swagger:generate v1
+```
 
-3. Access the Swagger UI at:
-    ```bash
-    http://localhost:8000/api/documentation
+When you add a new version file (e.g., `routes/api/v3.php`), the documentation will be automatically detected and registered. Simply run the generation command to create the documentation for the new version.
 
-    # ⚠️ Note: If you're using a different port or host, adjust the URL accordingly.
-    ```
-
-3. If you make changes to the API endpoints or models, regenerate the documentation:
-    ```bash
-    php artisan l5-swagger:generate
-    ```
+If you make changes to the API endpoints or models, regenerate the documentation.
 
 ### Troubleshooting
 

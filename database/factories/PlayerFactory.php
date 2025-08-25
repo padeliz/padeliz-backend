@@ -29,14 +29,23 @@ class PlayerFactory extends Factory
             'rankedin_id' => $this->faker->optional()->bothify('??######'),
             'instagram_username' => $this->faker->optional()->userName,
             'facebook_username' => $this->faker->optional()->userName,
+            'user_types' => ['player'], // Default to player
             'inserted_at' => now()->timestamp,
             'updated_at' => $this->faker->optional() ? now()->timestamp : null,
         ];
     }
 
+    /**
+     * Configure the model factory.
+     */
     public function configure()
     {
         return $this->afterCreating(function (Player $player) {
+            // Skip image creation in testing environment
+            if (app()->environment('testing')) {
+                return;
+            }
+
             // Create between 0 and 3 profile images
             $numImages = rand(0, 3);
 
@@ -55,6 +64,54 @@ class PlayerFactory extends Factory
                     File::put($newProfilePath, $imageContent);
                 }
             }
+        });
+    }
+
+    /**
+     * Indicate that the player is a manager.
+     */
+    public function manager()
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'user_types' => ['player', 'manager'],
+            ];
+        });
+    }
+
+    /**
+     * Indicate that the player is an admin.
+     */
+    public function admin()
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'user_types' => ['player', 'manager', 'admin'],
+            ];
+        });
+    }
+
+    /**
+     * Indicate that the player is only a player (no manager/admin).
+     */
+    public function playerOnly()
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'user_types' => ['player'],
+            ];
+        });
+    }
+
+    /**
+     * Indicate that the player is only a manager (no player/admin).
+     */
+    public function managerOnly()
+    {
+        return $this->state(function (array $attributes) {
+            return [
+                'user_types' => ['manager'],
+            ];
         });
     }
 }

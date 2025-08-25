@@ -30,9 +30,6 @@ class PlayerEligibilityFactory extends Factory
             'facebook_username' => $this->faker->userName(),
             'reviewed_at' => null,
             'review_status' => $this->faker->randomElement(['approved', 'pending', 'rejected']),
-            'review_message' => function (array $attributes) {
-                return $attributes['review_status'] === 'rejected' ? $this->faker->sentence() : null;
-            },
             'review_message' => null,
             'resubmitted_at' => null,
             'inserted_at' => time(),
