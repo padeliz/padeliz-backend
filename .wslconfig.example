@@ -1,0 +1,30 @@
+# WSL2 Performance Configuration for Laravel Development
+# Copy this file to your Windows user directory (C:\Users\YourUsername\.wslconfig)
+# This will improve performance when working with this Laravel project
+
+[wsl2]
+# Memory allocation (adjust based on your system)
+memory=8GB
+
+# CPU allocation (adjust based on your system)
+processors=8
+
+# Swap space
+swap=2GB
+
+# Enable page reporting so WSL can release unused memory back to Windows
+pageReporting=true
+
+# Turn on output commit memory
+swapUsage=50
+
+# Disable page compression
+pageCompression=false
+
+# Enable experimental features
+[experimental]
+networkingMode=mirrored
+dnsTunneling=true
+firewall=true
+autoMemoryReclaim=gradual
+sparseVhd=true

@@ -1,0 +1,114 @@
+# Git
+.git
+.gitignore
+.gitattributes
+
+# Documentation
+README.md
+*.md
+docs/
+
+# Development files
+.env
+.env.*
+!.env.example
+.editorconfig
+.styleci.yml
+.phpunit.result.cache
+
+# IDE and editor files
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Node.js (if using frontend build tools)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+package-lock.json
+yarn.lock
+
+# Composer
+vendor/
+composer.lock
+composer.phar
+
+# Laravel specific
+storage/logs/
+storage/framework/cache/
+storage/framework/sessions/
+storage/framework/views/
+storage/app/public/
+bootstrap/cache/
+
+# Testing
+tests/
+phpunit.xml
+.phpunit.result.cache
+coverage/
+
+# Build artifacts
+public/build/
+public/mix-manifest.json
+public/hot
+
+# Docker
+Dockerfile*
+docker-compose*
+.dockerignore
+docker/
+
+# CI/CD
+.github/
+.gitlab-ci.yml
+.travis.yml
+.circleci/
+
+# Temporary files
+*.tmp
+*.temp
+*.log
+*.cache
+
+# Backup files
+*.bak
+*.backup
+*.old
+
+# Archives
+*.zip
+*.tar.gz
+*.rar
+*.7z
+
+# Database
+*.sql
+*.sqlite
+*.db
+
+# Application specific
+storage/app/uploads/
+storage/app/backups/
+storage/app/exports/
+
+# DevContainer specific
+.devcontainer/
+
+# WSL2 configuration
+.wslconfig*
+
+# Local development
+docker-compose.override.yml
+docker-compose.local.yml

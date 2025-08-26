@@ -1,0 +1,22 @@
+{
+  "name": "App Padeliz Back (Laravel)",
+  "dockerComposeFile": "docker-compose.yml",
+  "service": "app",
+  "workspaceFolder": "/workspaces/app-padeliz-back",
+  "forwardPorts": [8000, 3306, 8080],
+  "portsAttributes": {
+    "8000": { "label": "Laravel App" },
+    "3306": { "label": "MySQL" },
+    "8080": { "label": "phpMyAdmin" }
+  },
+  "postCreateCommand": "git config --global core.autocrlf true && git config --global core.filemode false && git config --global --add safe.directory /workspaces/app-padeliz-back && sudo chown -R www:www /workspaces/app-padeliz-back || true && composer install && php artisan key:generate && php artisan migrate --seed",
+  "customizations": {
+    "vscode": {
+      "extensions": [
+        "ms-vscode-remote.remote-containers",
+        "bmewburn.vscode-intelephense-client",
+        "xdebug.php-debug"
+      ]
+    }
+  }
+}

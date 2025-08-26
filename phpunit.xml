@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <phpunit xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
          xsi:noNamespaceSchemaLocation="./vendor/phpunit/phpunit/phpunit.xsd"
-         bootstrap="vendor/autoload.php"
+         bootstrap="phpunit-bootstrap.php"
          colors="true"
 >
     <testsuites>
@@ -25,12 +25,7 @@
         <server name="QUEUE_CONNECTION" value="sync"/>
         <server name="SESSION_DRIVER" value="array"/>
         <server name="TELESCOPE_ENABLED" value="false"/>
-        <server name="DB_CONNECTION" value="mysql_testing"/>
-        <server name="DB_HOST" value="db"/>
-        <server name="DB_PORT" value="3306"/>
-        <server name="DB_DATABASE" value="db_padeliz_testing"/>
-        <server name="DB_USERNAME" value="db_user"/>
-        <server name="DB_PASSWORD" value="db_pass"/>
+
         <server name="GOOGLE_CLIENT_ID" value="test-client-id.apps.googleusercontent.com"/>
     </php>
 </phpunit>

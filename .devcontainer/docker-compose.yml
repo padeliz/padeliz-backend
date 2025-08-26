@@ -1,0 +1,81 @@
+version: '3.8'
+
+name: app-padeliz-back
+
+services:
+  app:
+    build:
+      context: ..
+      dockerfile: .devcontainer/Dockerfile
+    container_name: app-padeliz-back-laravel
+    restart: unless-stopped
+    working_dir: /workspaces/app-padeliz-back
+    volumes:
+      - ..:/workspaces/app-padeliz-back:delegated
+      - composer_cache:/root/.composer/cache
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+    networks:
+      - backend-network
+    depends_on:
+      - db
+
+  nginx:
+    image: nginx:alpine
+    container_name: app-padeliz-back-nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ..:/workspaces/app-padeliz-back:delegated
+      - ../docker/nginx:/etc/nginx/conf.d/
+    networks:
+      - backend-network
+    depends_on:
+      - app
+
+  db:
+    image: mysql:8.0
+    container_name: app-padeliz-back-db
+    restart: unless-stopped
+    environment:
+      MYSQL_ROOT_PASSWORD: root
+      MYSQL_DATABASE: db_padeliz
+      MYSQL_USER: db_user
+      MYSQL_PASSWORD: db_pass
+      # Testing database configuration
+      DB_TESTING_DATABASE: db_padeliz_testing
+      DB_TESTING_USERNAME: db_user
+      DB_TESTING_PASSWORD: db_pass
+    volumes:
+      - mysql_data:/var/lib/mysql
+      - ../docker/mysql/init:/docker-entrypoint-initdb.d
+    ports:
+      - "3306:3306"
+    networks:
+      - backend-network
+
+  phpmyadmin:
+    image: phpmyadmin/phpmyadmin
+    container_name: app-padeliz-back-phpmyadmin
+    ports:
+      - "8080:80"
+    environment:
+      PMA_HOST: db
+      PMA_PORT: 3306
+      PMA_USER: db_user
+      PMA_PASSWORD: db_pass
+      PMA_ARBITRARY: 1
+    depends_on:
+      - db
+    networks:
+      - backend-network
+
+networks:
+  backend-network:
+    driver: bridge
+
+volumes:
+  mysql_data:
+  composer_cache:

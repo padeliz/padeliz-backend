@@ -2,22 +2,32 @@
 
 ## App Padeliz Back
 
-Service Laravel-based API for https://padeliz.ro
+Service Laravel-based API for:
+- app-padeliz-front
+- manager-padeliz-front
+- admin-padeliz-front
 
 ## Development Setup (Windows)
+
+This project uses VS Code DevContainers for development with optimized performance for Google API client services.
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling.
 
 ### Prerequisites
-
 - [Git](https://git-scm.com/downloads)
 - [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/)
 - WSL2 enabled (Windows Subsystem for Linux)
-- A code editor (recommended: [VS Code](https://code.visualstudio.com/))
+    - *copy `.wslconfig.example` to your Windows user directory for optimal performance*
+- [VS Code](https://code.visualstudio.com/) with the "Dev Containers" extension
+
+### Performance Notes
+- **WSL2 Users**: The devcontainer is optimized for WSL2 performance issues
+- **Google API Client**: Handles large package installations without timeout issues
+- **Volume Mounting**: Uses optimized mounting strategy for better file I/O performance
 
 ### First-time setup
 
-1. **Install VS Code + “PHP Intelephense” extension**
+1. **Install VS Code + “Dev Containers” extension**
 
 2. **Clone the repository**
    ```bash
@@ -27,66 +37,61 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 
 3. **Open the repository folder in VS Code**
 
-3. **Environment Setup**
-   ```bash
-   # Copy the environment file
-   copy .env.example .env
-   ```
+4. **Open the Command Palette and run "Dev Containers: Reopen in Container"**
 
-4. **Start Docker containers**
-   ```bash
-   # Build and start the containers
-   docker-compose up -d
-
-   # View logs (optional)
-   docker-compose logs -f
-   ```
+    Press CTRL + P and type `> Dev Containers: Reopen in Container`
+    - This will open a new window in which the container is initialized.
+    - You're now editing the files directly in the Docker.
 
 5. **Install Dependencies**
+
+    *No need to do it manually.*
+
+    *Wait for the container to build and proceed with:*
+
+    - *installing all dependencies*
+    - *generating application key*
+    - *running database migrations*
+    - *setting up the development environment*
+
+6. **Environment Setup**
    ```bash
-   # Enter the app container
-   docker exec -it laravel_app bash
-
-   # Install PHP dependencies
-   composer install
-
-   # Generate application key
-   php artisan key:generate
+   # Copy the environment file (if not exists)
+   cp .env.example .env
    ```
 
-6. **Database Setup**
-   ```bash
-   # Run migrations
-   docker exec -it laravel_app php artisan migrate
+### Available Endpoints
 
-   # Seed the database
-   # ⚠️ WARNING: Never run seeders in production! They will erase all existing data.
-   docker exec -it laravel_app php artisan db:seed
-   ```
+The API is available at `http://localhost:8000`
+
+Its Swagger docs is available at `http://localhost:8000/api/documentation`
+
+Manage DB data from phpMyAdmin: `http://localhost:8080`
 
 ### Useful Commands
 
+Once inside the DevContainer, you can use these commands:
+
 ```bash
-# Start containers (run the app)
-docker-compose up -d # without -d it will show logs
+# Commonly useful
 
-# Stop containers
-docker-compose down
+php artisan migrate # Run migrations
 
-# Rebuild containers
-docker-compose up -d --build
+vendor/bin/phpunit # Run tests
 
-# View logs
-docker-compose logs -f
+php artisan cache:clear
+php artisan config:clear
+```
 
-# Access MySQL CLI (password is in the .env file)
-docker exec -it laravel_db mysql -u db_user -p
+```bash
+# Rarely useful
 
-# Run artisan commands
-docker exec -it laravel_app php artisan [command]
+composer install # Install dependencies
 
-# Run tests
-docker exec -it laravel_app php artisan test
+mysql -u [USER] -p [PASS] # Access MySQL CLI
+
+php artisan route:clear
+php artisan view:clear
 ```
 
 ### Project Structure
@@ -94,17 +99,11 @@ docker exec -it laravel_app php artisan test
   ```bash
   ├── app/               # Application core code
   ├── database/          # Migrations and seeders
-  ├── docker/            # Docker configuration files
+  ├── .devcontainer/     # DevContainer configuration
   ├── routes/            # API routes
   ├── tests/             # Test files
-  └── docker-compose.yml # Docker services configuration
-  ```
-
-### Available Endpoints
-
-The API is available at `http://localhost:8000`
-
-Its Swagger docs is available at `http://localhost:8000/api/documentation`
+  └── docker/            # Docker configuration files
+```
 
 ### Database Access
 
@@ -138,7 +137,7 @@ You can connect to the database using these credentials:
 
 2. Make your changes and test them
    ```bash
-   docker exec -it laravel_app php artisan test
+   php artisan test
    ```
 
 3. Commit

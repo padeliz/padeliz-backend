@@ -50,7 +50,8 @@
     "extra": {
         "laravel": {
             "dont-discover": []
-        }
+        },
+        "google/apiclient-services": [""]
     },
     "config": {
         "optimize-autoloader": true,
