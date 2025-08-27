@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Player;
 use App\Http\Controllers\Controller;
 use App\Models\MatchesTeam;
 use App\Models\Player;
+use App\Http\Resources\MatchesTeamResource;
 use Illuminate\Http\Request;
 
 /**
@@ -27,7 +28,7 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *         description="Successful operation",
      *         @OA\JsonContent(
      *             allOf={
-     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
      *                 @OA\Schema(
      *                     @OA\Property(
      *                         property="data",
@@ -46,11 +47,11 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      */
     public function index()
     {
-        return response()->json(
-            MatchesTeam::with(['player1', 'player2'])
+        $teams = MatchesTeam::with(['player1', 'player2'])
             ->orderBy('id_team', 'desc')
-            ->paginate($this->paginationLimit)
-        );
+            ->paginate($this->paginationLimit);
+
+        return MatchesTeamResource::collection($teams);
     }
 
     /**
@@ -70,11 +71,19 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *     @OA\Response(
      *         response=201,
      *         description="Team created successfully",
-     *         @OA\JsonContent(ref="#/components/schemas/MatchesTeam")
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/MatchesTeam")
+     *                 )
+     *             }
+     *         )
      *     ),
      *     @OA\Response(
      *         response=422,
-     *         description="Team already exists"
+     *         description="Team already exists",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -95,7 +104,7 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
         })->first();
 
         if ($existingTeam) {
-            return response()->json(['message' => 'Team already exists'], 422);
+            return $this->errorResponse('Team already exists', 422);
         }
 
         $team = new MatchesTeam();
@@ -105,6 +114,11 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
         $team->updated_at = now()->timestamp;
         $team->save();
 
-        return response()->json($team->load(['player1', 'player2']), 201);
+        $team->load(['player1', 'player2']);
+        return $this->resourceResponse(
+            new MatchesTeamResource($team),
+            'Team created successfully',
+            201
+        );
     }
 }

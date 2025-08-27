@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
 use App\Models\Player;
+use App\Http\Resources\PlayerResource;
 use Illuminate\Http\Request;
 use Google\Client as GoogleClient;
 use App\Exceptions\InvalidGoogleTokenException;
@@ -38,7 +39,24 @@ class ManagerAuthController extends V1BaseController
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Successful manager authentication"
+     *         description="Successful manager authentication",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", type="object",
+     *                         @OA\Property(property="token", type="string"),
+     *                         @OA\Property(property="player", ref="#/components/schemas/Player"),
+     *                         @OA\Property(property="user_type", type="string", example="manager")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Authentication failed",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -83,11 +101,11 @@ class ManagerAuthController extends V1BaseController
             // Create Sanctum token
             $token = $player->createToken('manager-google-token')->plainTextToken;
 
-            return response()->json([
+            return $this->successResponse([
                 'token' => $token,
-                'player' => $player,
+                'player' => new PlayerResource($player),
                 'user_type' => 'manager'
-            ]);
+            ], 'Manager authenticated successfully');
         } catch (\Exception $e) {
             // Log the error with context
             $this->authLogger->logError($e, [
@@ -97,10 +115,7 @@ class ManagerAuthController extends V1BaseController
                 'auth_type' => 'manager_google'
             ]);
 
-            return response()->json([
-                'message' => 'Manager authentication failed',
-                'error' => $e->getMessage()
-            ], 401);
+            return $this->errorResponse('Manager authentication failed', 401);
         }
     }
 
@@ -112,7 +127,8 @@ class ManagerAuthController extends V1BaseController
      *     security={{"sanctum":{}}},
      *     @OA\Response(
      *         response=200,
-     *         description="Manager logged out successfully"
+     *         description="Manager logged out successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiResponse")
      *     )
      * )
      */
@@ -120,9 +136,7 @@ class ManagerAuthController extends V1BaseController
     {
         $request->user()->currentAccessToken()->delete();
 
-        return response()->json([
-            'message' => 'Manager logged out successfully'
-        ]);
+        return $this->successResponse(null, 'Manager logged out successfully');
     }
 
     /**
@@ -134,13 +148,23 @@ class ManagerAuthController extends V1BaseController
      *     @OA\Response(
      *         response=200,
      *         description="Current manager profile",
-     *         @OA\JsonContent(ref="#/components/schemas/Player")
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/Player")
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function me(Request $request)
     {
-        return response()->json($request->user());
+        return $this->resourceResponse(
+            new PlayerResource($request->user()),
+            'Manager profile retrieved successfully'
+        );
     }
 
     /**
@@ -157,14 +181,31 @@ class ManagerAuthController extends V1BaseController
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Manager logged in successfully"
+     *         description="Manager logged in successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", type="object",
+     *                         @OA\Property(property="token", type="string"),
+     *                         @OA\Property(property="player", ref="#/components/schemas/Player"),
+     *                         @OA\Property(property="user_type", type="string", example="manager")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Dev login not available in production",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
     public function devLogin(Request $request)
     {
         if (app()->environment() === 'production') {
-            return response()->json(['message' => 'Dev login not available in production'], 403);
+            return $this->errorResponse('Dev login not available in production', 403);
         }
 
         $request->validate([
@@ -190,10 +231,10 @@ class ManagerAuthController extends V1BaseController
 
         $token = $player->createToken('manager-dev-token')->plainTextToken;
 
-        return response()->json([
+        return $this->successResponse([
             'token' => $token,
-            'player' => $player,
+            'player' => new PlayerResource($player),
             'user_type' => 'manager'
-        ]);
+        ], 'Manager logged in successfully');
     }
 }

@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
 use App\Models\{Edition, EditionParticipation, Player};
+use App\Http\Resources\EditionParticipationResource;
 use Illuminate\Http\Request;
 
 /**
@@ -36,7 +37,20 @@ class ParticipationController extends V1BaseController
      *     ),
      *     @OA\Response(
      *         response=201,
-     *         description="Player added to edition successfully"
+     *         description="Player added to edition successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/EditionParticipation")
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -54,9 +68,7 @@ class ParticipationController extends V1BaseController
         ])->first();
 
         if ($existingParticipation) {
-            return response()->json([
-                'message' => 'Player is already participating in this edition'
-            ], 422);
+            return $this->validationErrorResponse(['player_id' => ['Player is already participating in this edition']]);
         }
 
         $participation = EditionParticipation::create([
@@ -65,7 +77,11 @@ class ParticipationController extends V1BaseController
             'division_id' => $request->division_id
         ]);
 
-        return response()->json($participation, 201);
+        return $this->resourceResponse(
+            new EditionParticipationResource($participation),
+            'Player added to edition successfully',
+            201
+        );
     }
 
     /**
@@ -88,7 +104,13 @@ class ParticipationController extends V1BaseController
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Player removed from edition successfully"
+     *         description="Player removed from edition successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Participation not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -96,12 +118,10 @@ class ParticipationController extends V1BaseController
     {
         // Ensure the participation belongs to the specified edition
         if ($participation->edition_id !== $edition->id) {
-            return response()->json([
-                'message' => 'Participation does not belong to this edition'
-            ], 404);
+            return $this->notFoundResponse('Participation does not belong to this edition');
         }
 
         $participation->delete();
-        return response()->json(['message' => 'Player removed from edition successfully']);
+        return $this->successResponse(null, 'Player removed from edition successfully');
     }
 }

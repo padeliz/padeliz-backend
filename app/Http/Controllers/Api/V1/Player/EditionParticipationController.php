@@ -6,6 +6,7 @@ use App\Http\Controllers\Controller;
 use App\Models\Edition;
 use App\Models\PlayerEligibility;
 use App\Models\EditionDivision;
+use App\Http\Resources\EditionParticipationResource;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -38,15 +39,25 @@ class EditionParticipationController extends \App\Http\Controllers\BaseVersions\
      *     ),
      *     @OA\Response(
      *         response=201,
-     *         description="Successfully registered"
+     *         description="Successfully registered",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/EditionParticipation")
+     *                 )
+     *             }
+     *         )
      *     ),
      *     @OA\Response(
      *         response=403,
-     *         description="Player not eligible for this edition"
+     *         description="Player not eligible for this edition",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     ),
      *     @OA\Response(
      *         response=422,
-     *         description="Validation error or past edition"
+     *         description="Validation error or past edition",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -54,9 +65,7 @@ class EditionParticipationController extends \App\Http\Controllers\BaseVersions\
     {
         // Check if edition is in the past
         if (strtotime($edition->date) <= strtotime(date('Y-m-d'))) {
-            return response()->json([
-                'message' => 'Cannot join past editions'
-            ], 422);
+            return $this->validationErrorResponse(['edition' => ['Cannot join past editions']]);
         }
 
         // Check if player has approved eligibility
@@ -65,9 +74,7 @@ class EditionParticipationController extends \App\Http\Controllers\BaseVersions\
         ->first();
 
         if (!$eligibility) {
-            return response()->json([
-                'message' => 'You are not eligible yet. Please submit your eligibility request first.'
-            ], 403);
+            return $this->forbiddenResponse('You are not eligible yet. Please submit your eligibility request first.');
         }
 
         $validatedData = $request->validate([
@@ -83,6 +90,15 @@ class EditionParticipationController extends \App\Http\Controllers\BaseVersions\
         ->where('division_id', $validatedData['division_id'])
         ->firstOrFail();
 
+        // Check if player is already participating in this edition
+        $existingParticipation = $edition->participations()
+            ->where('player_id', $request->user()->id_player)
+            ->first();
+
+        if ($existingParticipation) {
+            return $this->validationErrorResponse(['player' => ['You are already registered for this edition']]);
+        }
+
         // Check if division is full
         $currentPlayers = $edition->participations()
             ->where('division_id', $editionDivision->division_id)
@@ -91,9 +107,7 @@ class EditionParticipationController extends \App\Http\Controllers\BaseVersions\
         if (
             $currentPlayers >= $editionDivision->players_limit
         ) {
-            return response()->json([
-                'message' => 'This division is already full'
-            ], 422);
+            return $this->validationErrorResponse(['division_id' => ['This division is already full']]);
         }
 
         // Create participation
@@ -107,8 +121,9 @@ class EditionParticipationController extends \App\Http\Controllers\BaseVersions\
             'payment' => $eligibility->being_student ? $edition->students_entry_fee : $edition->entry_fee,
         ]);
 
-        return response()->json(
-            $participation,
+        return $this->resourceResponse(
+            new EditionParticipationResource($participation),
+            'Successfully registered for edition',
             201
         );
     }
@@ -127,7 +142,8 @@ class EditionParticipationController extends \App\Http\Controllers\BaseVersions\
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Withdrawn successfully"
+     *         description="Withdrawn successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiResponse")
      *     )
      * )
      */
@@ -139,6 +155,6 @@ class EditionParticipationController extends \App\Http\Controllers\BaseVersions\
 
         $participation->delete();
 
-        return response()->json(['message' => 'Withdrawn successfully']);
+        return $this->successResponse(null, 'Withdrawn successfully');
     }
 }

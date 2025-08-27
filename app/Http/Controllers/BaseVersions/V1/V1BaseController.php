@@ -3,6 +3,7 @@
 namespace App\Http\Controllers\BaseVersions\V1;
 
 use App\Http\Controllers\Controller;
+use App\Traits\ApiResponse;
 
 /**
  * @OA\Info(
@@ -22,20 +23,42 @@ use App\Http\Controllers\Controller;
  * )
  *
  * @OA\Schema(
- *     schema="PaginatedResponse",
+ *     schema="ApiPaginatedResponse",
  *     description="Generic paginated response",
- *     @OA\Property(property="current_page", type="integer"),
  *     @OA\Property(property="data", type="array", @OA\Items(type="object")),
- *     @OA\Property(property="first_page_url", type="string"),
- *     @OA\Property(property="from", type="integer"),
- *     @OA\Property(property="last_page", type="integer"),
- *     @OA\Property(property="last_page_url", type="string"),
- *     @OA\Property(property="next_page_url", type="string"),
- *     @OA\Property(property="path", type="string"),
- *     @OA\Property(property="per_page", type="integer"),
- *     @OA\Property(property="prev_page_url", type="string"),
- *     @OA\Property(property="to", type="integer"),
- *     @OA\Property(property="total", type="integer")
+ *     @OA\Property(property="links", type="object",
+ *         @OA\Property(property="first", type="string"),
+ *         @OA\Property(property="last", type="string"),
+ *         @OA\Property(property="prev", type="string", nullable=true),
+ *         @OA\Property(property="next", type="string", nullable=true)
+ *     ),
+ *     @OA\Property(property="meta", type="object",
+ *         @OA\Property(property="current_page", type="integer"),
+ *         @OA\Property(property="from", type="integer"),
+ *         @OA\Property(property="last_page", type="integer"),
+ *         @OA\Property(property="path", type="string"),
+ *         @OA\Property(property="per_page", type="integer"),
+ *         @OA\Property(property="to", type="integer"),
+ *         @OA\Property(property="total", type="integer")
+ *     )
+ * )
+ *
+ * @OA\Schema(
+ *     schema="ApiResponse",
+ *     description="Standardized API response format",
+ *     @OA\Property(property="success", type="boolean", example=true),
+ *     @OA\Property(property="message", type="string", example="Operation completed successfully"),
+ *     @OA\Property(property="data", type="object", description="Response data")
+ * )
+ *
+
+ *
+ * @OA\Schema(
+ *     schema="ApiErrorResponse",
+ *     description="Standardized API error response format",
+ *     @OA\Property(property="success", type="boolean", example=false),
+ *     @OA\Property(property="message", type="string", example="Error message"),
+ *     @OA\Property(property="errors", type="object", description="Validation errors", nullable=true)
  * )
  *
  * @OA\Parameter(
@@ -50,7 +73,6 @@ use App\Http\Controllers\Controller;
  * @OA\SecurityScheme(
  *     type="http",
  *     scheme="bearer",
- *     bearerFormat="JWT",
  *     securityScheme="sanctum"
  * )
  *
@@ -59,6 +81,8 @@ use App\Http\Controllers\Controller;
  */
 class V1BaseController extends Controller
 {
+    use ApiResponse;
+
     /**
      * Get the current API version
      */

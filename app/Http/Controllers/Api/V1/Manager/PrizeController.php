@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Models\Prize;
+use App\Http\Resources\PrizeResource;
 use Illuminate\Http\Request;
 
 /**
@@ -25,7 +26,7 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *         description="Successful operation",
      *         @OA\JsonContent(
      *             allOf={
-     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
      *                 @OA\Schema(
      *                     @OA\Property(
      *                         property="data",
@@ -44,13 +45,40 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
             ->orderByRaw('LOWER(name) ASC, name ASC')  // Case-insensitive + consistent tie-breaking
             ->paginate($this->paginationLimit);
 
-        return response()->json($prizes);
+        return PrizeResource::collection($prizes);
     }
 
+    /**
+     * @OA\Get(
+     *     path="/api/v1/manager/prizes/{prize}",
+     *     summary="Get prize details",
+     *     tags={"Manager: Prizes"},
+     *     @OA\Parameter(
+     *         name="prize",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Successful operation",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/Prize")
+     *                 )
+     *             }
+     *         )
+     *     )
+     * )
+     */
     public function show(Prize $prize)
     {
-        return response()->json(
-            $prize->load(['clubPrizes.club'])
+        $prize->load(['clubPrizes.club']);
+        return $this->resourceResponse(
+            new PrizeResource($prize),
+            'Prize details retrieved successfully'
         );
     }
 }

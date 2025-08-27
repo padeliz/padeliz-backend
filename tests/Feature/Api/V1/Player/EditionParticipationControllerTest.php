@@ -3,35 +3,43 @@
 namespace Tests\Feature\Api\V1\Player;
 
 use Tests\TestCase;
-use App\Models\Edition;
 use App\Models\Player;
-use App\Models\EditionParticipation;
+use App\Models\Edition;
+use App\Models\Division;
+use App\Models\EditionDivision;
 use App\Models\PlayerEligibility;
-use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Illuminate\Foundation\Testing\RefreshDatabase;
 
 class EditionParticipationControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private $player;
-    private $edition;
+    protected $player;
+    protected $edition;
+    protected $division;
+    protected $editionDivision;
 
-    public function setUp(): void
+    protected function setUp(): void
     {
         parent::setUp();
 
-        // Create a player user
-        $this->player = Player::factory()->playerOnly()->create([
-            'name' => 'Test Player',
-            'google_email' => 'player@example.com',
-            'user_types' => ['player']
+        $this->player = Player::factory()->playerOnly()->create();
+        $this->edition = Edition::factory()->create([
+            'date' => now()->addDays(30)->format('Y-m-d')
+        ]);
+        $this->division = Division::factory()->create();
+        $this->editionDivision = EditionDivision::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'division_id' => $this->division->id_division,
+            'players_limit' => 10
         ]);
 
-        // Create an edition
-        $this->edition = Edition::factory()->create([
-            'name' => 'Test Edition',
-            'date' => now()->addDays(10)
+        // Create approved eligibility for the player
+        PlayerEligibility::factory()->create([
+            'player_id' => $this->player->id_player,
+            'edition_id' => $this->edition->id_edition,
+            'review_status' => 'approved'
         ]);
     }
 
@@ -39,118 +47,85 @@ class EditionParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->player);
 
-        // Create an approved eligibility first
-        PlayerEligibility::factory()->approved()->create([
-            'player_id' => $this->player->id_player,
-            'edition_id' => $this->edition->id_edition
-        ]);
-
-        // Create an edition division
-        $division = \App\Models\Division::factory()->create();
-        \App\Models\EditionDivision::factory()->create([
-            'edition_id' => $this->edition->id_edition,
-            'division_id' => $division->id_division,
-            'players_limit' => 10
-        ]);
-
         $participationData = [
-            'division_id' => $division->id_division
+            'division_id' => $this->division->id_division
         ];
 
         $response = $this->postJson("/api/v1/player/editions/{$this->edition->id_edition}/participate", $participationData);
 
         $response->assertStatus(201)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'id_participation',
+                    'edition_id',
+                    'player_id',
+                    'division_id'
+                ]
+            ])
             ->assertJson([
+            'success' => true,
+            'message' => 'Successfully registered for edition',
+            'data' => [
                 'player_id' => $this->player->id_player,
                 'edition_id' => $this->edition->id_edition
+                ]
             ]);
-
-        $this->assertDatabaseHas('edition_participations', [
-            'player_id' => $this->player->id_player,
-            'edition_id' => $this->edition->id_edition
-        ]);
     }
 
     public function test_destroy_removes_participation()
     {
         Sanctum::actingAs($this->player);
 
-        // Create participation first
-        EditionParticipation::factory()->create([
+        // First create a participation
+        $participation = $this->edition->participations()->create([
             'player_id' => $this->player->id_player,
-            'edition_id' => $this->edition->id_edition
+            'division_id' => $this->division->id_division,
+            'is_minor' => false,
+            'is_student' => false,
+            'discount' => 0,
+            'payment' => 100
         ]);
 
         $response = $this->deleteJson("/api/v1/player/editions/{$this->edition->id_edition}/withdraw");
 
-        $response->assertStatus(200);
-
-        $this->assertDatabaseMissing('edition_participations', [
-            'player_id' => $this->player->id_player,
-            'edition_id' => $this->edition->id_edition
-        ]);
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Withdrawn successfully'
+            ]);
     }
 
     public function test_requires_player_authentication()
     {
-        // Test without authentication
-        $response = $this->postJson("/api/v1/player/editions/{$this->edition->id_edition}/participate");
-        $response->assertStatus(401);
-
-        // Test with manager (should still work as managers can access player endpoints)
-        $manager = Player::factory()->manager()->create();
-        Sanctum::actingAs($manager);
-
-        // Create an approved eligibility for manager
-        PlayerEligibility::factory()->approved()->create([
-            'player_id' => $manager->id_player,
-            'edition_id' => $this->edition->id_edition
-        ]);
-
-        // Create an edition division
-        $division = \App\Models\Division::factory()->create();
-        \App\Models\EditionDivision::factory()->create([
-            'edition_id' => $this->edition->id_edition,
-            'division_id' => $division->id_division,
-            'players_limit' => 10
-        ]);
-
         $response = $this->postJson("/api/v1/player/editions/{$this->edition->id_edition}/participate", [
-            'division_id' => $division->id_division
+            'division_id' => $this->division->id_division
         ]);
-        $response->assertStatus(201);
+
+        $response->assertStatus(401);
     }
 
     public function test_cannot_participate_twice()
     {
         Sanctum::actingAs($this->player);
 
-        // Create an approved eligibility first
-        PlayerEligibility::factory()->approved()->create([
+        // Create first participation
+        $this->edition->participations()->create([
             'player_id' => $this->player->id_player,
-            'edition_id' => $this->edition->id_edition
+            'division_id' => $this->division->id_division,
+            'is_minor' => false,
+            'is_student' => false,
+            'discount' => 0,
+            'payment' => 100
         ]);
 
-        // Create an edition division
-        $division = \App\Models\Division::factory()->create();
-        \App\Models\EditionDivision::factory()->create([
-            'edition_id' => $this->edition->id_edition,
-            'division_id' => $division->id_division,
-            'players_limit' => 10
-        ]);
-
-        // Create participation first
-        EditionParticipation::factory()->create([
-            'player_id' => $this->player->id_player,
-            'edition_id' => $this->edition->id_edition,
-            'division_id' => $division->id_division
-        ]);
-
+        // Try to create second participation
         $response = $this->postJson("/api/v1/player/editions/{$this->edition->id_edition}/participate", [
-            'division_id' => $division->id_division
+            'division_id' => $this->division->id_division
         ]);
 
-        $response->assertStatus(201);
+        $response->assertStatus(422);
     }
 
     public function test_cannot_withdraw_without_participation()

@@ -48,9 +48,21 @@ class ClubControllerTest extends TestCase
                         'city'
                     ]
                 ],
+            'links' => [
+                'first',
+                'last',
+                'prev',
+                'next'
+            ],
+            'meta' => [
                 'current_page',
+                'from',
+                'last_page',
+                'path',
                 'per_page',
+                'to',
                 'total'
+            ]
             ]);
 
         $this->assertCount(5, $response->json('data'));
@@ -68,10 +80,23 @@ class ClubControllerTest extends TestCase
         $response = $this->getJson("/api/v1/manager/clubs/{$club->id_club}");
 
         $response->assertStatus(200)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'id_club',
+                    'name',
+                    'city'
+                ]
+            ])
             ->assertJson([
+            'success' => true,
+            'message' => 'Club details retrieved successfully',
+            'data' => [
                 'id_club' => $club->id_club,
                 'name' => 'Test Club',
                 'city' => 'Test City'
+            ]
             ]);
     }
 
@@ -88,9 +113,17 @@ class ClubControllerTest extends TestCase
 
         $response->assertStatus(201)
             ->assertJsonStructure([
+            'success',
+            'message',
+            'data' => [
                 'id_club',
                 'name',
                 'city'
+                ]
+            ])
+            ->assertJson([
+                'success' => true,
+                'message' => 'Club created successfully'
             ]);
 
         $this->assertDatabaseHas('clubs', [
@@ -113,10 +146,23 @@ class ClubControllerTest extends TestCase
         $response = $this->putJson("/api/v1/manager/clubs/{$club->id_club}", $updateData);
 
         $response->assertStatus(200)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'id_club',
+                    'name',
+                    'city'
+                ]
+            ])
             ->assertJson([
+            'success' => true,
+            'message' => 'Club updated successfully',
+            'data' => [
                 'id_club' => $club->id_club,
                 'name' => 'Updated Club Name',
                 'city' => 'Updated City'
+            ]
             ]);
     }
 
@@ -129,7 +175,15 @@ class ClubControllerTest extends TestCase
         $response = $this->deleteJson("/api/v1/manager/clubs/{$club->id_club}");
 
         $response->assertStatus(200)
-            ->assertJson(['message' => 'Club deleted successfully']);
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data'
+            ])
+            ->assertJson([
+                'success' => true,
+                'message' => 'Club deleted successfully'
+            ]);
 
         $this->assertDatabaseMissing('clubs', [
             'id_club' => $club->id_club
@@ -147,15 +201,23 @@ class ClubControllerTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
+            'success',
+            'message',
+            'data' => [
                 '*' => [
                     'id_location',
                     'club_id',
                     'name',
                     'address'
                 ]
+                ]
+            ])
+            ->assertJson([
+                'success' => true,
+                'message' => 'Club locations retrieved successfully'
             ]);
 
-        $this->assertCount(3, $response->json());
+        $this->assertCount(3, $response->json('data'));
     }
 
     public function test_manager_can_view_club_prizes()
@@ -190,9 +252,21 @@ class ClubControllerTest extends TestCase
                         ]
                     ]
                 ],
+            'links' => [
+                'first',
+                'last',
+                'prev',
+                'next'
+            ],
+            'meta' => [
                 'current_page',
+                'from',
+                'last_page',
+                'path',
                 'per_page',
+                'to',
                 'total'
+            ]
             ]);
 
         $this->assertCount(2, $response->json('data'));

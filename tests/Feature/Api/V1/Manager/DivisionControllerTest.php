@@ -67,10 +67,23 @@ class DivisionControllerTest extends TestCase
         $response = $this->getJson("/api/v1/manager/divisions/{$division->id_division}");
 
         $response->assertStatus(200)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'id_division',
+                    'name',
+                    'color'
+                ]
+            ])
             ->assertJson([
+            'success' => true,
+            'message' => 'Division details retrieved successfully',
+            'data' => [
                 'id_division' => $division->id_division,
                 'name' => 'Test Division',
                 'color' => '#ff0000'
+            ]
             ]);
     }
 

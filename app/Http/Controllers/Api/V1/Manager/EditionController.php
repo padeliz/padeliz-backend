@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Models\Edition;
+use App\Http\Resources\EditionResource;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -27,7 +28,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *         description="Successful operation",
      *         @OA\JsonContent(
      *             allOf={
-     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
      *                 @OA\Schema(
      *                     @OA\Property(
      *                         property="data",
@@ -42,11 +43,11 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      */
     public function index()
     {
-        return response()->json(
-            Edition::with(['location', 'divisions'])
+        $editions = Edition::with(['location', 'divisions'])
             ->orderBy('date', 'desc')
-            ->paginate($this->paginationLimit)
-        );
+            ->paginate($this->paginationLimit);
+
+        return EditionResource::collection($editions);
     }
 
     /**
@@ -61,7 +62,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *         description="Successful operation",
      *         @OA\JsonContent(
      *             allOf={
-     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
      *                 @OA\Schema(
      *                     @OA\Property(
      *                         property="data",
@@ -95,7 +96,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *         description="Successful operation",
      *         @OA\JsonContent(
      *             allOf={
-     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
      *                 @OA\Schema(
      *                     @OA\Property(
      *                         property="data",
@@ -129,7 +130,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *         description="Successful operation",
      *         @OA\JsonContent(
      *             allOf={
-     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
      *                 @OA\Schema(
      *                     @OA\Property(
      *                         property="data",
@@ -166,13 +167,24 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
-     *         @OA\JsonContent(ref="#/components/schemas/Edition")
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/Edition")
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function show(Edition $edition)
     {
-        return response()->json($edition->load(['location', 'divisions']));
+        $edition->load(['location', 'divisions']);
+        return $this->resourceResponse(
+            new EditionResource($edition),
+            'Edition details retrieved successfully'
+        );
     }
 
     /**
@@ -195,7 +207,20 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *     ),
      *     @OA\Response(
      *         response=201,
-     *         description="Edition created successfully"
+     *         description="Edition created successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/Edition")
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -212,7 +237,11 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
 
         $edition = Edition::create($request->all());
 
-        return response()->json($edition, 201);
+        return $this->resourceResponse(
+            new EditionResource($edition),
+            'Edition created successfully',
+            201
+        );
     }
 
     /**
@@ -229,7 +258,20 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Edition updated successfully"
+     *         description="Edition updated successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/Edition")
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -246,7 +288,10 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
 
         $edition->update($request->all());
 
-        return response()->json($edition);
+        return $this->resourceResponse(
+            new EditionResource($edition),
+            'Edition updated successfully'
+        );
     }
 
     /**
@@ -263,14 +308,18 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Edition deleted successfully"
+     *         description="Edition deleted successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiResponse")
      *     )
      * )
      */
     public function destroy(Edition $edition)
     {
         $edition->delete();
-        return response()->json(['message' => 'Edition deleted successfully']);
+        return $this->successResponse(
+            null,
+            'Edition deleted successfully'
+        );
     }
 
     /**
@@ -288,13 +337,23 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
-     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/EditionDivision"))
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/EditionDivision"))
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function divisions(Edition $edition)
     {
-        return response()->json($edition->divisions()->with('division')->get());
+        return $this->successResponse(
+            $edition->divisions()->with('division')->get(),
+            'Edition divisions retrieved successfully'
+        );
     }
 
     /**

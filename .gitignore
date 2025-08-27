@@ -4,7 +4,10 @@
 /public/uploads
 /storage/*.key
 /vendor
+
+.phpunit.cache
 .phpunit.result.cache
+
 Homestead.json
 Homestead.yaml
 npm-debug.log

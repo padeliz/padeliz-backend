@@ -4,6 +4,9 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Models\Club;
+use App\Http\Resources\ClubResource;
+use App\Http\Resources\LocationResource;
+use App\Http\Resources\PrizeFromClubResource;
 use Illuminate\Http\Request;
 
 /**
@@ -26,7 +29,7 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      *         description="Successful operation",
      *         @OA\JsonContent(
      *             allOf={
-     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
      *                 @OA\Schema(
      *                     @OA\Property(
      *                         property="data",
@@ -41,11 +44,11 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      */
     public function index()
     {
-        return response()->json(
-            Club::with('locations')
+        $clubs = Club::with('locations')
             ->orderBy('name')
-            ->paginate($this->paginationLimit)
-        );
+            ->paginate($this->paginationLimit);
+
+        return ClubResource::collection($clubs);
     }
 
     /**
@@ -64,17 +67,29 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
-     *         @OA\JsonContent(ref="#/components/schemas/Club")
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/Club")
+     *                 )
+     *             }
+     *         )
      *     ),
      *     @OA\Response(
      *         response=404,
-     *         description="Club not found"
+     *         description="Club not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
     public function show(Club $club)
     {
-        return response()->json($club->load('locations'));
+        $club->load('locations');
+        return $this->resourceResponse(
+            new ClubResource($club),
+            'Club details retrieved successfully'
+        );
     }
 
     /**
@@ -93,7 +108,20 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      *     ),
      *     @OA\Response(
      *         response=201,
-     *         description="Club created successfully"
+     *         description="Club created successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/Club")
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -106,7 +134,11 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
 
         $club = Club::create($request->all());
 
-        return response()->json($club, 201);
+        return $this->resourceResponse(
+            new ClubResource($club),
+            'Club created successfully',
+            201
+        );
     }
 
     /**
@@ -123,7 +155,20 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Club updated successfully"
+     *         description="Club updated successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/Club")
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -136,7 +181,10 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
 
         $club->update($request->all());
 
-        return response()->json($club);
+        return $this->resourceResponse(
+            new ClubResource($club),
+            'Club updated successfully'
+        );
     }
 
     /**
@@ -153,14 +201,18 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Club deleted successfully"
+     *         description="Club deleted successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiResponse")
      *     )
      * )
      */
     public function destroy(Club $club)
     {
         $club->delete();
-        return response()->json(['message' => 'Club deleted successfully']);
+        return $this->successResponse(
+            null,
+            'Club deleted successfully'
+        );
     }
 
     /**
@@ -180,15 +232,22 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      *         response=200,
      *         description="Successful operation",
      *         @OA\JsonContent(
-     *             type="array",
-     *             @OA\Items(ref="#/components/schemas/Location")
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/Location"))
+     *                 )
+     *             }
      *         )
      *     )
      * )
      */
     public function locations(Club $club)
     {
-        return response()->json($club->locations);
+        return $this->successResponse(
+            LocationResource::collection($club->locations),
+            'Club locations retrieved successfully'
+        );
     }
 
     /**
@@ -210,7 +269,7 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      *         description="Successful operation",
      *         @OA\JsonContent(
      *             allOf={
-     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
      *                 @OA\Schema(
      *                     @OA\Property(
      *                         property="data",
@@ -225,10 +284,10 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      */
     public function prizes(Club $club)
     {
-        return response()->json(
-            $club->prizes()
-                ->with('prize')
-                ->paginate($this->paginationLimit)
-        );
+        $prizes = $club->prizes()
+            ->with('prize')
+            ->paginate($this->paginationLimit);
+
+        return PrizeFromClubResource::collection($prizes);
     }
 }

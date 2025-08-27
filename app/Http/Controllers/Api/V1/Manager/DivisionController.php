@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Models\Division;
+use App\Http\Resources\DivisionResource;
 use Illuminate\Http\Request;
 
 /**
@@ -25,7 +26,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *         description="Successful operation",
      *         @OA\JsonContent(
      *             allOf={
-     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
      *                 @OA\Schema(
      *                     @OA\Property(
      *                         property="data",
@@ -61,12 +62,22 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
-     *         @OA\JsonContent(ref="#/components/schemas/Division")
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/Division")
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function show(Division $division)
     {
-        return response()->json($division);
+        return $this->resourceResponse(
+            new DivisionResource($division),
+            'Division details retrieved successfully'
+        );
     }
 }

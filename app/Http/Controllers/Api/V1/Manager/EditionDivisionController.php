@@ -5,6 +5,8 @@ namespace App\Http\Controllers\Api\V1\Manager;
 use App\Http\Controllers\Controller;
 use App\Models\EditionDivision;
 use App\Models\EditionParticipation;
+use App\Http\Resources\EditionDivisionResource;
+use App\Http\Resources\EditionParticipationResource;
 use Illuminate\Http\Request;
 
 /**
@@ -26,7 +28,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *         description="Successful operation",
      *         @OA\JsonContent(
      *             allOf={
-     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
      *                 @OA\Schema(
      *                     @OA\Property(
      *                         property="data",
@@ -41,10 +43,13 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      */
     public function index()
     {
-        return response()->json(
-            EditionDivision::with(['edition', 'division'])
+        $editionDivisions = EditionDivision::with(['edition', 'division'])
             ->orderBy('id_edition_division', 'desc')
-            ->paginate($this->paginationLimit)
+            ->paginate($this->paginationLimit);
+
+        return $this->resourceResponse(
+            EditionDivisionResource::collection($editionDivisions),
+            'Edition divisions retrieved successfully'
         );
     }
 
@@ -62,13 +67,25 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
-     *         @OA\JsonContent(ref="#/components/schemas/EditionDivision")
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/EditionDivision")
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function show(EditionDivision $editionDivision)
     {
-        return response()->json($editionDivision->load(['edition', 'division']));
+        $editionDivision->load(['edition', 'division']);
+
+        return $this->resourceResponse(
+            new EditionDivisionResource($editionDivision),
+            'Edition division details retrieved successfully'
+        );
     }
 
     /**
@@ -85,7 +102,18 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
-     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/EditionParticipation"))
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="array",
+     *                         @OA\Items(ref="#/components/schemas/EditionParticipation")
+     *                     )
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
@@ -96,6 +124,9 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
             'division_id' => $editionDivision->division_id
         ])->with(['player'])->get();
 
-        return response()->json($participants);
+        return $this->resourceResponse(
+            EditionParticipationResource::collection($participants),
+            'Participants retrieved successfully'
+        );
     }
 }

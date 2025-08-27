@@ -48,9 +48,21 @@ class LocationControllerTest extends TestCase
                         'address'
                     ]
                 ],
+            'links' => [
+                'first',
+                'last',
+                'prev',
+                'next'
+            ],
+            'meta' => [
                 'current_page',
+                'from',
+                'last_page',
+                'path',
                 'per_page',
+                'to',
                 'total'
+            ]
             ]);
 
         $this->assertCount(5, $response->json('data'));
@@ -68,8 +80,12 @@ class LocationControllerTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJson([
+            'success' => true,
+            'message' => 'Location details retrieved successfully',
+            'data' => [
                 'id_location' => $location->id_location,
                 'name' => 'Test Location'
+            ]
             ]);
     }
 
@@ -92,9 +108,21 @@ class LocationControllerTest extends TestCase
                         'date'
                     ]
                 ],
+            'links' => [
+                'first',
+                'last',
+                'prev',
+                'next'
+            ],
+            'meta' => [
                 'current_page',
+                'from',
+                'last_page',
+                'path',
                 'per_page',
+                'to',
                 'total'
+            ]
             ]);
 
         $this->assertCount(3, $response->json('data'));
@@ -144,13 +172,25 @@ class LocationControllerTest extends TestCase
                         'address'
                     ]
                 ],
+            'links' => [
+                'first',
+                'last',
+                'prev',
+                'next'
+            ],
+            'meta' => [
                 'current_page',
+                'from',
+                'last_page',
+                'path',
                 'per_page',
+                'to',
                 'total'
+            ]
             ]);
 
         $this->assertCount(10, $response->json('data'));
-        $this->assertEquals(1, $response->json('current_page'));
-        $this->assertEquals(25, $response->json('total'));
+        $this->assertEquals(1, $response->json('meta.current_page'));
+        $this->assertEquals(25, $response->json('meta.total'));
     }
 }

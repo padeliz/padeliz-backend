@@ -4,6 +4,7 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Models\PrizeFromClub;
+use App\Http\Resources\PrizeFromClubResource;
 use Illuminate\Http\Request;
 
 /**
@@ -25,7 +26,7 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *         description="Successful operation",
      *         @OA\JsonContent(
      *             allOf={
-     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
      *                 @OA\Schema(
      *                     @OA\Property(
      *                         property="data",
@@ -40,11 +41,11 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      */
     public function index()
     {
-        return response()->json(
-            PrizeFromClub::with(['club', 'prize'])
+        $prizesFromClubs = PrizeFromClub::with(['club', 'prize'])
             ->orderBy('id_club_prize', 'desc')
-            ->paginate($this->paginationLimit)
-        );
+            ->paginate($this->paginationLimit);
+
+        return PrizeFromClubResource::collection($prizesFromClubs);
     }
 
     /**
@@ -61,12 +62,23 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
-     *         @OA\JsonContent(ref="#/components/schemas/PrizeFromClub")
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/PrizeFromClub")
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function show(PrizeFromClub $prizeFromClub)
     {
-        return response()->json($prizeFromClub->load(['club', 'prize']));
+        $prizeFromClub->load(['club', 'prize']);
+        return $this->resourceResponse(
+            new PrizeFromClubResource($prizeFromClub),
+            'Prize from club details retrieved successfully'
+        );
     }
 }

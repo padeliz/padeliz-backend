@@ -3,9 +3,9 @@
 .gitignore
 .gitattributes
 
-# Documentation
-README.md
+# Documentation (keep README for devcontainer)
 *.md
+!README.md
 docs/
 
 # Development files
@@ -40,12 +40,12 @@ yarn-error.log*
 package-lock.json
 yarn.lock
 
-# Composer
+# Composer (will be installed in container)
 vendor/
 composer.lock
 composer.phar
 
-# Laravel specific
+# Laravel specific (will be created in container)
 storage/logs/
 storage/framework/cache/
 storage/framework/sessions/
@@ -53,18 +53,18 @@ storage/framework/views/
 storage/app/public/
 bootstrap/cache/
 
-# Testing
-tests/
-phpunit.xml
-.phpunit.result.cache
-coverage/
+# Testing (keep for development)
+# tests/
+# phpunit.xml
+# .phpunit.result.cache
+# coverage/
 
 # Build artifacts
 public/build/
 public/mix-manifest.json
 public/hot
 
-# Docker
+# Docker (exclude other Docker files)
 Dockerfile*
 docker-compose*
 .dockerignore

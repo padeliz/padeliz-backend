@@ -4,6 +4,8 @@ namespace App\Http\Controllers\Api\V1\Player;
 
 use App\Models\Player;
 use Illuminate\Http\Request;
+use App\Http\Requests\PlayerFormRequest;
+use App\Http\Resources\PlayerResource;
 
 /**
  * @OA\Tag(
@@ -15,7 +17,7 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
 {
     /**
      * @OA\Post(
-     *     path="/api/v1/players/profile",
+     *     path="/api/v1/player/players",
      *     summary="Create a new player",
      *     tags={"Player: Players"},
      *     security={{"sanctum":{}}},
@@ -31,30 +33,39 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
      *     @OA\Response(
      *         response=201,
      *         description="Player created successfully",
-     *         @OA\JsonContent(ref="#/components/schemas/Player")
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/Player")
+     *                 )
+     *             }
+     *         )
      *     ),
      *     @OA\Response(
      *         response=422,
-     *         description="Validation error"
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
-    public function store(Request $request)
+    public function store(PlayerFormRequest $request)
     {
-        $validated = $request->validate([
-            'name' => 'required|string|max:255',
-            'google_email' => 'required|email|unique:players,google_email,' . $request->user()->id_player . ',id_player',
-            'phone' => 'required|string|unique:players,phone,' . $request->user()->id_player . ',id_player',
-        ]);
+        $validated = $request->validated();
 
         $player = $request->user();
         $player->update($validated);
-        return response()->json($player, 200);
+
+        return $this->resourceResponse(
+            new PlayerResource($player),
+            'Player profile updated successfully',
+            201
+        );
     }
 
     /**
      * @OA\Get(
-     *     path="/api/v1/players/profile/{player}",
+     *     path="/api/v1/player/players/{player}",
      *     summary="Get player details",
      *     tags={"Player: Players"},
      *     security={{"sanctum":{}}},
@@ -67,18 +78,30 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
-     *         @OA\JsonContent(ref="#/components/schemas/Player")
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/Player")
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function show(Player $player)
     {
-        return response()->json($player->load(['participations.edition', 'participations.division']));
+        $player->load(['participations.edition', 'participations.division']);
+
+        return $this->resourceResponse(
+            new PlayerResource($player),
+            'Player details retrieved successfully'
+        );
     }
 
     /**
-     * @OA\Patch(
-     *     path="/api/v1/players/{player}",
+     * @OA\Put(
+     *     path="/api/v1/player/players/{player}",
      *     summary="Update player details",
      *     tags={"Player: Players"},
      *     security={{"sanctum":{}}},
@@ -108,44 +131,41 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
      *     @OA\Response(
      *         response=200,
      *         description="Player updated successfully",
-     *         @OA\JsonContent(ref="#/components/schemas/Player")
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/Player")
+     *                 )
+     *             }
+     *         )
      *     ),
      *     @OA\Response(
      *         response=403,
-     *         description="Unauthorized to update this player"
+     *         description="Unauthorized to update this player",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
-    public function update(Request $request, Player $player)
+    public function update(PlayerFormRequest $request, Player $player)
     {
         // Only allow users to update their own profile
         if ($request->user()->id_player !== $player->id_player) {
-            return response()->json(['message' => 'Unauthorized'], 403);
+            return $this->forbiddenResponse('You can only update your own profile');
         }
 
-        $validatedData = $request->validate([
-            'name' => 'sometimes|string|max:255',
-            'phone' => 'sometimes|string|max:255',
-            'skill_division' => 'sometimes|numeric|min:0|max:9.9',
-            'first_name' => 'sometimes|string|max:50|nullable',
-            'middle_name' => 'sometimes|string|max:50|nullable',
-            'last_name' => 'sometimes|string|max:50|nullable',
-            'year_of_birth' => 'sometimes|integer|min:1900|max:9999|nullable',
-            'being_student' => 'sometimes|boolean',
-            'playtomic_id' => 'sometimes|string|max:10|nullable',
-            'rankedin_id' => 'sometimes|string|max:15|nullable',
-            'instagram_username' => 'sometimes|string|max:50|nullable',
-            'facebook_username' => 'sometimes|string|max:50|nullable',
-        ]);
-
+        $validatedData = $request->validated();
         $player->update($validatedData);
 
-        return response()->json($player);
+        return $this->resourceResponse(
+            new PlayerResource($player),
+            'Player profile updated successfully'
+        );
     }
 
     /**
      * @OA\Post(
-     *     path="/api/v1/players/profile/image",
+     *     path="/api/v1/player/players/image",
      *     summary="Upload a profile image",
      *     tags={"Player: Players"},
      *     security={{"sanctum":{}}},
@@ -158,8 +178,25 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
      *             )
      *         )
      *     ),
-     *     @OA\Response(response=201, description="Image uploaded successfully"),
-     *     @OA\Response(response=422, description="Validation error or too many images")
+     *     @OA\Response(
+     *         response=201,
+     *         description="Image uploaded successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", type="object",
+     *                         @OA\Property(property="urls", type="array", @OA\Items(type="string"))
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error or too many images",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     )
      * )
      */
     public function uploadImage(Request $request)
@@ -172,22 +209,22 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
         $currentImages = $player->getUploadedFiles('images');
 
         if (count($currentImages) >= 3) {
-            return response()->json([
-                'message' => 'Maximum number of profile images (3) reached. Delete an existing image first.'
-            ], 422);
+            return $this->errorResponse(
+                'Maximum number of profile images (3) reached. Delete an existing image first.',
+                422
+            );
         }
 
         $player->saveUploadedFile($request->file('image'), 'images');
 
-        return response()->json([
-            'message' => 'Image uploaded successfully',
+        return $this->successResponse([
             'urls' => $player->getUploadedUrls('images')
-        ], 201);
+        ], 'Image uploaded successfully', 201);
     }
 
     /**
      * @OA\Delete(
-     *     path="/api/v1/players/profile/image/{filename}",
+     *     path="/api/v1/player/players/image/{filename}",
      *     summary="Delete a profile image",
      *     tags={"Player: Players"},
      *     security={{"sanctum":{}}},
@@ -197,8 +234,25 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
      *         required=true,
      *         @OA\Schema(type="string")
      *     ),
-     *     @OA\Response(response=200, description="Image deleted successfully"),
-     *     @OA\Response(response=404, description="Image not found")
+     *     @OA\Response(
+     *         response=200,
+     *         description="Image deleted successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", type="object",
+     *                         @OA\Property(property="urls", type="array", @OA\Items(type="string"))
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Image not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     )
      * )
      */
     public function deleteImage(Request $request, string $filename)
@@ -207,14 +261,11 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
         $player = $request->user();
 
         if (!$player->deleteUploadedFile($filename, 'images')) {
-            return response()->json([
-                'message' => 'Image not found'
-            ], 404);
+            return $this->notFoundResponse('Image not found');
         }
 
-        return response()->json([
-            'message' => 'Image deleted successfully',
+        return $this->successResponse([
             'urls' => $player->getUploadedUrls('images')
-        ]);
+        ], 'Image deleted successfully');
     }
 }

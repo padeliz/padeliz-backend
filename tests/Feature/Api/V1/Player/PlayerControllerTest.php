@@ -34,7 +34,7 @@ class PlayerControllerTest extends TestCase
     {
         Sanctum::actingAs($this->player);
 
-        $response = $this->postJson('/api/v1/player/profile', [
+        $response = $this->postJson('/api/v1/player/players', [
             'name' => 'Updated Player',
             'google_email' => 'updated@example.com',
             'phone' => '0987654321',
@@ -42,13 +42,21 @@ class PlayerControllerTest extends TestCase
             'being_student' => true
         ]);
 
-        $response->assertStatus(200)
+        $response->assertStatus(201)
             ->assertJsonStructure([
+            'success',
+            'message',
+            'data' => [
                 'id_player',
                 'name',
                 'phone',
                 'skill_division',
                 'being_student'
+                ]
+            ])
+            ->assertJson([
+                'success' => true,
+                'message' => 'Player profile updated successfully'
             ]);
 
         $this->assertDatabaseHas('players', [
@@ -63,12 +71,24 @@ class PlayerControllerTest extends TestCase
     {
         Sanctum::actingAs($this->player);
 
-        $response = $this->getJson("/api/v1/player/profile/{$this->player->id_player}");
+        $response = $this->getJson("/api/v1/player/players/{$this->player->id_player}");
 
         $response->assertStatus(200)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'id_player',
+                    'name'
+                ]
+            ])
             ->assertJson([
+            'success' => true,
+            'message' => 'Player details retrieved successfully',
+            'data' => [
                 'id_player' => $this->player->id_player,
                 'name' => 'Test Player'
+            ]
             ]);
     }
 
@@ -76,16 +96,29 @@ class PlayerControllerTest extends TestCase
     {
         Sanctum::actingAs($this->player);
 
-        $response = $this->putJson("/api/v1/player/profile/{$this->player->id_player}", [
+        $response = $this->putJson("/api/v1/player/players/{$this->player->id_player}", [
             'name' => 'Updated Player Name',
             'skill_division' => 3.5
         ]);
 
         $response->assertStatus(200)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'id_player',
+                    'name',
+                    'skill_division'
+                ]
+            ])
             ->assertJson([
+            'success' => true,
+            'message' => 'Player profile updated successfully',
+            'data' => [
                 'id_player' => $this->player->id_player,
                 'name' => 'Updated Player Name',
                 'skill_division' => 3.5
+            ]
             ]);
     }
 
@@ -98,12 +131,24 @@ class PlayerControllerTest extends TestCase
             'google_email' => 'other@example.com'
         ]);
 
-        $response = $this->getJson("/api/v1/player/profile/{$otherPlayer->id_player}");
+        $response = $this->getJson("/api/v1/player/players/{$otherPlayer->id_player}");
 
         $response->assertStatus(200)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'id_player',
+                    'name'
+                ]
+            ])
             ->assertJson([
+            'success' => true,
+            'message' => 'Player details retrieved successfully',
+            'data' => [
                 'id_player' => $otherPlayer->id_player,
                 'name' => 'Other Player'
+            ]
             ]);
     }
 
@@ -119,7 +164,7 @@ class PlayerControllerTest extends TestCase
 
         $file = UploadedFile::fake()->image('profile.jpg');
 
-        $response = $this->postJson('/api/v1/player/profile/image', [
+        $response = $this->postJson('/api/v1/player/players/image', [
             'image' => $file
         ]);
 
@@ -144,13 +189,13 @@ class PlayerControllerTest extends TestCase
 
         // First upload an image
         $file = UploadedFile::fake()->image('profile.jpg');
-        $uploadResponse = $this->postJson('/api/v1/player/profile/image', [
+        $uploadResponse = $this->postJson('/api/v1/player/players/image', [
             'image' => $file
         ]);
         $filename = $uploadResponse->json('filename');
 
         // Then delete it
-        $response = $this->deleteJson("/api/v1/player/profile/image/{$filename}");
+        $response = $this->deleteJson("/api/v1/player/players/image/{$filename}");
 
         $response->assertStatus(200)
             ->assertJson(['message' => 'Image deleted successfully']);
@@ -160,7 +205,7 @@ class PlayerControllerTest extends TestCase
 
     public function test_profile_requires_authentication()
     {
-        $response = $this->postJson('/api/v1/player/profile', [
+        $response = $this->postJson('/api/v1/player/players', [
             'name' => 'Test'
         ]);
 
@@ -171,7 +216,7 @@ class PlayerControllerTest extends TestCase
     {
         Sanctum::actingAs($this->player);
 
-        $response = $this->postJson('/api/v1/player/profile', [
+        $response = $this->postJson('/api/v1/player/players', [
             // Missing required fields
         ]);
 

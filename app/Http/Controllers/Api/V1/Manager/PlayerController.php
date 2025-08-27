@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Manager;
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
 use App\Models\Player;
 use Illuminate\Http\Request;
+use App\Http\Resources\PlayerResource;
 
 /**
  * @OA\Tag(
@@ -20,16 +21,32 @@ class PlayerController extends V1BaseController
      *     summary="Get all players",
      *     tags={"Manager: Players"},
      *     security={{"sanctum":{}}},
+     *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
      *         response=200,
-     *         description="List of all players"
+     *         description="List of all players",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="array",
+     *                         @OA\Items(ref="#/components/schemas/Player")
+     *                     )
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function index()
     {
-        $players = Player::with(['participations'])->get();
-        return response()->json($players);
+        $players = Player::with(['participations'])
+            ->orderBy('id_player', 'desc')
+            ->paginate($this->paginationLimit);
+
+        return PlayerResource::collection($players);
     }
 
     /**
@@ -70,7 +87,11 @@ class PlayerController extends V1BaseController
 
         $player = Player::create($request->all());
 
-        return response()->json($player, 201);
+        return $this->resourceResponse(
+            new PlayerResource($player),
+            'Player created successfully',
+            201
+        );
     }
 
     /**
@@ -105,7 +126,10 @@ class PlayerController extends V1BaseController
 
         $player->update($request->all());
 
-        return response()->json($player);
+        return $this->resourceResponse(
+            new PlayerResource($player),
+            'Player updated successfully'
+        );
     }
 
     /**
@@ -129,6 +153,6 @@ class PlayerController extends V1BaseController
     public function destroy(Player $player)
     {
         $player->delete();
-        return response()->json(['message' => 'Player deleted successfully']);
+        return $this->successResponse(null, 'Player deleted successfully');
     }
 }

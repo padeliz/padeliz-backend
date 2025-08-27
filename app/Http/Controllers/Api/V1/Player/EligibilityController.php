@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Player;
 use App\Http\Controllers\Controller;
 use App\Models\PlayerEligibility;
 use App\Models\Edition;
+use App\Http\Resources\PlayerEligibilityResource;
 use Illuminate\Http\Request;
 use Carbon\Carbon;
 
@@ -25,11 +26,19 @@ class EligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *     @OA\Response(
      *         response=200,
      *         description="Last approved eligibility",
-     *         @OA\JsonContent(ref="#/components/schemas/PlayerEligibility")
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/PlayerEligibility")
+     *                 )
+     *             }
+     *         )
      *     ),
      *     @OA\Response(
      *         response=404,
-     *         description="No approved eligibility found"
+     *         description="No approved eligibility found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -41,10 +50,13 @@ class EligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Base
             ->first();
 
         if (!$eligibility) {
-            return response()->json(['message' => 'No approved eligibility found'], 404);
+            return $this->notFoundResponse('No approved eligibility found');
         }
 
-        return response()->json($eligibility);
+        return $this->resourceResponse(
+            new PlayerEligibilityResource($eligibility),
+            'Approved eligibility retrieved successfully'
+        );
     }
 
     /**
@@ -56,11 +68,19 @@ class EligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *     @OA\Response(
      *         response=200,
      *         description="Pending eligibility",
-     *         @OA\JsonContent(ref="#/components/schemas/PlayerEligibility")
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/PlayerEligibility")
+     *                 )
+     *             }
+     *         )
      *     ),
      *     @OA\Response(
      *         response=404,
-     *         description="No pending eligibility found"
+     *         description="No pending eligibility found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -71,10 +91,13 @@ class EligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Base
             ->first();
 
         if (!$eligibility) {
-            return response()->json(['message' => 'No pending eligibility found'], 404);
+            return $this->notFoundResponse('No pending eligibility found');
         }
 
-        return response()->json($eligibility);
+        return $this->resourceResponse(
+            new PlayerEligibilityResource($eligibility),
+            'Pending eligibility retrieved successfully'
+        );
     }
 
     /**
@@ -86,11 +109,19 @@ class EligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *     @OA\Response(
      *         response=200,
      *         description="Last rejected eligibility",
-     *         @OA\JsonContent(ref="#/components/schemas/PlayerEligibility")
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/PlayerEligibility")
+     *                 )
+     *             }
+     *         )
      *     ),
      *     @OA\Response(
      *         response=404,
-     *         description="No rejected eligibility found"
+     *         description="No rejected eligibility found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -102,10 +133,13 @@ class EligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Base
             ->first();
 
         if (!$eligibility) {
-            return response()->json(['message' => 'No rejected eligibility found'], 404);
+            return $this->notFoundResponse('No rejected eligibility found');
         }
 
-        return response()->json($eligibility);
+        return $this->resourceResponse(
+            new PlayerEligibilityResource($eligibility),
+            'Rejected eligibility retrieved successfully'
+        );
     }
 
     /**
@@ -117,11 +151,19 @@ class EligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *     @OA\Response(
      *         response=200,
      *         description="Eligibility updated successfully",
-     *         @OA\JsonContent(ref="#/components/schemas/PlayerEligibility")
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/PlayerEligibility")
+     *                 )
+     *             }
+     *         )
      *     ),
      *     @OA\Response(
      *         response=404,
-     *         description="No pending eligibility found"
+     *         description="No pending eligibility found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -132,7 +174,7 @@ class EligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Base
             ->first();
 
         if (!$eligibility) {
-            return response()->json(['message' => 'No pending eligibility found'], 404);
+            return $this->notFoundResponse('No pending eligibility found');
         }
 
         $player = $request->user();
@@ -153,7 +195,10 @@ class EligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Base
             'resubmitted_at' => time()
         ]);
 
-        return response()->json($eligibility);
+        return $this->resourceResponse(
+            new PlayerEligibilityResource($eligibility),
+            'Eligibility updated successfully'
+        );
     }
 
     /**
@@ -172,11 +217,19 @@ class EligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *     @OA\Response(
      *         response=201,
      *         description="Eligibility created successfully",
-     *         @OA\JsonContent(ref="#/components/schemas/PlayerEligibility")
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/PlayerEligibility")
+     *                 )
+     *             }
+     *         )
      *     ),
      *     @OA\Response(
      *         response=422,
-     *         description="Validation error or pending eligibility exists or past edition"
+     *         description="Validation error or pending eligibility exists or past edition",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -188,9 +241,7 @@ class EligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Base
             ->exists();
 
         if ($hasPending) {
-            return response()->json([
-                'message' => 'You already have a pending eligibility'
-            ], 422);
+            return $this->validationErrorResponse(['edition_id' => ['You already have a pending eligibility']]);
         }
 
         $request->validate([
@@ -200,9 +251,7 @@ class EligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Base
         // Check if edition is in the past
         $edition = Edition::findOrFail($request->edition_id);
         if (strtotime($edition->date) <= strtotime(date('Y-m-d'))) {
-            return response()->json([
-                'message' => 'Cannot create eligibility for past editions'
-            ], 422);
+            return $this->validationErrorResponse(['edition_id' => ['Cannot create eligibility for past editions']]);
         }
 
         $player = $request->user();
@@ -228,6 +277,10 @@ class EligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Base
             'facebook_username' => $player->facebook_username,
         ]);
 
-        return response()->json($eligibility, 201);
+        return $this->resourceResponse(
+            new PlayerEligibilityResource($eligibility),
+            'Eligibility created successfully',
+            201
+        );
     }
 }

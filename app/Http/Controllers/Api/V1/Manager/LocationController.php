@@ -4,7 +4,9 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Models\Location;
+use App\Http\Resources\LocationResource;
 use Illuminate\Http\Request;
+use App\Http\Resources\EditionResource;
 
 /**
  * @OA\Tag(
@@ -25,7 +27,7 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *         description="Successful operation",
      *         @OA\JsonContent(
      *             allOf={
-     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
      *                 @OA\Schema(
      *                     @OA\Property(
      *                         property="data",
@@ -40,11 +42,11 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      */
     public function index()
     {
-        return response()->json(
-            Location::with('club')
+        $locations = Location::with('club')
             ->orderBy('name')
-            ->paginate($this->paginationLimit)
-        );
+            ->paginate($this->paginationLimit);
+
+        return LocationResource::collection($locations);
     }
 
     /**
@@ -61,13 +63,24 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
-     *         @OA\JsonContent(ref="#/components/schemas/Location")
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/Location")
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function show(Location $location)
     {
-        return response()->json($location->load('club'));
+        $location->load('club');
+        return $this->resourceResponse(
+            new LocationResource($location),
+            'Location details retrieved successfully'
+        );
     }
 
     /**
@@ -87,7 +100,7 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *         description="Successful operation",
      *         @OA\JsonContent(
      *             allOf={
-     *                 @OA\Schema(ref="#/components/schemas/PaginatedResponse"),
+     *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
      *                 @OA\Schema(
      *                     @OA\Property(
      *                         property="data",
@@ -102,11 +115,10 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      */
     public function editions(Location $location)
     {
-        return response()->json(
-            $location->editions()
-                ->with(['divisions', 'location'])
-                ->orderBy('date', 'desc')
-                ->paginate($this->paginationLimit)
-        );
+        $editions = $location->editions()
+            ->orderBy('date', 'desc')
+            ->paginate($this->paginationLimit);
+
+        return EditionResource::collection($editions);
     }
 }

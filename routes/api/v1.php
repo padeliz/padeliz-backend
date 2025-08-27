@@ -37,8 +37,8 @@ Route::prefix('v1')->group(function () {
             Route::get('me', [\App\Http\Controllers\Api\V1\Player\PlayerAuthController::class, 'me']);
         });
 
-        // Player profile management
-        Route::prefix('profile')->group(function () {
+        // Player management
+        Route::prefix('players')->group(function () {
             Route::post('/', [\App\Http\Controllers\Api\V1\Player\PlayerController::class, 'store']);
             Route::get('{player}', [\App\Http\Controllers\Api\V1\Player\PlayerController::class, 'show']);
             Route::put('{player}', [\App\Http\Controllers\Api\V1\Player\PlayerController::class, 'update']);

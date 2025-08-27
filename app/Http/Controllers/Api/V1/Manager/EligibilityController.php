@@ -5,6 +5,7 @@ namespace App\Http\Controllers\Api\V1\Manager;
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
 use App\Models\PlayerEligibility;
 use Illuminate\Http\Request;
+use App\Http\Resources\PlayerEligibilityResource;
 
 /**
  * @OA\Tag(
@@ -20,16 +21,32 @@ class EligibilityController extends V1BaseController
      *     summary="Get all eligibility records",
      *     tags={"Manager: Eligibilities"},
      *     security={{"sanctum":{}}},
+     *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
      *         response=200,
-     *         description="List of all eligibility records"
+     *         description="List of all eligibility records",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="array",
+     *                         @OA\Items(ref="#/components/schemas/PlayerEligibility")
+     *                     )
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function index()
     {
-        $eligibilities = PlayerEligibility::with(['player'])->get();
-        return response()->json($eligibilities);
+        $eligibilities = PlayerEligibility::with(['player'])
+            ->orderBy('id', 'desc')
+            ->paginate($this->paginationLimit);
+
+        return PlayerEligibilityResource::collection($eligibilities);
     }
 
     /**
@@ -67,6 +84,9 @@ class EligibilityController extends V1BaseController
 
         $eligibility->update($request->all());
 
-        return response()->json($eligibility);
+        return $this->resourceResponse(
+            new PlayerEligibilityResource($eligibility),
+            'Eligibility updated successfully'
+        );
     }
 }
