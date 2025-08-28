@@ -15,10 +15,12 @@ class EditionLotteryResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'id' => $this->id,
+            'id_lottery' => $this->id_lottery,
             'edition_id' => $this->edition_id,
-            'prize_id' => $this->prize_id,
+            'orderliness' => $this->orderliness,
             'division_id' => $this->division_id,
+            'prize_id' => $this->prize_id,
+            'total_draws_nr' => $this->total_draws_nr,
             'created_at' => $this->created_at,
             'updated_at' => $this->updated_at,
             'prize' => $this->whenLoaded('prize', function () {
@@ -33,5 +35,7 @@ class EditionLotteryResource extends JsonResource
         ];
     }
 }
+
+
 
 

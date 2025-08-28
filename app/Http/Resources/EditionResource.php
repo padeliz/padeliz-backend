@@ -18,9 +18,15 @@ class EditionResource extends JsonResource
             'students_entry_fee' => $this->students_entry_fee,
             'arriving_time' => $this->arriving_time,
             'closing_time' => $this->closing_time,
-            'location' => new LocationResource($this->whenLoaded('location')),
-            'edition_divisions' => EditionDivisionResource::collection($this->whenLoaded('editionDivisions')),
-            'participations' => EditionParticipationResource::collection($this->whenLoaded('participations')),
+            'location' => $this->whenLoaded('location', function () {
+                return new LocationResource($this->location);
+            }),
+            'edition_divisions' => $this->whenLoaded('editionDivisions', function () {
+                return EditionDivisionResource::collection($this->editionDivisions);
+            }),
+            'participations' => $this->whenLoaded('participations', function () {
+                return EditionParticipationResource::collection($this->participations);
+            }),
         ];
     }
 }

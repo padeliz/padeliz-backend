@@ -14,10 +14,19 @@ class LocationFactory extends Factory
     {
         return [
             'club_id' => Club::factory(),
-            'name' => substr($this->faker->company(), 0, 10) . ' ' . substr($this->faker->unique()->streetName(), 0, 10),
+            'name' => substr($this->faker->unique()->words(2, true), 0, 30),
             'address' => substr($this->faker->address(), 0, 200),
             'total_indoors_courts' => $this->faker->numberBetween(3, 6),
             'total_outdoor_courts' => $this->faker->numberBetween(3, 6),
         ];
+    }
+
+    public function forClub(Club $club)
+    {
+        return $this->state(function (array $attributes) use ($club) {
+            return [
+                'club_id' => $club->id_club,
+            ];
+        });
     }
 }

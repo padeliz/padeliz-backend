@@ -5,6 +5,7 @@ namespace Tests\Feature\Api\V1\Manager;
 use Tests\TestCase;
 use App\Models\Player;
 use App\Models\Location;
+use App\Models\Club;
 use App\Models\Edition;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -14,6 +15,7 @@ class LocationControllerTest extends TestCase
     use RefreshDatabase;
 
     private $manager;
+    private $club;
 
     public function setUp(): void
     {
@@ -27,6 +29,11 @@ class LocationControllerTest extends TestCase
             'google_email' => 'manager@example.com',
             'google_avatar' => 'https://example.com/manager-avatar.jpg',
             'user_types' => ['player', 'manager']
+        ]);
+
+        $this->club = Club::factory()->create([
+            'name' => 'Test Club',
+            'city' => 'Test City'
         ]);
     }
 
@@ -87,6 +94,137 @@ class LocationControllerTest extends TestCase
                 'name' => 'Test Location'
             ]
             ]);
+    }
+
+    public function test_manager_can_create_location()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $locationData = [
+            'club_id' => $this->club->id_club,
+            'name' => 'New Location',
+            'address' => '123 Test Street',
+            'total_indoors_courts' => 4,
+            'total_outdoor_courts' => 2
+        ];
+
+        $response = $this->postJson('/api/v1/manager/locations', $locationData);
+
+        $response->assertStatus(201)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Location created successfully',
+                'data' => [
+                    'name' => 'New Location',
+                    'address' => '123 Test Street',
+                    'total_indoors_courts' => 4,
+                    'total_outdoor_courts' => 2
+                ]
+            ]);
+
+        $this->assertDatabaseHas('locations', [
+            'name' => 'New Location',
+            'club_id' => $this->club->id_club
+        ]);
+    }
+
+    public function test_manager_can_update_location()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $location = Location::factory()->create([
+            'name' => 'Old Name',
+            'address' => 'Old Address'
+        ]);
+
+        $updateData = [
+            'name' => 'Updated Name',
+            'address' => 'Updated Address',
+            'total_indoors_courts' => 6
+        ];
+
+        $response = $this->putJson("/api/v1/manager/locations/{$location->id_location}", $updateData);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Location updated successfully',
+                'data' => [
+                    'id_location' => $location->id_location,
+                    'name' => 'Updated Name',
+                    'address' => 'Updated Address',
+                    'total_indoors_courts' => 6
+                ]
+            ]);
+
+        $this->assertDatabaseHas('locations', [
+            'id_location' => $location->id_location,
+            'name' => 'Updated Name',
+            'address' => 'Updated Address'
+        ]);
+    }
+
+    public function test_manager_can_delete_location()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $location = Location::factory()->create();
+
+        $response = $this->deleteJson("/api/v1/manager/locations/{$location->id_location}");
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Location deleted successfully'
+            ]);
+
+        $this->assertDatabaseMissing('locations', [
+            'id_location' => $location->id_location
+        ]);
+    }
+
+    public function test_manager_cannot_delete_location_with_editions()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $location = Location::factory()->create();
+        Edition::factory()->create(['location_id' => $location->id_location]);
+
+        $response = $this->deleteJson("/api/v1/manager/locations/{$location->id_location}");
+
+        $response->assertStatus(409)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Cannot delete location because it has related editions'
+            ]);
+
+        $this->assertDatabaseHas('locations', [
+            'id_location' => $location->id_location
+        ]);
+    }
+
+    public function test_location_creation_validation()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->postJson('/api/v1/manager/locations', []);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['club_id', 'name']);
+    }
+
+    public function test_location_update_validation()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $location = Location::factory()->create();
+
+        $response = $this->putJson("/api/v1/manager/locations/{$location->id_location}", [
+            'club_id' => 99999 // Non-existent club
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['club_id']);
     }
 
     public function test_manager_can_view_location_editions()

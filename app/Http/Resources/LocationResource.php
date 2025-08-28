@@ -15,6 +15,8 @@ class LocationResource extends JsonResource
             'address' => $this->address,
             'city' => $this->city,
             'club_id' => $this->club_id,
+            'total_indoors_courts' => $this->total_indoors_courts,
+            'total_outdoor_courts' => $this->total_outdoor_courts,
         ];
     }
 }

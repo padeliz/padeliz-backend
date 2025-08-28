@@ -73,11 +73,15 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->command->info('Creating locations...');
+        $locations = collect();
         foreach ($clubs as $club) {
-            Location::factory()->count(rand(1, 2))->create([
-                'club_id' => $club->id_club,
-                'name' => $club->name . ' ' . $faker->unique()->streetName(),
-            ]);
+            $clubLocations = Location::factory()
+                ->count(rand(1, 2))
+                ->forClub($club)
+                ->create([
+                    'name' => substr($club->name . ' ' . $faker->unique()->streetName(), 0, 30),
+                ]);
+            $locations = $locations->merge($clubLocations);
         }
 
         $this->command->info('Creating divisions...');
@@ -113,13 +117,20 @@ class DatabaseSeeder extends Seeder
         );
 
         $this->command->info('Creating past editions...');
-        $pastEditions = $this->createEditions(0, rand(10, 20), Carbon::now()->subMonths(16), Carbon::now());
+        $pastEditions = $this->createEditions(0, rand(10, 20), Carbon::now()->subMonths(16), Carbon::now(), $locations);
 
         $this->command->info('Creating ongoing editions...');
-        $ongoingEditions = $this->createEditions($pastEditions->count(), rand(1, 2), Carbon::now(), Carbon::now());
+        $ongoingEditions = $this->createEditions($pastEditions->count(), rand(1, 2), Carbon::now(), Carbon::now(), $locations);
 
         $this->command->info('Creating future editions...');
-        $futureEditions = $this->createEditions($ongoingEditions->count() + $pastEditions->count(), rand(6, 10), Carbon::now(), Carbon::now()->addMonths(3));
+        $futureEditions = $this->createEditions($ongoingEditions->count() + $pastEditions->count(), rand(6, 10), Carbon::now(), Carbon::now()->addMonths(3), $locations);
+
+        // Set the first edition for each division after editions are created
+        $this->command->info('Setting first editions for divisions...');
+        $allEditions = $pastEditions->merge($ongoingEditions)->merge($futureEditions);
+        foreach ($divisions as $division) {
+            $division->update(['its_first_edition_id' => $allEditions->random()->id_edition]);
+        }
 
         $this->command->info('Creating prizes and club prizes...');
         $prizes = Prize::factory()->count(5)->create();
@@ -128,8 +139,8 @@ class DatabaseSeeder extends Seeder
         foreach ($clubs as $club) {
             PrizeFromClub::factory()
                 ->count(rand(1, 3))
+                ->forClub($club)
                 ->create([
-                    'club_id' => $club->id_club,
                     'prize_id' => $prizes->random()->id_prize,
                 ]);
         }
@@ -152,23 +163,22 @@ class DatabaseSeeder extends Seeder
             ]);
     }
 
-    private function createEditions(int $index_nr, int $count, Carbon $startDate, Carbon $endDate)
+    private function createEditions(int $index_nr, int $count, Carbon $startDate, Carbon $endDate, $locations)
     {
         $editions = [];
-        $locations = Location::all();
 
         // Ensure we have locations before creating editions
         if ($locations->isEmpty()) {
             $this->command->error('No locations found. Cannot create editions.');
-            return [];
+            return collect();
         }
 
         for ($i = 0; $i < $count; $i++) {
             $arriving_time = Carbon::createFromTime(rand(12, 19), 30);
 
-            $editions[] = Edition::factory()->create(['name' => '#' . ($index_nr + $i + 1),
+            $editions[] = Edition::factory()->forLocation($locations->random())->create([
+                'name' => '#' . ($index_nr + $i + 1),
                 'date' => Carbon::parse($startDate)->addDays(rand(0, Carbon::parse($endDate)->diffInDays($startDate))),
-                'location_id' => $locations->random()->id_location, // Changed from id to id_location
                 'entry_fee' => rand(45, 55),
                 'students_entry_fee' => rand(35, 45),
                 'arriving_time' => $arriving_time->format('H:i:s'),
@@ -176,7 +186,7 @@ class DatabaseSeeder extends Seeder
             ]);
         }
 
-        return collect($editions);  // Convert array to collection
+        return collect($editions);
     }
 
     private function createEditionDivisionsAndParticipations($edition, $players)

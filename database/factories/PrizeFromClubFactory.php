@@ -25,4 +25,13 @@ class PrizeFromClubFactory extends Factory
             'box_2_text_color' => $this->faker->optional()->hexColor(),
         ];
     }
+
+    public function forClub(Club $club)
+    {
+        return $this->state(function (array $attributes) use ($club) {
+            return [
+                'club_id' => $club->id_club,
+            ];
+        });
+    }
 }

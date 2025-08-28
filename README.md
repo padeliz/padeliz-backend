@@ -88,6 +88,9 @@ php artisan config:clear
 
 composer install # Install dependencies
 
+# ⚠️ WARNING: Never run seeders in production! They will erase all existing data.
+php artisan db:seed # Repopulate database with dummy data
+
 mysql -u [USER] -p [PASS] # Access MySQL CLI
 
 php artisan route:clear

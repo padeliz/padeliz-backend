@@ -93,6 +93,9 @@ Route::prefix('v1')->group(function () {
         Route::prefix('locations')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\Manager\LocationController::class, 'index']);
             Route::get('{location}', [\App\Http\Controllers\Api\V1\Manager\LocationController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\LocationController::class, 'store']);
+            Route::put('{location}', [\App\Http\Controllers\Api\V1\Manager\LocationController::class, 'update']);
+            Route::delete('{location}', [\App\Http\Controllers\Api\V1\Manager\LocationController::class, 'destroy']);
             Route::get('{location}/editions', [\App\Http\Controllers\Api\V1\Manager\LocationController::class, 'editions']);
         });
 
@@ -100,6 +103,9 @@ Route::prefix('v1')->group(function () {
         Route::prefix('divisions')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\Manager\DivisionController::class, 'index']);
             Route::get('{division}', [\App\Http\Controllers\Api\V1\Manager\DivisionController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\DivisionController::class, 'store']);
+            Route::put('{division}', [\App\Http\Controllers\Api\V1\Manager\DivisionController::class, 'update']);
+            Route::delete('{division}', [\App\Http\Controllers\Api\V1\Manager\DivisionController::class, 'destroy']);
         });
 
         // Edition management
@@ -121,29 +127,45 @@ Route::prefix('v1')->group(function () {
         Route::prefix('prizes')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\Manager\PrizeController::class, 'index']);
             Route::get('{prize}', [\App\Http\Controllers\Api\V1\Manager\PrizeController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\PrizeController::class, 'store']);
+            Route::put('{prize}', [\App\Http\Controllers\Api\V1\Manager\PrizeController::class, 'update']);
+            Route::delete('{prize}', [\App\Http\Controllers\Api\V1\Manager\PrizeController::class, 'destroy']);
         });
 
         // Club prizes management
         Route::prefix('prizes-from-clubs')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\Manager\PrizeFromClubController::class, 'index']);
             Route::get('{prizeFromClub}', [\App\Http\Controllers\Api\V1\Manager\PrizeFromClubController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\PrizeFromClubController::class, 'store']);
+            Route::put('{prizeFromClub}', [\App\Http\Controllers\Api\V1\Manager\PrizeFromClubController::class, 'update']);
+            Route::delete('{prizeFromClub}', [\App\Http\Controllers\Api\V1\Manager\PrizeFromClubController::class, 'destroy']);
         });
 
         // Lottery management
         Route::prefix('lotteries')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'index']);
             Route::get('{lottery}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'store']);
+            Route::put('{lottery}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'update']);
+            Route::delete('{lottery}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'destroy']);
             Route::get('{lottery}/lucky-ones', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'index']);
         });
 
         // Lucky ones management
         Route::prefix('lucky-ones')->group(function () {
             Route::get('{luckyOne}', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'store']);
+            Route::put('{luckyOne}', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'update']);
+            Route::delete('{luckyOne}', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'destroy']);
         });
 
         // Edition divisions management
         Route::prefix('edition-divisions')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'index']);
             Route::get('{editionDivision}', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'store']);
+            Route::put('{editionDivision}', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'update']);
+            Route::delete('{editionDivision}', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'destroy']);
             Route::get('{editionDivision}/participants', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'participants']);
         });
 
@@ -157,14 +179,29 @@ Route::prefix('v1')->group(function () {
 
         // Participation management
         Route::prefix('editions/{edition}/participations')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\ParticipationController::class, 'index']);
+            Route::get('{participation}', [\App\Http\Controllers\Api\V1\Manager\ParticipationController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\ParticipationController::class, 'store']);
+            Route::put('{participation}', [\App\Http\Controllers\Api\V1\Manager\ParticipationController::class, 'update']);
             Route::delete('{participation}', [\App\Http\Controllers\Api\V1\Manager\ParticipationController::class, 'destroy']);
         });
 
         // Eligibility management
         Route::prefix('eligibility')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'index']);
-            Route::patch('{eligibility}', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'update']);
+            Route::get('{eligibility}', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'store']);
+            Route::put('{eligibility}', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'update']);
+            Route::delete('{eligibility}', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'destroy']);
+        });
+
+        // Matches teams management
+        Route::prefix('matches-teams')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\MatchesTeamController::class, 'index']);
+            Route::get('{team}', [\App\Http\Controllers\Api\V1\Manager\MatchesTeamController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\MatchesTeamController::class, 'store']);
+            Route::put('{team}', [\App\Http\Controllers\Api\V1\Manager\MatchesTeamController::class, 'update']);
+            Route::delete('{team}', [\App\Http\Controllers\Api\V1\Manager\MatchesTeamController::class, 'destroy']);
         });
     });
 });

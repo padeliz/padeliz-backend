@@ -25,8 +25,12 @@ class EditionParticipationResource extends JsonResource
             'payment' => $this->payment,
             'absence_reason' => $this->absence_reason,
             'ban_reason' => $this->ban_reason,
-            'edition' => new EditionResource($this->whenLoaded('edition')),
-            'division' => new DivisionResource($this->whenLoaded('division')),
+            'edition' => $this->whenLoaded('edition', function () {
+                return new EditionResource($this->edition);
+            }),
+            'division' => $this->whenLoaded('division', function () {
+                return new DivisionResource($this->division);
+            }),
         ];
     }
 }

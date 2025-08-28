@@ -12,7 +12,7 @@ class ClubFactory extends Factory
     public function definition()
     {
         return [
-            'name' => substr($this->faker->company(), 0, 30),
+            'name' => substr($this->faker->unique()->company(), 0, 30),
             'city' => substr($this->faker->city(), 0, 30),
         ];
     }

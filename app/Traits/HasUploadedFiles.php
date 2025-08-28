@@ -4,15 +4,22 @@ namespace App\Traits;
 
 use Illuminate\Support\Facades\File;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Log;
 
 trait HasUploadedFiles
 {
     public function getUploadPath(string $type, string $lang = 'en', string $size = 'medium'): string
     {
+        $basePath = config('uploads.base_path');
+        if (empty($basePath)) {
+            throw new \InvalidArgumentException('UPLOADS_BASE_PATH environment variable is required');
+        }
+
         $modelName = strtolower(class_basename($this));
+
         return sprintf(
             '%s/.%s/%s/%s/%s/%s',
-            public_path('uploads'),
+            $basePath,
             $modelName,
             $this->getKey(),
             $type,
@@ -25,11 +32,25 @@ trait HasUploadedFiles
     {
         $path = $this->getUploadPath($type, $lang, $size);
 
-        if (!File::exists($path)) {
+        $absolutePath = base_path($path);
+
+        if (!File::exists($absolutePath)) {
             return [];
         }
 
-        $files = File::files($path);
+        try {
+            $files = File::files($absolutePath);
+        } catch (\Exception $e) {
+            Log::error('HasUploadedFiles::getUploadedFiles - Error reading directory', [
+                'path' => $absolutePath,
+                'error' => $e->getMessage()
+            ]);
+            return [];
+        }
+
+        if (empty($files)) {
+            return [];
+        }
 
         return array_map(function ($file) {
             return $file->getBasename();
@@ -38,10 +59,24 @@ trait HasUploadedFiles
 
     public function getUploadedUrls(string $type, string $lang = 'en', string $size = 'medium'): array
     {
-        return array_map(function ($file) use ($type, $lang, $size) {
+        $basePath = config('uploads.base_path');
+        if (empty($basePath)) {
+            throw new \InvalidArgumentException('UPLOADS_BASE_PATH environment variable is required');
+        }
+
+        $uploadedFiles = $this->getUploadedFiles($type, $lang, $size);
+
+        return array_map(function ($file) use ($type, $lang, $size, $basePath) {
+            $baseUrl = rtrim(config('app.url'), '/');
+
+            // Remove 'public/' from the path for URL generation
+            $urlPath = str_replace('public/', '', $basePath);
+
+            $uploadsUrl = $baseUrl . '/' . ltrim($urlPath, '/');
+
             return sprintf(
                 '%s/.%s/%s/%s/%s/%s/%s',
-                config('uploads.base_path'),
+                $uploadsUrl,
                 strtolower(class_basename($this)),
                 $this->getKey(),
                 $type,
@@ -49,16 +84,17 @@ trait HasUploadedFiles
                 $size,
                 $file
             );
-        }, $this->getUploadedFiles($type, $lang, $size));
+        }, $uploadedFiles);
     }
 
     public function saveUploadedFile(UploadedFile $file, string $type, string $lang = 'en', string $size = 'medium'): string
     {
-        $filename = $type . '-' . time() . '.' . $file->getClientOriginalExtension();
+        $filename = $type . '-' . microtime(true) . '.' . $file->getClientOriginalExtension();
         $path = $this->getUploadPath($type, $lang, $size);
+        $absolutePath = base_path($path);
 
-        File::makeDirectory($path, 0755, true, true);
-        $file->move($path, $filename);
+        File::makeDirectory($absolutePath, 0755, true, true);
+        $file->move($absolutePath, $filename);
 
         return $filename;
     }
@@ -66,11 +102,12 @@ trait HasUploadedFiles
     public function deleteUploadedFile(string $filename, string $type, string $lang = 'en', string $size = 'medium'): bool
     {
         $path = $this->getUploadPath($type, $lang, $size) . '/' . $filename;
+        $absolutePath = base_path($path);
 
-        if (!File::exists($path)) {
+        if (!File::exists($absolutePath)) {
             return false;
         }
 
-        return File::delete($path);
+        return File::delete($absolutePath);
     }
 }

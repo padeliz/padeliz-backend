@@ -32,9 +32,10 @@ class PlayerResource extends JsonResource
             'rankedin_id' => $this->rankedin_id,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
-            'participations' => EditionParticipationResource::collection($this->whenLoaded('participations')),
+            'uploaded_profile_urls' => $this->uploaded_profile_urls,
+            'participations' => $this->whenLoaded('participations', function () {
+                return EditionParticipationResource::collection($this->participations);
+            }),
         ];
     }
 }
-
-

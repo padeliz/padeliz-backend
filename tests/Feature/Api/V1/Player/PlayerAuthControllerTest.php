@@ -149,7 +149,8 @@ class PlayerAuthControllerTest extends TestCase
                 'name',
                 'phone',
                 'google_name',
-                'google_avatar'
+                'google_avatar',
+                'uploaded_profile_urls'
             ]
             ])
             ->assertJson([
@@ -160,6 +161,25 @@ class PlayerAuthControllerTest extends TestCase
                 'name' => 'Test Player'
             ]
             ]);
+    }
+
+    public function test_me_endpoint_returns_uploaded_profile_urls()
+    {
+        Sanctum::actingAs($this->player);
+
+        $response = $this->getJson('/api/v1/player/auth/me');
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'uploaded_profile_urls'
+                ]
+            ]);
+
+        $data = $response->json('data');
+        $this->assertIsArray($data['uploaded_profile_urls']);
     }
 
     public function test_me_endpoint_requires_authentication()
