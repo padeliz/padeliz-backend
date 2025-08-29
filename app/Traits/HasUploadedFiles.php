@@ -89,14 +89,47 @@ trait HasUploadedFiles
 
     public function saveUploadedFile(UploadedFile $file, string $type, string $lang = 'en', string $size = 'medium'): string
     {
-        $filename = $type . '-' . microtime(true) . '.' . $file->getClientOriginalExtension();
-        $path = $this->getUploadPath($type, $lang, $size);
-        $absolutePath = base_path($path);
+        try {
+            $filename = $type . '-' . microtime(true) . '.' . $file->getClientOriginalExtension();
+            $path = $this->getUploadPath($type, $lang, $size);
+            $absolutePath = base_path($path);
 
-        File::makeDirectory($absolutePath, 0755, true, true);
-        $file->move($absolutePath, $filename);
+            // Ensure the directory exists
+            if (!File::exists($absolutePath)) {
+                File::makeDirectory($absolutePath, 0755, true, true);
+            }
 
-        return $filename;
+            // Validate that the directory was created successfully
+            if (!File::exists($absolutePath)) {
+                throw new \RuntimeException('Failed to create upload directory');
+            }
+
+            // Check if the file is valid and readable
+            if (!$file->isValid()) {
+                throw new \RuntimeException('Uploaded file is not valid: ' . $file->getError());
+            }
+
+            // Move the file to the destination
+            $file->move($absolutePath, $filename);
+
+            // Verify the file was actually moved
+            if (!File::exists($absolutePath . '/' . $filename)) {
+                throw new \RuntimeException('File was not saved successfully');
+            }
+
+            return $filename;
+        } catch (\Exception $e) {
+            Log::error('HasUploadedFiles::saveUploadedFile - Error saving file', [
+                'type' => $type,
+                'lang' => $lang,
+                'size' => $size,
+                'original_name' => $file->getClientOriginalName(),
+                'error' => $e->getMessage(),
+                'trace' => $e->getTraceAsString()
+            ]);
+
+            throw new \RuntimeException('The image failed to upload: ' . $e->getMessage());
+        }
     }
 
     public function deleteUploadedFile(string $filename, string $type, string $lang = 'en', string $size = 'medium'): bool

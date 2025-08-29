@@ -6,6 +6,7 @@ use App\Models\Player;
 use Illuminate\Http\Request;
 use App\Http\Requests\PlayerFormRequest;
 use App\Http\Resources\PlayerResource;
+use Illuminate\Support\Facades\Log;
 
 /**
  * @OA\Tag(
@@ -174,7 +175,12 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
      *         @OA\MediaType(
      *             mediaType="multipart/form-data",
      *             @OA\Schema(
-     *                 @OA\Property(property="image", type="file", format="binary")
+     *                 @OA\Property(
+     *                     property="image",
+     *                     type="file",
+     *                     format="binary",
+     *                     description="Image file (JPEG, PNG, GIF, WebP) - max 5MB"
+     *                 )
      *             )
      *         )
      *     ),
@@ -194,7 +200,7 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
      *     ),
      *     @OA\Response(
      *         response=422,
-     *         description="Validation error or too many images",
+     *         description="Validation error, too many images, or upload failure",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -202,9 +208,22 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
     public function uploadImage(Request $request)
     {
         $request->validate([
-            'image' => 'required|image|max:2048' // 2MB max
+            'image' => [
+                'required',
+                'file',
+                'image',
+                'mimes:jpeg,jpg,png,gif,webp',
+                'max:5120' // 5MB max
+            ]
+        ], [
+            'image.required' => 'Please select an image to upload.',
+            'image.file' => 'The uploaded file is not valid.',
+            'image.image' => 'The file must be an image.',
+            'image.mimes' => 'The image must be a JPEG, PNG, GIF, or WebP file.',
+            'image.max' => 'The image size must not exceed 5MB.'
         ]);
 
+        /** @var Player $player */
         $player = $request->user();
         $currentImages = $player->getUploadedFiles('images');
 
@@ -215,7 +234,22 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
             );
         }
 
-        $player->saveUploadedFile($request->file('image'), 'images');
+        try {
+            $player->saveUploadedFile($request->file('image'), 'images');
+        } catch (\Exception $e) {
+            Log::error('PlayerController::uploadImage - Error uploading file', [
+                'player_id' => $player->id_player,
+                'error' => $e->getMessage(),
+                'file_name' => $request->file('image')->getClientOriginalName(),
+                'file_size' => $request->file('image')->getSize(),
+                'file_mime' => $request->file('image')->getMimeType()
+            ]);
+
+            return $this->errorResponse(
+                'The image failed to upload. Please try again with a different image.',
+                422
+            );
+        }
 
         return $this->successResponse([
             'urls' => $player->getUploadedUrls('images')
