@@ -9,7 +9,7 @@ use App\Http\Resources\PlayerResource;
 
 /**
  * @OA\Tag(
- *     name="Manager: Players",
+ *     name="🐧 Manager: Players",
  *     description="(v1) Player management and operations"
  * )
  */
@@ -19,7 +19,7 @@ class PlayerController extends V1BaseController
      * @OA\Get(
      *     path="/api/v1/manager/players",
      *     summary="Get all players",
-     *     tags={"Manager: Players"},
+     *     tags={"🐧 Manager: Players"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
@@ -53,7 +53,7 @@ class PlayerController extends V1BaseController
      * @OA\Post(
      *     path="/api/v1/manager/players",
      *     summary="Create a new player",
-     *     tags={"Manager: Players"},
+     *     tags={"🐧 Manager: Players"},
      *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,
@@ -98,7 +98,7 @@ class PlayerController extends V1BaseController
      * @OA\Put(
      *     path="/api/v1/manager/players/{player}",
      *     summary="Update a player",
-     *     tags={"Manager: Players"},
+     *     tags={"🐧 Manager: Players"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="player",
@@ -136,7 +136,7 @@ class PlayerController extends V1BaseController
      * @OA\Delete(
      *     path="/api/v1/manager/players/{player}",
      *     summary="Delete a player",
-     *     tags={"Manager: Players"},
+     *     tags={"🐧 Manager: Players"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="player",

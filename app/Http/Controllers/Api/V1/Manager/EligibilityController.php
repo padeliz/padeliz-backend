@@ -9,7 +9,7 @@ use App\Http\Resources\PlayerEligibilityResource;
 
 /**
  * @OA\Tag(
- *     name="Manager: Eligibilities",
+ *     name="🐧 Manager: Eligibilities",
  *     description="(v1) Eligibility management and operations"
  * )
  */
@@ -19,7 +19,7 @@ class EligibilityController extends V1BaseController
      * @OA\Get(
      *     path="/api/v1/manager/eligibility",
      *     summary="Get all eligibility records",
-     *     tags={"Manager: Eligibilities"},
+     *     tags={"🐧 Manager: Eligibilities"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
@@ -53,7 +53,7 @@ class EligibilityController extends V1BaseController
      * @OA\Get(
      *     path="/api/v1/manager/eligibility/{eligibility}",
      *     summary="Get eligibility details",
-     *     tags={"Manager: Eligibilities"},
+     *     tags={"🐧 Manager: Eligibilities"},
      *     @OA\Parameter(
      *         name="eligibility",
      *         in="path",
@@ -88,7 +88,7 @@ class EligibilityController extends V1BaseController
      * @OA\Post(
      *     path="/api/v1/manager/eligibility",
      *     summary="Create a new eligibility record",
-     *     tags={"Manager: Eligibilities"},
+     *     tags={"🐧 Manager: Eligibilities"},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -161,7 +161,7 @@ class EligibilityController extends V1BaseController
      * @OA\Patch(
      *     path="/api/v1/manager/eligibility/{eligibility}",
      *     summary="Update eligibility status",
-     *     tags={"Manager: Eligibilities"},
+     *     tags={"🐧 Manager: Eligibilities"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="eligibility",
@@ -205,7 +205,7 @@ class EligibilityController extends V1BaseController
      * @OA\Delete(
      *     path="/api/v1/manager/eligibility/{eligibility}",
      *     summary="Delete an eligibility record",
-     *     tags={"Manager: Eligibilities"},
+     *     tags={"🐧 Manager: Eligibilities"},
      *     @OA\Parameter(
      *         name="eligibility",
      *         in="path",

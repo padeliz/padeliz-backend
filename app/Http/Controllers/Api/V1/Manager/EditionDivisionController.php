@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
- *     name="Manager: Editions Divisions",
+ *     name="🐧 Manager: Editions Divisions",
  *     description="(v1) API Endpoints for edition divisions"
  * )
  */
@@ -21,7 +21,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      * @OA\Get(
      *     path="/api/v1/manager/edition-divisions",
      *     summary="Get paginated list of edition divisions",
-     *     tags={"Manager: Editions Divisions"},
+     *     tags={"🐧 Manager: Editions Divisions"},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
      *         response=200,
@@ -54,7 +54,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      * @OA\Get(
      *     path="/api/v1/manager/edition-divisions/{editionDivision}",
      *     summary="Get edition division details",
-     *     tags={"Manager: Editions Divisions"},
+     *     tags={"🐧 Manager: Editions Divisions"},
      *     @OA\Parameter(
      *         name="editionDivision",
      *         in="path",
@@ -89,7 +89,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      * @OA\Post(
      *     path="/api/v1/manager/edition-divisions",
      *     summary="Create a new edition division",
-     *     tags={"Manager: Editions Divisions"},
+     *     tags={"🐧 Manager: Editions Divisions"},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -168,7 +168,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      * @OA\Put(
      *     path="/api/v1/manager/edition-divisions/{editionDivision}",
      *     summary="Update edition division details",
-     *     tags={"Manager: Editions Divisions"},
+     *     tags={"🐧 Manager: Editions Divisions"},
      *     @OA\Parameter(
      *         name="editionDivision",
      *         in="path",
@@ -267,7 +267,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      * @OA\Delete(
      *     path="/api/v1/manager/edition-divisions/{editionDivision}",
      *     summary="Delete an edition division",
-     *     tags={"Manager: Editions Divisions"},
+     *     tags={"🐧 Manager: Editions Divisions"},
      *     @OA\Parameter(
      *         name="editionDivision",
      *         in="path",
@@ -310,7 +310,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      * @OA\Get(
      *     path="/api/v1/manager/edition-divisions/{editionDivision}/participants",
      *     summary="Get participants in this division",
-     *     tags={"Manager: Editions Divisions"},
+     *     tags={"🐧 Manager: Editions Divisions"},
      *     @OA\Parameter(
      *         name="editionDivision",
      *         in="path",

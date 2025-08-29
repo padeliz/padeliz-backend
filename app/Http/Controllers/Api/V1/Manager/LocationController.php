@@ -10,7 +10,7 @@ use App\Http\Resources\EditionResource;
 
 /**
  * @OA\Tag(
- *     name="Manager: Locations",
+ *     name="🐧 Manager: Locations",
  *     description="(v1) Location management and operations"
  * )
  */
@@ -20,7 +20,7 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      * @OA\Get(
      *     path="/api/v1/manager/locations",
      *     summary="Get paginated list of locations",
-     *     tags={"Manager: Locations"},
+     *     tags={"🐧 Manager: Locations"},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
      *         response=200,
@@ -53,7 +53,7 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      * @OA\Get(
      *     path="/api/v1/manager/locations/{location}",
      *     summary="Get location details",
-     *     tags={"Manager: Locations"},
+     *     tags={"🐧 Manager: Locations"},
      *     @OA\Parameter(
      *         name="location",
      *         in="path",
@@ -87,7 +87,7 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      * @OA\Post(
      *     path="/api/v1/manager/locations",
      *     summary="Create a new location",
-     *     tags={"Manager: Locations"},
+     *     tags={"🐧 Manager: Locations"},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -142,7 +142,7 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      * @OA\Put(
      *     path="/api/v1/manager/locations/{location}",
      *     summary="Update location details",
-     *     tags={"Manager: Locations"},
+     *     tags={"🐧 Manager: Locations"},
      *     @OA\Parameter(
      *         name="location",
      *         in="path",
@@ -201,7 +201,7 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      * @OA\Delete(
      *     path="/api/v1/manager/locations/{location}",
      *     summary="Delete a location",
-     *     tags={"Manager: Locations"},
+     *     tags={"🐧 Manager: Locations"},
      *     @OA\Parameter(
      *         name="location",
      *         in="path",
@@ -239,7 +239,7 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      * @OA\Get(
      *     path="/api/v1/manager/locations/{location}/editions",
      *     summary="Get paginated list of location editions",
-     *     tags={"Manager: Locations"},
+     *     tags={"🐧 Manager: Locations"},
      *     @OA\Parameter(
      *         name="location",
      *         in="path",

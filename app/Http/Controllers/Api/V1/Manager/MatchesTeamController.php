@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
- *     name="Manager: Matches Teams",
+ *     name="🐧 Manager: Matches Teams",
  *     description="(v1) Match teams management and operations"
  * )
  */
@@ -19,7 +19,7 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      * @OA\Get(
      *     path="/api/v1/manager/matches-teams",
      *     summary="Get paginated list of match teams",
-     *     tags={"Manager: Matches Teams"},
+     *     tags={"🐧 Manager: Matches Teams"},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
      *         response=200,
@@ -52,7 +52,7 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      * @OA\Get(
      *     path="/api/v1/manager/matches-teams/{team}",
      *     summary="Get match team details",
-     *     tags={"Manager: Matches Teams"},
+     *     tags={"🐧 Manager: Matches Teams"},
      *     @OA\Parameter(
      *         name="team",
      *         in="path",
@@ -86,7 +86,7 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      * @OA\Post(
      *     path="/api/v1/manager/matches-teams",
      *     summary="Create a new match team",
-     *     tags={"Manager: Matches Teams"},
+     *     tags={"🐧 Manager: Matches Teams"},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -154,7 +154,7 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      * @OA\Put(
      *     path="/api/v1/manager/matches-teams/{team}",
      *     summary="Update match team details",
-     *     tags={"Manager: Matches Teams"},
+     *     tags={"🐧 Manager: Matches Teams"},
      *     @OA\Parameter(
      *         name="team",
      *         in="path",
@@ -238,7 +238,7 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      * @OA\Delete(
      *     path="/api/v1/manager/matches-teams/{team}",
      *     summary="Delete a match team",
-     *     tags={"Manager: Matches Teams"},
+     *     tags={"🐧 Manager: Matches Teams"},
      *     @OA\Parameter(
      *         name="team",
      *         in="path",
@@ -259,4 +259,3 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
         return $this->successResponse(null, 'Matches team deleted successfully');
     }
 }
-

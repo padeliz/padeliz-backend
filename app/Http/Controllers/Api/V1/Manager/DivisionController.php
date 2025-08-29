@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
- *     name="Manager: Divisions",
+ *     name="🐧 Manager: Divisions",
  *     description="(v1) Division management and operations"
  * )
  */
@@ -19,7 +19,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      * @OA\Get(
      *     path="/api/v1/manager/divisions",
      *     summary="Get paginated list of divisions",
-     *     tags={"Manager: Divisions"},
+     *     tags={"🐧 Manager: Divisions"},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
      *         response=200,
@@ -52,7 +52,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      * @OA\Get(
      *     path="/api/v1/manager/divisions/{division}",
      *     summary="Get division details",
-     *     tags={"Manager: Divisions"},
+     *     tags={"🐧 Manager: Divisions"},
      *     @OA\Parameter(
      *         name="division",
      *         in="path",
@@ -85,7 +85,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      * @OA\Post(
      *     path="/api/v1/manager/divisions",
      *     summary="Create a new division",
-     *     tags={"Manager: Divisions"},
+     *     tags={"🐧 Manager: Divisions"},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -137,7 +137,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      * @OA\Put(
      *     path="/api/v1/manager/divisions/{division}",
      *     summary="Update division details",
-     *     tags={"Manager: Divisions"},
+     *     tags={"🐧 Manager: Divisions"},
      *     @OA\Parameter(
      *         name="division",
      *         in="path",
@@ -193,7 +193,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      * @OA\Delete(
      *     path="/api/v1/manager/divisions/{division}",
      *     summary="Delete a division",
-     *     tags={"Manager: Divisions"},
+     *     tags={"🐧 Manager: Divisions"},
      *     @OA\Parameter(
      *         name="division",
      *         in="path",

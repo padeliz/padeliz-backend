@@ -12,7 +12,7 @@ use App\Services\AuthLogger;
 
 /**
  * @OA\Tag(
- *     name="Manager: Auth",
+ *     name="🐧 Manager: Auth",
  *     description="(v1) Manager authentication and session management"
  * )
  */
@@ -29,7 +29,7 @@ class ManagerAuthController extends V1BaseController
      * @OA\Post(
      *     path="/api/v1/manager/auth/google",
      *     summary="Authenticate manager with Google",
-     *     tags={"Manager: Auth"},
+     *     tags={"🐧 Manager: Auth"},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -123,7 +123,7 @@ class ManagerAuthController extends V1BaseController
      * @OA\Post(
      *     path="/api/v1/manager/auth/logout",
      *     summary="Logout manager",
-     *     tags={"Manager: Auth"},
+     *     tags={"🐧 Manager: Auth"},
      *     security={{"sanctum":{}}},
      *     @OA\Response(
      *         response=200,
@@ -143,7 +143,7 @@ class ManagerAuthController extends V1BaseController
      * @OA\Get(
      *     path="/api/v1/manager/auth/me",
      *     summary="Get current manager profile",
-     *     tags={"Manager: Auth"},
+     *     tags={"🐧 Manager: Auth"},
      *     security={{"sanctum":{}}},
      *     @OA\Response(
      *         response=200,
@@ -171,7 +171,7 @@ class ManagerAuthController extends V1BaseController
      * @OA\Post(
      *     path="/api/v1/manager/auth/dev-login",
      *     summary="Developer login for manager (DEV ONLY)",
-     *     tags={"Manager: Auth"},
+     *     tags={"🐧 Manager: Auth"},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(

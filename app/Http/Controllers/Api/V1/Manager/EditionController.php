@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
- *     name="Manager: Editions",
+ *     name="🐧 Manager: Editions",
  *     description="(v1) Edition management and operations"
  * )
  */
@@ -20,7 +20,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      * @OA\Get(
      *     path="/api/v1/manager/editions",
      *     summary="Get paginated list of editions",
-     *     tags={"Manager: Editions"},
+     *     tags={"🐧 Manager: Editions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
@@ -54,7 +54,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      * @OA\Get(
      *     path="/api/v1/manager/editions/upcoming",
      *     summary="Get paginated list of upcoming editions",
-     *     tags={"Manager: Editions"},
+     *     tags={"🐧 Manager: Editions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
@@ -88,7 +88,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      * @OA\Get(
      *     path="/api/v1/manager/editions/ongoing",
      *     summary="Get paginated list of ongoing editions",
-     *     tags={"Manager: Editions"},
+     *     tags={"🐧 Manager: Editions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
@@ -122,7 +122,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      * @OA\Get(
      *     path="/api/v1/manager/editions/past",
      *     summary="Get paginated list of past editions",
-     *     tags={"Manager: Editions"},
+     *     tags={"🐧 Manager: Editions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
@@ -156,7 +156,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      * @OA\Get(
      *     path="/api/v1/manager/editions/{edition}",
      *     summary="Get edition details",
-     *     tags={"Manager: Editions"},
+     *     tags={"🐧 Manager: Editions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="edition",
@@ -191,7 +191,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      * @OA\Post(
      *     path="/api/v1/manager/editions",
      *     summary="Create a new edition",
-     *     tags={"Manager: Editions"},
+     *     tags={"🐧 Manager: Editions"},
      *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,
@@ -248,7 +248,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      * @OA\Put(
      *     path="/api/v1/manager/editions/{edition}",
      *     summary="Update an edition",
-     *     tags={"Manager: Editions"},
+     *     tags={"🐧 Manager: Editions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="edition",
@@ -298,7 +298,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      * @OA\Delete(
      *     path="/api/v1/manager/editions/{edition}",
      *     summary="Delete an edition",
-     *     tags={"Manager: Editions"},
+     *     tags={"🐧 Manager: Editions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="edition",
@@ -326,7 +326,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      * @OA\Get(
      *     path="/api/v1/manager/editions/{edition}/divisions",
      *     summary="Get edition divisions",
-     *     tags={"Manager: Editions"},
+     *     tags={"🐧 Manager: Editions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="edition",
@@ -360,7 +360,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      * @OA\Get(
      *     path="/api/v1/manager/editions/{edition}/participants",
      *     summary="Get edition participants",
-     *     tags={"Manager: Editions"},
+     *     tags={"🐧 Manager: Editions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="edition",
@@ -384,7 +384,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      * @OA\Get(
      *     path="/api/v1/manager/editions/{edition}/lotteries",
      *     summary="Get edition lotteries",
-     *     tags={"Manager: Editions"},
+     *     tags={"🐧 Manager: Editions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="edition",

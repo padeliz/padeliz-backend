@@ -12,7 +12,7 @@ use Illuminate\Validation\Rule;
 
 /**
  * @OA\Tag(
- *     name="Player: Edition Participations",
+ *     name="🐥 Player: Edition Participations",
  *     description="(v1) Player edition participation and registration"
  * )
  */
@@ -22,7 +22,7 @@ class EditionParticipationController extends \App\Http\Controllers\BaseVersions\
      * @OA\Post(
      *     path="/api/v1/player/editions/{edition}/participate",
      *     summary="Register for an edition",
-     *     tags={"Player: Edition Participations"},
+     *     tags={"🐥 Player: Edition Participations"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="edition",
@@ -132,7 +132,7 @@ class EditionParticipationController extends \App\Http\Controllers\BaseVersions\
      * @OA\Delete(
      *     path="/api/v1/player/editions/{edition}/withdraw",
      *     summary="Withdraw from an edition",
-     *     tags={"Player: Edition Participations"},
+     *     tags={"🐥 Player: Edition Participations"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="edition",

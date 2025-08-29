@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
- *     name="Player: MatchesTeam",
+ *     name="🐥 Player: MatchesTeam",
  *     description="(v1) Player match teams and partnerships"
  * )
  */
@@ -20,7 +20,7 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      * @OA\Get(
      *     path="/api/v1/player/matches/teams",
      *     summary="Get paginated list of matches teams",
-     *     tags={"Player: MatchesTeam"},
+     *     tags={"🐥 Player: MatchesTeam"},
      *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
@@ -58,7 +58,7 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      * @OA\Post(
      *     path="/api/v1/player/matches/teams",
      *     summary="Create a new team",
-     *     tags={"Player: MatchesTeam"},
+     *     tags={"🐥 Player: MatchesTeam"},
      *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,

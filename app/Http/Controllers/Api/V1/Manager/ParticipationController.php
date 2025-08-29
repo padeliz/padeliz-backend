@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
- *     name="Manager: Participations",
+ *     name="🐧 Manager: Participations",
  *     description="(v1) Participation management and operations"
  * )
  */
@@ -19,7 +19,7 @@ class ParticipationController extends V1BaseController
      * @OA\Get(
      *     path="/api/v1/manager/editions/{edition}/participations",
      *     summary="Get all participations for an edition",
-     *     tags={"Manager: Participations"},
+     *     tags={"🐧 Manager: Participations"},
      *     @OA\Parameter(
      *         name="edition",
      *         in="path",
@@ -59,7 +59,7 @@ class ParticipationController extends V1BaseController
      * @OA\Get(
      *     path="/api/v1/manager/editions/{edition}/participations/{participation}",
      *     summary="Get participation details",
-     *     tags={"Manager: Participations"},
+     *     tags={"🐧 Manager: Participations"},
      *     @OA\Parameter(
      *         name="edition",
      *         in="path",
@@ -105,7 +105,7 @@ class ParticipationController extends V1BaseController
      * @OA\Post(
      *     path="/api/v1/manager/editions/{edition}/participations",
      *     summary="Add player to edition",
-     *     tags={"Manager: Participations"},
+     *     tags={"🐧 Manager: Participations"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="edition",
@@ -192,7 +192,7 @@ class ParticipationController extends V1BaseController
      * @OA\Put(
      *     path="/api/v1/manager/editions/{edition}/participations/{participation}",
      *     summary="Update participation details",
-     *     tags={"Manager: Participations"},
+     *     tags={"🐧 Manager: Participations"},
      *     @OA\Parameter(
      *         name="edition",
      *         in="path",
@@ -280,7 +280,7 @@ class ParticipationController extends V1BaseController
      * @OA\Delete(
      *     path="/api/v1/manager/editions/{edition}/participations/{participation}",
      *     summary="Remove player from edition",
-     *     tags={"Manager: Participations"},
+     *     tags={"🐧 Manager: Participations"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="edition",

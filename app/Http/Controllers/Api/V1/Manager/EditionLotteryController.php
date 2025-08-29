@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
- *     name="Manager: Editions Lottery",
+ *     name="🐧 Manager: Editions Lottery",
  *     description="(v1) Edition lottery management and operations"
  * )
  */
@@ -19,7 +19,7 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
      * @OA\Get(
      *     path="/api/v1/manager/lotteries",
      *     summary="Get paginated list of lotteries",
-     *     tags={"Manager: Editions Lottery"},
+     *     tags={"🐧 Manager: Editions Lottery"},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
      *         response=200,
@@ -52,7 +52,7 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
      * @OA\Get(
      *     path="/api/v1/manager/lotteries/{lottery}",
      *     summary="Get lottery details",
-     *     tags={"Manager: Editions Lottery"},
+     *     tags={"🐧 Manager: Editions Lottery"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="lottery",
@@ -92,7 +92,7 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
      * @OA\Post(
      *     path="/api/v1/manager/lotteries",
      *     summary="Create a new lottery",
-     *     tags={"Manager: Editions Lottery"},
+     *     tags={"🐧 Manager: Editions Lottery"},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -147,7 +147,7 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
      * @OA\Put(
      *     path="/api/v1/manager/lotteries/{lottery}",
      *     summary="Update lottery details",
-     *     tags={"Manager: Editions Lottery"},
+     *     tags={"🐧 Manager: Editions Lottery"},
      *     @OA\Parameter(
      *         name="lottery",
      *         in="path",
@@ -206,7 +206,7 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
      * @OA\Delete(
      *     path="/api/v1/manager/lotteries/{lottery}",
      *     summary="Delete a lottery",
-     *     tags={"Manager: Editions Lottery"},
+     *     tags={"🐧 Manager: Editions Lottery"},
      *     @OA\Parameter(
      *         name="lottery",
      *         in="path",

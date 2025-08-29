@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
- *     name="Manager: Clubs",
+ *     name="🐧 Manager: Clubs",
  *     description="(v1) Club management and operations"
  * )
  */
@@ -21,7 +21,7 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      * @OA\Get(
      *     path="/api/v1/manager/clubs",
      *     summary="Get paginated list of clubs",
-     *     tags={"Manager: Clubs"},
+     *     tags={"🐧 Manager: Clubs"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
@@ -55,7 +55,7 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      * @OA\Get(
      *     path="/api/v1/manager/clubs/{club}",
      *     summary="Get club details",
-     *     tags={"Manager: Clubs"},
+     *     tags={"🐧 Manager: Clubs"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="club",
@@ -96,7 +96,7 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      * @OA\Post(
      *     path="/api/v1/manager/clubs",
      *     summary="Create a new club",
-     *     tags={"Manager: Clubs"},
+     *     tags={"🐧 Manager: Clubs"},
      *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,
@@ -145,7 +145,7 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      * @OA\Put(
      *     path="/api/v1/manager/clubs/{club}",
      *     summary="Update a club",
-     *     tags={"Manager: Clubs"},
+     *     tags={"🐧 Manager: Clubs"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="club",
@@ -191,7 +191,7 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      * @OA\Delete(
      *     path="/api/v1/manager/clubs/{club}",
      *     summary="Delete a club",
-     *     tags={"Manager: Clubs"},
+     *     tags={"🐧 Manager: Clubs"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="club",
@@ -219,7 +219,7 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      * @OA\Get(
      *     path="/api/v1/manager/clubs/{club}/locations",
      *     summary="Get club locations",
-     *     tags={"Manager: Clubs"},
+     *     tags={"🐧 Manager: Clubs"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="club",
@@ -254,7 +254,7 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      * @OA\Get(
      *     path="/api/v1/manager/clubs/{club}/prizes",
      *     summary="Get paginated list of club prizes",
-     *     tags={"Manager: Clubs"},
+     *     tags={"🐧 Manager: Clubs"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="club",

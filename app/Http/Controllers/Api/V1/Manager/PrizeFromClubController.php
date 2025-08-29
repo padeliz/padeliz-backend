@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
- *     name="Manager: Prizes From Clubs",
+ *     name="🐧 Manager: Prizes From Clubs",
  *     description="(v1) API Endpoints for prizes from clubs"
  * )
  */
@@ -19,7 +19,7 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      * @OA\Get(
      *     path="/api/v1/manager/prizes-from-clubs",
      *     summary="Get paginated list of prizes from clubs",
-     *     tags={"Manager: Prizes From Clubs"},
+     *     tags={"🐧 Manager: Prizes From Clubs"},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
      *         response=200,
@@ -52,7 +52,7 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      * @OA\Get(
      *     path="/api/v1/manager/prizes-from-clubs/{prizeFromClub}",
      *     summary="Get prize from club details",
-     *     tags={"Manager: Prizes From Clubs"},
+     *     tags={"🐧 Manager: Prizes From Clubs"},
      *     @OA\Parameter(
      *         name="prizeFromClub",
      *         in="path",
@@ -86,7 +86,7 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      * @OA\Post(
      *     path="/api/v1/manager/prizes-from-clubs",
      *     summary="Create a new prize from club",
-     *     tags={"Manager: Prizes From Clubs"},
+     *     tags={"🐧 Manager: Prizes From Clubs"},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -161,7 +161,7 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      * @OA\Put(
      *     path="/api/v1/manager/prizes-from-clubs/{prizeFromClub}",
      *     summary="Update prize from club details",
-     *     tags={"Manager: Prizes From Clubs"},
+     *     tags={"🐧 Manager: Prizes From Clubs"},
      *     @OA\Parameter(
      *         name="prizeFromClub",
      *         in="path",
@@ -246,7 +246,7 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      * @OA\Delete(
      *     path="/api/v1/manager/prizes-from-clubs/{prizeFromClub}",
      *     summary="Delete a prize from club",
-     *     tags={"Manager: Prizes From Clubs"},
+     *     tags={"🐧 Manager: Prizes From Clubs"},
      *     @OA\Parameter(
      *         name="prizeFromClub",
      *         in="path",

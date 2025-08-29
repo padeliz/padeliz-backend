@@ -9,7 +9,7 @@ use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
- *     name="Manager: Prizes",
+ *     name="🐧 Manager: Prizes",
  *     description="(v1) Prize management and operations"
  * )
  */
@@ -19,7 +19,7 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      * @OA\Get(
      *     path="/api/v1/manager/prizes",
      *     summary="Get paginated list of prizes",
-     *     tags={"Manager: Prizes"},
+     *     tags={"🐧 Manager: Prizes"},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
      *         response=200,
@@ -52,7 +52,7 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      * @OA\Get(
      *     path="/api/v1/manager/prizes/{prize}",
      *     summary="Get prize details",
-     *     tags={"Manager: Prizes"},
+     *     tags={"🐧 Manager: Prizes"},
      *     @OA\Parameter(
      *         name="prize",
      *         in="path",
@@ -86,7 +86,7 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      * @OA\Post(
      *     path="/api/v1/manager/prizes",
      *     summary="Create a new prize",
-     *     tags={"Manager: Prizes"},
+     *     tags={"🐧 Manager: Prizes"},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -146,7 +146,7 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      * @OA\Put(
      *     path="/api/v1/manager/prizes/{prize}",
      *     summary="Update prize details",
-     *     tags={"Manager: Prizes"},
+     *     tags={"🐧 Manager: Prizes"},
      *     @OA\Parameter(
      *         name="prize",
      *         in="path",
@@ -210,7 +210,7 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      * @OA\Delete(
      *     path="/api/v1/manager/prizes/{prize}",
      *     summary="Delete a prize",
-     *     tags={"Manager: Prizes"},
+     *     tags={"🐧 Manager: Prizes"},
      *     @OA\Parameter(
      *         name="prize",
      *         in="path",

@@ -12,7 +12,7 @@ use App\Services\AuthLogger;
 
 /**
  * @OA\Tag(
- *     name="Player: Auth",
+ *     name="🐥 Player: Auth",
  *     description="(v1) Player authentication and session management"
  * )
  */
@@ -29,7 +29,7 @@ class PlayerAuthController extends V1BaseController
      * @OA\Post(
      *     path="/api/v1/player/auth/google",
      *     summary="Authenticate player with Google",
-     *     tags={"Player: Auth"},
+     *     tags={"🐥 Player: Auth"},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -123,7 +123,7 @@ class PlayerAuthController extends V1BaseController
      * @OA\Post(
      *     path="/api/v1/player/auth/logout",
      *     summary="Logout player",
-     *     tags={"Player: Auth"},
+     *     tags={"🐥 Player: Auth"},
      *     security={{"sanctum":{}}},
      *     @OA\Response(
      *         response=200,
@@ -143,7 +143,7 @@ class PlayerAuthController extends V1BaseController
      * @OA\Get(
      *     path="/api/v1/player/auth/me",
      *     summary="Get current player profile",
-     *     tags={"Player: Auth"},
+     *     tags={"🐥 Player: Auth"},
      *     security={{"sanctum":{}}},
      *     @OA\Response(
      *         response=200,
@@ -171,7 +171,7 @@ class PlayerAuthController extends V1BaseController
      * @OA\Post(
      *     path="/api/v1/player/auth/dev-login",
      *     summary="Developer login for player (DEV ONLY)",
-     *     tags={"Player: Auth"},
+     *     tags={"🐥 Player: Auth"},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(

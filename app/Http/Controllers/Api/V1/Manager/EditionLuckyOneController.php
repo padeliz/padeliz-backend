@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
- *     name="Manager: Editions Lucky One",
+ *     name="🐧 Manager: Editions Lucky One",
  *     description="(v1) Edition lucky one management and operations"
  * )
  */
@@ -20,7 +20,7 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
      * @OA\Get(
      *     path="/api/v1/manager/lotteries/{lottery}/lucky-ones",
      *     summary="Get all lucky ones for a lottery",
-     *     tags={"Manager: Editions Lucky One"},
+     *     tags={"🐧 Manager: Editions Lucky One"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="lottery",
@@ -62,7 +62,7 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
      * @OA\Get(
      *     path="/api/v1/manager/lucky-ones/{luckyOne}",
      *     summary="Get lucky one details",
-     *     tags={"Manager: Editions Lucky One"},
+     *     tags={"🐧 Manager: Editions Lucky One"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="luckyOne",
@@ -98,7 +98,7 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
      * @OA\Post(
      *     path="/api/v1/manager/lucky-ones",
      *     summary="Create a new lucky one",
-     *     tags={"Manager: Editions Lucky One"},
+     *     tags={"🐧 Manager: Editions Lucky One"},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -177,7 +177,7 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
      * @OA\Put(
      *     path="/api/v1/manager/lucky-ones/{luckyOne}",
      *     summary="Update lucky one details",
-     *     tags={"Manager: Editions Lucky One"},
+     *     tags={"🐧 Manager: Editions Lucky One"},
      *     @OA\Parameter(
      *         name="luckyOne",
      *         in="path",
@@ -258,7 +258,7 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
      * @OA\Delete(
      *     path="/api/v1/manager/lucky-ones/{luckyOne}",
      *     summary="Delete a lucky one",
-     *     tags={"Manager: Editions Lucky One"},
+     *     tags={"🐧 Manager: Editions Lucky One"},
      *     @OA\Parameter(
      *         name="luckyOne",
      *         in="path",
