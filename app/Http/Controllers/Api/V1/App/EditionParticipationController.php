@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\V1\Player;
+namespace App\Http\Controllers\Api\V1\App;
 
 use App\Http\Controllers\Controller;
 use App\Models\Edition;
@@ -12,7 +12,7 @@ use Illuminate\Validation\Rule;
 
 /**
  * @OA\Tag(
- *     name="🐥 Player: Edition Participations",
+ *     name="🐥 App: Edition Participations",
  *     description="(v1) Player edition participation and registration"
  * )
  */
@@ -20,9 +20,9 @@ class EditionParticipationController extends \App\Http\Controllers\BaseVersions\
 {
     /**
      * @OA\Post(
-     *     path="/api/v1/player/editions/{edition}/participate",
+     *     path="/api/v1/app/editions/{edition}/participate",
      *     summary="Register for an edition",
-     *     tags={"🐥 Player: Edition Participations"},
+     *     tags={"🐥 App: Edition Participations"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="edition",
@@ -130,9 +130,9 @@ class EditionParticipationController extends \App\Http\Controllers\BaseVersions\
 
     /**
      * @OA\Delete(
-     *     path="/api/v1/player/editions/{edition}/withdraw",
+     *     path="/api/v1/app/editions/{edition}/withdraw",
      *     summary="Withdraw from an edition",
-     *     tags={"🐥 Player: Edition Participations"},
+     *     tags={"🐥 App: Edition Participations"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="edition",

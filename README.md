@@ -1,11 +1,11 @@
 <img src="https://github.com/user-attachments/assets/6ea788c4-f033-45b8-8701-bae663d57119" width="400">
 
-## App Padeliz Back
+## Padeliz API
 
-Service Laravel-based API for:
-- app-padeliz-front
-- manager-padeliz-front
-- admin-padeliz-front
+Service Laravel-based endpoints for:
+- padeliz-frontend-app
+- padeliz-frontend-manager
+- padeliz-frontend-admin
 
 ## Development Setup (Windows)
 
@@ -32,7 +32,7 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 2. **Clone the repository**
    ```bash
    ## in the VSCode terminal
-   git clone https://github.com/padeliz/app-padeliz-back.git
+   git clone https://github.com/padeliz/padeliz-backend.git
    ```
 
 3. **Open the repository folder in VS Code**

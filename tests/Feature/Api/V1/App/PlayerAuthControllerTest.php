@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\Api\V1\Player;
+namespace Tests\Feature\Api\V1\App;
 
 use Tests\TestCase;
 use App\Models\Player;
@@ -40,7 +40,7 @@ class PlayerAuthControllerTest extends TestCase
                 ]);
         });
 
-        $response = $this->postJson('/api/v1/player/auth/google', [
+        $response = $this->postJson('/api/v1/app/auth/google', [
             'token' => 'any.test.token'
         ]);
 
@@ -78,7 +78,7 @@ class PlayerAuthControllerTest extends TestCase
                 ]);
         });
 
-        $response = $this->postJson('/api/v1/player/auth/google', [
+        $response = $this->postJson('/api/v1/app/auth/google', [
             'token' => 'valid.token'
         ]);
 
@@ -114,7 +114,7 @@ class PlayerAuthControllerTest extends TestCase
 
     public function test_google_callback_validates_required_fields()
     {
-        $response = $this->postJson('/api/v1/player/auth/google', []);
+        $response = $this->postJson('/api/v1/app/auth/google', []);
 
         $response->assertStatus(422);
     }
@@ -127,7 +127,7 @@ class PlayerAuthControllerTest extends TestCase
                 ->andReturn(null);
         });
 
-        $response = $this->postJson('/api/v1/player/auth/google', [
+        $response = $this->postJson('/api/v1/app/auth/google', [
             'token' => 'invalid.token'
         ]);
 
@@ -138,7 +138,7 @@ class PlayerAuthControllerTest extends TestCase
     {
         Sanctum::actingAs($this->player);
 
-        $response = $this->getJson('/api/v1/player/auth/me');
+        $response = $this->getJson('/api/v1/app/auth/me');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -167,7 +167,7 @@ class PlayerAuthControllerTest extends TestCase
     {
         Sanctum::actingAs($this->player);
 
-        $response = $this->getJson('/api/v1/player/auth/me');
+        $response = $this->getJson('/api/v1/app/auth/me');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -184,7 +184,7 @@ class PlayerAuthControllerTest extends TestCase
 
     public function test_me_endpoint_requires_authentication()
     {
-        $response = $this->getJson('/api/v1/player/auth/me');
+        $response = $this->getJson('/api/v1/app/auth/me');
 
         $response->assertStatus(401);
     }
@@ -193,7 +193,7 @@ class PlayerAuthControllerTest extends TestCase
     {
         Sanctum::actingAs($this->player);
 
-        $response = $this->postJson('/api/v1/player/auth/logout');
+        $response = $this->postJson('/api/v1/app/auth/logout');
 
         $response->assertStatus(200)
             ->assertJson([
@@ -204,14 +204,14 @@ class PlayerAuthControllerTest extends TestCase
 
     public function test_logout_endpoint_requires_authentication()
     {
-        $response = $this->postJson('/api/v1/player/auth/logout');
+        $response = $this->postJson('/api/v1/app/auth/logout');
 
         $response->assertStatus(401);
     }
 
     public function test_dev_login_creates_player_in_non_production()
     {
-        $response = $this->postJson('/api/v1/player/auth/dev-login', [
+        $response = $this->postJson('/api/v1/app/auth/dev-login', [
             'email' => 'dev@example.com'
         ]);
 
@@ -253,7 +253,7 @@ class PlayerAuthControllerTest extends TestCase
 
         $startTime = microtime(true);
 
-        $response = $this->postJson('/api/v1/player/auth/google', [
+        $response = $this->postJson('/api/v1/app/auth/google', [
             'token' => 'any.test.token'
         ]);
 
@@ -279,7 +279,7 @@ class PlayerAuthControllerTest extends TestCase
 
         // Make multiple requests quickly
         for ($i = 0; $i < 5; $i++) {
-            $response = $this->postJson('/api/v1/player/auth/google', [
+            $response = $this->postJson('/api/v1/app/auth/google', [
                 'token' => 'any.test.token'
             ]);
             $response->assertStatus(200);
@@ -302,7 +302,7 @@ class PlayerAuthControllerTest extends TestCase
         // Simulate concurrent requests
         $responses = [];
         for ($i = 0; $i < 3; $i++) {
-            $responses[] = $this->postJson('/api/v1/player/auth/google', [
+            $responses[] = $this->postJson('/api/v1/app/auth/google', [
                 'token' => 'any.test.token'
             ]);
         }
@@ -324,7 +324,7 @@ class PlayerAuthControllerTest extends TestCase
             $player = Player::factory()->create(['user_types' => $userTypes]);
             Sanctum::actingAs($player);
 
-            $response = $this->getJson('/api/v1/player/auth/me');
+            $response = $this->getJson('/api/v1/app/auth/me');
 
             $response->assertStatus(200)
                 ->assertJson([
@@ -352,7 +352,7 @@ class PlayerAuthControllerTest extends TestCase
                 ]);
         });
 
-        $response = $this->postJson('/api/v1/player/auth/google', [
+        $response = $this->postJson('/api/v1/app/auth/google', [
             'token' => 'any.test.token'
         ]);
 

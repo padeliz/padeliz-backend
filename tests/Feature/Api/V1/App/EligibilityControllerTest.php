@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\Api\V1\Player;
+namespace Tests\Feature\Api\V1\App;
 
 use Tests\TestCase;
 use App\Models\Player;
@@ -35,7 +35,7 @@ class EligibilityControllerTest extends TestCase
             'review_status' => 'approved'
         ]);
 
-        $response = $this->getJson('/api/v1/player/eligibility/approved');
+        $response = $this->getJson('/api/v1/app/eligibility/approved');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -62,7 +62,7 @@ class EligibilityControllerTest extends TestCase
             'review_status' => 'pending'
         ]);
 
-        $response = $this->getJson('/api/v1/player/eligibility/pending');
+        $response = $this->getJson('/api/v1/app/eligibility/pending');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -89,7 +89,7 @@ class EligibilityControllerTest extends TestCase
             'review_status' => 'rejected'
         ]);
 
-        $response = $this->getJson('/api/v1/player/eligibility/rejected');
+        $response = $this->getJson('/api/v1/app/eligibility/rejected');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -115,7 +115,7 @@ class EligibilityControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition
         ];
 
-        $response = $this->postJson('/api/v1/player/eligibility', $eligibilityData);
+        $response = $this->postJson('/api/v1/app/eligibility', $eligibilityData);
 
         $response->assertStatus(201)
             ->assertJsonStructure([
@@ -143,7 +143,7 @@ class EligibilityControllerTest extends TestCase
             'review_status' => 'pending'
         ]);
 
-        $response = $this->patchJson('/api/v1/player/eligibility', []);
+        $response = $this->patchJson('/api/v1/app/eligibility', []);
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -163,7 +163,7 @@ class EligibilityControllerTest extends TestCase
 
     public function test_eligibility_requires_authentication()
     {
-        $response = $this->getJson('/api/v1/player/eligibility/approved');
+        $response = $this->getJson('/api/v1/app/eligibility/approved');
 
         $response->assertStatus(401);
     }
@@ -172,7 +172,7 @@ class EligibilityControllerTest extends TestCase
     {
         Sanctum::actingAs($this->player);
 
-        $response = $this->patchJson('/api/v1/player/eligibility', []);
+        $response = $this->patchJson('/api/v1/app/eligibility', []);
 
         $response->assertStatus(404);
     }
@@ -181,7 +181,7 @@ class EligibilityControllerTest extends TestCase
     {
         Sanctum::actingAs($this->player);
 
-        $response = $this->postJson('/api/v1/player/eligibility', []);
+        $response = $this->postJson('/api/v1/app/eligibility', []);
 
         $response->assertStatus(422);
     }

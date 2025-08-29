@@ -238,7 +238,7 @@ class ManagerAuthControllerTest extends TestCase
         $managerResponse->assertStatus(200);
 
         // Should also be able to access player endpoints
-        $playerResponse = $this->getJson('/api/v1/player/auth/me');
+        $playerResponse = $this->getJson('/api/v1/app/auth/me');
         $playerResponse->assertStatus(200);
     }
 

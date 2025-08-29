@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\Api\V1\Player;
+namespace Tests\Feature\Api\V1\App;
 
 use Tests\TestCase;
 use App\Models\Player;
@@ -26,7 +26,7 @@ class MatchesTeamControllerTest extends TestCase
 
         MatchesTeam::factory()->count(5)->create();
 
-        $response = $this->getJson('/api/v1/player/matches/teams');
+        $response = $this->getJson('/api/v1/app/matches/teams');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -68,7 +68,7 @@ class MatchesTeamControllerTest extends TestCase
             'player_2' => $otherPlayer->id_player
         ];
 
-        $response = $this->postJson('/api/v1/player/matches/teams', $teamData);
+        $response = $this->postJson('/api/v1/app/matches/teams', $teamData);
 
         $response->assertStatus(201)
             ->assertJsonStructure([
@@ -95,14 +95,14 @@ class MatchesTeamControllerTest extends TestCase
             'player_2' => $this->player->id_player
         ];
 
-        $response = $this->postJson('/api/v1/player/matches/teams', $teamData);
+        $response = $this->postJson('/api/v1/app/matches/teams', $teamData);
 
         $response->assertStatus(422);
     }
 
     public function test_matches_teams_require_authentication()
     {
-        $response = $this->getJson('/api/v1/player/matches/teams');
+        $response = $this->getJson('/api/v1/app/matches/teams');
 
         $response->assertStatus(401);
     }
@@ -111,7 +111,7 @@ class MatchesTeamControllerTest extends TestCase
     {
         Sanctum::actingAs($this->player);
 
-        $response = $this->postJson('/api/v1/player/matches/teams', []);
+        $response = $this->postJson('/api/v1/app/matches/teams', []);
 
         $response->assertStatus(422);
     }
@@ -125,7 +125,7 @@ class MatchesTeamControllerTest extends TestCase
             'player_2' => 99998
         ];
 
-        $response = $this->postJson('/api/v1/player/matches/teams', $teamData);
+        $response = $this->postJson('/api/v1/app/matches/teams', $teamData);
 
         $response->assertStatus(422);
     }
@@ -136,7 +136,7 @@ class MatchesTeamControllerTest extends TestCase
 
         MatchesTeam::factory()->count(25)->create();
 
-        $response = $this->getJson('/api/v1/player/matches/teams?page=1&per_page=10');
+        $response = $this->getJson('/api/v1/app/matches/teams?page=1&per_page=10');
 
         $response->assertStatus(200)
             ->assertJsonStructure([

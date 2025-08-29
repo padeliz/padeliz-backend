@@ -1,5 +1,5 @@
 {
-    "name": "padeliz/app-padeliz-back",
+    "name": "padeliz/padeliz-backend",
     "type": "application",
     "description": "Service API Laravel-based for https://padeliz.ro",
     "keywords": ["padel", "events", "padeliz", "api"],

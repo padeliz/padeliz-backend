@@ -1,17 +1,17 @@
 version: '3.8'
 
-name: app-padeliz-back
+name: padeliz-backend
 
 services:
   app:
     build:
       context: ..
       dockerfile: .devcontainer/Dockerfile
-    container_name: app-padeliz-back-laravel
+    container_name: padeliz-backend-laravel
     restart: unless-stopped
-    working_dir: /workspaces/app-padeliz-back
+    working_dir: /workspaces/padeliz-backend
     volumes:
-      - ..:/workspaces/app-padeliz-back:delegated
+      - ..:/workspaces/padeliz-backend:delegated
       - composer_cache:/root/.composer/cache
     environment:
       - DB_HOST=db
@@ -23,12 +23,12 @@ services:
 
   nginx:
     image: nginx:alpine
-    container_name: app-padeliz-back-nginx
+    container_name: padeliz-backend-nginx
     restart: unless-stopped
     ports:
       - "8000:80"
     volumes:
-      - ..:/workspaces/app-padeliz-back:delegated
+      - ..:/workspaces/padeliz-backend:delegated
       - ../docker/nginx:/etc/nginx/conf.d/
     networks:
       - backend-network
@@ -37,7 +37,7 @@ services:
 
   db:
     image: mysql:8.0
-    container_name: app-padeliz-back-db
+    container_name: padeliz-backend-db
     restart: unless-stopped
     environment:
       MYSQL_ROOT_PASSWORD: root
@@ -58,7 +58,7 @@ services:
 
   phpmyadmin:
     image: phpmyadmin/phpmyadmin
-    container_name: app-padeliz-back-phpmyadmin
+    container_name: padeliz-backend-phpmyadmin
     ports:
       - "8080:80"
     environment:

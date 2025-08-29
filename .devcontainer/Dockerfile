@@ -23,7 +23,7 @@ RUN pecl install xdebug \
 COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 
 # Set working directory
-WORKDIR /workspaces/app-padeliz-back
+WORKDIR /workspaces/padeliz-backend
 
 # Add user for laravel application
 RUN groupadd -g 1000 www \

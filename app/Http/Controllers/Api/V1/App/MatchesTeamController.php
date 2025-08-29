@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\V1\Player;
+namespace App\Http\Controllers\Api\V1\App;
 
 use App\Http\Controllers\Controller;
 use App\Models\MatchesTeam;
@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
- *     name="🐥 Player: MatchesTeam",
+ *     name="🐥 App: MatchesTeam",
  *     description="(v1) Player match teams and partnerships"
  * )
  */
@@ -18,9 +18,9 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
 {
     /**
      * @OA\Get(
-     *     path="/api/v1/player/matches/teams",
+     *     path="/api/v1/app/matches/teams",
      *     summary="Get paginated list of matches teams",
-     *     tags={"🐥 Player: MatchesTeam"},
+     *     tags={"🐥 App: MatchesTeam"},
      *     security={{"bearerAuth":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
@@ -56,9 +56,9 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
 
     /**
      * @OA\Post(
-     *     path="/api/v1/player/matches/teams",
+     *     path="/api/v1/app/matches/teams",
      *     summary="Create a new team",
-     *     tags={"🐥 Player: MatchesTeam"},
+     *     tags={"🐥 App: MatchesTeam"},
      *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,

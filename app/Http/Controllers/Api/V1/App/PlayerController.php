@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\V1\Player;
+namespace App\Http\Controllers\Api\V1\App;
 
 use App\Models\Player;
 use Illuminate\Http\Request;
@@ -10,7 +10,7 @@ use Illuminate\Support\Facades\Log;
 
 /**
  * @OA\Tag(
- *     name="🐥 Player: Players",
+ *     name="🐥 App: Players",
  *     description="(v1) Player profile management and operations"
  * )
  */
@@ -18,9 +18,9 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
 {
     /**
      * @OA\Post(
-     *     path="/api/v1/player/players",
+     *     path="/api/v1/app/players",
      *     summary="Create a new player",
-     *     tags={"🐥 Player: Players"},
+     *     tags={"🐥 App: Players"},
      *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,
@@ -66,9 +66,9 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
 
     /**
      * @OA\Get(
-     *     path="/api/v1/player/players/{player}",
+     *     path="/api/v1/app/players/{player}",
      *     summary="Get player details",
-     *     tags={"🐥 Player: Players"},
+     *     tags={"🐥 App: Players"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="player",
@@ -102,9 +102,9 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
 
     /**
      * @OA\Put(
-     *     path="/api/v1/player/players/{player}",
+     *     path="/api/v1/app/players/{player}",
      *     summary="Update player details",
-     *     tags={"🐥 Player: Players"},
+     *     tags={"🐥 App: Players"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="player",
@@ -166,9 +166,9 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
 
     /**
      * @OA\Post(
-     *     path="/api/v1/player/players/image",
+     *     path="/api/v1/app/players/image",
      *     summary="Upload a profile image",
-     *     tags={"🐥 Player: Players"},
+     *     tags={"🐥 App: Players"},
      *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,
@@ -258,9 +258,9 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
 
     /**
      * @OA\Delete(
-     *     path="/api/v1/player/players/image/{filename}",
+     *     path="/api/v1/app/players/image/{filename}",
      *     summary="Delete a profile image",
-     *     tags={"🐥 Player: Players"},
+     *     tags={"🐥 App: Players"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="filename",

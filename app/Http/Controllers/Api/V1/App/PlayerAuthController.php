@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\V1\Player;
+namespace App\Http\Controllers\Api\V1\App;
 
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
 use App\Models\Player;
@@ -12,7 +12,7 @@ use App\Services\AuthLogger;
 
 /**
  * @OA\Tag(
- *     name="🐥 Player: Auth",
+ *     name="🐥 App: Auth",
  *     description="(v1) Player authentication and session management"
  * )
  */
@@ -27,9 +27,9 @@ class PlayerAuthController extends V1BaseController
 
     /**
      * @OA\Post(
-     *     path="/api/v1/player/auth/google",
+     *     path="/api/v1/app/auth/google",
      *     summary="Authenticate player with Google",
-     *     tags={"🐥 Player: Auth"},
+     *     tags={"🐥 App: Auth"},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -121,9 +121,9 @@ class PlayerAuthController extends V1BaseController
 
     /**
      * @OA\Post(
-     *     path="/api/v1/player/auth/logout",
+     *     path="/api/v1/app/auth/logout",
      *     summary="Logout player",
-     *     tags={"🐥 Player: Auth"},
+     *     tags={"🐥 App: Auth"},
      *     security={{"sanctum":{}}},
      *     @OA\Response(
      *         response=200,
@@ -141,9 +141,9 @@ class PlayerAuthController extends V1BaseController
 
     /**
      * @OA\Get(
-     *     path="/api/v1/player/auth/me",
+     *     path="/api/v1/app/auth/me",
      *     summary="Get current player profile",
-     *     tags={"🐥 Player: Auth"},
+     *     tags={"🐥 App: Auth"},
      *     security={{"sanctum":{}}},
      *     @OA\Response(
      *         response=200,
@@ -169,9 +169,9 @@ class PlayerAuthController extends V1BaseController
 
     /**
      * @OA\Post(
-     *     path="/api/v1/player/auth/dev-login",
+     *     path="/api/v1/app/auth/dev-login",
      *     summary="Developer login for player (DEV ONLY)",
-     *     tags={"🐥 Player: Auth"},
+     *     tags={"🐥 App: Auth"},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(

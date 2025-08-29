@@ -8,11 +8,11 @@ Route::prefix('v1')->group(function () {
     // ========================================
     // PLAYER AUTHENTICATION ROUTES
     // ========================================
-    Route::prefix('player/auth')->group(function () {
-        Route::post('google', [\App\Http\Controllers\Api\V1\Player\PlayerAuthController::class, 'googleCallback']);
+    Route::prefix('app/auth')->group(function () {
+        Route::post('google', [\App\Http\Controllers\Api\V1\App\PlayerAuthController::class, 'googleCallback']);
 
         if (App::environment() != 'production') {
-            Route::post('dev-login', [\App\Http\Controllers\Api\V1\Player\PlayerAuthController::class, 'devLogin']);
+            Route::post('dev-login', [\App\Http\Controllers\Api\V1\App\PlayerAuthController::class, 'devLogin']);
         }
     });
 
@@ -30,41 +30,41 @@ Route::prefix('v1')->group(function () {
     // ========================================
     // PLAYER ROUTES (Requires player authentication)
     // ========================================
-    Route::middleware(['auth:sanctum', 'user.type:player'])->prefix('player')->group(function () {
+    Route::middleware(['auth:sanctum', 'user.type:player'])->prefix('app')->group(function () {
         // Player authentication
         Route::prefix('auth')->group(function () {
-            Route::post('logout', [\App\Http\Controllers\Api\V1\Player\PlayerAuthController::class, 'logout']);
-            Route::get('me', [\App\Http\Controllers\Api\V1\Player\PlayerAuthController::class, 'me']);
+            Route::post('logout', [\App\Http\Controllers\Api\V1\App\PlayerAuthController::class, 'logout']);
+            Route::get('me', [\App\Http\Controllers\Api\V1\App\PlayerAuthController::class, 'me']);
         });
 
         // Player management
         Route::prefix('players')->group(function () {
-            Route::post('/', [\App\Http\Controllers\Api\V1\Player\PlayerController::class, 'store']);
-            Route::get('{player}', [\App\Http\Controllers\Api\V1\Player\PlayerController::class, 'show']);
-            Route::put('{player}', [\App\Http\Controllers\Api\V1\Player\PlayerController::class, 'update']);
-            Route::post('image', [\App\Http\Controllers\Api\V1\Player\PlayerController::class, 'uploadImage']);
-            Route::delete('image/{filename}', [\App\Http\Controllers\Api\V1\Player\PlayerController::class, 'deleteImage']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\App\PlayerController::class, 'store']);
+            Route::get('{player}', [\App\Http\Controllers\Api\V1\App\PlayerController::class, 'show']);
+            Route::put('{player}', [\App\Http\Controllers\Api\V1\App\PlayerController::class, 'update']);
+            Route::post('image', [\App\Http\Controllers\Api\V1\App\PlayerController::class, 'uploadImage']);
+            Route::delete('image/{filename}', [\App\Http\Controllers\Api\V1\App\PlayerController::class, 'deleteImage']);
         });
 
         // Player participation
         Route::prefix('editions/{edition}')->group(function () {
-            Route::post('participate', [\App\Http\Controllers\Api\V1\Player\EditionParticipationController::class, 'store']);
-            Route::delete('withdraw', [\App\Http\Controllers\Api\V1\Player\EditionParticipationController::class, 'destroy']);
+            Route::post('participate', [\App\Http\Controllers\Api\V1\App\EditionParticipationController::class, 'store']);
+            Route::delete('withdraw', [\App\Http\Controllers\Api\V1\App\EditionParticipationController::class, 'destroy']);
         });
 
         // Player matches
         Route::prefix('matches/teams')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\V1\Player\MatchesTeamController::class, 'index']);
-            Route::post('/', [\App\Http\Controllers\Api\V1\Player\MatchesTeamController::class, 'store']);
+            Route::get('/', [\App\Http\Controllers\Api\V1\App\MatchesTeamController::class, 'index']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\App\MatchesTeamController::class, 'store']);
         });
 
         // Player eligibility
         Route::prefix('eligibility')->group(function () {
-            Route::get('approved', [\App\Http\Controllers\Api\V1\Player\EligibilityController::class, 'approved']);
-            Route::get('pending', [\App\Http\Controllers\Api\V1\Player\EligibilityController::class, 'pending']);
-            Route::get('rejected', [\App\Http\Controllers\Api\V1\Player\EligibilityController::class, 'rejected']);
-            Route::patch('/', [\App\Http\Controllers\Api\V1\Player\EligibilityController::class, 'update']);
-            Route::post('/', [\App\Http\Controllers\Api\V1\Player\EligibilityController::class, 'store']);
+            Route::get('approved', [\App\Http\Controllers\Api\V1\App\EligibilityController::class, 'approved']);
+            Route::get('pending', [\App\Http\Controllers\Api\V1\App\EligibilityController::class, 'pending']);
+            Route::get('rejected', [\App\Http\Controllers\Api\V1\App\EligibilityController::class, 'rejected']);
+            Route::patch('/', [\App\Http\Controllers\Api\V1\App\EligibilityController::class, 'update']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\App\EligibilityController::class, 'store']);
         });
     });
 

@@ -1,6 +1,6 @@
 <?php
 
-namespace App\Http\Controllers\Api\V1\Player;
+namespace App\Http\Controllers\Api\V1\App;
 
 use App\Http\Controllers\Controller;
 use App\Models\PlayerEligibility;
@@ -11,7 +11,7 @@ use Carbon\Carbon;
 
 /**
  * @OA\Tag(
- *     name="🐥 Player: Eligibilities",
+ *     name="🐥 App: Eligibilities",
  *     description="(v1) Player eligibility and verification"
  * )
  */
@@ -19,9 +19,9 @@ class EligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Base
 {
     /**
      * @OA\Get(
-     *     path="/api/v1/player/eligibility/approved",
+     *     path="/api/v1/app/eligibility/approved",
      *     summary="Get user's last approved eligibility",
-     *     tags={"🐥 Player: Eligibilities"},
+     *     tags={"🐥 App: Eligibilities"},
      *     security={{"sanctum":{}}},
      *     @OA\Response(
      *         response=200,
@@ -61,9 +61,9 @@ class EligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Base
 
     /**
      * @OA\Get(
-     *     path="/api/v1/player/eligibility/pending",
+     *     path="/api/v1/app/eligibility/pending",
      *     summary="Get user's pending eligibility",
-     *     tags={"🐥 Player: Eligibilities"},
+     *     tags={"🐥 App: Eligibilities"},
      *     security={{"sanctum":{}}},
      *     @OA\Response(
      *         response=200,
@@ -102,9 +102,9 @@ class EligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Base
 
     /**
      * @OA\Get(
-     *     path="/api/v1/player/eligibility/rejected",
+     *     path="/api/v1/app/eligibility/rejected",
      *     summary="Get user's last rejected eligibility",
-     *     tags={"🐥 Player: Eligibilities"},
+     *     tags={"🐥 App: Eligibilities"},
      *     security={{"sanctum":{}}},
      *     @OA\Response(
      *         response=200,
@@ -144,9 +144,9 @@ class EligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Base
 
     /**
      * @OA\Patch(
-     *     path="/api/v1/player/eligibility",
+     *     path="/api/v1/app/eligibility",
      *     summary="Update pending eligibility with current player data",
-     *     tags={"🐥 Player: Eligibilities"},
+     *     tags={"🐥 App: Eligibilities"},
      *     security={{"sanctum":{}}},
      *     @OA\Response(
      *         response=200,
@@ -203,9 +203,9 @@ class EligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Base
 
     /**
      * @OA\Post(
-     *     path="/api/v1/player/eligibility",
+     *     path="/api/v1/app/eligibility",
      *     summary="Create new eligibility",
-     *     tags={"🐥 Player: Eligibilities"},
+     *     tags={"🐥 App: Eligibilities"},
      *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,

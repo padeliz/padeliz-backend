@@ -1,6 +1,6 @@
 <?php
 
-namespace Tests\Feature\Api\V1\Player;
+namespace Tests\Feature\Api\V1\App;
 
 use Tests\TestCase;
 use App\Models\Player;
@@ -51,7 +51,7 @@ class EditionParticipationControllerTest extends TestCase
             'division_id' => $this->division->id_division
         ];
 
-        $response = $this->postJson("/api/v1/player/editions/{$this->edition->id_edition}/participate", $participationData);
+        $response = $this->postJson("/api/v1/app/editions/{$this->edition->id_edition}/participate", $participationData);
 
         $response->assertStatus(201)
             ->assertJsonStructure([
@@ -88,7 +88,7 @@ class EditionParticipationControllerTest extends TestCase
             'payment' => 100
         ]);
 
-        $response = $this->deleteJson("/api/v1/player/editions/{$this->edition->id_edition}/withdraw");
+        $response = $this->deleteJson("/api/v1/app/editions/{$this->edition->id_edition}/withdraw");
 
         $response->assertStatus(200)
             ->assertJson([
@@ -99,7 +99,7 @@ class EditionParticipationControllerTest extends TestCase
 
     public function test_requires_player_authentication()
     {
-        $response = $this->postJson("/api/v1/player/editions/{$this->edition->id_edition}/participate", [
+        $response = $this->postJson("/api/v1/app/editions/{$this->edition->id_edition}/participate", [
             'division_id' => $this->division->id_division
         ]);
 
@@ -121,7 +121,7 @@ class EditionParticipationControllerTest extends TestCase
         ]);
 
         // Try to create second participation
-        $response = $this->postJson("/api/v1/player/editions/{$this->edition->id_edition}/participate", [
+        $response = $this->postJson("/api/v1/app/editions/{$this->edition->id_edition}/participate", [
             'division_id' => $this->division->id_division
         ]);
 
@@ -132,7 +132,7 @@ class EditionParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->player);
 
-        $response = $this->deleteJson("/api/v1/player/editions/{$this->edition->id_edition}/withdraw");
+        $response = $this->deleteJson("/api/v1/app/editions/{$this->edition->id_edition}/withdraw");
 
         $response->assertStatus(404);
     }
