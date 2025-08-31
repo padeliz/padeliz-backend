@@ -12,8 +12,8 @@ use Illuminate\Database\Eloquent\Model;
  *     @OA\Property(property="id_club", type="integer", format="int64"),
  *     @OA\Property(property="name", type="string", maxLength=255),
  *     @OA\Property(property="city", type="string", maxLength=255),
- *     @OA\Property(property="created_at", type="string", format="date-time"),
- *     @OA\Property(property="updated_at", type="string", format="date-time"),
+ *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
+ *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(
  *         property="locations",
  *         type="array",
@@ -27,11 +27,26 @@ class Club extends Model
 
     protected $table = 'clubs';
     protected $primaryKey = 'id_club';
-    public $timestamps = false;
+    public $timestamps = true;
+
+    protected $dateFormat = 'U';
+
+    const CREATED_AT = 'inserted_at';
+    const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
         'name',
         'city',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'inserted_at' => 'integer',
+        'updated_at' => 'integer',
     ];
 
     public function locations()

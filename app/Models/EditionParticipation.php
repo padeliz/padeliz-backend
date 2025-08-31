@@ -19,6 +19,8 @@ use Illuminate\Database\Eloquent\Model;
  *     @OA\Property(property="payment", type="number", nullable=true),
  *     @OA\Property(property="absence_reason", type="string", nullable=true),
  *     @OA\Property(property="ban_reason", type="string", nullable=true),
+ *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
+ *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(
  *         property="player",
  *         ref="#/components/schemas/Player"
@@ -36,7 +38,12 @@ class EditionParticipation extends Model
 
     protected $table = 'edition_participations';
     protected $primaryKey = 'id_participation';
-    public $timestamps = false;
+    public $timestamps = true;
+
+    protected $dateFormat = 'U';
+
+    const CREATED_AT = 'inserted_at';
+    const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
         'edition_id',
@@ -51,6 +58,8 @@ class EditionParticipation extends Model
     ];
 
     protected $casts = [
+        'inserted_at' => 'integer',
+        'updated_at' => 'integer',
         'is_minor' => 'boolean',
         'is_student' => 'boolean',
     ];

@@ -25,6 +25,8 @@ class EditionParticipationResource extends JsonResource
             'payment' => $this->payment,
             'absence_reason' => $this->absence_reason,
             'ban_reason' => $this->ban_reason,
+            'inserted_at' => $this->inserted_at,
+            'updated_at' => $this->updated_at,
             'edition' => $this->whenLoaded('edition', function () {
                 return new EditionResource($this->edition);
             }),
@@ -34,5 +36,3 @@ class EditionParticipationResource extends JsonResource
         ];
     }
 }
-
-

@@ -24,6 +24,7 @@ class EditionParticipationFactory extends Factory
             'payment' => $this->faker->numberBetween(35, 55),
             'absence_reason' => $this->faker->optional()->randomElement(['SICK', 'FORGOT', 'EXAMS', 'RECONSIDERED']),
             'ban_reason' => $this->faker->optional()->randomElement(['LEFT SUDDENLY', 'AGGRESSIVE PLAYER', 'LIBIDINOUS', '']),
+            'inserted_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
         ];
     }
 }

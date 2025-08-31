@@ -18,7 +18,7 @@ class PlayerFactory extends Factory
             'google_id' => $this->faker->unique()->uuid,
             'google_name' => $this->faker->name,
             'google_email' => $this->faker->email,
-            'google_avatar' => $this->faker->imageUrl(300, 300, 'people'),
+            'google_avatar' => 'https://i.pravatar.cc/300?u=' . $this->faker->uuid,
             'skill_division' => $this->faker->randomFloat(1, 1, 5),
             'first_name' => $this->faker->optional()->firstName,
             'middle_name' => $this->faker->optional()->firstName,
@@ -30,8 +30,8 @@ class PlayerFactory extends Factory
             'instagram_username' => $this->faker->optional()->userName,
             'facebook_username' => $this->faker->optional()->userName,
             'user_types' => ['player'], // Default to player
-            'inserted_at' => now()->timestamp,
-            'updated_at' => $this->faker->optional() ? now()->timestamp : null,
+            'inserted_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
+            'updated_at' => $this->faker->optional()->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
         ];
     }
 

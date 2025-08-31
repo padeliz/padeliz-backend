@@ -64,6 +64,46 @@ class DatabaseSeeder extends Seeder
             File::cleanDirectory($uploadsPath);
         }
 
+        // Create specific managers first
+        $this->command->info('Creating specific managers...');
+        $specificManagers = collect([
+            Player::factory()->manager()->create([
+                'name' => 'Arsh Padel Minitour',
+                'google_email' => 'arsh.padel.minitour@gmail.com',
+                'google_name' => 'ARSH Padel Minitour',
+            ]),
+            Player::factory()->manager()->create([
+                'name' => 'Arshavin Padeliz',
+                'google_email' => 'arshavin@padeliz.ro',
+                'google_name' => 'Arshavin (Padeliz)',
+            ]),
+        ]);
+
+        // Create specific players
+        $this->command->info('Creating specific players...');
+        $specificPlayers = collect([
+            Player::factory()->playerOnly()->create([
+                'name' => 'Arsavin Wallentyn',
+                'google_email' => 'arsavinwallentyn@gmail.com',
+                'google_name' => 'Arsavin Wallentyn',
+            ]),
+            Player::factory()->playerOnly()->create([
+                'name' => 'Raluca Mihale 2003',
+                'google_email' => 'ralucamihale2003@gmail.com',
+                'google_name' => 'Raluca Mihale 2003',
+            ]),
+            Player::factory()->playerOnly()->create([
+                'name' => 'Raluca Mihale',
+                'google_email' => 'ralucamihale@gmail.com',
+                'google_name' => 'Raluca Mihale',
+            ]),
+            Player::factory()->playerOnly()->create([
+                'name' => 'Valentin Arsavin',
+                'google_email' => 'valentin.arsavin@bosromania.ro',
+                'google_name' => 'Valentin Arsavin (BOS)',
+            ]),
+        ]);
+
         $this->command->info('Creating clubs...');
         $clubs = collect([
             Club::factory()->create(['name' => 'Magic Padel', 'city' => 'Bucharest']),
@@ -95,8 +135,11 @@ class DatabaseSeeder extends Seeder
             Division::factory()->create(['name' => 'Adults Learners', 'color' => '#89bdce', 'is_students_only' => 0]),
         ]);
 
-        $this->command->info('Creating players...');
+        $this->command->info('Creating additional players...');
         $players = collect();
+
+        // Start with our specific players and managers
+        $players = $players->merge($specificPlayers);
 
         // Create regular players (70% of total)
         $regularPlayersCount = (int) (rand(15, 20) * 0.7);

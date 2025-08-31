@@ -15,8 +15,8 @@ class MatchesTeamFactory extends Factory
         return [
             'player_1' => Player::factory()->create()->id_player,
             'player_2' => Player::factory()->create()->id_player,
-            'inserted_at' => $this->faker->unixTime(),
-            'updated_at' => $this->faker->optional()->unixTime(),
+            'inserted_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
+            'updated_at' => $this->faker->optional()->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
         ];
     }
 }

@@ -19,7 +19,11 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => ['*'],
+    'allowed_origins' => [
+        env('CORS_APP_ORIGIN'),
+        env('CORS_MANAGER_ORIGIN'),
+        env('CORS_ADMIN_ORIGIN'),
+    ],
 
     'allowed_origins_patterns' => [],
 

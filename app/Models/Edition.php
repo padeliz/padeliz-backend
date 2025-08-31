@@ -17,6 +17,8 @@ use Illuminate\Database\Eloquent\Model;
  *     @OA\Property(property="students_entry_fee", type="number"),
  *     @OA\Property(property="arriving_time", type="string", format="time"),
  *     @OA\Property(property="closing_time", type="string", format="time"),
+ *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
+ *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(
  *         property="location",
  *         ref="#/components/schemas/Location"
@@ -40,7 +42,12 @@ class Edition extends Model
 
     protected $table = 'editions';
     protected $primaryKey = 'id_edition';
-    public $timestamps = false;
+
+    public $timestamps = true;
+    protected $dateFormat = 'U'; // handle inserted_at and updated_at as Unix timestamps
+
+    const CREATED_AT = 'inserted_at';
+    const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
         'name',
@@ -53,9 +60,11 @@ class Edition extends Model
     ];
 
     protected $casts = [
-        'date' => 'date',
-        'arriving_time' => 'datetime',
-        'closing_time' => 'datetime',
+        'date' => 'date:Y-m-d',
+        'arriving_time' => 'datetime:H:i:s',
+        'closing_time' => 'datetime:H:i:s',
+        'inserted_at' => 'integer',
+        'updated_at' => 'integer',
     ];
 
     public function location()

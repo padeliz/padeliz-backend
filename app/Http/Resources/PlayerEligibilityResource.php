@@ -22,7 +22,7 @@ class PlayerEligibilityResource extends JsonResource
             'review_status' => $this->review_status,
             'notes' => $this->review_message,
             'name' => $this->name,
-            'created_at' => $this->inserted_at,
+            'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
             'player' => $this->whenLoaded('player', function () {
                 return new PlayerResource($this->player);

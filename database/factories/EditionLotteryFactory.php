@@ -20,6 +20,7 @@ class EditionLotteryFactory extends Factory
             'division_id' => $this->faker->optional()->randomElement([Division::factory(), null]),
             'prize_id' => $this->faker->optional()->randomElement([Prize::factory(), null]),
             'total_draws_nr' => $this->faker->numberBetween(1, 10),
+            'inserted_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
         ];
     }
 }

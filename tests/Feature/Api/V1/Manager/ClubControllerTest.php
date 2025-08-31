@@ -45,7 +45,9 @@ class ClubControllerTest extends TestCase
                     '*' => [
                         'id_club',
                         'name',
-                        'city'
+                        'city',
+                        'inserted_at',
+                        'updated_at'
                     ]
                 ],
             'links' => [
@@ -86,7 +88,9 @@ class ClubControllerTest extends TestCase
                 'data' => [
                     'id_club',
                     'name',
-                    'city'
+                    'city',
+                    'inserted_at',
+                    'updated_at'
                 ]
             ])
             ->assertJson([
@@ -113,12 +117,14 @@ class ClubControllerTest extends TestCase
 
         $response->assertStatus(201)
             ->assertJsonStructure([
-            'success',
-            'message',
-            'data' => [
-                'id_club',
-                'name',
-                'city'
+                'success',
+                'message',
+                'data' => [
+                    'id_club',
+                    'name',
+                    'city',
+                    'inserted_at',
+                    'updated_at'
                 ]
             ])
             ->assertJson([
@@ -152,7 +158,9 @@ class ClubControllerTest extends TestCase
                 'data' => [
                     'id_club',
                     'name',
-                    'city'
+                    'city',
+                    'inserted_at',
+                    'updated_at'
                 ]
             ])
             ->assertJson([

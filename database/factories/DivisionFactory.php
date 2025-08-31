@@ -16,6 +16,7 @@ class DivisionFactory extends Factory
             'color' => $this->faker->hexColor(),
             'is_students_only' => $this->faker->boolean(),
             'its_first_edition_id' => \App\Models\Edition::factory()->create()->id_edition,
+            'inserted_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
         ];
     }
 }

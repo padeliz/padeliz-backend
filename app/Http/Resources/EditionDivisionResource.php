@@ -27,9 +27,9 @@ class EditionDivisionResource extends JsonResource
             'include_scores' => $this->include_scores,
             'has_demonstrative_match' => $this->has_demonstrative_match,
             'fixed_teams' => $this->fixed_teams,
+            'inserted_at' => $this->inserted_at,
+            'updated_at' => $this->updated_at,
             'division' => new DivisionResource($this->whenLoaded('division')),
         ];
     }
 }
-
-

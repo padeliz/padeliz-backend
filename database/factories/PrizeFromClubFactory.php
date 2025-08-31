@@ -23,6 +23,7 @@ class PrizeFromClubFactory extends Factory
             'box_2_text' => $this->faker->optional()->sentence(),
             'box_2_bg_color' => $this->faker->optional()->hexColor(),
             'box_2_text_color' => $this->faker->optional()->hexColor(),
+            'inserted_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
         ];
     }
 

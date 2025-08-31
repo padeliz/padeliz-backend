@@ -12,6 +12,8 @@ use Illuminate\Database\Eloquent\Model;
  *     @OA\Property(property="id_team", type="integer", format="int64"),
  *     @OA\Property(property="player_1", type="integer", format="int64"),
  *     @OA\Property(property="player_2", type="integer", format="int64"),
+ *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
+ *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(
  *         property="player1",
  *         ref="#/components/schemas/Player"
@@ -29,13 +31,26 @@ class MatchesTeam extends Model
 
     protected $table = 'matches_teams';
     protected $primaryKey = 'id_team';
-    public $timestamps = false;
+    public $timestamps = true;
+
+    protected $dateFormat = 'U';
+
+    const CREATED_AT = 'inserted_at';
+    const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
         'player_1',
         'player_2',
-        'inserted_at',
-        'updated_at',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'inserted_at' => 'integer',
+        'updated_at' => 'integer',
     ];
 
     public function player1()

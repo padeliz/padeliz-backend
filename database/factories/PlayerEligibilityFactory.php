@@ -32,8 +32,8 @@ class PlayerEligibilityFactory extends Factory
             'review_status' => $this->faker->randomElement(['approved', 'pending', 'rejected']),
             'review_message' => null,
             'resubmitted_at' => null,
-            'inserted_at' => time(),
-            'updated_at' => time()
+            'inserted_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
+            'updated_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time())
         ];
     }
 

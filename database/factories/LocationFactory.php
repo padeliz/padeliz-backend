@@ -18,6 +18,7 @@ class LocationFactory extends Factory
             'address' => substr($this->faker->address(), 0, 200),
             'total_indoors_courts' => $this->faker->numberBetween(3, 6),
             'total_outdoor_courts' => $this->faker->numberBetween(3, 6),
+            'inserted_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
         ];
     }
 

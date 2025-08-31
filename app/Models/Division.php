@@ -13,8 +13,8 @@ use Illuminate\Database\Eloquent\Model;
  *     @OA\Property(property="name", type="string", maxLength=255),
  *     @OA\Property(property="color", type="string", maxLength=7),
  *     @OA\Property(property="is_students_only", type="boolean"),
- *     @OA\Property(property="created_at", type="string", format="date-time"),
- *     @OA\Property(property="updated_at", type="string", format="date-time")
+ *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
+ *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true)
  * )
  */
 
@@ -24,7 +24,12 @@ class Division extends Model
 
     protected $table = 'divisions';
     protected $primaryKey = 'id_division';
-    public $timestamps = false;
+    public $timestamps = true;
+
+    protected $dateFormat = 'U';
+
+    const CREATED_AT = 'inserted_at';
+    const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
         'name',
@@ -39,6 +44,8 @@ class Division extends Model
      * @var array
      */
     protected $casts = [
+        'inserted_at' => 'integer',
+        'updated_at' => 'integer',
         'is_students_only' => 'boolean',
     ];
 

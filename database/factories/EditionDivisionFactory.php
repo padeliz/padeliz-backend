@@ -26,6 +26,7 @@ class EditionDivisionFactory extends Factory
             'include_scores' => $this->faker->boolean(80),
             'has_demonstrative_match' => $this->faker->boolean(20),
             'fixed_teams' => $this->faker->boolean(20),
+            'inserted_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
         ];
     }
 }

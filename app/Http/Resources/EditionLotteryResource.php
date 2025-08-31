@@ -21,7 +21,7 @@ class EditionLotteryResource extends JsonResource
             'division_id' => $this->division_id,
             'prize_id' => $this->prize_id,
             'total_draws_nr' => $this->total_draws_nr,
-            'created_at' => $this->created_at,
+            'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
             'prize' => $this->whenLoaded('prize', function () {
                 return new PrizeResource($this->prize);
@@ -35,7 +35,3 @@ class EditionLotteryResource extends JsonResource
         ];
     }
 }
-
-
-
-

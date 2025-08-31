@@ -21,6 +21,8 @@ use Illuminate\Database\Eloquent\Model;
  *     @OA\Property(property="include_scores", type="boolean"),
  *     @OA\Property(property="has_demonstrative_match", type="boolean"),
  *     @OA\Property(property="fixed_teams", type="boolean"),
+ *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
+ *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(
  *         property="division",
  *         ref="#/components/schemas/Division"
@@ -34,7 +36,12 @@ class EditionDivision extends Model
 
     protected $table = 'edition_divisions';
     protected $primaryKey = 'id_edition_division';
-    public $timestamps = false;
+    public $timestamps = true;
+
+    protected $dateFormat = 'U';
+
+    const CREATED_AT = 'inserted_at';
+    const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
         'edition_id',
@@ -51,8 +58,10 @@ class EditionDivision extends Model
     ];
 
     protected $casts = [
-        'playing_start_time' => 'datetime',
-        'playing_end_time' => 'datetime',
+        'inserted_at' => 'integer',
+        'updated_at' => 'integer',
+        'playing_start_time' => 'datetime:H:i:s',
+        'playing_end_time' => 'datetime:H:i:s',
     ];
 
     public function edition()

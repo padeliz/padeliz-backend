@@ -15,12 +15,13 @@ class EditionFactory extends Factory
     {
         return [
             'name' => '#' . $this->faker->unique()->numberBetween(1, 1000),
-            'date' => $this->faker->dateTimeBetween('-1 year', '+3 months'),
+            'date' => $this->faker->dateTimeBetween('-1 year', '+3 months')->format('Y-m-d'),
             'location_id' => Location::factory(),
             'entry_fee' => 55,
             'students_entry_fee' => 45,
-            'arriving_time' => Carbon::createFromTime($this->faker->numberBetween(12, 19), $this->faker->randomElement([00, 30])),
-            'closing_time' => Carbon::createFromTime($this->faker->numberBetween(16, 21), $this->faker->randomElement([00, 30])),
+            'arriving_time' => Carbon::createFromTime($this->faker->numberBetween(12, 19), $this->faker->randomElement([00, 30]))->format('H:i:s'),
+            'closing_time' => Carbon::createFromTime($this->faker->numberBetween(16, 21), $this->faker->randomElement([00, 30]))->format('H:i:s'),
+            'inserted_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
         ];
     }
 

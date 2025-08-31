@@ -23,6 +23,7 @@ class EditionLuckyOneFactory extends Factory
             'announced_at' => ($date = $this->faker->optional()->dateTimeBetween($drawnAt, '+2 hours')) ? $date->getTimestamp() : null,
             'accepted_at' => ($date = $this->faker->optional()->dateTimeBetween($drawnAt, '+3 hours')) ? $date->getTimestamp() : null,
             'rejected_at' => ($date = $this->faker->optional()->dateTimeBetween($drawnAt, '+3 hours')) ? $date->getTimestamp() : null,
+            'inserted_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
         ];
     }
 }

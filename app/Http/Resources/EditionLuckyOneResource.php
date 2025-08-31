@@ -23,7 +23,7 @@ class EditionLuckyOneResource extends JsonResource
             'announced_at' => $this->announced_at,
             'accepted_at' => $this->accepted_at,
             'rejected_at' => $this->rejected_at,
-            'created_at' => $this->created_at,
+            'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
             'drawn_participation' => $this->whenLoaded('participation', function () {
                 return new EditionParticipationResource($this->participation);
@@ -31,7 +31,3 @@ class EditionLuckyOneResource extends JsonResource
         ];
     }
 }
-
-
-
-

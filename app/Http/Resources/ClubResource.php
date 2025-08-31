@@ -13,6 +13,8 @@ class ClubResource extends JsonResource
             'id_club' => $this->id_club,
             'name' => $this->name,
             'city' => $this->city,
+            'inserted_at' => $this->inserted_at,
+            'updated_at' => $this->updated_at,
             'locations' => $this->whenLoaded('locations', function () {
                 return LocationResource::collection($this->locations);
             }),

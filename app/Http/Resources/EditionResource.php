@@ -18,6 +18,8 @@ class EditionResource extends JsonResource
             'students_entry_fee' => $this->students_entry_fee,
             'arriving_time' => $this->arriving_time,
             'closing_time' => $this->closing_time,
+            'inserted_at' => $this->inserted_at,
+            'updated_at' => $this->updated_at,
             'location' => $this->whenLoaded('location', function () {
                 return new LocationResource($this->location);
             }),
@@ -30,5 +32,3 @@ class EditionResource extends JsonResource
         ];
     }
 }
-
-

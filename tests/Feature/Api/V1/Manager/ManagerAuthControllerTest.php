@@ -31,7 +31,7 @@ class ManagerAuthControllerTest extends TestCase
         ]);
     }
 
-    public function test_google_callback_creates_new_manager()
+    public function test_google_callback_returns_404_for_new_user()
     {
         // Mock Google Client
         $this->mock(\Google\Client::class, function ($mock) {
@@ -49,23 +49,13 @@ class ManagerAuthControllerTest extends TestCase
             'token' => 'any.test.token'
         ]);
 
-        $response->assertStatus(200)
-            ->assertJsonStructure([
-            'success',
-            'message',
-            'data' => [
-                'token',
-                'player' => [
-                    'id_player',
-                    'name',
-                    'google_name',
-                    'google_avatar'
-                ],
-                'user_type'
-                ]
+        $response->assertStatus(404)
+            ->assertJson([
+                'success' => false,
+                'message' => 'User not found. Please register first.'
             ]);
 
-        $this->assertDatabaseHas('players', [
+        $this->assertDatabaseMissing('players', [
             'google_email' => 'newmanager@example.com'
         ]);
     }
@@ -115,6 +105,35 @@ class ManagerAuthControllerTest extends TestCase
                 'user_type' => 'manager'
             ]
         ]);
+    }
+
+    public function test_google_callback_returns_403_for_player_without_manager_privileges()
+    {
+        // Create a player without manager privileges
+        $player = Player::factory()->playerOnly()->create([
+            'google_email' => 'player@example.com'
+        ]);
+
+        // Mock Google Client
+        $this->mock(\Google\Client::class, function ($mock) {
+            $mock->shouldReceive('verifyIdToken')
+                ->andReturn([
+                    'sub' => 'google_player_123',
+                    'name' => 'Test Player',
+                    'email' => 'player@example.com',
+                    'picture' => 'https://example.com/player-avatar.jpg'
+                ]);
+        });
+
+        $response = $this->postJson('/api/v1/manager/auth/google', [
+            'token' => 'valid.token'
+        ]);
+
+        $response->assertStatus(403)
+            ->assertJson([
+                'success' => false,
+                'message' => 'User does not have manager privileges.'
+            ]);
     }
 
     public function test_me_endpoint_returns_authenticated_manager()

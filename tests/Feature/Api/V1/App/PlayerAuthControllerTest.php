@@ -27,7 +27,7 @@ class PlayerAuthControllerTest extends TestCase
         ]);
     }
 
-    public function test_google_callback_creates_new_player()
+    public function test_google_callback_returns_404_for_new_user()
     {
         // Mock Google Client
         $this->mock(\Google\Client::class, function ($mock) {
@@ -44,23 +44,13 @@ class PlayerAuthControllerTest extends TestCase
             'token' => 'any.test.token'
         ]);
 
-        $response->assertStatus(200)
-            ->assertJsonStructure([
-            'success',
-            'message',
-            'data' => [
-                'token',
-                'player' => [
-                    'id_player',
-                    'name',
-                    'google_name',
-                    'google_avatar'
-                ],
-                'user_type'
-                ]
+        $response->assertStatus(404)
+            ->assertJson([
+                'success' => false,
+                'message' => 'User not found. Please register first.'
             ]);
 
-        $this->assertDatabaseHas('players', [
+        $this->assertDatabaseMissing('players', [
             'google_email' => 'newplayer@example.com'
         ]);
     }
@@ -110,6 +100,35 @@ class PlayerAuthControllerTest extends TestCase
                 'user_type' => 'player'
             ]
         ]);
+    }
+
+    public function test_google_callback_returns_403_for_manager_without_player_privileges()
+    {
+        // Create a manager without player privileges
+        $manager = Player::factory()->managerOnly()->create([
+            'google_email' => 'manager@example.com'
+        ]);
+
+        // Mock Google Client
+        $this->mock(\Google\Client::class, function ($mock) {
+            $mock->shouldReceive('verifyIdToken')
+                ->andReturn([
+                    'sub' => 'google_manager_123',
+                    'name' => 'Test Manager',
+                    'email' => 'manager@example.com',
+                    'picture' => 'https://example.com/manager-avatar.jpg'
+                ]);
+        });
+
+        $response = $this->postJson('/api/v1/app/auth/google', [
+            'token' => 'valid.token'
+        ]);
+
+        $response->assertStatus(403)
+            ->assertJson([
+                'success' => false,
+                'message' => 'User does not have player privileges.'
+            ]);
     }
 
     public function test_google_callback_validates_required_fields()
@@ -240,14 +259,14 @@ class PlayerAuthControllerTest extends TestCase
         // Create many players to test performance
         Player::factory()->count(100)->create();
 
-        // Mock Google Client
+        // Mock Google Client to return existing player
         $this->mock(\Google\Client::class, function ($mock) {
             $mock->shouldReceive('verifyIdToken')
                 ->andReturn([
-                'sub' => 'google_player_456',
-                'name' => 'New Player',
-                'email' => 'newplayer@example.com',
-                'picture' => 'https://example.com/new-player.jpg'
+                'sub' => 'google_player_123',
+                'name' => 'Test Player',
+                'email' => 'player@example.com',
+                'picture' => 'https://example.com/player-avatar.jpg'
                 ]);
         });
 
@@ -266,14 +285,14 @@ class PlayerAuthControllerTest extends TestCase
 
     public function test_rate_limiting_on_google_callback()
     {
-        // Mock Google Client
+        // Mock Google Client to return existing player
         $this->mock(\Google\Client::class, function ($mock) {
             $mock->shouldReceive('verifyIdToken')
                 ->andReturn([
-                'sub' => 'google_player_456',
-                'name' => 'New Player',
-                'email' => 'newplayer@example.com',
-                'picture' => 'https://example.com/new-player.jpg'
+                'sub' => 'google_player_123',
+                'name' => 'Test Player',
+                'email' => 'player@example.com',
+                'picture' => 'https://example.com/player-avatar.jpg'
                 ]);
         });
 
@@ -288,14 +307,14 @@ class PlayerAuthControllerTest extends TestCase
 
     public function test_concurrent_requests_handle_properly()
     {
-        // Mock Google Client
+        // Mock Google Client to return existing player
         $this->mock(\Google\Client::class, function ($mock) {
             $mock->shouldReceive('verifyIdToken')
                 ->andReturn([
-                'sub' => 'google_player_456',
-                'name' => 'New Player',
-                'email' => 'newplayer@example.com',
-                'picture' => 'https://example.com/new-player.jpg'
+                'sub' => 'google_player_123',
+                'name' => 'Test Player',
+                'email' => 'player@example.com',
+                'picture' => 'https://example.com/player-avatar.jpg'
                 ]);
         });
 
