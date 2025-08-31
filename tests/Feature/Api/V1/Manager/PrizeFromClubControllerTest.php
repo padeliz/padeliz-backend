@@ -1,21 +1,25 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Api\V1\Manager;
 
-use Tests\TestCase;
-use App\Models\Player;
-use App\Models\PrizeFromClub;
 use App\Models\Club;
+use App\Models\Player;
 use App\Models\Prize;
+use App\Models\PrizeFromClub;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
 
 class PrizeFromClubControllerTest extends TestCase
 {
     use RefreshDatabase;
 
     private $manager;
+
     private $club;
+
     private $prize;
 
     public function setUp(): void
@@ -29,16 +33,16 @@ class PrizeFromClubControllerTest extends TestCase
             'google_name' => 'Test Manager',
             'google_email' => 'manager@example.com',
             'google_avatar' => 'https://example.com/manager-avatar.jpg',
-            'user_types' => ['player', 'manager']
+            'user_types' => ['player', 'manager'],
         ]);
 
         $this->club = Club::factory()->create([
             'name' => 'Test Club',
-            'city' => 'Test City'
+            'city' => 'Test City',
         ]);
 
         $this->prize = Prize::factory()->create([
-            'name' => 'Test Prize'
+            'name' => 'Test Prize',
         ]);
     }
 
@@ -63,14 +67,14 @@ class PrizeFromClubControllerTest extends TestCase
                         'box_1_text_color',
                         'box_2_text',
                         'box_2_bg_color',
-                        'box_2_text_color'
-                    ]
+                        'box_2_text_color',
+                    ],
                 ],
                 'links' => [
                     'first',
                     'last',
                     'prev',
-                    'next'
+                    'next',
                 ],
                 'meta' => [
                     'current_page',
@@ -79,8 +83,8 @@ class PrizeFromClubControllerTest extends TestCase
                     'path',
                     'per_page',
                     'to',
-                    'total'
-                ]
+                    'total',
+                ],
             ]);
 
         $this->assertCount(5, $response->json('data'));
@@ -93,7 +97,7 @@ class PrizeFromClubControllerTest extends TestCase
         $prizeFromClub = PrizeFromClub::factory()->create([
             'club_id' => $this->club->id_club,
             'prize_id' => $this->prize->id_prize,
-            'box_1_text' => 'Test Box 1'
+            'box_1_text' => 'Test Box 1',
         ]);
 
         $response = $this->getJson("/api/v1/manager/prizes-from-clubs/{$prizeFromClub->id_club_prize}");
@@ -106,8 +110,8 @@ class PrizeFromClubControllerTest extends TestCase
                     'id_club_prize' => $prizeFromClub->id_club_prize,
                     'club_id' => $this->club->id_club,
                     'prize_id' => $this->prize->id_prize,
-                    'box_1_text' => 'Test Box 1'
-                ]
+                    'box_1_text' => 'Test Box 1',
+                ],
             ]);
     }
 
@@ -124,7 +128,7 @@ class PrizeFromClubControllerTest extends TestCase
             'box_1_text_color' => '#FFFFFF',
             'box_2_text' => 'Club Box 2 Text',
             'box_2_bg_color' => '#00FF00',
-            'box_2_text_color' => '#000000'
+            'box_2_text_color' => '#000000',
         ];
 
         $response = $this->postJson('/api/v1/manager/prizes-from-clubs', $prizeFromClubData);
@@ -142,14 +146,14 @@ class PrizeFromClubControllerTest extends TestCase
                     'box_1_text_color' => '#FFFFFF',
                     'box_2_text' => 'Club Box 2 Text',
                     'box_2_bg_color' => '#00FF00',
-                    'box_2_text_color' => '#000000'
-                ]
+                    'box_2_text_color' => '#000000',
+                ],
             ]);
 
         $this->assertDatabaseHas('prizes_from_clubs', [
             'club_id' => $this->club->id_club,
             'prize_id' => $this->prize->id_prize,
-            'image' => 'club-prize-image.jpg'
+            'image' => 'club-prize-image.jpg',
         ]);
     }
 
@@ -160,13 +164,13 @@ class PrizeFromClubControllerTest extends TestCase
         $prizeFromClub = PrizeFromClub::factory()->create([
             'club_id' => $this->club->id_club,
             'prize_id' => $this->prize->id_prize,
-            'box_1_text' => 'Old Box 1'
+            'box_1_text' => 'Old Box 1',
         ]);
 
         $updateData = [
             'box_1_text' => 'Updated Box 1',
             'box_1_bg_color' => '#0000FF',
-            'image' => 'updated-image.jpg'
+            'image' => 'updated-image.jpg',
         ];
 
         $response = $this->putJson("/api/v1/manager/prizes-from-clubs/{$prizeFromClub->id_club_prize}", $updateData);
@@ -179,14 +183,14 @@ class PrizeFromClubControllerTest extends TestCase
                     'id_club_prize' => $prizeFromClub->id_club_prize,
                     'box_1_text' => 'Updated Box 1',
                     'box_1_bg_color' => '#0000FF',
-                    'image' => 'updated-image.jpg'
-                ]
+                    'image' => 'updated-image.jpg',
+                ],
             ]);
 
         $this->assertDatabaseHas('prizes_from_clubs', [
             'id_club_prize' => $prizeFromClub->id_club_prize,
             'box_1_text' => 'Updated Box 1',
-            'box_1_bg_color' => '#0000FF'
+            'box_1_bg_color' => '#0000FF',
         ]);
     }
 
@@ -201,11 +205,11 @@ class PrizeFromClubControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
-                'message' => 'Prize from club deleted successfully'
+                'message' => 'Prize from club deleted successfully',
             ]);
 
         $this->assertDatabaseMissing('prizes_from_clubs', [
-            'id_club_prize' => $prizeFromClub->id_club_prize
+            'id_club_prize' => $prizeFromClub->id_club_prize,
         ]);
     }
 
@@ -216,14 +220,14 @@ class PrizeFromClubControllerTest extends TestCase
         // Create first prize from club
         PrizeFromClub::factory()->create([
             'club_id' => $this->club->id_club,
-            'prize_id' => $this->prize->id_prize
+            'prize_id' => $this->prize->id_prize,
         ]);
 
         // Try to create duplicate
         $duplicateData = [
             'club_id' => $this->club->id_club,
             'prize_id' => $this->prize->id_prize,
-            'image' => 'duplicate-image.jpg'
+            'image' => 'duplicate-image.jpg',
         ];
 
         $response = $this->postJson('/api/v1/manager/prizes-from-clubs', $duplicateData);
@@ -231,7 +235,7 @@ class PrizeFromClubControllerTest extends TestCase
         $response->assertStatus(422)
             ->assertJson([
                 'success' => false,
-                'message' => 'This club already has this prize'
+                'message' => 'This club already has this prize',
             ]);
     }
 
@@ -245,24 +249,24 @@ class PrizeFromClubControllerTest extends TestCase
         // Create two different club prizes
         $prizeFromClub1 = PrizeFromClub::factory()->create([
             'club_id' => $this->club->id_club,
-            'prize_id' => $this->prize->id_prize
+            'prize_id' => $this->prize->id_prize,
         ]);
 
         $prizeFromClub2 = PrizeFromClub::factory()->create([
             'club_id' => $club2->id_club,
-            'prize_id' => $prize2->id_prize
+            'prize_id' => $prize2->id_prize,
         ]);
 
         // Try to update second to match first
         $response = $this->putJson("/api/v1/manager/prizes-from-clubs/{$prizeFromClub2->id_club_prize}", [
             'club_id' => $this->club->id_club,
-            'prize_id' => $this->prize->id_prize
+            'prize_id' => $this->prize->id_prize,
         ]);
 
         $response->assertStatus(422)
             ->assertJson([
                 'success' => false,
-                'message' => 'This club already has this prize'
+                'message' => 'This club already has this prize',
             ]);
     }
 
@@ -284,7 +288,7 @@ class PrizeFromClubControllerTest extends TestCase
             'club_id' => $this->club->id_club,
             'prize_id' => $this->prize->id_prize,
             'box_1_bg_color' => 'invalid-color',
-            'box_1_text_color' => 'invalid-color'
+            'box_1_text_color' => 'invalid-color',
         ]);
 
         $response->assertStatus(422)
@@ -298,7 +302,7 @@ class PrizeFromClubControllerTest extends TestCase
         $prizeFromClub = PrizeFromClub::factory()->create();
 
         $response = $this->putJson("/api/v1/manager/prizes-from-clubs/{$prizeFromClub->id_club_prize}", [
-            'club_id' => 99999 // Non-existent club
+            'club_id' => 99999, // Non-existent club
         ]);
 
         $response->assertStatus(422)
@@ -345,14 +349,14 @@ class PrizeFromClubControllerTest extends TestCase
                     '*' => [
                         'id_club_prize',
                         'club_id',
-                        'prize_id'
-                    ]
+                        'prize_id',
+                    ],
                 ],
                 'links' => [
                     'first',
                     'last',
                     'prev',
-                    'next'
+                    'next',
                 ],
                 'meta' => [
                     'current_page',
@@ -361,8 +365,8 @@ class PrizeFromClubControllerTest extends TestCase
                     'path',
                     'per_page',
                     'to',
-                    'total'
-                ]
+                    'total',
+                ],
             ]);
 
         $this->assertCount(10, $response->json('data'));
@@ -370,4 +374,3 @@ class PrizeFromClubControllerTest extends TestCase
         $this->assertEquals(25, $response->json('meta.total'));
     }
 }
-

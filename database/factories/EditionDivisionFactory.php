@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
-use App\Models\EditionDivision;
-use App\Models\Edition;
 use App\Models\Division;
-use Illuminate\Database\Eloquent\Factories\Factory;
+use App\Models\Edition;
+use App\Models\EditionDivision;
 use Carbon\Carbon;
+use Illuminate\Database\Eloquent\Factories\Factory;
 
 class EditionDivisionFactory extends Factory
 {

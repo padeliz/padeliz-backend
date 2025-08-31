@@ -1,14 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Api\V1\Manager;
 
-use Tests\TestCase;
-use App\Models\Player;
 use App\Models\Club;
 use App\Models\Location;
+use App\Models\Player;
 use App\Models\Prize;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
 
 class ClubControllerTest extends TestCase
 {
@@ -27,7 +29,7 @@ class ClubControllerTest extends TestCase
             'google_name' => 'Test Manager',
             'google_email' => 'manager@example.com',
             'google_avatar' => 'https://example.com/manager-avatar.jpg',
-            'user_types' => ['player', 'manager']
+            'user_types' => ['player', 'manager'],
         ]);
     }
 
@@ -47,14 +49,14 @@ class ClubControllerTest extends TestCase
                         'name',
                         'city',
                         'inserted_at',
-                        'updated_at'
-                    ]
+                        'updated_at',
+                    ],
                 ],
             'links' => [
                 'first',
                 'last',
                 'prev',
-                'next'
+                'next',
             ],
             'meta' => [
                 'current_page',
@@ -63,8 +65,8 @@ class ClubControllerTest extends TestCase
                 'path',
                 'per_page',
                 'to',
-                'total'
-            ]
+                'total',
+            ],
             ]);
 
         $this->assertCount(5, $response->json('data'));
@@ -76,7 +78,7 @@ class ClubControllerTest extends TestCase
 
         $club = Club::factory()->create([
             'name' => 'Test Club',
-            'city' => 'Test City'
+            'city' => 'Test City',
         ]);
 
         $response = $this->getJson("/api/v1/manager/clubs/{$club->id_club}");
@@ -90,8 +92,8 @@ class ClubControllerTest extends TestCase
                     'name',
                     'city',
                     'inserted_at',
-                    'updated_at'
-                ]
+                    'updated_at',
+                ],
             ])
             ->assertJson([
             'success' => true,
@@ -99,8 +101,8 @@ class ClubControllerTest extends TestCase
             'data' => [
                 'id_club' => $club->id_club,
                 'name' => 'Test Club',
-                'city' => 'Test City'
-            ]
+                'city' => 'Test City',
+            ],
             ]);
     }
 
@@ -110,7 +112,7 @@ class ClubControllerTest extends TestCase
 
         $clubData = [
             'name' => 'New Club',
-            'city' => 'New City'
+            'city' => 'New City',
         ];
 
         $response = $this->postJson('/api/v1/manager/clubs', $clubData);
@@ -124,17 +126,17 @@ class ClubControllerTest extends TestCase
                     'name',
                     'city',
                     'inserted_at',
-                    'updated_at'
-                ]
+                    'updated_at',
+                ],
             ])
             ->assertJson([
                 'success' => true,
-                'message' => 'Club created successfully'
+                'message' => 'Club created successfully',
             ]);
 
         $this->assertDatabaseHas('clubs', [
             'name' => 'New Club',
-            'city' => 'New City'
+            'city' => 'New City',
         ]);
     }
 
@@ -146,7 +148,7 @@ class ClubControllerTest extends TestCase
 
         $updateData = [
             'name' => 'Updated Club Name',
-            'city' => 'Updated City'
+            'city' => 'Updated City',
         ];
 
         $response = $this->putJson("/api/v1/manager/clubs/{$club->id_club}", $updateData);
@@ -160,8 +162,8 @@ class ClubControllerTest extends TestCase
                     'name',
                     'city',
                     'inserted_at',
-                    'updated_at'
-                ]
+                    'updated_at',
+                ],
             ])
             ->assertJson([
             'success' => true,
@@ -169,8 +171,8 @@ class ClubControllerTest extends TestCase
             'data' => [
                 'id_club' => $club->id_club,
                 'name' => 'Updated Club Name',
-                'city' => 'Updated City'
-            ]
+                'city' => 'Updated City',
+            ],
             ]);
     }
 
@@ -186,15 +188,15 @@ class ClubControllerTest extends TestCase
             ->assertJsonStructure([
                 'success',
                 'message',
-                'data'
+                'data',
             ])
             ->assertJson([
                 'success' => true,
-                'message' => 'Club deleted successfully'
+                'message' => 'Club deleted successfully',
             ]);
 
         $this->assertDatabaseMissing('clubs', [
-            'id_club' => $club->id_club
+            'id_club' => $club->id_club,
         ]);
     }
 
@@ -216,13 +218,13 @@ class ClubControllerTest extends TestCase
                     'id_location',
                     'club_id',
                     'name',
-                    'address'
-                ]
-                ]
+                    'address',
+                ],
+                ],
             ])
             ->assertJson([
                 'success' => true,
-                'message' => 'Club locations retrieved successfully'
+                'message' => 'Club locations retrieved successfully',
             ]);
 
         $this->assertCount(3, $response->json('data'));
@@ -239,7 +241,7 @@ class ClubControllerTest extends TestCase
         foreach ($prizes as $prize) {
             \App\Models\PrizeFromClub::factory()->create([
                 'club_id' => $club->id_club,
-                'prize_id' => $prize->id_prize
+                'prize_id' => $prize->id_prize,
             ]);
         }
 
@@ -256,15 +258,15 @@ class ClubControllerTest extends TestCase
                         'prize' => [
                             'id_prize',
                             'name',
-                            'image'
-                        ]
-                    ]
+                            'image',
+                        ],
+                    ],
                 ],
             'links' => [
                 'first',
                 'last',
                 'prev',
-                'next'
+                'next',
             ],
             'meta' => [
                 'current_page',
@@ -273,8 +275,8 @@ class ClubControllerTest extends TestCase
                 'path',
                 'per_page',
                 'to',
-                'total'
-            ]
+                'total',
+            ],
             ]);
 
         $this->assertCount(2, $response->json('data'));

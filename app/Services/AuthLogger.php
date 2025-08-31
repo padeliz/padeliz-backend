@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Services;
 
-use Illuminate\Support\Facades\File;
 use Carbon\Carbon;
+use Illuminate\Support\Facades\File;
 
 class AuthLogger
 {
@@ -14,7 +16,7 @@ class AuthLogger
         $this->baseDir = storage_path('logs/auth');
 
         // Ensure the auth directory exists
-        if (!File::exists($this->baseDir)) {
+        if (! File::exists($this->baseDir)) {
             File::makeDirectory($this->baseDir, 0775, true);
         }
     }
@@ -29,7 +31,7 @@ class AuthLogger
             'timestamp' => $now->toIso8601String(),
             'error' => $e->getMessage(),
             'trace' => $e->getTraceAsString(),
-            'context' => $context
+            'context' => $context,
         ];
 
         File::append(

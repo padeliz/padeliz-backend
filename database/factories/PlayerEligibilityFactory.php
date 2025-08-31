@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
-use App\Models\Player;
 use App\Models\Edition;
+use App\Models\Player;
 use App\Models\PlayerEligibility;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -33,7 +35,7 @@ class PlayerEligibilityFactory extends Factory
             'review_message' => null,
             'resubmitted_at' => null,
             'inserted_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
-            'updated_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time())
+            'updated_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
         ];
     }
 
@@ -45,7 +47,7 @@ class PlayerEligibilityFactory extends Factory
         return $this->state(function (array $attributes) {
             return [
                 'review_status' => 'approved',
-                'reviewed_at' => time()
+                'reviewed_at' => time(),
             ];
         });
     }
@@ -59,7 +61,7 @@ class PlayerEligibilityFactory extends Factory
             return [
                 'review_status' => 'rejected',
                 'reviewed_at' => time(),
-                'review_message' => $this->faker->sentence()
+                'review_message' => $this->faker->sentence(),
             ];
         });
     }

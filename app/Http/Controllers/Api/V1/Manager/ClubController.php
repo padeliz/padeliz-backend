@@ -1,12 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V1\Manager;
 
-use App\Http\Controllers\Controller;
-use App\Models\Club;
 use App\Http\Resources\ClubResource;
 use App\Http\Resources\LocationResource;
 use App\Http\Resources\PrizeFromClubResource;
+use App\Models\Club;
 use Illuminate\Http\Request;
 
 /**
@@ -86,6 +87,7 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
     public function show(Club $club)
     {
         $club->load('locations');
+
         return $this->resourceResponse(
             new ClubResource($club),
             'Club details retrieved successfully'
@@ -129,7 +131,7 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
     {
         $request->validate([
             'name' => 'required|string|max:255',
-            'city' => 'required|string|max:255'
+            'city' => 'required|string|max:255',
         ]);
 
         $club = Club::create($request->all());
@@ -176,7 +178,7 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
     {
         $request->validate([
             'name' => 'sometimes|required|string|max:255',
-            'city' => 'sometimes|required|string|max:255'
+            'city' => 'sometimes|required|string|max:255',
         ]);
 
         $club->update($request->all());
@@ -209,6 +211,7 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
     public function destroy(Club $club)
     {
         $club->delete();
+
         return $this->successResponse(
             null,
             'Club deleted successfully'

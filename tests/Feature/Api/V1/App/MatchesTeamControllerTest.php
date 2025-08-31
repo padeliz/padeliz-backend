@@ -1,12 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Api\V1\App;
 
-use Tests\TestCase;
-use App\Models\Player;
 use App\Models\MatchesTeam;
+use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
 
 class MatchesTeamControllerTest extends TestCase
 {
@@ -34,14 +36,14 @@ class MatchesTeamControllerTest extends TestCase
                     '*' => [
                         'id_team',
                         'player_1',
-                        'player_2'
-                    ]
+                        'player_2',
+                    ],
                 ],
             'links' => [
                 'first',
                 'last',
                 'prev',
-                'next'
+                'next',
             ],
             'meta' => [
                 'current_page',
@@ -50,8 +52,8 @@ class MatchesTeamControllerTest extends TestCase
                 'path',
                 'per_page',
                 'to',
-                'total'
-            ]
+                'total',
+            ],
             ]);
 
         $this->assertCount(5, $response->json('data'));
@@ -65,7 +67,7 @@ class MatchesTeamControllerTest extends TestCase
 
         $teamData = [
             'player_1' => $this->player->id_player,
-            'player_2' => $otherPlayer->id_player
+            'player_2' => $otherPlayer->id_player,
         ];
 
         $response = $this->postJson('/api/v1/app/matches/teams', $teamData);
@@ -77,12 +79,12 @@ class MatchesTeamControllerTest extends TestCase
             'data' => [
                 'id_team',
                 'player_1',
-                'player_2'
-                ]
+                'player_2',
+                ],
             ])
             ->assertJson([
                 'success' => true,
-                'message' => 'Team created successfully'
+                'message' => 'Team created successfully',
             ]);
     }
 
@@ -92,7 +94,7 @@ class MatchesTeamControllerTest extends TestCase
 
         $teamData = [
             'player_1' => $this->player->id_player,
-            'player_2' => $this->player->id_player
+            'player_2' => $this->player->id_player,
         ];
 
         $response = $this->postJson('/api/v1/app/matches/teams', $teamData);
@@ -122,7 +124,7 @@ class MatchesTeamControllerTest extends TestCase
 
         $teamData = [
             'player_1' => 99999,
-            'player_2' => 99998
+            'player_2' => 99998,
         ];
 
         $response = $this->postJson('/api/v1/app/matches/teams', $teamData);
@@ -144,14 +146,14 @@ class MatchesTeamControllerTest extends TestCase
                     '*' => [
                         'id_team',
                         'player_1',
-                        'player_2'
-                    ]
+                        'player_2',
+                    ],
                 ],
             'links' => [
                 'first',
                 'last',
                 'prev',
-                'next'
+                'next',
             ],
             'meta' => [
                 'current_page',
@@ -160,8 +162,8 @@ class MatchesTeamControllerTest extends TestCase
                 'path',
                 'per_page',
                 'to',
-                'total'
-            ]
+                'total',
+            ],
             ]);
 
         $this->assertCount(10, $response->json('data'));

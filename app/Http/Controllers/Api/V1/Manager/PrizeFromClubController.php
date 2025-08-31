@@ -1,10 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V1\Manager;
 
-use App\Http\Controllers\Controller;
-use App\Models\PrizeFromClub;
 use App\Http\Resources\PrizeFromClubResource;
+use App\Models\PrizeFromClub;
 use Illuminate\Http\Request;
 
 /**
@@ -76,6 +77,7 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
     public function show(PrizeFromClub $prizeFromClub)
     {
         $prizeFromClub->load(['club', 'prize']);
+
         return $this->resourceResponse(
             new PrizeFromClubResource($prizeFromClub),
             'Prize from club details retrieved successfully'

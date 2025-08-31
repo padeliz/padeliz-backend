@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
-use App\Models\{Edition, EditionParticipation, Player};
 use App\Http\Resources\EditionParticipationResource;
+use App\Models\{Edition, EditionParticipation, Player};
 use Illuminate\Http\Request;
 
 /**
@@ -162,7 +164,7 @@ class ParticipationController extends V1BaseController
         // Check if player is already participating
         $existingParticipation = EditionParticipation::where([
             'edition_id' => $edition->id_edition,
-            'player_id' => $validated['player_id']
+            'player_id' => $validated['player_id'],
         ])->first();
 
         if ($existingParticipation) {
@@ -259,7 +261,7 @@ class ParticipationController extends V1BaseController
         if (isset($validated['player_id']) && $validated['player_id'] !== $participation->player_id) {
             $existingParticipation = EditionParticipation::where([
                 'edition_id' => $edition->id_edition,
-                'player_id' => $validated['player_id']
+                'player_id' => $validated['player_id'],
             ])->first();
 
             if ($existingParticipation) {
@@ -314,6 +316,7 @@ class ParticipationController extends V1BaseController
         }
 
         $participation->delete();
+
         return $this->successResponse(null, 'Participation deleted successfully');
     }
 }

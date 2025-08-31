@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
+use App\Http\Resources\PlayerEligibilityResource;
 use App\Models\PlayerEligibility;
 use Illuminate\Http\Request;
-use App\Http\Resources\PlayerEligibilityResource;
 
 /**
  * @OA\Tag(
@@ -187,7 +189,7 @@ class EligibilityController extends V1BaseController
     {
         $request->validate([
             'review_status' => 'required|in:approved,rejected,pending',
-            'notes' => 'nullable|string'
+            'notes' => 'nullable|string',
         ]);
 
         $eligibility->update([

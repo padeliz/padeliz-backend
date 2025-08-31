@@ -1,9 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Traits;
 
-use Illuminate\Support\Facades\File;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Log;
 
 trait HasUploadedFiles
@@ -34,7 +36,7 @@ trait HasUploadedFiles
 
         $absolutePath = base_path($path);
 
-        if (!File::exists($absolutePath)) {
+        if (! File::exists($absolutePath)) {
             return [];
         }
 
@@ -43,8 +45,9 @@ trait HasUploadedFiles
         } catch (\Exception $e) {
             Log::error('HasUploadedFiles::getUploadedFiles - Error reading directory', [
                 'path' => $absolutePath,
-                'error' => $e->getMessage()
+                'error' => $e->getMessage(),
             ]);
+
             return [];
         }
 
@@ -95,17 +98,17 @@ trait HasUploadedFiles
             $absolutePath = base_path($path);
 
             // Ensure the directory exists
-            if (!File::exists($absolutePath)) {
+            if (! File::exists($absolutePath)) {
                 File::makeDirectory($absolutePath, 0755, true, true);
             }
 
             // Validate that the directory was created successfully
-            if (!File::exists($absolutePath)) {
+            if (! File::exists($absolutePath)) {
                 throw new \RuntimeException('Failed to create upload directory');
             }
 
             // Check if the file is valid and readable
-            if (!$file->isValid()) {
+            if (! $file->isValid()) {
                 throw new \RuntimeException('Uploaded file is not valid: ' . $file->getError());
             }
 
@@ -113,7 +116,7 @@ trait HasUploadedFiles
             $file->move($absolutePath, $filename);
 
             // Verify the file was actually moved
-            if (!File::exists($absolutePath . '/' . $filename)) {
+            if (! File::exists($absolutePath . '/' . $filename)) {
                 throw new \RuntimeException('File was not saved successfully');
             }
 
@@ -125,7 +128,7 @@ trait HasUploadedFiles
                 'size' => $size,
                 'original_name' => $file->getClientOriginalName(),
                 'error' => $e->getMessage(),
-                'trace' => $e->getTraceAsString()
+                'trace' => $e->getTraceAsString(),
             ]);
 
             throw new \RuntimeException('The image failed to upload: ' . $e->getMessage());
@@ -137,7 +140,7 @@ trait HasUploadedFiles
         $path = $this->getUploadPath($type, $lang, $size) . '/' . $filename;
         $absolutePath = base_path($path);
 
-        if (!File::exists($absolutePath)) {
+        if (! File::exists($absolutePath)) {
             return false;
         }
 

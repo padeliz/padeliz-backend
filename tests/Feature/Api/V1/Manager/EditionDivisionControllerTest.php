@@ -1,22 +1,26 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Api\V1\Manager;
 
-use Tests\TestCase;
-use App\Models\Player;
-use App\Models\EditionDivision;
-use App\Models\Edition;
 use App\Models\Division;
+use App\Models\Edition;
+use App\Models\EditionDivision;
 use App\Models\EditionParticipation;
+use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
 
 class EditionDivisionControllerTest extends TestCase
 {
     use RefreshDatabase;
 
     private $manager;
+
     private $edition;
+
     private $division;
 
     public function setUp(): void
@@ -30,15 +34,15 @@ class EditionDivisionControllerTest extends TestCase
             'google_name' => 'Test Manager',
             'google_email' => 'manager@example.com',
             'google_avatar' => 'https://example.com/manager-avatar.jpg',
-            'user_types' => ['player', 'manager']
+            'user_types' => ['player', 'manager'],
         ]);
 
         $this->edition = Edition::factory()->create([
-            'name' => 'Test Edition'
+            'name' => 'Test Edition',
         ]);
 
         $this->division = Division::factory()->create([
-            'name' => 'Test Division'
+            'name' => 'Test Division',
         ]);
     }
 
@@ -65,14 +69,14 @@ class EditionDivisionControllerTest extends TestCase
                         'player_matches_repeat',
                         'include_scores',
                         'has_demonstrative_match',
-                        'fixed_teams'
-                    ]
+                        'fixed_teams',
+                    ],
                 ],
                 'links' => [
                     'first',
                     'last',
                     'prev',
-                    'next'
+                    'next',
                 ],
                 'meta' => [
                     'current_page',
@@ -81,8 +85,8 @@ class EditionDivisionControllerTest extends TestCase
                     'path',
                     'per_page',
                     'to',
-                    'total'
-                ]
+                    'total',
+                ],
             ]);
 
         $this->assertCount(5, $response->json('data'));
@@ -96,7 +100,7 @@ class EditionDivisionControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition,
             'division_id' => $this->division->id_division,
             'players_limit' => 16,
-            'court' => 'Court A'
+            'court' => 'Court A',
         ]);
 
         $response = $this->getJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}");
@@ -110,8 +114,8 @@ class EditionDivisionControllerTest extends TestCase
                     'edition_id' => $this->edition->id_edition,
                     'division_id' => $this->division->id_division,
                     'players_limit' => 16,
-                    'court' => 'Court A'
-                ]
+                    'court' => 'Court A',
+                ],
             ]);
     }
 
@@ -130,7 +134,7 @@ class EditionDivisionControllerTest extends TestCase
             'player_matches_repeat' => 1,
             'include_scores' => true,
             'has_demonstrative_match' => false,
-            'fixed_teams' => false
+            'fixed_teams' => false,
         ];
 
         $response = $this->postJson('/api/v1/manager/edition-divisions', $editionDivisionData);
@@ -148,8 +152,8 @@ class EditionDivisionControllerTest extends TestCase
                     'player_matches_repeat' => 1,
                     'include_scores' => true,
                     'has_demonstrative_match' => false,
-                    'fixed_teams' => false
-                ]
+                    'fixed_teams' => false,
+                ],
             ])
             ->assertJsonStructure([
                 'success',
@@ -166,15 +170,15 @@ class EditionDivisionControllerTest extends TestCase
                     'player_matches_repeat',
                     'include_scores',
                     'has_demonstrative_match',
-                    'fixed_teams'
-                ]
+                    'fixed_teams',
+                ],
             ]);
 
         $this->assertDatabaseHas('edition_divisions', [
             'edition_id' => $this->edition->id_edition,
             'division_id' => $this->division->id_division,
             'players_limit' => 16,
-            'court' => 'Court A'
+            'court' => 'Court A',
         ]);
     }
 
@@ -186,14 +190,14 @@ class EditionDivisionControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition,
             'division_id' => $this->division->id_division,
             'players_limit' => 16,
-            'court' => 'Court A'
+            'court' => 'Court A',
         ]);
 
         $updateData = [
             'players_limit' => 32,
             'court' => 'Court B',
             'playing_start_time' => '10:00:00',
-            'playing_end_time' => '18:00:00'
+            'playing_end_time' => '18:00:00',
         ];
 
         $response = $this->putJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}", $updateData);
@@ -205,8 +209,8 @@ class EditionDivisionControllerTest extends TestCase
                 'data' => [
                     'id_edition_division' => $editionDivision->id_edition_division,
                     'players_limit' => 32,
-                    'court' => 'Court B'
-                ]
+                    'court' => 'Court B',
+                ],
             ])
             ->assertJsonStructure([
                 'success',
@@ -223,14 +227,14 @@ class EditionDivisionControllerTest extends TestCase
                     'player_matches_repeat',
                     'include_scores',
                     'has_demonstrative_match',
-                    'fixed_teams'
-                ]
+                    'fixed_teams',
+                ],
             ]);
 
         $this->assertDatabaseHas('edition_divisions', [
             'id_edition_division' => $editionDivision->id_edition_division,
             'players_limit' => 32,
-            'court' => 'Court B'
+            'court' => 'Court B',
         ]);
     }
 
@@ -245,11 +249,11 @@ class EditionDivisionControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
-                'message' => 'Edition division deleted successfully'
+                'message' => 'Edition division deleted successfully',
             ]);
 
         $this->assertDatabaseMissing('edition_divisions', [
-            'id_edition_division' => $editionDivision->id_edition_division
+            'id_edition_division' => $editionDivision->id_edition_division,
         ]);
     }
 
@@ -259,14 +263,14 @@ class EditionDivisionControllerTest extends TestCase
 
         $editionDivision = EditionDivision::factory()->create([
             'edition_id' => $this->edition->id_edition,
-            'division_id' => $this->division->id_division
+            'division_id' => $this->division->id_division,
         ]);
 
         $player = Player::factory()->create();
         EditionParticipation::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'player_id' => $player->id_player,
-            'division_id' => $this->division->id_division
+            'division_id' => $this->division->id_division,
         ]);
 
         $response = $this->deleteJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}");
@@ -274,11 +278,11 @@ class EditionDivisionControllerTest extends TestCase
         $response->assertStatus(409)
             ->assertJson([
                 'success' => false,
-                'message' => 'Cannot delete edition division because it has related participations'
+                'message' => 'Cannot delete edition division because it has related participations',
             ]);
 
         $this->assertDatabaseHas('edition_divisions', [
-            'id_edition_division' => $editionDivision->id_edition_division
+            'id_edition_division' => $editionDivision->id_edition_division,
         ]);
     }
 
@@ -289,7 +293,7 @@ class EditionDivisionControllerTest extends TestCase
         // Create first edition division
         EditionDivision::factory()->create([
             'edition_id' => $this->edition->id_edition,
-            'division_id' => $this->division->id_division
+            'division_id' => $this->division->id_division,
         ]);
 
         // Try to create duplicate
@@ -299,7 +303,7 @@ class EditionDivisionControllerTest extends TestCase
             'players_limit' => 16,
             'court' => 'Court A',
             'playing_start_time' => '09:00:00',
-            'playing_end_time' => '17:00:00'
+            'playing_end_time' => '17:00:00',
         ];
 
         $response = $this->postJson('/api/v1/manager/edition-divisions', $duplicateData);
@@ -307,7 +311,7 @@ class EditionDivisionControllerTest extends TestCase
         $response->assertStatus(422)
             ->assertJson([
                 'success' => false,
-                'message' => 'This division is already assigned to this edition'
+                'message' => 'This division is already assigned to this edition',
             ]);
     }
 
@@ -321,24 +325,24 @@ class EditionDivisionControllerTest extends TestCase
         // Create two different edition divisions
         $editionDivision1 = EditionDivision::factory()->create([
             'edition_id' => $this->edition->id_edition,
-            'division_id' => $this->division->id_division
+            'division_id' => $this->division->id_division,
         ]);
 
         $editionDivision2 = EditionDivision::factory()->create([
             'edition_id' => $edition2->id_edition,
-            'division_id' => $division2->id_division
+            'division_id' => $division2->id_division,
         ]);
 
         // Try to update second to match first
         $response = $this->putJson("/api/v1/manager/edition-divisions/{$editionDivision2->id_edition_division}", [
             'edition_id' => $this->edition->id_edition,
-            'division_id' => $this->division->id_division
+            'division_id' => $this->division->id_division,
         ]);
 
         $response->assertStatus(422)
             ->assertJson([
                 'success' => false,
-                'message' => 'This division is already assigned to this edition'
+                'message' => 'This division is already assigned to this edition',
             ]);
     }
 
@@ -362,7 +366,7 @@ class EditionDivisionControllerTest extends TestCase
             'players_limit' => 16,
             'court' => 'Court A',
             'playing_start_time' => '17:00:00',
-            'playing_end_time' => '09:00:00' // End time before start time
+            'playing_end_time' => '09:00:00', // End time before start time
         ]);
 
         $response->assertStatus(422)
@@ -376,7 +380,7 @@ class EditionDivisionControllerTest extends TestCase
         $editionDivision = EditionDivision::factory()->create();
 
         $response = $this->putJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}", [
-            'edition_id' => 99999 // Non-existent edition
+            'edition_id' => 99999, // Non-existent edition
         ]);
 
         $response->assertStatus(422)
@@ -389,14 +393,14 @@ class EditionDivisionControllerTest extends TestCase
 
         $editionDivision = EditionDivision::factory()->create([
             'edition_id' => $this->edition->id_edition,
-            'division_id' => $this->division->id_division
+            'division_id' => $this->division->id_division,
         ]);
 
         $player = Player::factory()->create();
         EditionParticipation::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'player_id' => $player->id_player,
-            'division_id' => $this->division->id_division
+            'division_id' => $this->division->id_division,
         ]);
 
         $response = $this->getJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}/participants");
@@ -404,7 +408,7 @@ class EditionDivisionControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
-                'message' => 'Participants retrieved successfully'
+                'message' => 'Participants retrieved successfully',
             ]);
 
         $this->assertCount(1, $response->json('data'));
@@ -452,14 +456,14 @@ class EditionDivisionControllerTest extends TestCase
                         'edition_id',
                         'division_id',
                         'players_limit',
-                        'court'
-                    ]
+                        'court',
+                    ],
                 ],
                 'links' => [
                     'first',
                     'last',
                     'prev',
-                    'next'
+                    'next',
                 ],
                 'meta' => [
                     'current_page',
@@ -468,8 +472,8 @@ class EditionDivisionControllerTest extends TestCase
                     'path',
                     'per_page',
                     'to',
-                    'total'
-                ]
+                    'total',
+                ],
             ]);
 
         $this->assertCount(10, $response->json('data'));

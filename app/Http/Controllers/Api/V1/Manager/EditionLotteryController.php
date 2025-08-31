@@ -1,10 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V1\Manager;
 
-use App\Models\EditionLottery;
-use App\Models\Edition;
 use App\Http\Resources\EditionLotteryResource;
+use App\Models\EditionLottery;
 use Illuminate\Http\Request;
 
 /**
@@ -79,7 +80,7 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
         $lottery->load([
             'prize',
             'division',
-            'luckyOnes.drawnParticipation.player'
+            'luckyOnes.drawnParticipation.player',
         ]);
 
         return $this->resourceResponse(

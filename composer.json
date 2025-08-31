@@ -15,6 +15,7 @@
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",
+        "friendsofphp/php-cs-fixer": "^3.86",
         "laravel/sail": "^1.0.1",
         "mockery/mockery": "^1.4.4",
         "nunomaduro/collision": "^8.0",
@@ -45,7 +46,14 @@
         ],
         "post-create-project-cmd": [
             "@php artisan key:generate --ansi"
-        ]
+        ],
+        "format": "vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.php --verbose",
+        "format:check": "vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.php --dry-run --diff",
+        "format:fix": "vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.php --verbose",
+        "format:app": "vendor/bin/php-cs-fixer fix app/ --config=.php-cs-fixer.php --verbose",
+        "format:config": "vendor/bin/php-cs-fixer fix config/ --config=.php-cs-fixer.php --verbose",
+        "format:routes": "vendor/bin/php-cs-fixer fix routes/ --config=.php-cs-fixer.php --verbose",
+        "format:tests": "vendor/bin/php-cs-fixer fix tests/ --config=.php-cs-fixer.php --verbose"
     },
     "extra": {
         "laravel": {

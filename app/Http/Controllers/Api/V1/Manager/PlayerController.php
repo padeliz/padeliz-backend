@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
+use App\Http\Resources\PlayerResource;
 use App\Models\Player;
 use Illuminate\Http\Request;
-use App\Http\Resources\PlayerResource;
 
 /**
  * @OA\Tag(
@@ -82,7 +84,7 @@ class PlayerController extends V1BaseController
             'last_name' => 'nullable|string|max:50',
             'skill_division' => 'nullable|numeric|min:0|max:9.9',
             'user_types' => 'nullable|array',
-            'user_types.*' => 'string|in:player,manager,admin'
+            'user_types.*' => 'string|in:player,manager,admin',
         ]);
 
         $player = Player::create($request->all());
@@ -121,7 +123,7 @@ class PlayerController extends V1BaseController
             'last_name' => 'nullable|string|max:50',
             'skill_division' => 'nullable|numeric|min:0|max:9.9',
             'user_types' => 'nullable|array',
-            'user_types.*' => 'string|in:player,manager,admin'
+            'user_types.*' => 'string|in:player,manager,admin',
         ]);
 
         $player->update($request->all());
@@ -153,6 +155,7 @@ class PlayerController extends V1BaseController
     public function destroy(Player $player)
     {
         $player->delete();
+
         return $this->successResponse(null, 'Player deleted successfully');
     }
 }

@@ -1,8 +1,9 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
 use Illuminate\Support\Facades\File;
 
 class ApiDocumentationController extends Controller
@@ -26,6 +27,7 @@ class ApiDocumentationController extends Controller
         usort($apiVersions, function ($a, $b) {
             $aNum = (int) substr($a, 1);
             $bNum = (int) substr($b, 1);
+
             return $aNum - $bNum;
         });
 

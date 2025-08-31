@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Api\V1\App;
 
-use Tests\TestCase;
 use App\Models\Player;
-use Laravel\Sanctum\Sanctum;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
 
 class PlayerAuthControllerTest extends TestCase
 {
@@ -23,7 +25,7 @@ class PlayerAuthControllerTest extends TestCase
             'google_name' => 'Test Player',
             'google_email' => 'player@example.com',
             'google_avatar' => 'https://example.com/player-avatar.jpg',
-            'user_types' => ['player']
+            'user_types' => ['player'],
         ]);
     }
 
@@ -36,22 +38,22 @@ class PlayerAuthControllerTest extends TestCase
                 'sub' => 'google_player_456',
                 'name' => 'New Player',
                 'email' => 'newplayer@example.com',
-                'picture' => 'https://example.com/new-player.jpg'
+                'picture' => 'https://example.com/new-player.jpg',
                 ]);
         });
 
         $response = $this->postJson('/api/v1/app/auth/google', [
-            'token' => 'any.test.token'
+            'token' => 'any.test.token',
         ]);
 
         $response->assertStatus(404)
             ->assertJson([
                 'success' => false,
-                'message' => 'User not found. Please register first.'
+                'message' => 'User not found. Please register first.',
             ]);
 
         $this->assertDatabaseMissing('players', [
-            'google_email' => 'newplayer@example.com'
+            'google_email' => 'newplayer@example.com',
         ]);
     }
 
@@ -64,12 +66,12 @@ class PlayerAuthControllerTest extends TestCase
                 'sub' => 'google_player_123',
                 'name' => 'Test Player',
                 'email' => 'player@example.com',
-                'picture' => 'https://example.com/player-avatar.jpg'
+                'picture' => 'https://example.com/player-avatar.jpg',
                 ]);
         });
 
         $response = $this->postJson('/api/v1/app/auth/google', [
-            'token' => 'valid.token'
+            'token' => 'valid.token',
         ]);
 
         $response->assertStatus(200)
@@ -82,10 +84,10 @@ class PlayerAuthControllerTest extends TestCase
                     'id_player',
                     'name',
                     'google_name',
-                    'google_avatar'
+                    'google_avatar',
                 ],
-                'user_type'
-                ]
+                'user_type',
+                ],
             ]);
 
         // Verify the existing player was returned
@@ -95,10 +97,10 @@ class PlayerAuthControllerTest extends TestCase
             'data' => [
                 'player' => [
                     'id_player' => $this->player->id_player,
-                    'name' => 'Test Player'
+                    'name' => 'Test Player',
                 ],
-                'user_type' => 'player'
-            ]
+                'user_type' => 'player',
+            ],
         ]);
     }
 
@@ -106,7 +108,7 @@ class PlayerAuthControllerTest extends TestCase
     {
         // Create a manager without player privileges
         $manager = Player::factory()->managerOnly()->create([
-            'google_email' => 'manager@example.com'
+            'google_email' => 'manager@example.com',
         ]);
 
         // Mock Google Client
@@ -116,18 +118,18 @@ class PlayerAuthControllerTest extends TestCase
                     'sub' => 'google_manager_123',
                     'name' => 'Test Manager',
                     'email' => 'manager@example.com',
-                    'picture' => 'https://example.com/manager-avatar.jpg'
+                    'picture' => 'https://example.com/manager-avatar.jpg',
                 ]);
         });
 
         $response = $this->postJson('/api/v1/app/auth/google', [
-            'token' => 'valid.token'
+            'token' => 'valid.token',
         ]);
 
         $response->assertStatus(403)
             ->assertJson([
                 'success' => false,
-                'message' => 'User does not have player privileges.'
+                'message' => 'User does not have player privileges.',
             ]);
     }
 
@@ -147,7 +149,7 @@ class PlayerAuthControllerTest extends TestCase
         });
 
         $response = $this->postJson('/api/v1/app/auth/google', [
-            'token' => 'invalid.token'
+            'token' => 'invalid.token',
         ]);
 
         $response->assertStatus(401);
@@ -169,16 +171,16 @@ class PlayerAuthControllerTest extends TestCase
                 'phone',
                 'google_name',
                 'google_avatar',
-                'uploaded_profile_urls'
-            ]
+                'uploaded_profile_urls',
+            ],
             ])
             ->assertJson([
             'success' => true,
             'message' => 'Player profile retrieved successfully',
             'data' => [
                 'id_player' => $this->player->id_player,
-                'name' => 'Test Player'
-            ]
+                'name' => 'Test Player',
+            ],
             ]);
     }
 
@@ -193,8 +195,8 @@ class PlayerAuthControllerTest extends TestCase
                 'success',
                 'message',
                 'data' => [
-                    'uploaded_profile_urls'
-                ]
+                    'uploaded_profile_urls',
+                ],
             ]);
 
         $data = $response->json('data');
@@ -217,7 +219,7 @@ class PlayerAuthControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
-                'message' => 'Player logged out successfully'
+                'message' => 'Player logged out successfully',
             ]);
     }
 
@@ -231,7 +233,7 @@ class PlayerAuthControllerTest extends TestCase
     public function test_dev_login_creates_player_in_non_production()
     {
         $response = $this->postJson('/api/v1/app/auth/dev-login', [
-            'email' => 'dev@example.com'
+            'email' => 'dev@example.com',
         ]);
 
         $response->assertStatus(200)
@@ -243,14 +245,14 @@ class PlayerAuthControllerTest extends TestCase
                 'player' => [
                     'id_player',
                     'name',
-                    'google_email'
+                    'google_email',
                 ],
-                'user_type'
-                ]
+                'user_type',
+                ],
             ]);
 
         $this->assertDatabaseHas('players', [
-            'google_email' => 'dev@example.com'
+            'google_email' => 'dev@example.com',
         ]);
     }
 
@@ -266,14 +268,14 @@ class PlayerAuthControllerTest extends TestCase
                 'sub' => 'google_player_123',
                 'name' => 'Test Player',
                 'email' => 'player@example.com',
-                'picture' => 'https://example.com/player-avatar.jpg'
+                'picture' => 'https://example.com/player-avatar.jpg',
                 ]);
         });
 
         $startTime = microtime(true);
 
         $response = $this->postJson('/api/v1/app/auth/google', [
-            'token' => 'any.test.token'
+            'token' => 'any.test.token',
         ]);
 
         $endTime = microtime(true);
@@ -292,14 +294,14 @@ class PlayerAuthControllerTest extends TestCase
                 'sub' => 'google_player_123',
                 'name' => 'Test Player',
                 'email' => 'player@example.com',
-                'picture' => 'https://example.com/player-avatar.jpg'
+                'picture' => 'https://example.com/player-avatar.jpg',
                 ]);
         });
 
         // Make multiple requests quickly
         for ($i = 0; $i < 5; $i++) {
             $response = $this->postJson('/api/v1/app/auth/google', [
-                'token' => 'any.test.token'
+                'token' => 'any.test.token',
             ]);
             $response->assertStatus(200);
         }
@@ -314,7 +316,7 @@ class PlayerAuthControllerTest extends TestCase
                 'sub' => 'google_player_123',
                 'name' => 'Test Player',
                 'email' => 'player@example.com',
-                'picture' => 'https://example.com/player-avatar.jpg'
+                'picture' => 'https://example.com/player-avatar.jpg',
                 ]);
         });
 
@@ -322,7 +324,7 @@ class PlayerAuthControllerTest extends TestCase
         $responses = [];
         for ($i = 0; $i < 3; $i++) {
             $responses[] = $this->postJson('/api/v1/app/auth/google', [
-                'token' => 'any.test.token'
+                'token' => 'any.test.token',
             ]);
         }
 
@@ -336,7 +338,7 @@ class PlayerAuthControllerTest extends TestCase
         $userTypes = [
             ['player'],
             ['player', 'manager'],
-            ['manager', 'player']
+            ['manager', 'player'],
         ];
 
         foreach ($userTypes as $userTypes) {
@@ -348,7 +350,7 @@ class PlayerAuthControllerTest extends TestCase
             $response->assertStatus(200)
                 ->assertJson([
                 'success' => true,
-                'message' => 'Player profile retrieved successfully'
+                'message' => 'Player profile retrieved successfully',
                 ]);
         }
     }
@@ -357,7 +359,7 @@ class PlayerAuthControllerTest extends TestCase
     {
         // Test that unique constraints are respected
         $existingPlayer = Player::factory()->create([
-            'google_email' => 'unique@example.com'
+            'google_email' => 'unique@example.com',
         ]);
 
         // Mock Google Client
@@ -367,12 +369,12 @@ class PlayerAuthControllerTest extends TestCase
                 'sub' => 'google_player_456',
                 'name' => 'New Player',
                 'email' => 'unique@example.com',
-                'picture' => 'https://example.com/new-player.jpg'
+                'picture' => 'https://example.com/new-player.jpg',
                 ]);
         });
 
         $response = $this->postJson('/api/v1/app/auth/google', [
-            'token' => 'any.test.token'
+            'token' => 'any.test.token',
         ]);
 
         $response->assertStatus(200);

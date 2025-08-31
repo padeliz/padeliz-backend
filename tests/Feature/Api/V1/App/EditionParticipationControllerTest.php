@@ -1,23 +1,28 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Api\V1\App;
 
-use Tests\TestCase;
-use App\Models\Player;
-use App\Models\Edition;
 use App\Models\Division;
+use App\Models\Edition;
 use App\Models\EditionDivision;
+use App\Models\Player;
 use App\Models\PlayerEligibility;
-use Laravel\Sanctum\Sanctum;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
 
 class EditionParticipationControllerTest extends TestCase
 {
     use RefreshDatabase;
 
     protected $player;
+
     protected $edition;
+
     protected $division;
+
     protected $editionDivision;
 
     protected function setUp(): void
@@ -26,20 +31,20 @@ class EditionParticipationControllerTest extends TestCase
 
         $this->player = Player::factory()->playerOnly()->create();
         $this->edition = Edition::factory()->create([
-            'date' => now()->addDays(30)->format('Y-m-d')
+            'date' => now()->addDays(30)->format('Y-m-d'),
         ]);
         $this->division = Division::factory()->create();
         $this->editionDivision = EditionDivision::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'division_id' => $this->division->id_division,
-            'players_limit' => 10
+            'players_limit' => 10,
         ]);
 
         // Create approved eligibility for the player
         PlayerEligibility::factory()->create([
             'player_id' => $this->player->id_player,
             'edition_id' => $this->edition->id_edition,
-            'review_status' => 'approved'
+            'review_status' => 'approved',
         ]);
     }
 
@@ -48,7 +53,7 @@ class EditionParticipationControllerTest extends TestCase
         Sanctum::actingAs($this->player);
 
         $participationData = [
-            'division_id' => $this->division->id_division
+            'division_id' => $this->division->id_division,
         ];
 
         $response = $this->postJson("/api/v1/app/editions/{$this->edition->id_edition}/participate", $participationData);
@@ -61,16 +66,16 @@ class EditionParticipationControllerTest extends TestCase
                     'id_participation',
                     'edition_id',
                     'player_id',
-                    'division_id'
-                ]
+                    'division_id',
+                ],
             ])
             ->assertJson([
             'success' => true,
             'message' => 'Successfully registered for edition',
             'data' => [
                 'player_id' => $this->player->id_player,
-                'edition_id' => $this->edition->id_edition
-                ]
+                'edition_id' => $this->edition->id_edition,
+                ],
             ]);
     }
 
@@ -85,7 +90,7 @@ class EditionParticipationControllerTest extends TestCase
             'is_minor' => false,
             'is_student' => false,
             'discount' => 0,
-            'payment' => 100
+            'payment' => 100,
         ]);
 
         $response = $this->deleteJson("/api/v1/app/editions/{$this->edition->id_edition}/withdraw");
@@ -93,14 +98,14 @@ class EditionParticipationControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
-                'message' => 'Withdrawn successfully'
+                'message' => 'Withdrawn successfully',
             ]);
     }
 
     public function test_requires_player_authentication()
     {
         $response = $this->postJson("/api/v1/app/editions/{$this->edition->id_edition}/participate", [
-            'division_id' => $this->division->id_division
+            'division_id' => $this->division->id_division,
         ]);
 
         $response->assertStatus(401);
@@ -117,12 +122,12 @@ class EditionParticipationControllerTest extends TestCase
             'is_minor' => false,
             'is_student' => false,
             'discount' => 0,
-            'payment' => 100
+            'payment' => 100,
         ]);
 
         // Try to create second participation
         $response = $this->postJson("/api/v1/app/editions/{$this->edition->id_edition}/participate", [
-            'division_id' => $this->division->id_division
+            'division_id' => $this->division->id_division,
         ]);
 
         $response->assertStatus(422);

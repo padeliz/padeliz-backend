@@ -1,14 +1,15 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V1\App;
 
-use App\Http\Controllers\BaseVersions\V1\V1BaseController;
-use App\Models\Player;
-use App\Http\Resources\PlayerResource;
-use Illuminate\Http\Request;
-use Google\Client as GoogleClient;
 use App\Exceptions\InvalidGoogleTokenException;
+use App\Http\Controllers\BaseVersions\V1\V1BaseController;
+use App\Http\Resources\PlayerResource;
+use App\Models\Player;
 use App\Services\AuthLogger;
+use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
@@ -64,33 +65,33 @@ class PlayerAuthController extends V1BaseController
     {
         // Validate request first
         $request->validate([
-            'token' => 'required|string'
+            'token' => 'required|string',
         ]);
 
         try {
             // Verify token with Google
             $payload = $googleClient->verifyIdToken($request->token);
 
-            if (!$payload) {
+            if (! $payload) {
                 throw new InvalidGoogleTokenException();
             }
 
-            $googleUser = (object)[
+            $googleUser = (object) [
                 'id' => $payload['sub'],
                 'name' => $payload['name'] ?? null,
                 'email' => $payload['email'],
-                'avatar' => $payload['picture'] ?? null
+                'avatar' => $payload['picture'] ?? null,
             ];
 
             // Find existing player
             $player = Player::where('google_email', $googleUser->email)->first();
 
-            if (!$player) {
+            if (! $player) {
                 return $this->errorResponse('User not found. Please register first.', 404);
             }
 
             // Ensure player has player user type
-            if (!$player->hasUserType('player')) {
+            if (! $player->hasUserType('player')) {
                 return $this->errorResponse('User does not have player privileges.', 403);
             }
 
@@ -100,7 +101,7 @@ class PlayerAuthController extends V1BaseController
             return $this->successResponse([
                 'token' => $token,
                 'player' => new PlayerResource($player),
-                'user_type' => 'player'
+                'user_type' => 'player',
             ], 'Player authenticated successfully');
         } catch (\Exception $e) {
             // Log the error with context
@@ -108,7 +109,7 @@ class PlayerAuthController extends V1BaseController
                 'token_length' => strlen($request->token ?? ''),
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent(),
-                'auth_type' => 'player_google'
+                'auth_type' => 'player_google',
             ]);
 
             return $this->errorResponse('Player authentication failed', 401);
@@ -205,23 +206,23 @@ class PlayerAuthController extends V1BaseController
         }
 
         $request->validate([
-            'email' => 'required|email'
+            'email' => 'required|email',
         ]);
 
         $player = Player::where('google_email', $request->email)->first();
 
-        if (!$player) {
+        if (! $player) {
             $player = Player::create([
                 'name' => 'Dev Player',
                 'google_email' => $request->email,
                 'google_id' => 'dev_' . time(),
                 'google_name' => 'Dev Player',
-                'google_avatar' => 'https://example.com/dev-avatar.jpg'
+                'google_avatar' => 'https://example.com/dev-avatar.jpg',
             ]);
         }
 
         // Ensure player has player user type
-        if (!$player->hasUserType('player')) {
+        if (! $player->hasUserType('player')) {
             $player->addUserType('player');
         }
 
@@ -230,7 +231,7 @@ class PlayerAuthController extends V1BaseController
         return $this->successResponse([
             'token' => $token,
             'player' => new PlayerResource($player),
-            'user_type' => 'player'
+            'user_type' => 'player',
         ], 'Player logged in successfully');
     }
 }

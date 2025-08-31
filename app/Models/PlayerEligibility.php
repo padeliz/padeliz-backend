@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -36,12 +38,15 @@ class PlayerEligibility extends Model
     use HasFactory;
 
     protected $table = 'player_eligibilities';
+
     protected $primaryKey = 'id_eligibility';
+
     public $timestamps = true;
+
     protected $dateFormat = 'U';
 
-    const CREATED_AT = 'inserted_at';
-    const UPDATED_AT = 'updated_at';
+    public const CREATED_AT = 'inserted_at';
+    public const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
         'edition_id',
@@ -61,7 +66,7 @@ class PlayerEligibility extends Model
         'reviewed_at',
         'review_status',
         'review_message',
-        'resubmitted_at'
+        'resubmitted_at',
     ];
 
     protected $casts = [
@@ -71,7 +76,7 @@ class PlayerEligibility extends Model
         'being_student' => 'boolean',
         'year_of_birth' => 'integer',
         'skill_division' => 'float',
-        'resubmitted_at' => 'integer'
+        'resubmitted_at' => 'integer',
     ];
 
     public function player()

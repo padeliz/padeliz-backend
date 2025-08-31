@@ -1,19 +1,22 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Api\V1\App;
 
-use Tests\TestCase;
-use App\Models\Player;
 use App\Models\Edition;
+use App\Models\Player;
 use App\Models\PlayerEligibility;
-use Laravel\Sanctum\Sanctum;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
 
 class EligibilityControllerTest extends TestCase
 {
     use RefreshDatabase;
 
     protected $player;
+
     protected $edition;
 
     protected function setUp(): void
@@ -22,7 +25,7 @@ class EligibilityControllerTest extends TestCase
 
         $this->player = Player::factory()->playerOnly()->create();
         $this->edition = Edition::factory()->create([
-            'date' => now()->addDays(30)->format('Y-m-d')
+            'date' => now()->addDays(30)->format('Y-m-d'),
         ]);
     }
 
@@ -32,7 +35,7 @@ class EligibilityControllerTest extends TestCase
 
         $eligibility = PlayerEligibility::factory()->create([
             'player_id' => $this->player->id_player,
-            'review_status' => 'approved'
+            'review_status' => 'approved',
         ]);
 
         $response = $this->getJson('/api/v1/app/eligibility/approved');
@@ -44,12 +47,12 @@ class EligibilityControllerTest extends TestCase
             'data' => [
                 'id',
                 'player_id',
-                'review_status'
-                ]
+                'review_status',
+                ],
             ])
             ->assertJson([
                 'success' => true,
-                'message' => 'Approved eligibility retrieved successfully'
+                'message' => 'Approved eligibility retrieved successfully',
             ]);
     }
 
@@ -59,7 +62,7 @@ class EligibilityControllerTest extends TestCase
 
         $eligibility = PlayerEligibility::factory()->create([
             'player_id' => $this->player->id_player,
-            'review_status' => 'pending'
+            'review_status' => 'pending',
         ]);
 
         $response = $this->getJson('/api/v1/app/eligibility/pending');
@@ -71,12 +74,12 @@ class EligibilityControllerTest extends TestCase
             'data' => [
                 'id',
                 'player_id',
-                'review_status'
-                ]
+                'review_status',
+                ],
             ])
             ->assertJson([
                 'success' => true,
-                'message' => 'Pending eligibility retrieved successfully'
+                'message' => 'Pending eligibility retrieved successfully',
             ]);
     }
 
@@ -86,7 +89,7 @@ class EligibilityControllerTest extends TestCase
 
         $eligibility = PlayerEligibility::factory()->create([
             'player_id' => $this->player->id_player,
-            'review_status' => 'rejected'
+            'review_status' => 'rejected',
         ]);
 
         $response = $this->getJson('/api/v1/app/eligibility/rejected');
@@ -98,12 +101,12 @@ class EligibilityControllerTest extends TestCase
             'data' => [
                 'id',
                 'player_id',
-                'review_status'
-                ]
+                'review_status',
+                ],
             ])
             ->assertJson([
                 'success' => true,
-                'message' => 'Rejected eligibility retrieved successfully'
+                'message' => 'Rejected eligibility retrieved successfully',
             ]);
     }
 
@@ -112,7 +115,7 @@ class EligibilityControllerTest extends TestCase
         Sanctum::actingAs($this->player);
 
         $eligibilityData = [
-            'edition_id' => $this->edition->id_edition
+            'edition_id' => $this->edition->id_edition,
         ];
 
         $response = $this->postJson('/api/v1/app/eligibility', $eligibilityData);
@@ -125,12 +128,12 @@ class EligibilityControllerTest extends TestCase
                 'id',
                 'player_id',
                 'edition_id',
-                'name'
-                ]
+                'name',
+                ],
             ])
             ->assertJson([
                 'success' => true,
-                'message' => 'Eligibility created successfully'
+                'message' => 'Eligibility created successfully',
             ]);
     }
 
@@ -140,7 +143,7 @@ class EligibilityControllerTest extends TestCase
 
         $eligibility = PlayerEligibility::factory()->create([
             'player_id' => $this->player->id_player,
-            'review_status' => 'pending'
+            'review_status' => 'pending',
         ]);
 
         $response = $this->patchJson('/api/v1/app/eligibility', []);
@@ -152,12 +155,12 @@ class EligibilityControllerTest extends TestCase
             'data' => [
                 'id',
                 'player_id',
-                'edition_id'
-                ]
+                'edition_id',
+                ],
             ])
             ->assertJson([
                 'success' => true,
-                'message' => 'Eligibility updated successfully'
+                'message' => 'Eligibility updated successfully',
             ]);
     }
 

@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\BaseVersions\V1;
 
 use App\Http\Controllers\Controller;
@@ -50,8 +52,6 @@ use App\Traits\ApiResponse;
  *     @OA\Property(property="message", type="string", example="Operation completed successfully"),
  *     @OA\Property(property="data", type="object", description="Response data")
  * )
- *
-
  *
  * @OA\Schema(
  *     schema="ApiErrorResponse",

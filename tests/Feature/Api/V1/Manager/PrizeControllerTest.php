@@ -1,14 +1,16 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Api\V1\Manager;
 
-use Tests\TestCase;
+use App\Models\EditionLottery;
 use App\Models\Player;
 use App\Models\Prize;
 use App\Models\PrizeFromClub;
-use App\Models\EditionLottery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
 
 class PrizeControllerTest extends TestCase
 {
@@ -27,7 +29,7 @@ class PrizeControllerTest extends TestCase
             'google_name' => 'Test Manager',
             'google_email' => 'manager@example.com',
             'google_avatar' => 'https://example.com/manager-avatar.jpg',
-            'user_types' => ['player', 'manager']
+            'user_types' => ['player', 'manager'],
         ]);
     }
 
@@ -51,14 +53,14 @@ class PrizeControllerTest extends TestCase
                         'box_1_text_color',
                         'box_2_text',
                         'box_2_bg_color',
-                        'box_2_text_color'
-                    ]
+                        'box_2_text_color',
+                    ],
                 ],
                 'links' => [
                     'first',
                     'last',
                     'prev',
-                    'next'
+                    'next',
                 ],
                 'meta' => [
                     'current_page',
@@ -67,8 +69,8 @@ class PrizeControllerTest extends TestCase
                     'path',
                     'per_page',
                     'to',
-                    'total'
-                ]
+                    'total',
+                ],
             ]);
 
         $this->assertCount(5, $response->json('data'));
@@ -80,7 +82,7 @@ class PrizeControllerTest extends TestCase
 
         $prize = Prize::factory()->create([
             'name' => 'Test Prize',
-            'box_1_text' => 'Test Box 1'
+            'box_1_text' => 'Test Box 1',
         ]);
 
         $response = $this->getJson("/api/v1/manager/prizes/{$prize->id_prize}");
@@ -92,8 +94,8 @@ class PrizeControllerTest extends TestCase
                 'data' => [
                     'id_prize' => $prize->id_prize,
                     'name' => 'Test Prize',
-                    'box_1_text' => 'Test Box 1'
-                ]
+                    'box_1_text' => 'Test Box 1',
+                ],
             ]);
     }
 
@@ -109,7 +111,7 @@ class PrizeControllerTest extends TestCase
             'box_1_text_color' => '#FFFFFF',
             'box_2_text' => 'Box 2 Text',
             'box_2_bg_color' => '#00FF00',
-            'box_2_text_color' => '#000000'
+            'box_2_text_color' => '#000000',
         ];
 
         $response = $this->postJson('/api/v1/manager/prizes', $prizeData);
@@ -126,13 +128,13 @@ class PrizeControllerTest extends TestCase
                     'box_1_text_color' => '#FFFFFF',
                     'box_2_text' => 'Box 2 Text',
                     'box_2_bg_color' => '#00FF00',
-                    'box_2_text_color' => '#000000'
-                ]
+                    'box_2_text_color' => '#000000',
+                ],
             ]);
 
         $this->assertDatabaseHas('prizes', [
             'name' => 'New Prize',
-            'image' => 'prize-image.jpg'
+            'image' => 'prize-image.jpg',
         ]);
     }
 
@@ -142,13 +144,13 @@ class PrizeControllerTest extends TestCase
 
         $prize = Prize::factory()->create([
             'name' => 'Old Name',
-            'box_1_text' => 'Old Box 1'
+            'box_1_text' => 'Old Box 1',
         ]);
 
         $updateData = [
             'name' => 'Updated Name',
             'box_1_text' => 'Updated Box 1',
-            'box_1_bg_color' => '#0000FF'
+            'box_1_bg_color' => '#0000FF',
         ];
 
         $response = $this->putJson("/api/v1/manager/prizes/{$prize->id_prize}", $updateData);
@@ -161,14 +163,14 @@ class PrizeControllerTest extends TestCase
                     'id_prize' => $prize->id_prize,
                     'name' => 'Updated Name',
                     'box_1_text' => 'Updated Box 1',
-                    'box_1_bg_color' => '#0000FF'
-                ]
+                    'box_1_bg_color' => '#0000FF',
+                ],
             ]);
 
         $this->assertDatabaseHas('prizes', [
             'id_prize' => $prize->id_prize,
             'name' => 'Updated Name',
-            'box_1_text' => 'Updated Box 1'
+            'box_1_text' => 'Updated Box 1',
         ]);
     }
 
@@ -183,11 +185,11 @@ class PrizeControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
-                'message' => 'Prize deleted successfully'
+                'message' => 'Prize deleted successfully',
             ]);
 
         $this->assertDatabaseMissing('prizes', [
-            'id_prize' => $prize->id_prize
+            'id_prize' => $prize->id_prize,
         ]);
     }
 
@@ -203,11 +205,11 @@ class PrizeControllerTest extends TestCase
         $response->assertStatus(409)
             ->assertJson([
                 'success' => false,
-                'message' => 'Cannot delete prize because it has related club prizes or lotteries'
+                'message' => 'Cannot delete prize because it has related club prizes or lotteries',
             ]);
 
         $this->assertDatabaseHas('prizes', [
-            'id_prize' => $prize->id_prize
+            'id_prize' => $prize->id_prize,
         ]);
     }
 
@@ -223,11 +225,11 @@ class PrizeControllerTest extends TestCase
         $response->assertStatus(409)
             ->assertJson([
                 'success' => false,
-                'message' => 'Cannot delete prize because it has related club prizes or lotteries'
+                'message' => 'Cannot delete prize because it has related club prizes or lotteries',
             ]);
 
         $this->assertDatabaseHas('prizes', [
-            'id_prize' => $prize->id_prize
+            'id_prize' => $prize->id_prize,
         ]);
     }
 
@@ -248,7 +250,7 @@ class PrizeControllerTest extends TestCase
         $response = $this->postJson('/api/v1/manager/prizes', [
             'name' => 'Test Prize',
             'box_1_bg_color' => 'invalid-color',
-            'box_1_text_color' => 'invalid-color'
+            'box_1_text_color' => 'invalid-color',
         ]);
 
         $response->assertStatus(422)
@@ -263,7 +265,7 @@ class PrizeControllerTest extends TestCase
         $prize2 = Prize::factory()->create(['name' => 'Another Prize']);
 
         $response = $this->putJson("/api/v1/manager/prizes/{$prize2->id_prize}", [
-            'name' => 'Existing Prize'
+            'name' => 'Existing Prize',
         ]);
 
         $response->assertStatus(422)
@@ -310,14 +312,14 @@ class PrizeControllerTest extends TestCase
                     '*' => [
                         'id_prize',
                         'name',
-                        'image'
-                    ]
+                        'image',
+                    ],
                 ],
                 'links' => [
                     'first',
                     'last',
                     'prev',
-                    'next'
+                    'next',
                 ],
                 'meta' => [
                     'current_page',
@@ -326,8 +328,8 @@ class PrizeControllerTest extends TestCase
                     'path',
                     'per_page',
                     'to',
-                    'total'
-                ]
+                    'total',
+                ],
             ]);
 
         $this->assertCount(10, $response->json('data'));
@@ -335,4 +337,3 @@ class PrizeControllerTest extends TestCase
         $this->assertEquals(25, $response->json('meta.total'));
     }
 }
-

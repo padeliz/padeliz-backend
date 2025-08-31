@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
-use App\Models\EditionParticipation;
-use App\Models\Edition;
-use App\Models\Player;
 use App\Models\Division;
+use App\Models\Edition;
+use App\Models\EditionParticipation;
+use App\Models\Player;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class EditionParticipationFactory extends Factory

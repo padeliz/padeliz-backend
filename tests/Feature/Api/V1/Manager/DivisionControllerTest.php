@@ -1,15 +1,17 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Api\V1\Manager;
 
-use Tests\TestCase;
-use App\Models\Player;
 use App\Models\Division;
 use App\Models\Edition;
 use App\Models\EditionDivision;
 use App\Models\EditionParticipation;
+use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
 
 class DivisionControllerTest extends TestCase
 {
@@ -28,7 +30,7 @@ class DivisionControllerTest extends TestCase
             'google_name' => 'Test Manager',
             'google_email' => 'manager@example.com',
             'google_avatar' => 'https://example.com/manager-avatar.jpg',
-            'user_types' => ['player', 'manager']
+            'user_types' => ['player', 'manager'],
         ]);
     }
 
@@ -47,14 +49,14 @@ class DivisionControllerTest extends TestCase
                         'id_division',
                         'name',
                         'color',
-                        'is_students_only'
-                    ]
+                        'is_students_only',
+                    ],
                 ],
             'links' => [
                 'first',
                 'last',
                 'prev',
-                'next'
+                'next',
             ],
             'meta' => [
                 'current_page',
@@ -63,8 +65,8 @@ class DivisionControllerTest extends TestCase
                 'path',
                 'per_page',
                 'to',
-                'total'
-            ]
+                'total',
+            ],
             ]);
 
         $this->assertCount(5, $response->json('data'));
@@ -76,7 +78,7 @@ class DivisionControllerTest extends TestCase
 
         $division = Division::factory()->create([
             'name' => 'Test Division',
-            'color' => '#FF0000'
+            'color' => '#FF0000',
         ]);
 
         $response = $this->getJson("/api/v1/manager/divisions/{$division->id_division}");
@@ -88,8 +90,8 @@ class DivisionControllerTest extends TestCase
                 'data' => [
                 'id_division' => $division->id_division,
                 'name' => 'Test Division',
-                'color' => '#FF0000'
-                ]
+                'color' => '#FF0000',
+                ],
             ]);
     }
 
@@ -104,7 +106,7 @@ class DivisionControllerTest extends TestCase
             'name' => 'New Division',
             'color' => '#00FF00',
             'is_students_only' => true,
-            'its_first_edition_id' => $edition->id_edition
+            'its_first_edition_id' => $edition->id_edition,
         ];
 
         $response = $this->postJson('/api/v1/manager/divisions', $divisionData);
@@ -116,14 +118,14 @@ class DivisionControllerTest extends TestCase
                 'data' => [
                     'name' => 'New Division',
                     'color' => '#00FF00',
-                    'is_students_only' => true
-                ]
+                    'is_students_only' => true,
+                ],
             ]);
 
         $this->assertDatabaseHas('divisions', [
             'name' => 'New Division',
             'color' => '#00FF00',
-            'is_students_only' => true
+            'is_students_only' => true,
         ]);
     }
 
@@ -134,13 +136,13 @@ class DivisionControllerTest extends TestCase
         $division = Division::factory()->create([
             'name' => 'Old Name',
             'color' => '#FF0000',
-            'is_students_only' => false
+            'is_students_only' => false,
         ]);
 
         $updateData = [
             'name' => 'Updated Name',
             'color' => '#0000FF',
-            'is_students_only' => true
+            'is_students_only' => true,
         ];
 
         $response = $this->putJson("/api/v1/manager/divisions/{$division->id_division}", $updateData);
@@ -153,15 +155,15 @@ class DivisionControllerTest extends TestCase
                     'id_division' => $division->id_division,
                     'name' => 'Updated Name',
                     'color' => '#0000FF',
-                    'is_students_only' => true
-                ]
+                    'is_students_only' => true,
+                ],
             ]);
 
         $this->assertDatabaseHas('divisions', [
             'id_division' => $division->id_division,
             'name' => 'Updated Name',
             'color' => '#0000FF',
-            'is_students_only' => true
+            'is_students_only' => true,
         ]);
     }
 
@@ -176,11 +178,11 @@ class DivisionControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
-                'message' => 'Division deleted successfully'
+                'message' => 'Division deleted successfully',
             ]);
 
         $this->assertDatabaseMissing('divisions', [
-            'id_division' => $division->id_division
+            'id_division' => $division->id_division,
         ]);
     }
 
@@ -192,7 +194,7 @@ class DivisionControllerTest extends TestCase
         $edition = Edition::factory()->create();
         EditionDivision::factory()->create([
             'edition_id' => $edition->id_edition,
-            'division_id' => $division->id_division
+            'division_id' => $division->id_division,
         ]);
 
         $response = $this->deleteJson("/api/v1/manager/divisions/{$division->id_division}");
@@ -200,11 +202,11 @@ class DivisionControllerTest extends TestCase
         $response->assertStatus(409)
             ->assertJson([
                 'success' => false,
-                'message' => 'Cannot delete division because it has related edition divisions or participations'
+                'message' => 'Cannot delete division because it has related edition divisions or participations',
             ]);
 
         $this->assertDatabaseHas('divisions', [
-            'id_division' => $division->id_division
+            'id_division' => $division->id_division,
         ]);
     }
 
@@ -218,7 +220,7 @@ class DivisionControllerTest extends TestCase
         EditionParticipation::factory()->create([
             'edition_id' => $edition->id_edition,
             'player_id' => $player->id_player,
-            'division_id' => $division->id_division
+            'division_id' => $division->id_division,
         ]);
 
         $response = $this->deleteJson("/api/v1/manager/divisions/{$division->id_division}");
@@ -226,11 +228,11 @@ class DivisionControllerTest extends TestCase
         $response->assertStatus(409)
             ->assertJson([
                 'success' => false,
-                'message' => 'Cannot delete division because it has related edition divisions or participations'
+                'message' => 'Cannot delete division because it has related edition divisions or participations',
             ]);
 
         $this->assertDatabaseHas('divisions', [
-            'id_division' => $division->id_division
+            'id_division' => $division->id_division,
         ]);
     }
 
@@ -250,7 +252,7 @@ class DivisionControllerTest extends TestCase
 
         $response = $this->postJson('/api/v1/manager/divisions', [
             'name' => 'Test Division',
-            'color' => 'invalid-color'
+            'color' => 'invalid-color',
         ]);
 
         $response->assertStatus(422)
@@ -264,7 +266,7 @@ class DivisionControllerTest extends TestCase
         $division = Division::factory()->create();
 
         $response = $this->putJson("/api/v1/manager/divisions/{$division->id_division}", [
-            'color' => 'invalid-color'
+            'color' => 'invalid-color',
         ]);
 
         $response->assertStatus(422)
@@ -312,14 +314,14 @@ class DivisionControllerTest extends TestCase
                         'id_division',
                         'name',
                         'color',
-                        'is_students_only'
-                    ]
+                        'is_students_only',
+                    ],
                 ],
             'links' => [
                 'first',
                 'last',
                 'prev',
-                'next'
+                'next',
             ],
             'meta' => [
                 'current_page',
@@ -328,8 +330,8 @@ class DivisionControllerTest extends TestCase
                 'path',
                 'per_page',
                 'to',
-                'total'
-            ]
+                'total',
+            ],
             ]);
 
         $this->assertCount(10, $response->json('data'));

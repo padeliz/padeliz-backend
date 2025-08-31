@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 return [
     'default' => 'v1',
     /*
@@ -19,9 +21,7 @@ return [
             ],
 
             'routes' => [
-                /*
-                 * Route for accessing api documentation interface
-                 */
+                // Route for accessing api documentation interface
                 'api' => 'api/documentation/v1',
                 'docs' => 'api/documentation/v1/docs',
                 'oauth2_callback' => 'api/documentation/v1/oauth2-callback',
@@ -31,19 +31,13 @@ return [
     ],
     'defaults' => [
         'routes' => [
-            /*
-             * Route for accessing parsed swagger annotations.
-             */
+            // Route for accessing parsed swagger annotations.
             'docs' => 'docs',
 
-            /*
-             * Route for Oauth2 authentication callback.
-             */
+            // Route for Oauth2 authentication callback.
             'oauth2_callback' => 'api/oauth2-callback',
 
-            /*
-             * Middleware allows to prevent unexpected access to API documentation
-             */
+            // Middleware allows to prevent unexpected access to API documentation
             'middleware' => [
                 'api' => [],
                 'asset' => [],
@@ -51,26 +45,18 @@ return [
                 'oauth2_callback' => [],
             ],
 
-            /*
-             * Route Group options
-             */
+            // Route Group options
             'group_options' => [],
         ],
 
         'paths' => [
-            /*
-             * Absolute path to location where parsed annotations will be stored
-             */
+            // Absolute path to location where parsed annotations will be stored
             'docs' => storage_path('api-docs'),
 
-            /*
-             * Absolute path to directory where to export views
-             */
+            // Absolute path to directory where to export views
             'views' => base_path('resources/views/vendor/l5-swagger'),
 
-            /*
-             * Edit to set the api's base path
-             */
+            // Edit to set the api's base path
             'base' => env('L5_SWAGGER_BASE_PATH', null),
 
             /*
@@ -145,14 +131,10 @@ return [
             'open_api_spec_version' => env('L5_SWAGGER_OPEN_API_SPEC_VERSION', \L5Swagger\Generator::OPEN_API_DEFAULT_SPEC_VERSION),
         ],
 
-        /*
-         * API security definitions. Will be generated into documentation file.
-        */
+        // API security definitions. Will be generated into documentation file.
         'securityDefinitions' => [
             'securitySchemes' => [
-                /*
-                 * Examples of Security schemes
-                 */
+                // Examples of Security schemes
                 /*
                 'api_key_security_example' => [ // Unique name of security
                     'type' => 'apiKey', // The type of the security scheme. Valid values are "basic", "apiKey" or "oauth2".
@@ -197,9 +179,7 @@ return [
                 */
             ],
             'security' => [
-                /*
-                 * Examples of Securities
-                 */
+                // Examples of Securities
                 [
                     /*
                     'oauth2_security_example' => [
@@ -219,9 +199,7 @@ return [
          */
         'generate_always' => env('L5_SWAGGER_GENERATE_ALWAYS', false),
 
-        /*
-         * Set this to `true` to generate a copy of documentation in yaml format
-         */
+        // Set this to `true` to generate a copy of documentation in yaml format
         'generate_yaml_copy' => env('L5_SWAGGER_GENERATE_YAML_COPY', false),
 
         /*
@@ -249,9 +227,7 @@ return [
          */
         'validator_url' => null,
 
-        /*
-         * Swagger UI configuration parameters
-         */
+        // Swagger UI configuration parameters
         'ui' => [
             'display' => [
                 'dark_mode' => env('L5_SWAGGER_UI_DARK_MODE', false),
@@ -275,22 +251,16 @@ return [
             ],
 
             'authorization' => [
-                /*
-                 * If set to true, it persists authorization data, and it would not be lost on browser close/refresh
-                 */
+                // If set to true, it persists authorization data, and it would not be lost on browser close/refresh
                 'persist_authorization' => env('L5_SWAGGER_UI_PERSIST_AUTHORIZATION', false),
 
                 'oauth2' => [
-                    /*
-                     * If set to true, adds PKCE to AuthorizationCodeGrant flow
-                     */
+                    // If set to true, adds PKCE to AuthorizationCodeGrant flow
                     'use_pkce_with_authorization_code_grant' => false,
                 ],
             ],
         ],
-        /*
-         * Constants which can be used in annotations
-         */
+        // Constants which can be used in annotations
         'constants' => [
             'L5_SWAGGER_CONST_HOST' => env('L5_SWAGGER_CONST_HOST', 'http://my-default-host.com'),
         ],

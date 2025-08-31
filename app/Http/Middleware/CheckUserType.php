@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Middleware;
 
 use Closure;
@@ -17,13 +19,13 @@ class CheckUserType
     {
         $user = $request->user();
 
-        if (!$user) {
+        if (! $user) {
             return response()->json(['message' => 'Unauthenticated'], 401);
         }
 
-        if (!$user->hasUserType($userType)) {
+        if (! $user->hasUserType($userType)) {
             return response()->json([
-                'message' => 'Access denied. Required user type: ' . $userType
+                'message' => 'Access denied. Required user type: ' . $userType,
             ], 403);
         }
 

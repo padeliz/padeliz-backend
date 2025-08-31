@@ -7,11 +7,13 @@ Service Laravel-based endpoints for:
 - padeliz-frontend-manager
 - padeliz-frontend-admin
 
+
 ## Development Setup (Windows)
 
 This project uses VS Code DevContainers for development with optimized performance for Google API client services.
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling.
+
 
 ### Prerequisites
 - [Git](https://git-scm.com/downloads)
@@ -20,10 +22,12 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
     - *copy `.wslconfig.example` to your Windows user directory for optimal performance*
 - [VS Code](https://code.visualstudio.com/) with the "Dev Containers" extension
 
+
 ### Performance Notes
 - **WSL2 Users**: The devcontainer is optimized for WSL2 performance issues
 - **Google API Client**: Handles large package installations without timeout issues
 - **Volume Mounting**: Uses optimized mounting strategy for better file I/O performance
+
 
 ### First-time setup
 
@@ -60,6 +64,7 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
    cp .env.example .env
    ```
 
+
 ### Available Endpoints
 
 The API is available at `http://localhost:8000`
@@ -67,6 +72,7 @@ The API is available at `http://localhost:8000`
 Its Swagger docs is available at `http://localhost:8000/api/documentation`
 
 Manage DB data from phpMyAdmin: `http://localhost:8080`
+
 
 ### Useful Commands
 
@@ -78,6 +84,10 @@ Once inside the DevContainer, you can use these commands:
 php artisan migrate # Run migrations
 
 vendor/bin/phpunit # Run tests
+
+composer format # Format all code
+composer format:check # Check formatting without making changes
+composer format:fix # Fix formatting with verbose output
 
 php artisan cache:clear
 php artisan config:clear
@@ -97,6 +107,7 @@ php artisan route:clear
 php artisan view:clear
 ```
 
+
 ### Project Structure
 
   ```bash
@@ -108,6 +119,7 @@ php artisan view:clear
   └── docker/            # Docker configuration files
 ```
 
+
 ### Database Access
 
 You can connect to the database using these credentials:
@@ -116,6 +128,7 @@ You can connect to the database using these credentials:
 - Database: db_padeliz
 - Username: db_user
 - Password: db_pass
+
 
 ### Troubleshooting
 
@@ -130,6 +143,7 @@ You can connect to the database using these credentials:
 3. **Permission Issues**
    - Run Docker Desktop as administrator
    - Ensure proper file permissions in WSL
+
 
 ### Contributing
 
@@ -156,6 +170,7 @@ You can connect to the database using these credentials:
 
 4. Create a Pull Request on GitHub
 
+
 ### Generating Documentation
 
 The API documentation is automatically generated for each version and is available at: `http://localhost:8000/api/documentation`
@@ -171,6 +186,23 @@ php artisan l5-swagger:generate v1
 When you add a new version file (e.g., `routes/api/v3.php`), the documentation will be automatically detected and registered. Simply run the generation command to create the documentation for the new version.
 
 If you make changes to the API endpoints or models, regenerate the documentation.
+
+
+### Automatic Code Formatting
+
+This project is configured with automatic code formatting that works out of the box. No manual setup required!
+
+#### What's Configured:
+- **VS Code Settings**: Automatic formatting on save, proper indentation (4 spaces for PHP, 2 for JSON/YAML)
+- **PHP CS Fixer**: PSR-12 compliant code formatting with Laravel-specific rules
+- **EditorConfig**: Consistent editor behavior across different IDEs
+- **DevContainer Integration**: All extensions and settings are automatically installed
+
+#### How It Works:
+1. **On Save**: Code is automatically formatted when you save any PHP file
+2. **Manual Formatting**: Use `Ctrl+Shift+P` → "Format Document" or `Shift+Alt+F`
+3. **VS Code Tasks**: Use `Ctrl+Shift+P` → "Tasks: Run Task" → Choose formatting task
+
 
 ### Troubleshooting
 

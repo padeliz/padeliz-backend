@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
+use App\Traits\HasUploadedFiles;
+use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
-use Illuminate\Database\Eloquent\Factories\HasFactory;
-use App\Traits\HasUploadedFiles;
 
 /**
  * @OA\Schema(
@@ -42,16 +44,20 @@ use App\Traits\HasUploadedFiles;
  */
 class Player extends Authenticatable
 {
-    use HasFactory, HasApiTokens, HasUploadedFiles;
+    use HasFactory;
+    use HasApiTokens;
+    use HasUploadedFiles;
 
     protected $table = 'players';
+
     protected $primaryKey = 'id_player';
+
     public $timestamps = true;
 
     protected $dateFormat = 'U';
 
-    const CREATED_AT = 'inserted_at';
-    const UPDATED_AT = 'updated_at';
+    public const CREATED_AT = 'inserted_at';
+    public const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
         'name',
@@ -68,12 +74,12 @@ class Player extends Authenticatable
         'being_student',
         'playtomic_id',
         'rankedin_id',
-        'user_types'
+        'user_types',
     ];
 
     protected $hidden = [
         'google_id',
-        'remember_token'
+        'remember_token',
     ];
 
     protected $appends = ['uploaded_profile_urls'];
@@ -140,7 +146,7 @@ class Player extends Authenticatable
     public function addUserType(string $userType): void
     {
         $userTypes = $this->user_types ?? [];
-        if (!in_array($userType, $userTypes)) {
+        if (! in_array($userType, $userTypes)) {
             $userTypes[] = $userType;
             $this->user_types = $userTypes;
             $this->save();
@@ -153,7 +159,7 @@ class Player extends Authenticatable
     public function removeUserType(string $userType): void
     {
         $userTypes = $this->user_types ?? [];
-        $userTypes = array_filter($userTypes, fn($type) => $type !== $userType);
+        $userTypes = array_filter($userTypes, fn ($type) => $type !== $userType);
         $this->user_types = array_values($userTypes);
         $this->save();
     }

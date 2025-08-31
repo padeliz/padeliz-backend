@@ -1,11 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V1\App;
 
-use App\Models\Player;
-use Illuminate\Http\Request;
 use App\Http\Requests\PlayerFormRequest;
 use App\Http\Resources\PlayerResource;
+use App\Models\Player;
+use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
 /**
@@ -213,14 +215,14 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
                 'file',
                 'image',
                 'mimes:jpeg,jpg,png,gif,webp',
-                'max:5120' // 5MB max
-            ]
+                'max:5120', // 5MB max
+            ],
         ], [
             'image.required' => 'Please select an image to upload.',
             'image.file' => 'The uploaded file is not valid.',
             'image.image' => 'The file must be an image.',
             'image.mimes' => 'The image must be a JPEG, PNG, GIF, or WebP file.',
-            'image.max' => 'The image size must not exceed 5MB.'
+            'image.max' => 'The image size must not exceed 5MB.',
         ]);
 
         /** @var Player $player */
@@ -242,7 +244,7 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
                 'error' => $e->getMessage(),
                 'file_name' => $request->file('image')->getClientOriginalName(),
                 'file_size' => $request->file('image')->getSize(),
-                'file_mime' => $request->file('image')->getMimeType()
+                'file_mime' => $request->file('image')->getMimeType(),
             ]);
 
             return $this->errorResponse(
@@ -252,7 +254,7 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
         }
 
         return $this->successResponse([
-            'urls' => $player->getUploadedUrls('images')
+            'urls' => $player->getUploadedUrls('images'),
         ], 'Image uploaded successfully', 201);
     }
 
@@ -291,15 +293,15 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
      */
     public function deleteImage(Request $request, string $filename)
     {
-        /** @var Player $player  */
+        /** @var Player $player */
         $player = $request->user();
 
-        if (!$player->deleteUploadedFile($filename, 'images')) {
+        if (! $player->deleteUploadedFile($filename, 'images')) {
             return $this->notFoundResponse('Image not found');
         }
 
         return $this->successResponse([
-            'urls' => $player->getUploadedUrls('images')
+            'urls' => $player->getUploadedUrls('images'),
         ], 'Image deleted successfully');
     }
 }

@@ -1,19 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Api\V1\Manager;
 
-use Tests\TestCase;
-use App\Models\Player;
 use App\Models\MatchesTeam;
+use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
 
 class MatchesTeamControllerTest extends TestCase
 {
     use RefreshDatabase;
 
     private $manager;
+
     private $player1;
+
     private $player2;
 
     public function setUp(): void
@@ -27,15 +31,15 @@ class MatchesTeamControllerTest extends TestCase
             'google_name' => 'Test Manager',
             'google_email' => 'manager@example.com',
             'google_avatar' => 'https://example.com/manager-avatar.jpg',
-            'user_types' => ['player', 'manager']
+            'user_types' => ['player', 'manager'],
         ]);
 
         $this->player1 = Player::factory()->create([
-            'name' => 'Player One'
+            'name' => 'Player One',
         ]);
 
         $this->player2 = Player::factory()->create([
-            'name' => 'Player Two'
+            'name' => 'Player Two',
         ]);
     }
 
@@ -55,14 +59,14 @@ class MatchesTeamControllerTest extends TestCase
                         'player_1',
                         'player_2',
                         'inserted_at',
-                        'updated_at'
-                    ]
+                        'updated_at',
+                    ],
                 ],
                 'links' => [
                     'first',
                     'last',
                     'prev',
-                    'next'
+                    'next',
                 ],
                 'meta' => [
                     'current_page',
@@ -71,8 +75,8 @@ class MatchesTeamControllerTest extends TestCase
                     'path',
                     'per_page',
                     'to',
-                    'total'
-                ]
+                    'total',
+                ],
             ]);
 
         $this->assertCount(5, $response->json('data'));
@@ -84,7 +88,7 @@ class MatchesTeamControllerTest extends TestCase
 
         $team = MatchesTeam::factory()->create([
             'player_1' => $this->player1->id_player,
-            'player_2' => $this->player2->id_player
+            'player_2' => $this->player2->id_player,
         ]);
 
         $response = $this->getJson("/api/v1/manager/matches-teams/{$team->id_team}");
@@ -96,8 +100,8 @@ class MatchesTeamControllerTest extends TestCase
                 'data' => [
                     'id_team' => $team->id_team,
                     'player_1' => $this->player1->id_player,
-                    'player_2' => $this->player2->id_player
-                ]
+                    'player_2' => $this->player2->id_player,
+                ],
             ]);
     }
 
@@ -107,7 +111,7 @@ class MatchesTeamControllerTest extends TestCase
 
         $teamData = [
             'player_1' => $this->player1->id_player,
-            'player_2' => $this->player2->id_player
+            'player_2' => $this->player2->id_player,
         ];
 
         $response = $this->postJson('/api/v1/manager/matches-teams', $teamData);
@@ -118,13 +122,13 @@ class MatchesTeamControllerTest extends TestCase
                 'message' => 'Matches team created successfully',
                 'data' => [
                     'player_1' => $this->player1->id_player,
-                    'player_2' => $this->player2->id_player
-                ]
+                    'player_2' => $this->player2->id_player,
+                ],
             ]);
 
         $this->assertDatabaseHas('matches_teams', [
             'player_1' => $this->player1->id_player,
-            'player_2' => $this->player2->id_player
+            'player_2' => $this->player2->id_player,
         ]);
     }
 
@@ -135,11 +139,11 @@ class MatchesTeamControllerTest extends TestCase
         $player3 = Player::factory()->create();
         $team = MatchesTeam::factory()->create([
             'player_1' => $this->player1->id_player,
-            'player_2' => $this->player2->id_player
+            'player_2' => $this->player2->id_player,
         ]);
 
         $updateData = [
-            'player_2' => $player3->id_player
+            'player_2' => $player3->id_player,
         ];
 
         $response = $this->putJson("/api/v1/manager/matches-teams/{$team->id_team}", $updateData);
@@ -151,14 +155,14 @@ class MatchesTeamControllerTest extends TestCase
                 'data' => [
                     'id_team' => $team->id_team,
                     'player_1' => $this->player1->id_player,
-                    'player_2' => $player3->id_player
-                ]
+                    'player_2' => $player3->id_player,
+                ],
             ]);
 
         $this->assertDatabaseHas('matches_teams', [
             'id_team' => $team->id_team,
             'player_1' => $this->player1->id_player,
-            'player_2' => $player3->id_player
+            'player_2' => $player3->id_player,
         ]);
     }
 
@@ -173,11 +177,11 @@ class MatchesTeamControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
-                'message' => 'Matches team deleted successfully'
+                'message' => 'Matches team deleted successfully',
             ]);
 
         $this->assertDatabaseMissing('matches_teams', [
-            'id_team' => $team->id_team
+            'id_team' => $team->id_team,
         ]);
     }
 
@@ -187,7 +191,7 @@ class MatchesTeamControllerTest extends TestCase
 
         $teamData = [
             'player_1' => $this->player1->id_player,
-            'player_2' => $this->player1->id_player // Same player
+            'player_2' => $this->player1->id_player, // Same player
         ];
 
         $response = $this->postJson('/api/v1/manager/matches-teams', $teamData);
@@ -203,13 +207,13 @@ class MatchesTeamControllerTest extends TestCase
         // Create first team
         MatchesTeam::factory()->create([
             'player_1' => $this->player1->id_player,
-            'player_2' => $this->player2->id_player
+            'player_2' => $this->player2->id_player,
         ]);
 
         // Try to create duplicate (same order)
         $duplicateData1 = [
             'player_1' => $this->player1->id_player,
-            'player_2' => $this->player2->id_player
+            'player_2' => $this->player2->id_player,
         ];
 
         $response = $this->postJson('/api/v1/manager/matches-teams', $duplicateData1);
@@ -217,13 +221,13 @@ class MatchesTeamControllerTest extends TestCase
         $response->assertStatus(422)
             ->assertJson([
                 'success' => false,
-                'message' => 'This team already exists'
+                'message' => 'This team already exists',
             ]);
 
         // Try to create duplicate (reverse order)
         $duplicateData2 = [
             'player_1' => $this->player2->id_player,
-            'player_2' => $this->player1->id_player
+            'player_2' => $this->player1->id_player,
         ];
 
         $response = $this->postJson('/api/v1/manager/matches-teams', $duplicateData2);
@@ -231,7 +235,7 @@ class MatchesTeamControllerTest extends TestCase
         $response->assertStatus(422)
             ->assertJson([
                 'success' => false,
-                'message' => 'This team already exists'
+                'message' => 'This team already exists',
             ]);
     }
 
@@ -245,24 +249,24 @@ class MatchesTeamControllerTest extends TestCase
         // Create two different teams
         $team1 = MatchesTeam::factory()->create([
             'player_1' => $this->player1->id_player,
-            'player_2' => $this->player2->id_player
+            'player_2' => $this->player2->id_player,
         ]);
 
         $team2 = MatchesTeam::factory()->create([
             'player_1' => $player3->id_player,
-            'player_2' => $player4->id_player
+            'player_2' => $player4->id_player,
         ]);
 
         // Try to update second team to match first
         $response = $this->putJson("/api/v1/manager/matches-teams/{$team2->id_team}", [
             'player_1' => $this->player1->id_player,
-            'player_2' => $this->player2->id_player
+            'player_2' => $this->player2->id_player,
         ]);
 
         $response->assertStatus(422)
             ->assertJson([
                 'success' => false,
-                'message' => 'This team already exists'
+                'message' => 'This team already exists',
             ]);
     }
 
@@ -282,7 +286,7 @@ class MatchesTeamControllerTest extends TestCase
 
         $response = $this->postJson('/api/v1/manager/matches-teams', [
             'player_1' => 99999, // Non-existent player
-            'player_2' => $this->player2->id_player
+            'player_2' => $this->player2->id_player,
         ]);
 
         $response->assertStatus(422)
@@ -296,7 +300,7 @@ class MatchesTeamControllerTest extends TestCase
         $team = MatchesTeam::factory()->create();
 
         $response = $this->putJson("/api/v1/manager/matches-teams/{$team->id_team}", [
-            'player_1' => 99999 // Non-existent player
+            'player_1' => 99999, // Non-existent player
         ]);
 
         $response->assertStatus(422)
@@ -343,14 +347,14 @@ class MatchesTeamControllerTest extends TestCase
                     '*' => [
                         'id_team',
                         'player_1',
-                        'player_2'
-                    ]
+                        'player_2',
+                    ],
                 ],
                 'links' => [
                     'first',
                     'last',
                     'prev',
-                    'next'
+                    'next',
                 ],
                 'meta' => [
                     'current_page',
@@ -359,8 +363,8 @@ class MatchesTeamControllerTest extends TestCase
                     'path',
                     'per_page',
                     'to',
-                    'total'
-                ]
+                    'total',
+                ],
             ]);
 
         $this->assertCount(10, $response->json('data'));
@@ -374,7 +378,7 @@ class MatchesTeamControllerTest extends TestCase
 
         $teamData = [
             'player_1' => $this->player1->id_player,
-            'player_2' => $this->player2->id_player
+            'player_2' => $this->player2->id_player,
         ];
 
         $response = $this->postJson('/api/v1/manager/matches-teams', $teamData);
@@ -382,12 +386,12 @@ class MatchesTeamControllerTest extends TestCase
         $response->assertStatus(201)
             ->assertJson([
                 'success' => true,
-                'message' => 'Matches team created successfully'
+                'message' => 'Matches team created successfully',
             ]);
 
         $this->assertDatabaseHas('matches_teams', [
             'player_1' => $this->player1->id_player,
-            'player_2' => $this->player2->id_player
+            'player_2' => $this->player2->id_player,
         ]);
 
         // Check that timestamps are set
@@ -405,7 +409,7 @@ class MatchesTeamControllerTest extends TestCase
 
         $team = MatchesTeam::factory()->create([
             'player_1' => $this->player1->id_player,
-            'player_2' => $this->player2->id_player
+            'player_2' => $this->player2->id_player,
         ]);
 
         $originalUpdatedAt = $team->updated_at;
@@ -415,7 +419,7 @@ class MatchesTeamControllerTest extends TestCase
 
         $player3 = Player::factory()->create();
         $response = $this->putJson("/api/v1/manager/matches-teams/{$team->id_team}", [
-            'player_2' => $player3->id_player
+            'player_2' => $player3->id_player,
         ]);
 
         $response->assertStatus(200);

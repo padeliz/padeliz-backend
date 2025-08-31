@@ -1,24 +1,26 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Seeders;
 
+use App\Models\Club;
+use App\Models\Division;
+use App\Models\Edition;
+use App\Models\EditionDivision;
+use App\Models\EditionLottery;
+use App\Models\EditionLuckyOne;
+use App\Models\EditionParticipation;
+use App\Models\Location;
+use App\Models\MatchesTeam;
+use App\Models\Player;
+use App\Models\Prize;
+use App\Models\PrizeFromClub;
+use Carbon\Carbon;
+use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
-use App\Models\Club;
-use App\Models\Division;
-use App\Models\Location;
-use App\Models\Edition;
-use App\Models\Player;
-use App\Models\EditionDivision;
-use App\Models\EditionParticipation;
-use App\Models\Prize;
-use App\Models\PrizeFromClub;
-use App\Models\EditionLottery;
-use App\Models\EditionLuckyOne;
-use Carbon\Carbon;
-use Faker\Factory as Faker;
-use App\Models\MatchesTeam;
 use Illuminate\Support\Facades\File;
 
 class DatabaseSeeder extends Seeder
@@ -32,6 +34,7 @@ class DatabaseSeeder extends Seeder
     {
         if (App::environment() == 'production') {
             $this->command->error('Seeding is not allowed in production!');
+
             return;
         }
 
@@ -56,7 +59,7 @@ class DatabaseSeeder extends Seeder
 
         // Ensure uploads directory exists and is empty
         $uploadsPath = public_path('uploads');
-        if (!File::exists($uploadsPath)) {
+        if (! File::exists($uploadsPath)) {
             $this->command->info('Create uploads/ folder...');
             File::makeDirectory($uploadsPath, 0755, true);
         } else {
@@ -201,8 +204,8 @@ class DatabaseSeeder extends Seeder
         MatchesTeam::factory()
             ->count(rand(10, 20))
             ->create([
-                'player_1' => fn() => $players->random()->id_player,
-                'player_2' => fn() => $players->random()->id_player,
+                'player_1' => fn () => $players->random()->id_player,
+                'player_2' => fn () => $players->random()->id_player,
             ]);
     }
 
@@ -213,6 +216,7 @@ class DatabaseSeeder extends Seeder
         // Ensure we have locations before creating editions
         if ($locations->isEmpty()) {
             $this->command->error('No locations found. Cannot create editions.');
+
             return collect();
         }
 
@@ -221,7 +225,7 @@ class DatabaseSeeder extends Seeder
 
             $editions[] = Edition::factory()->forLocation($locations->random())->create([
                 'name' => '#' . ($index_nr + $i + 1),
-                'date' => Carbon::parse($startDate)->addDays(rand(0, Carbon::parse($endDate)->diffInDays($startDate))),
+                'date' => Carbon::parse($startDate)->addDays(rand(0, (int)Carbon::parse($endDate)->diffInDays($startDate))),
                 'entry_fee' => rand(45, 55),
                 'students_entry_fee' => rand(35, 45),
                 'arriving_time' => $arriving_time->format('H:i:s'),

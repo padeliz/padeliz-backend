@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
-use App\Models\EditionLottery;
-use App\Models\Edition;
 use App\Models\Division;
+use App\Models\Edition;
+use App\Models\EditionLottery;
 use App\Models\Prize;
 use Illuminate\Database\Eloquent\Factories\Factory;
 

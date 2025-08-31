@@ -1,20 +1,23 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Api\V1\Manager;
 
-use Tests\TestCase;
-use App\Models\Player;
-use App\Models\Location;
 use App\Models\Club;
 use App\Models\Edition;
+use App\Models\Location;
+use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
 
 class LocationControllerTest extends TestCase
 {
     use RefreshDatabase;
 
     private $manager;
+
     private $club;
 
     public function setUp(): void
@@ -28,12 +31,12 @@ class LocationControllerTest extends TestCase
             'google_name' => 'Test Manager',
             'google_email' => 'manager@example.com',
             'google_avatar' => 'https://example.com/manager-avatar.jpg',
-            'user_types' => ['player', 'manager']
+            'user_types' => ['player', 'manager'],
         ]);
 
         $this->club = Club::factory()->create([
             'name' => 'Test Club',
-            'city' => 'Test City'
+            'city' => 'Test City',
         ]);
     }
 
@@ -52,14 +55,14 @@ class LocationControllerTest extends TestCase
                         'id_location',
                         'club_id',
                         'name',
-                        'address'
-                    ]
+                        'address',
+                    ],
                 ],
             'links' => [
                 'first',
                 'last',
                 'prev',
-                'next'
+                'next',
             ],
             'meta' => [
                 'current_page',
@@ -68,8 +71,8 @@ class LocationControllerTest extends TestCase
                 'path',
                 'per_page',
                 'to',
-                'total'
-            ]
+                'total',
+            ],
             ]);
 
         $this->assertCount(5, $response->json('data'));
@@ -80,7 +83,7 @@ class LocationControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $location = Location::factory()->create([
-            'name' => 'Test Location'
+            'name' => 'Test Location',
         ]);
 
         $response = $this->getJson("/api/v1/manager/locations/{$location->id_location}");
@@ -91,8 +94,8 @@ class LocationControllerTest extends TestCase
             'message' => 'Location details retrieved successfully',
             'data' => [
                 'id_location' => $location->id_location,
-                'name' => 'Test Location'
-            ]
+                'name' => 'Test Location',
+            ],
             ]);
     }
 
@@ -105,7 +108,7 @@ class LocationControllerTest extends TestCase
             'name' => 'New Location',
             'address' => '123 Test Street',
             'total_indoors_courts' => 4,
-            'total_outdoor_courts' => 2
+            'total_outdoor_courts' => 2,
         ];
 
         $response = $this->postJson('/api/v1/manager/locations', $locationData);
@@ -118,13 +121,13 @@ class LocationControllerTest extends TestCase
                     'name' => 'New Location',
                     'address' => '123 Test Street',
                     'total_indoors_courts' => 4,
-                    'total_outdoor_courts' => 2
-                ]
+                    'total_outdoor_courts' => 2,
+                ],
             ]);
 
         $this->assertDatabaseHas('locations', [
             'name' => 'New Location',
-            'club_id' => $this->club->id_club
+            'club_id' => $this->club->id_club,
         ]);
     }
 
@@ -134,13 +137,13 @@ class LocationControllerTest extends TestCase
 
         $location = Location::factory()->create([
             'name' => 'Old Name',
-            'address' => 'Old Address'
+            'address' => 'Old Address',
         ]);
 
         $updateData = [
             'name' => 'Updated Name',
             'address' => 'Updated Address',
-            'total_indoors_courts' => 6
+            'total_indoors_courts' => 6,
         ];
 
         $response = $this->putJson("/api/v1/manager/locations/{$location->id_location}", $updateData);
@@ -153,14 +156,14 @@ class LocationControllerTest extends TestCase
                     'id_location' => $location->id_location,
                     'name' => 'Updated Name',
                     'address' => 'Updated Address',
-                    'total_indoors_courts' => 6
-                ]
+                    'total_indoors_courts' => 6,
+                ],
             ]);
 
         $this->assertDatabaseHas('locations', [
             'id_location' => $location->id_location,
             'name' => 'Updated Name',
-            'address' => 'Updated Address'
+            'address' => 'Updated Address',
         ]);
     }
 
@@ -175,11 +178,11 @@ class LocationControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
-                'message' => 'Location deleted successfully'
+                'message' => 'Location deleted successfully',
             ]);
 
         $this->assertDatabaseMissing('locations', [
-            'id_location' => $location->id_location
+            'id_location' => $location->id_location,
         ]);
     }
 
@@ -195,11 +198,11 @@ class LocationControllerTest extends TestCase
         $response->assertStatus(409)
             ->assertJson([
                 'success' => false,
-                'message' => 'Cannot delete location because it has related editions'
+                'message' => 'Cannot delete location because it has related editions',
             ]);
 
         $this->assertDatabaseHas('locations', [
-            'id_location' => $location->id_location
+            'id_location' => $location->id_location,
         ]);
     }
 
@@ -220,7 +223,7 @@ class LocationControllerTest extends TestCase
         $location = Location::factory()->create();
 
         $response = $this->putJson("/api/v1/manager/locations/{$location->id_location}", [
-            'club_id' => 99999 // Non-existent club
+            'club_id' => 99999, // Non-existent club
         ]);
 
         $response->assertStatus(422)
@@ -243,14 +246,14 @@ class LocationControllerTest extends TestCase
                         'id_edition',
                         'location_id',
                         'name',
-                        'date'
-                    ]
+                        'date',
+                    ],
                 ],
             'links' => [
                 'first',
                 'last',
                 'prev',
-                'next'
+                'next',
             ],
             'meta' => [
                 'current_page',
@@ -259,8 +262,8 @@ class LocationControllerTest extends TestCase
                 'path',
                 'per_page',
                 'to',
-                'total'
-            ]
+                'total',
+            ],
             ]);
 
         $this->assertCount(3, $response->json('data'));
@@ -307,14 +310,14 @@ class LocationControllerTest extends TestCase
                         'id_location',
                         'club_id',
                         'name',
-                        'address'
-                    ]
+                        'address',
+                    ],
                 ],
             'links' => [
                 'first',
                 'last',
                 'prev',
-                'next'
+                'next',
             ],
             'meta' => [
                 'current_page',
@@ -323,8 +326,8 @@ class LocationControllerTest extends TestCase
                 'path',
                 'per_page',
                 'to',
-                'total'
-            ]
+                'total',
+            ],
             ]);
 
         $this->assertCount(10, $response->json('data'));

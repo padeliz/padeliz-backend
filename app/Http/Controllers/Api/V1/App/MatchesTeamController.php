@@ -1,11 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V1\App;
 
-use App\Http\Controllers\Controller;
+use App\Http\Resources\MatchesTeamResource;
 use App\Models\MatchesTeam;
 use App\Models\Player;
-use App\Http\Resources\MatchesTeamResource;
 use Illuminate\Http\Request;
 
 /**
@@ -115,6 +116,7 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
         $team->save();
 
         $team->load(['player1', 'player2']);
+
         return $this->resourceResponse(
             new MatchesTeamResource($team),
             'Team created successfully',

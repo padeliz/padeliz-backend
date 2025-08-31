@@ -13,7 +13,6 @@ Homestead.yaml
 npm-debug.log
 yarn-error.log
 /.idea
-/.vscode
 
 .env
 .env.*
@@ -21,3 +20,9 @@ yarn-error.log
 
 # L5-Swagger
 /storage/api-docs
+
+# VS Code user-specific settings (workspace settings are committed)
+.vscode/settings.json.user
+
+# PHP CS Fixer cache
+.php-cs-fixer.cache

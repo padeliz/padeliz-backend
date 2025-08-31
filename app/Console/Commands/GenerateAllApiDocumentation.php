@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
-use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Artisan;
+use Illuminate\Support\Facades\File;
 
 class GenerateAllApiDocumentation extends Command
 {
@@ -34,6 +36,7 @@ class GenerateAllApiDocumentation extends Command
 
         if (empty($versions)) {
             $this->warn('No API versions found in routes/api directory.');
+
             return;
         }
 
@@ -43,9 +46,9 @@ class GenerateAllApiDocumentation extends Command
         foreach ($versions as $version) {
             $this->info("Generating documentation for {$version}...");
 
-                        try {
+            try {
                 Artisan::call('l5-swagger:generate', [
-                    'documentation' => $version
+                    'documentation' => $version,
                 ]);
 
                 $this->info("✓ Documentation generated for {$version}");
@@ -83,9 +86,10 @@ class GenerateAllApiDocumentation extends Command
         }
 
         // Sort versions numerically
-        usort($versions, function($a, $b) {
+        usort($versions, function ($a, $b) {
             $aNum = (int) substr($a, 1);
             $bNum = (int) substr($b, 1);
+
             return $aNum - $bNum;
         });
 

@@ -1,18 +1,20 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Api\V1\App;
 
-use Tests\TestCase;
-use Tests\Helpers\FileUploadTestHelper;
 use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Laravel\Sanctum\Sanctum;
 use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
+use Laravel\Sanctum\Sanctum;
+use Tests\Helpers\FileUploadTestHelper;
+use Tests\TestCase;
 
 class PlayerControllerTest extends TestCase
 {
-    use RefreshDatabase, FileUploadTestHelper;
+    use RefreshDatabase;
+    use FileUploadTestHelper;
 
     private $player;
 
@@ -28,7 +30,7 @@ class PlayerControllerTest extends TestCase
             'google_name' => 'Test Player',
             'google_email' => 'player@example.com',
             'google_avatar' => 'https://example.com/avatar.jpg',
-            'user_types' => ['player']
+            'user_types' => ['player'],
         ]);
     }
 
@@ -47,7 +49,7 @@ class PlayerControllerTest extends TestCase
             'google_email' => 'updated@example.com',
             'phone' => '0987654321',
             'skill_division' => 4.5,
-            'being_student' => true
+            'being_student' => true,
         ]);
 
         $response->assertStatus(201)
@@ -59,19 +61,19 @@ class PlayerControllerTest extends TestCase
                 'name',
                 'phone',
                 'skill_division',
-                'being_student'
-                ]
+                'being_student',
+                ],
             ])
             ->assertJson([
                 'success' => true,
-                'message' => 'Player profile updated successfully'
+                'message' => 'Player profile updated successfully',
             ]);
 
         $this->assertDatabaseHas('players', [
             'id_player' => $this->player->id_player,
             'name' => 'Updated Player',
             'google_email' => 'updated@example.com',
-            'phone' => '0987654321'
+            'phone' => '0987654321',
         ]);
     }
 
@@ -88,16 +90,16 @@ class PlayerControllerTest extends TestCase
                 'data' => [
                     'id_player',
                 'name',
-                'uploaded_profile_urls'
-                ]
+                'uploaded_profile_urls',
+                ],
             ])
             ->assertJson([
             'success' => true,
             'message' => 'Player details retrieved successfully',
             'data' => [
                 'id_player' => $this->player->id_player,
-                'name' => 'Test Player'
-            ]
+                'name' => 'Test Player',
+            ],
             ]);
     }
 
@@ -107,7 +109,7 @@ class PlayerControllerTest extends TestCase
 
         $response = $this->putJson("/api/v1/app/players/{$this->player->id_player}", [
             'name' => 'Updated Player Name',
-            'skill_division' => 3.5
+            'skill_division' => 3.5,
         ]);
 
         $response->assertStatus(200)
@@ -117,8 +119,8 @@ class PlayerControllerTest extends TestCase
                 'data' => [
                     'id_player',
                     'name',
-                    'skill_division'
-                ]
+                    'skill_division',
+                ],
             ])
             ->assertJson([
             'success' => true,
@@ -126,8 +128,8 @@ class PlayerControllerTest extends TestCase
             'data' => [
                 'id_player' => $this->player->id_player,
                 'name' => 'Updated Player Name',
-                'skill_division' => 3.5
-            ]
+                'skill_division' => 3.5,
+            ],
             ]);
     }
 
@@ -137,7 +139,7 @@ class PlayerControllerTest extends TestCase
 
         $otherPlayer = Player::factory()->create([
             'name' => 'Other Player',
-            'google_email' => 'other@example.com'
+            'google_email' => 'other@example.com',
         ]);
 
         $response = $this->getJson("/api/v1/app/players/{$otherPlayer->id_player}");
@@ -148,16 +150,16 @@ class PlayerControllerTest extends TestCase
                 'message',
                 'data' => [
                     'id_player',
-                    'name'
-                ]
+                    'name',
+                ],
             ])
             ->assertJson([
             'success' => true,
             'message' => 'Player details retrieved successfully',
             'data' => [
                 'id_player' => $otherPlayer->id_player,
-                'name' => 'Other Player'
-            ]
+                'name' => 'Other Player',
+            ],
             ]);
     }
 
@@ -168,7 +170,7 @@ class PlayerControllerTest extends TestCase
         $file = $this->createFakeImage('profile.png');
 
         $response = $this->postJson('/api/v1/app/players/image', [
-            'image' => $file
+            'image' => $file,
         ]);
 
         $response->assertStatus(201)
@@ -176,12 +178,12 @@ class PlayerControllerTest extends TestCase
             'success',
                 'message',
                 'data' => [
-                    'urls'
-                ]
+                    'urls',
+                ],
             ])
             ->assertJson([
                 'success' => true,
-                'message' => 'Image uploaded successfully'
+                'message' => 'Image uploaded successfully',
             ]);
 
         // Check that the file was actually saved
@@ -202,21 +204,21 @@ class PlayerControllerTest extends TestCase
         // Upload first image
         $file1 = $this->createFakeImage('profile1.png');
         $response1 = $this->postJson('/api/v1/app/players/image', [
-            'image' => $file1
+            'image' => $file1,
         ]);
         $response1->assertStatus(201);
 
         // Upload second image
         $file2 = $this->createFakeImage('profile2.png');
         $response2 = $this->postJson('/api/v1/app/players/image', [
-            'image' => $file2
+            'image' => $file2,
         ]);
         $response2->assertStatus(201);
 
         // Upload third image
         $file3 = $this->createFakeImage('profile3.png');
         $response3 = $this->postJson('/api/v1/app/players/image', [
-            'image' => $file3
+            'image' => $file3,
         ]);
         $response3->assertStatus(201);
 
@@ -233,7 +235,7 @@ class PlayerControllerTest extends TestCase
         for ($i = 1; $i <= 3; $i++) {
             $file = $this->createFakeImage("profile{$i}.png");
             $response = $this->postJson('/api/v1/app/players/image', [
-                'image' => $file
+                'image' => $file,
             ]);
             $response->assertStatus(201);
 
@@ -249,13 +251,13 @@ class PlayerControllerTest extends TestCase
         // Try to upload a fourth image
         $file4 = $this->createFakeImage('profile4.png');
         $response = $this->postJson('/api/v1/app/players/image', [
-            'image' => $file4
+            'image' => $file4,
         ]);
 
         $response->assertStatus(422)
             ->assertJson([
                 'success' => false,
-                'message' => 'Maximum number of profile images (3) reached. Delete an existing image first.'
+                'message' => 'Maximum number of profile images (3) reached. Delete an existing image first.',
             ]);
 
         // Verify we still only have 3 images
@@ -270,7 +272,7 @@ class PlayerControllerTest extends TestCase
         // First upload an image
         $file = $this->createFakeImage('profile.png');
         $uploadResponse = $this->postJson('/api/v1/app/players/image', [
-            'image' => $file
+            'image' => $file,
         ]);
         $uploadResponse->assertStatus(201);
 
@@ -287,12 +289,12 @@ class PlayerControllerTest extends TestCase
                 'success',
                 'message',
                 'data' => [
-                    'urls'
-                ]
+                    'urls',
+                ],
             ])
             ->assertJson([
                 'success' => true,
-                'message' => 'Image deleted successfully'
+                'message' => 'Image deleted successfully',
             ]);
 
         // Verify the file was deleted
@@ -309,7 +311,7 @@ class PlayerControllerTest extends TestCase
         $response->assertStatus(404)
             ->assertJson([
                 'success' => false,
-                'message' => 'Image not found'
+                'message' => 'Image not found',
             ]);
     }
 
@@ -325,7 +327,7 @@ class PlayerControllerTest extends TestCase
         // Test with text file instead of image
         $textFile = $this->createFakeTextFile('test.txt');
         $response = $this->postJson('/api/v1/app/players/image', [
-            'image' => $textFile
+            'image' => $textFile,
         ]);
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['image']);
@@ -333,7 +335,7 @@ class PlayerControllerTest extends TestCase
         // Test with file too large (create a large file)
         $largeFile = UploadedFile::fake()->create('large.jpg', 6000); // 6MB
         $response = $this->postJson('/api/v1/app/players/image', [
-            'image' => $largeFile
+            'image' => $largeFile,
         ]);
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['image']);
@@ -345,24 +347,24 @@ class PlayerControllerTest extends TestCase
 
         $otherPlayer = Player::factory()->create([
             'name' => 'Other Player',
-            'google_email' => 'other@example.com'
+            'google_email' => 'other@example.com',
         ]);
 
         $response = $this->putJson("/api/v1/app/players/{$otherPlayer->id_player}", [
-            'name' => 'Hacked Name'
+            'name' => 'Hacked Name',
         ]);
 
         $response->assertStatus(403)
             ->assertJson([
                 'success' => false,
-                'message' => 'You can only update your own profile'
+                'message' => 'You can only update your own profile',
             ]);
     }
 
     public function test_profile_requires_authentication()
     {
         $response = $this->postJson('/api/v1/app/players', [
-            'name' => 'Test'
+            'name' => 'Test',
         ]);
 
         $response->assertStatus(401);
@@ -385,7 +387,7 @@ class PlayerControllerTest extends TestCase
         $file = $this->createFakeImage('profile.png');
 
         $response = $this->postJson('/api/v1/app/players/image', [
-            'image' => $file
+            'image' => $file,
         ]);
 
         $response->assertStatus(401);

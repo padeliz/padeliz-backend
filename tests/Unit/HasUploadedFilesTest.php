@@ -1,12 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Unit;
 
-use Tests\TestCase;
 use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Log;
+use Tests\TestCase;
 
 class HasUploadedFilesTest extends TestCase
 {
@@ -46,7 +47,7 @@ class HasUploadedFilesTest extends TestCase
 
         $this->assertStringContainsString(config('uploads.base_path'), $path);
         $this->assertStringContainsString('.player', $path);
-        $this->assertStringContainsString($player->id_player, $path);
+        $this->assertStringContainsString((string)$player->id_player, $path);
         $this->assertStringContainsString('images', $path);
     }
 
@@ -196,7 +197,7 @@ class HasUploadedFilesTest extends TestCase
         $this->assertStringStartsWith(config('app.url'), $urls[0]);
         $this->assertStringContainsString('/' . config('uploads.base_path'), $urls[0]);
         $this->assertStringContainsString('.player', $urls[0]);
-        $this->assertStringContainsString($player->id_player, $urls[0]);
+        $this->assertStringContainsString((string)$player->id_player, $urls[0]);
         $this->assertStringContainsString('test-image.png', $urls[0]);
 
         // Clean up
@@ -252,8 +253,6 @@ class HasUploadedFilesTest extends TestCase
         // Clean up
         File::deleteDirectory($uploadPath);
     }
-
-
 
     public function test_delete_uploaded_file_removes_file()
     {

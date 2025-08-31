@@ -1,12 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V1\Manager;
 
-use App\Http\Controllers\Controller;
-use App\Models\EditionDivision;
-use App\Models\EditionParticipation;
 use App\Http\Resources\EditionDivisionResource;
 use App\Http\Resources\EditionParticipationResource;
+use App\Models\EditionDivision;
+use App\Models\EditionParticipation;
 use Illuminate\Http\Request;
 
 /**
@@ -291,7 +292,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
         // Check if edition division has related participations
         $participations = EditionParticipation::where([
             'edition_id' => $editionDivision->edition_id,
-            'division_id' => $editionDivision->division_id
+            'division_id' => $editionDivision->division_id,
         ])->exists();
 
         if ($participations) {
@@ -339,7 +340,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
     {
         $participants = EditionParticipation::where([
             'edition_id' => $editionDivision->edition_id,
-            'division_id' => $editionDivision->division_id
+            'division_id' => $editionDivision->division_id,
         ])->with(['player'])->get();
 
         return $this->resourceResponse(

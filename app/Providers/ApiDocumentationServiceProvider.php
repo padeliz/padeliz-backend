@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Providers;
 
-use Illuminate\Support\ServiceProvider;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Route;
+use Illuminate\Support\ServiceProvider;
 
 class ApiDocumentationServiceProvider extends ServiceProvider
 {
@@ -13,7 +15,7 @@ class ApiDocumentationServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+
     }
 
     /**
@@ -63,9 +65,10 @@ class ApiDocumentationServiceProvider extends ServiceProvider
         }
 
         // Sort versions numerically
-        usort($versions, function($a, $b) {
+        usort($versions, function ($a, $b) {
             $aNum = (int) substr($a, 1);
             $bNum = (int) substr($b, 1);
+
             return $aNum - $bNum;
         });
 
@@ -101,7 +104,7 @@ class ApiDocumentationServiceProvider extends ServiceProvider
                     'format_to_use_for_docs' => env('L5_FORMAT_TO_USE_FOR_DOCS', 'json'),
                     'annotations' => $this->getAnnotationPathsForVersion($version, $controllers),
                 ],
-            ]
+            ],
         ]);
     }
 
@@ -113,7 +116,7 @@ class ApiDocumentationServiceProvider extends ServiceProvider
         $controllers = [];
         $routeFile = base_path("routes/api/{$version}.php");
 
-        if (!File::exists($routeFile)) {
+        if (! File::exists($routeFile)) {
             return $controllers;
         }
 
@@ -146,7 +149,7 @@ class ApiDocumentationServiceProvider extends ServiceProvider
         // Add paths for controllers used by this version
         foreach ($controllers as $controller) {
             $controllerPath = $this->getControllerPath($controller);
-            if ($controllerPath && !in_array($controllerPath, $paths)) {
+            if ($controllerPath && ! in_array($controllerPath, $paths)) {
                 $paths[] = $controllerPath;
             }
         }

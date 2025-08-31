@@ -1,12 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V1\Manager;
 
-use App\Http\Controllers\Controller;
-use App\Models\Location;
-use App\Http\Resources\LocationResource;
-use Illuminate\Http\Request;
 use App\Http\Resources\EditionResource;
+use App\Http\Resources\LocationResource;
+use App\Models\Location;
+use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
@@ -77,6 +78,7 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
     public function show(Location $location)
     {
         $location->load('club');
+
         return $this->resourceResponse(
             new LocationResource($location),
             'Location details retrieved successfully'

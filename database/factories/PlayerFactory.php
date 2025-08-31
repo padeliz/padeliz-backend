@@ -1,10 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Database\Factories;
 
 use App\Models\Player;
-use Illuminate\Support\Facades\File;
 use Illuminate\Database\Eloquent\Factories\Factory;
+use Illuminate\Support\Facades\File;
 
 class PlayerFactory extends Factory
 {
@@ -56,7 +58,7 @@ class PlayerFactory extends Factory
             }
 
             for ($i = 0; $i < $numImages; $i++) {
-                $profileUrl = "https://i.pravatar.cc/300?u=" . $player->id_player . "-" . $i;
+                $profileUrl = 'https://i.pravatar.cc/300?u=' . $player->id_player . '-' . $i;
                 $newProfilePath = $profilePath . '/image-' . strtolower(str_replace(' ', '-', $player->name)) . '-' . $i . '.jpg';
 
                 $imageContent = file_get_contents($profileUrl);

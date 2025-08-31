@@ -1,13 +1,14 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Api\V1\Manager;
 
-use Tests\TestCase;
 use App\Models\Player;
-use Google\Client as GoogleClient;
-use Mockery;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Mockery;
+use Tests\TestCase;
 
 class ManagerAuthControllerTest extends TestCase
 {
@@ -27,7 +28,7 @@ class ManagerAuthControllerTest extends TestCase
             'google_name' => 'Test Manager',
             'google_email' => 'manager@example.com',
             'google_avatar' => 'https://example.com/manager-avatar.jpg',
-            'user_types' => ['player', 'manager']
+            'user_types' => ['player', 'manager'],
         ]);
     }
 
@@ -41,22 +42,22 @@ class ManagerAuthControllerTest extends TestCase
                     'sub' => 'google_manager_456',
                     'name' => 'New Manager',
                     'email' => 'newmanager@example.com',
-                    'picture' => 'https://example.com/new-manager.jpg'
+                    'picture' => 'https://example.com/new-manager.jpg',
                 ]);
         });
 
         $response = $this->postJson('/api/v1/manager/auth/google', [
-            'token' => 'any.test.token'
+            'token' => 'any.test.token',
         ]);
 
         $response->assertStatus(404)
             ->assertJson([
                 'success' => false,
-                'message' => 'User not found. Please register first.'
+                'message' => 'User not found. Please register first.',
             ]);
 
         $this->assertDatabaseMissing('players', [
-            'google_email' => 'newmanager@example.com'
+            'google_email' => 'newmanager@example.com',
         ]);
     }
 
@@ -69,12 +70,12 @@ class ManagerAuthControllerTest extends TestCase
                     'sub' => 'google_manager_123',
                     'name' => 'Test Manager',
                     'email' => 'manager@example.com',
-                    'picture' => 'https://example.com/manager-avatar.jpg'
+                    'picture' => 'https://example.com/manager-avatar.jpg',
                 ]);
         });
 
         $response = $this->postJson('/api/v1/manager/auth/google', [
-            'token' => 'valid.token'
+            'token' => 'valid.token',
         ]);
 
         $response->assertStatus(200)
@@ -87,10 +88,10 @@ class ManagerAuthControllerTest extends TestCase
                     'id_player',
                     'name',
                     'google_name',
-                    'google_avatar'
+                    'google_avatar',
                 ],
-                'user_type'
-                ]
+                'user_type',
+                ],
             ]);
 
         // Verify the existing manager was returned
@@ -100,10 +101,10 @@ class ManagerAuthControllerTest extends TestCase
             'data' => [
                 'player' => [
                     'id_player' => $this->manager->id_player,
-                    'name' => 'Test Manager'
+                    'name' => 'Test Manager',
                 ],
-                'user_type' => 'manager'
-            ]
+                'user_type' => 'manager',
+            ],
         ]);
     }
 
@@ -111,7 +112,7 @@ class ManagerAuthControllerTest extends TestCase
     {
         // Create a player without manager privileges
         $player = Player::factory()->playerOnly()->create([
-            'google_email' => 'player@example.com'
+            'google_email' => 'player@example.com',
         ]);
 
         // Mock Google Client
@@ -121,18 +122,18 @@ class ManagerAuthControllerTest extends TestCase
                     'sub' => 'google_player_123',
                     'name' => 'Test Player',
                     'email' => 'player@example.com',
-                    'picture' => 'https://example.com/player-avatar.jpg'
+                    'picture' => 'https://example.com/player-avatar.jpg',
                 ]);
         });
 
         $response = $this->postJson('/api/v1/manager/auth/google', [
-            'token' => 'valid.token'
+            'token' => 'valid.token',
         ]);
 
         $response->assertStatus(403)
             ->assertJson([
                 'success' => false,
-                'message' => 'User does not have manager privileges.'
+                'message' => 'User does not have manager privileges.',
             ]);
     }
 
@@ -151,16 +152,16 @@ class ManagerAuthControllerTest extends TestCase
                 'name',
                 'phone',
                 'google_name',
-                'google_avatar'
-            ]
+                'google_avatar',
+            ],
             ])
             ->assertJson([
             'success' => true,
             'message' => 'Manager profile retrieved successfully',
             'data' => [
                 'id_player' => $this->manager->id_player,
-                'name' => 'Test Manager'
-            ]
+                'name' => 'Test Manager',
+            ],
             ]);
     }
 
@@ -180,13 +181,13 @@ class ManagerAuthControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
-                'message' => 'Manager logged out successfully'
+                'message' => 'Manager logged out successfully',
             ]);
 
         // Verify token is revoked
         $this->assertDatabaseMissing('personal_access_tokens', [
             'tokenable_id' => $this->manager->id_player,
-            'tokenable_type' => Player::class
+            'tokenable_type' => Player::class,
         ]);
     }
 
@@ -198,7 +199,7 @@ class ManagerAuthControllerTest extends TestCase
         }
 
         $response = $this->postJson('/api/v1/manager/auth/dev-login', [
-            'email' => 'devmanager@example.com'
+            'email' => 'devmanager@example.com',
         ]);
 
         $response->assertStatus(200)
@@ -210,14 +211,14 @@ class ManagerAuthControllerTest extends TestCase
                 'player' => [
                     'id_player',
                     'name',
-                    'google_email'
+                    'google_email',
                 ],
-                'user_type'
-                ]
+                'user_type',
+                ],
             ]);
 
         $this->assertDatabaseHas('players', [
-            'google_email' => 'devmanager@example.com'
+            'google_email' => 'devmanager@example.com',
         ]);
     }
 
@@ -227,7 +228,7 @@ class ManagerAuthControllerTest extends TestCase
         Sanctum::actingAs($player);
 
         $response = $this->postJson('/api/v1/manager/auth/dev-login', [
-            'email' => 'test@example.com'
+            'email' => 'test@example.com',
         ]);
 
         // Dev-login endpoints are accessible without authentication in development
@@ -241,10 +242,10 @@ class ManagerAuthControllerTest extends TestCase
                     'player' => [
                         'id_player',
                         'name',
-                        'google_email'
+                        'google_email',
                     ],
-                    'user_type'
-                ]
+                    'user_type',
+                ],
             ]);
     }
 
@@ -266,7 +267,7 @@ class ManagerAuthControllerTest extends TestCase
         $testCases = [
             ['player', 'manager'],
             ['manager'],
-            ['player', 'manager', 'admin']
+            ['player', 'manager', 'admin'],
         ];
 
         foreach ($testCases as $userTypes) {
@@ -279,7 +280,7 @@ class ManagerAuthControllerTest extends TestCase
             $response->assertStatus(200)
                 ->assertJson([
                 'success' => true,
-                'message' => 'Manager profile retrieved successfully'
+                'message' => 'Manager profile retrieved successfully',
                 ]);
         }
     }

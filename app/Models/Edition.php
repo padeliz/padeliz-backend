@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -35,19 +37,20 @@ use Illuminate\Database\Eloquent\Model;
  *     )
  * )
  */
-
 class Edition extends Model
 {
     use HasFactory;
 
     protected $table = 'editions';
+
     protected $primaryKey = 'id_edition';
 
     public $timestamps = true;
+
     protected $dateFormat = 'U'; // handle inserted_at and updated_at as Unix timestamps
 
-    const CREATED_AT = 'inserted_at';
-    const UPDATED_AT = 'updated_at';
+    public const CREATED_AT = 'inserted_at';
+    public const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
         'name',

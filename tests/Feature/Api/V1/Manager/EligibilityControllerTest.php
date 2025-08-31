@@ -1,20 +1,24 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Api\V1\Manager;
 
-use Tests\TestCase;
-use App\Models\Player;
 use App\Models\Edition;
+use App\Models\Player;
 use App\Models\PlayerEligibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
 
 class EligibilityControllerTest extends TestCase
 {
     use RefreshDatabase;
 
     private $manager;
+
     private $player;
+
     private $edition;
 
     public function setUp(): void
@@ -28,15 +32,15 @@ class EligibilityControllerTest extends TestCase
             'google_name' => 'Test Manager',
             'google_email' => 'manager@example.com',
             'google_avatar' => 'https://example.com/manager-avatar.jpg',
-            'user_types' => ['player', 'manager']
+            'user_types' => ['player', 'manager'],
         ]);
 
         $this->player = Player::factory()->create([
-            'name' => 'Test Player'
+            'name' => 'Test Player',
         ]);
 
         $this->edition = Edition::factory()->create([
-            'name' => 'Test Edition'
+            'name' => 'Test Edition',
         ]);
     }
 
@@ -55,14 +59,14 @@ class EligibilityControllerTest extends TestCase
                         'id_eligibility',
                         'player_id',
                     'review_status',
-                        'notes'
-                    ]
+                        'notes',
+                    ],
                 ],
                 'links' => [
                     'first',
                     'last',
                     'prev',
-                    'next'
+                    'next',
                 ],
                 'meta' => [
                     'current_page',
@@ -71,8 +75,8 @@ class EligibilityControllerTest extends TestCase
                     'path',
                     'per_page',
                     'to',
-                    'total'
-                ]
+                    'total',
+                ],
             ]);
 
         $this->assertCount(5, $response->json('data'));
@@ -86,7 +90,7 @@ class EligibilityControllerTest extends TestCase
             'player_id' => $this->player->id_player,
             'edition_id' => $this->edition->id_edition,
             'review_status' => 'approved',
-            'review_message' => 'Player is eligible'
+            'review_message' => 'Player is eligible',
         ]);
 
         $response = $this->getJson("/api/v1/manager/eligibility/{$eligibility->id_eligibility}");
@@ -99,8 +103,8 @@ class EligibilityControllerTest extends TestCase
                     'id_eligibility' => $eligibility->id_eligibility,
                     'player_id' => $this->player->id_player,
                 'review_status' => 'approved',
-                    'notes' => 'Player is eligible'
-                ]
+                    'notes' => 'Player is eligible',
+                ],
             ]);
     }
 
@@ -112,7 +116,7 @@ class EligibilityControllerTest extends TestCase
             'player_id' => $this->player->id_player,
             'edition_id' => $this->edition->id_edition,
             'review_status' => 'pending',
-            'notes' => 'Under review'
+            'notes' => 'Under review',
         ];
 
         $response = $this->postJson('/api/v1/manager/eligibility', $eligibilityData);
@@ -124,15 +128,15 @@ class EligibilityControllerTest extends TestCase
                 'data' => [
                     'player_id' => $this->player->id_player,
                 'review_status' => 'pending',
-                    'notes' => 'Under review'
-                ]
+                    'notes' => 'Under review',
+                ],
             ]);
 
         $this->assertDatabaseHas('player_eligibilities', [
             'player_id' => $this->player->id_player,
             'edition_id' => $this->edition->id_edition,
             'review_status' => 'pending',
-            'review_message' => 'Under review'
+            'review_message' => 'Under review',
         ]);
     }
 
@@ -144,12 +148,12 @@ class EligibilityControllerTest extends TestCase
             'player_id' => $this->player->id_player,
             'edition_id' => $this->edition->id_edition,
             'review_status' => 'pending',
-            'review_message' => 'Under review'
+            'review_message' => 'Under review',
         ]);
 
         $updateData = [
             'review_status' => 'approved',
-            'notes' => 'Player approved'
+            'notes' => 'Player approved',
         ];
 
         $response = $this->putJson("/api/v1/manager/eligibility/{$eligibility->id_eligibility}", $updateData);
@@ -161,14 +165,14 @@ class EligibilityControllerTest extends TestCase
                 'data' => [
                     'id_eligibility' => $eligibility->id_eligibility,
                 'review_status' => 'approved',
-                    'notes' => 'Player approved'
-                ]
+                    'notes' => 'Player approved',
+                ],
             ]);
 
         $this->assertDatabaseHas('player_eligibilities', [
             'id_eligibility' => $eligibility->id_eligibility,
             'review_status' => 'approved',
-            'review_message' => 'Player approved'
+            'review_message' => 'Player approved',
         ]);
     }
 
@@ -183,11 +187,11 @@ class EligibilityControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
-                'message' => 'Eligibility deleted successfully'
+                'message' => 'Eligibility deleted successfully',
             ]);
 
         $this->assertDatabaseMissing('player_eligibilities', [
-            'id_eligibility' => $eligibility->id_eligibility
+            'id_eligibility' => $eligibility->id_eligibility,
         ]);
     }
 
@@ -199,14 +203,14 @@ class EligibilityControllerTest extends TestCase
         PlayerEligibility::factory()->create([
             'player_id' => $this->player->id_player,
             'edition_id' => $this->edition->id_edition,
-            'review_status' => 'approved'
+            'review_status' => 'approved',
         ]);
 
         // Try to create duplicate
         $duplicateData = [
             'player_id' => $this->player->id_player,
             'edition_id' => $this->edition->id_edition,
-            'review_status' => 'pending'
+            'review_status' => 'pending',
         ];
 
         $response = $this->postJson('/api/v1/manager/eligibility', $duplicateData);
@@ -214,7 +218,7 @@ class EligibilityControllerTest extends TestCase
         $response->assertStatus(422)
             ->assertJson([
                 'success' => false,
-            'message' => 'Player already has an eligibility record for this edition'
+            'message' => 'Player already has an eligibility record for this edition',
             ]);
     }
 
@@ -234,7 +238,7 @@ class EligibilityControllerTest extends TestCase
 
         $response = $this->postJson('/api/v1/manager/eligibility', [
             'player_id' => 99999, // Non-existent player
-            'review_status' => 'approved'
+            'review_status' => 'approved',
         ]);
 
         $response->assertStatus(422)
@@ -247,7 +251,7 @@ class EligibilityControllerTest extends TestCase
 
         $response = $this->postJson('/api/v1/manager/eligibility', [
             'player_id' => $this->player->id_player,
-            'review_status' => 'invalid_status' // Invalid status
+            'review_status' => 'invalid_status', // Invalid status
         ]);
 
         $response->assertStatus(422)
@@ -261,7 +265,7 @@ class EligibilityControllerTest extends TestCase
         $eligibility = PlayerEligibility::factory()->create();
 
         $response = $this->putJson("/api/v1/manager/eligibility/{$eligibility->id_eligibility}", [
-            'review_status' => 'invalid_status' // Invalid status
+            'review_status' => 'invalid_status', // Invalid status
         ]);
 
         $response->assertStatus(422)
@@ -308,14 +312,14 @@ class EligibilityControllerTest extends TestCase
                     '*' => [
                         'id_eligibility',
                         'player_id',
-                    'review_status'
-                    ]
+                    'review_status',
+                    ],
                 ],
                 'links' => [
                     'first',
                     'last',
                     'prev',
-                    'next'
+                    'next',
                 ],
                 'meta' => [
                     'current_page',
@@ -324,8 +328,8 @@ class EligibilityControllerTest extends TestCase
                     'path',
                     'per_page',
                     'to',
-                    'total'
-                ]
+                    'total',
+                ],
             ]);
 
         $this->assertCount(10, $response->json('data'));
@@ -340,7 +344,7 @@ class EligibilityControllerTest extends TestCase
         $eligibilityData = [
             'player_id' => $this->player->id_player,
             'edition_id' => $this->edition->id_edition,
-            'review_status' => 'pending'
+            'review_status' => 'pending',
             // Not providing notes (optional)
         ];
 
@@ -349,14 +353,14 @@ class EligibilityControllerTest extends TestCase
         $response->assertStatus(201)
             ->assertJson([
                 'success' => true,
-                'message' => 'Eligibility created successfully'
+                'message' => 'Eligibility created successfully',
             ]);
 
         $this->assertDatabaseHas('player_eligibilities', [
             'player_id' => $this->player->id_player,
             'edition_id' => $this->edition->id_edition,
             'review_status' => 'pending',
-            'review_message' => null
+            'review_message' => null,
         ]);
     }
 
@@ -377,7 +381,7 @@ class EligibilityControllerTest extends TestCase
                 'player_id' => $player->id_player,
                 'edition_id' => $this->edition->id_edition,
                 'review_status' => $status,
-                'notes' => "Status: {$status}"
+                'notes' => "Status: {$status}",
             ];
 
             $response = $this->postJson('/api/v1/manager/eligibility', $eligibilityData);
@@ -387,14 +391,14 @@ class EligibilityControllerTest extends TestCase
                     'success' => true,
                     'message' => 'Eligibility created successfully',
                     'data' => [
-                    'review_status' => $status
-                    ]
+                    'review_status' => $status,
+                    ],
                 ]);
 
             $this->assertDatabaseHas('player_eligibilities', [
                 'player_id' => $player->id_player,
                 'edition_id' => $this->edition->id_edition,
-                'review_status' => $status
+                'review_status' => $status,
             ]);
         }
     }

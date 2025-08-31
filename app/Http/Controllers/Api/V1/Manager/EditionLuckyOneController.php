@@ -1,11 +1,12 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V1\Manager;
 
-use App\Http\Controllers\Controller;
-use App\Models\EditionLuckyOne;
-use App\Models\EditionLottery;
 use App\Http\Resources\EditionLuckyOneResource;
+use App\Models\EditionLottery;
+use App\Models\EditionLuckyOne;
 use Illuminate\Http\Request;
 
 /**
@@ -144,10 +145,10 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
         ]);
 
         // Set default timestamps if not provided
-        if (!isset($validated['drawn_at'])) {
+        if (! isset($validated['drawn_at'])) {
             $validated['drawn_at'] = time();
         }
-        if (!isset($validated['available_at'])) {
+        if (! isset($validated['available_at'])) {
             $validated['available_at'] = time();
         }
 

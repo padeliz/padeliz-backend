@@ -1,13 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V1\App;
 
-use App\Http\Controllers\Controller;
-use App\Models\PlayerEligibility;
-use App\Models\Edition;
 use App\Http\Resources\PlayerEligibilityResource;
+use App\Models\Edition;
+use App\Models\PlayerEligibility;
 use Illuminate\Http\Request;
-use Carbon\Carbon;
 
 /**
  * @OA\Tag(
@@ -49,7 +49,7 @@ class EligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Base
             ->latest('reviewed_at')
             ->first();
 
-        if (!$eligibility) {
+        if (! $eligibility) {
             return $this->notFoundResponse('No approved eligibility found');
         }
 
@@ -90,7 +90,7 @@ class EligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Base
             ->where('review_status', 'pending')
             ->first();
 
-        if (!$eligibility) {
+        if (! $eligibility) {
             return $this->notFoundResponse('No pending eligibility found');
         }
 
@@ -132,7 +132,7 @@ class EligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Base
             ->latest('reviewed_at')
             ->first();
 
-        if (!$eligibility) {
+        if (! $eligibility) {
             return $this->notFoundResponse('No rejected eligibility found');
         }
 
@@ -173,7 +173,7 @@ class EligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Base
             ->where('review_status', 'pending')
             ->first();
 
-        if (!$eligibility) {
+        if (! $eligibility) {
             return $this->notFoundResponse('No pending eligibility found');
         }
 
@@ -192,7 +192,7 @@ class EligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Base
             'rankedin_id' => $player->rankedin_id,
             'instagram_username' => $player->instagram_username,
             'facebook_username' => $player->facebook_username,
-            'resubmitted_at' => time()
+            'resubmitted_at' => time(),
         ]);
 
         return $this->resourceResponse(
@@ -245,12 +245,12 @@ class EligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Base
         }
 
         $request->validate([
-            'edition_id' => 'required|exists:editions,id_edition'
+            'edition_id' => 'required|exists:editions,id_edition',
         ]);
 
         // Check if edition is in the past
         $edition = Edition::findOrFail($request->edition_id);
-        if (strtotime($edition->date) <= strtotime(date('Y-m-d'))) {
+        if (strtotime($edition->date->format('Y-m-d')) <= strtotime(date('Y-m-d'))) {
             return $this->validationErrorResponse(['edition_id' => ['Cannot create eligibility for past editions']]);
         }
 

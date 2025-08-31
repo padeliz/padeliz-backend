@@ -1,10 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V1\Manager;
 
-use App\Http\Controllers\Controller;
-use App\Models\Edition;
 use App\Http\Resources\EditionResource;
+use App\Models\Edition;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -80,7 +81,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
         return response()->json(
             Edition::where('date', '>', Carbon::now())
                 ->orderBy('date', 'asc')
-            ->paginate($this->paginationLimit)
+                ->paginate($this->paginationLimit)
         );
     }
 
@@ -114,7 +115,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
         return response()->json(
             Edition::where('date', '=', Carbon::today())
                 ->orderBy('date', 'asc')
-            ->paginate($this->paginationLimit)
+                ->paginate($this->paginationLimit)
         );
     }
 
@@ -148,7 +149,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
         return response()->json(
             Edition::where('date', '<', Carbon::today())
                 ->orderBy('date', 'desc')
-            ->paginate($this->paginationLimit)
+                ->paginate($this->paginationLimit)
         );
     }
 
@@ -181,6 +182,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
     public function show(Edition $edition)
     {
         $edition->load(['location', 'divisions']);
+
         return $this->resourceResponse(
             new EditionResource($edition),
             'Edition details retrieved successfully'
@@ -232,7 +234,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
             'start_date' => 'required|date',
             'end_date' => 'required|date|after:start_date',
             'location_id' => 'nullable|exists:locations,id',
-            'max_participants' => 'nullable|integer|min:1'
+            'max_participants' => 'nullable|integer|min:1',
         ]);
 
         $edition = Edition::create($request->all());
@@ -283,7 +285,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
             'start_date' => 'sometimes|required|date',
             'end_date' => 'sometimes|required|date|after:start_date',
             'location_id' => 'nullable|exists:locations,id',
-            'max_participants' => 'nullable|integer|min:1'
+            'max_participants' => 'nullable|integer|min:1',
         ]);
 
         $edition->update($request->all());
@@ -316,6 +318,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
     public function destroy(Edition $edition)
     {
         $edition->delete();
+
         return $this->successResponse(
             null,
             'Edition deleted successfully'

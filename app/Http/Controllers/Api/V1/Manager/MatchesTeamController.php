@@ -1,10 +1,11 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V1\Manager;
 
-use App\Http\Controllers\Controller;
-use App\Models\MatchesTeam;
 use App\Http\Resources\MatchesTeamResource;
+use App\Models\MatchesTeam;
 use Illuminate\Http\Request;
 
 /**
@@ -76,6 +77,7 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
     public function show(MatchesTeam $team)
     {
         $team->load(['player1', 'player2']);
+
         return $this->resourceResponse(
             new MatchesTeamResource($team),
             'Matches team details retrieved successfully'
@@ -124,10 +126,10 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
         // Check if team already exists
         $existingTeam = MatchesTeam::where(function ($query) use ($validated) {
             $query->where('player_1', $validated['player_1'])
-                  ->where('player_2', $validated['player_2']);
+                ->where('player_2', $validated['player_2']);
         })->orWhere(function ($query) use ($validated) {
             $query->where('player_1', $validated['player_2'])
-                  ->where('player_2', $validated['player_1']);
+                ->where('player_2', $validated['player_1']);
         })->first();
 
         if ($existingTeam) {
@@ -210,10 +212,10 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
             $existingTeam = MatchesTeam::where('id_team', '!=', $team->id_team)
                 ->where(function ($query) use ($player1, $player2) {
                     $query->where('player_1', $player1)
-                          ->where('player_2', $player2);
+                        ->where('player_2', $player2);
                 })->orWhere(function ($query) use ($player1, $player2) {
                     $query->where('player_1', $player2)
-                          ->where('player_2', $player1);
+                        ->where('player_2', $player1);
                 })->first();
 
             if ($existingTeam) {

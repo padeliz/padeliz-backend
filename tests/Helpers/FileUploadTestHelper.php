@@ -1,5 +1,7 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Helpers;
 
 use Illuminate\Http\UploadedFile;
@@ -63,7 +65,7 @@ trait FileUploadTestHelper
     {
         // Create uploads directory structure
         $uploadsPath = config('uploads.base_path');
-        if (!file_exists($uploadsPath)) {
+        if (! file_exists($uploadsPath)) {
             mkdir($uploadsPath, 0755, true);
         }
     }
@@ -87,11 +89,11 @@ trait FileUploadTestHelper
         if (is_dir($dir)) {
             $objects = scandir($dir);
             foreach ($objects as $object) {
-                if ($object != "." && $object != "..") {
-                    if (is_dir($dir . "/" . $object)) {
-                        $this->recursiveDelete($dir . "/" . $object);
+                if ($object != '.' && $object != '..') {
+                    if (is_dir($dir . '/' . $object)) {
+                        $this->recursiveDelete($dir . '/' . $object);
                     } else {
-                        unlink($dir . "/" . $object);
+                        unlink($dir . '/' . $object);
                     }
                 }
             }

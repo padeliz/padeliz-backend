@@ -1,24 +1,29 @@
 <?php
 
+declare(strict_types=1);
+
 namespace Tests\Feature\Api\V1\Manager;
 
-use Tests\TestCase;
-use App\Models\Player;
-use App\Models\EditionLottery;
-use App\Models\Edition;
 use App\Models\Division;
-use App\Models\Prize;
+use App\Models\Edition;
+use App\Models\EditionLottery;
 use App\Models\EditionLuckyOne;
+use App\Models\Player;
+use App\Models\Prize;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
 
 class EditionLotteryControllerTest extends TestCase
 {
     use RefreshDatabase;
 
     private $manager;
+
     private $edition;
+
     private $division;
+
     private $prize;
 
     public function setUp(): void
@@ -32,19 +37,19 @@ class EditionLotteryControllerTest extends TestCase
             'google_name' => 'Test Manager',
             'google_email' => 'manager@example.com',
             'google_avatar' => 'https://example.com/manager-avatar.jpg',
-            'user_types' => ['player', 'manager']
+            'user_types' => ['player', 'manager'],
         ]);
 
         $this->edition = Edition::factory()->create([
-            'name' => 'Test Edition'
+            'name' => 'Test Edition',
         ]);
 
         $this->division = Division::factory()->create([
-            'name' => 'Test Division'
+            'name' => 'Test Division',
         ]);
 
         $this->prize = Prize::factory()->create([
-            'name' => 'Test Prize'
+            'name' => 'Test Prize',
         ]);
     }
 
@@ -65,14 +70,14 @@ class EditionLotteryControllerTest extends TestCase
                         'orderliness',
                         'division_id',
                         'prize_id',
-                        'total_draws_nr'
-                    ]
+                        'total_draws_nr',
+                    ],
                 ],
                 'links' => [
                     'first',
                     'last',
                     'prev',
-                    'next'
+                    'next',
                 ],
                 'meta' => [
                     'current_page',
@@ -81,8 +86,8 @@ class EditionLotteryControllerTest extends TestCase
                     'path',
                     'per_page',
                     'to',
-                    'total'
-                ]
+                    'total',
+                ],
             ]);
 
         $this->assertCount(5, $response->json('data'));
@@ -96,7 +101,7 @@ class EditionLotteryControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition,
             'division_id' => $this->division->id_division,
             'prize_id' => $this->prize->id_prize,
-            'total_draws_nr' => 10
+            'total_draws_nr' => 10,
         ]);
 
         $response = $this->getJson("/api/v1/manager/lotteries/{$lottery->id_lottery}");
@@ -110,8 +115,8 @@ class EditionLotteryControllerTest extends TestCase
                     'edition_id' => $this->edition->id_edition,
                     'division_id' => $this->division->id_division,
                     'prize_id' => $this->prize->id_prize,
-                    'total_draws_nr' => 10
-                ]
+                    'total_draws_nr' => 10,
+                ],
             ]);
     }
 
@@ -124,7 +129,7 @@ class EditionLotteryControllerTest extends TestCase
             'orderliness' => 1,
             'division_id' => $this->division->id_division,
             'prize_id' => $this->prize->id_prize,
-            'total_draws_nr' => 5
+            'total_draws_nr' => 5,
         ];
 
         $response = $this->postJson('/api/v1/manager/lotteries', $lotteryData);
@@ -138,15 +143,15 @@ class EditionLotteryControllerTest extends TestCase
                     'orderliness' => 1,
                     'division_id' => $this->division->id_division,
                     'prize_id' => $this->prize->id_prize,
-                    'total_draws_nr' => 5
-                ]
+                    'total_draws_nr' => 5,
+                ],
             ]);
 
         $this->assertDatabaseHas('edition_lotteries', [
             'edition_id' => $this->edition->id_edition,
             'division_id' => $this->division->id_division,
             'prize_id' => $this->prize->id_prize,
-            'total_draws_nr' => 5
+            'total_draws_nr' => 5,
         ]);
     }
 
@@ -157,13 +162,13 @@ class EditionLotteryControllerTest extends TestCase
         $lottery = EditionLottery::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'orderliness' => 1,
-            'total_draws_nr' => 5
+            'total_draws_nr' => 5,
         ]);
 
         $updateData = [
             'orderliness' => 2,
             'total_draws_nr' => 10,
-            'division_id' => $this->division->id_division
+            'division_id' => $this->division->id_division,
         ];
 
         $response = $this->putJson("/api/v1/manager/lotteries/{$lottery->id_lottery}", $updateData);
@@ -176,14 +181,14 @@ class EditionLotteryControllerTest extends TestCase
                     'id_lottery' => $lottery->id_lottery,
                     'orderliness' => 2,
                     'total_draws_nr' => 10,
-                    'division_id' => $this->division->id_division
-                ]
+                    'division_id' => $this->division->id_division,
+                ],
             ]);
 
         $this->assertDatabaseHas('edition_lotteries', [
             'id_lottery' => $lottery->id_lottery,
             'orderliness' => 2,
-            'total_draws_nr' => 10
+            'total_draws_nr' => 10,
         ]);
     }
 
@@ -198,11 +203,11 @@ class EditionLotteryControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
-                'message' => 'Lottery deleted successfully'
+                'message' => 'Lottery deleted successfully',
             ]);
 
         $this->assertDatabaseMissing('edition_lotteries', [
-            'id_lottery' => $lottery->id_lottery
+            'id_lottery' => $lottery->id_lottery,
         ]);
     }
 
@@ -218,11 +223,11 @@ class EditionLotteryControllerTest extends TestCase
         $response->assertStatus(409)
             ->assertJson([
                 'success' => false,
-                'message' => 'Cannot delete lottery because it has related lucky ones'
+                'message' => 'Cannot delete lottery because it has related lucky ones',
             ]);
 
         $this->assertDatabaseHas('edition_lotteries', [
-            'id_lottery' => $lottery->id_lottery
+            'id_lottery' => $lottery->id_lottery,
         ]);
     }
 
@@ -242,7 +247,7 @@ class EditionLotteryControllerTest extends TestCase
 
         $response = $this->postJson('/api/v1/manager/lotteries', [
             'edition_id' => 99999, // Non-existent edition
-            'total_draws_nr' => 5
+            'total_draws_nr' => 5,
         ]);
 
         $response->assertStatus(422)
@@ -255,7 +260,7 @@ class EditionLotteryControllerTest extends TestCase
 
         $response = $this->postJson('/api/v1/manager/lotteries', [
             'edition_id' => $this->edition->id_edition,
-            'total_draws_nr' => 0 // Invalid - must be at least 1
+            'total_draws_nr' => 0, // Invalid - must be at least 1
         ]);
 
         $response->assertStatus(422)
@@ -269,7 +274,7 @@ class EditionLotteryControllerTest extends TestCase
         $lottery = EditionLottery::factory()->create();
 
         $response = $this->putJson("/api/v1/manager/lotteries/{$lottery->id_lottery}", [
-            'edition_id' => 99999 // Non-existent edition
+            'edition_id' => 99999, // Non-existent edition
         ]);
 
         $response->assertStatus(422)
@@ -317,14 +322,14 @@ class EditionLotteryControllerTest extends TestCase
                         'id_lottery',
                         'edition_id',
                         'orderliness',
-                        'total_draws_nr'
-                    ]
+                        'total_draws_nr',
+                    ],
                 ],
                 'links' => [
                     'first',
                     'last',
                     'prev',
-                    'next'
+                    'next',
                 ],
                 'meta' => [
                     'current_page',
@@ -333,8 +338,8 @@ class EditionLotteryControllerTest extends TestCase
                     'path',
                     'per_page',
                     'to',
-                    'total'
-                ]
+                    'total',
+                ],
             ]);
 
         $this->assertCount(10, $response->json('data'));
@@ -348,7 +353,7 @@ class EditionLotteryControllerTest extends TestCase
 
         $lotteryData = [
             'edition_id' => $this->edition->id_edition,
-            'total_draws_nr' => 3
+            'total_draws_nr' => 3,
             // Not providing division_id and prize_id (optional)
         ];
 
@@ -362,16 +367,15 @@ class EditionLotteryControllerTest extends TestCase
                     'edition_id' => $this->edition->id_edition,
                     'total_draws_nr' => 3,
                     'division_id' => null,
-                    'prize_id' => null
-                ]
+                    'prize_id' => null,
+                ],
             ]);
 
         $this->assertDatabaseHas('edition_lotteries', [
             'edition_id' => $this->edition->id_edition,
             'total_draws_nr' => 3,
             'division_id' => null,
-            'prize_id' => null
+            'prize_id' => null,
         ]);
     }
 }
-

@@ -1,12 +1,13 @@
 <?php
 
+declare(strict_types=1);
+
 namespace App\Http\Controllers\Api\V1\App;
 
-use App\Http\Controllers\Controller;
-use App\Models\Edition;
-use App\Models\PlayerEligibility;
-use App\Models\EditionDivision;
 use App\Http\Resources\EditionParticipationResource;
+use App\Models\Edition;
+use App\Models\EditionDivision;
+use App\Models\PlayerEligibility;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -64,16 +65,16 @@ class EditionParticipationController extends \App\Http\Controllers\BaseVersions\
     public function store(Request $request, Edition $edition)
     {
         // Check if edition is in the past
-        if (strtotime($edition->date) <= strtotime(date('Y-m-d'))) {
+        if (strtotime($edition->date->format('Y-m-d')) <= strtotime(date('Y-m-d'))) {
             return $this->validationErrorResponse(['edition' => ['Cannot join past editions']]);
         }
 
         // Check if player has approved eligibility
         $eligibility = PlayerEligibility::where('player_id', $request->user()->id_player)
             ->where('review_status', 'approved')
-        ->first();
+            ->first();
 
-        if (!$eligibility) {
+        if (! $eligibility) {
             return $this->forbiddenResponse('You are not eligible yet. Please submit your eligibility request first.');
         }
 
@@ -81,14 +82,14 @@ class EditionParticipationController extends \App\Http\Controllers\BaseVersions\
             'division_id' => [
                 'required',
                 Rule::exists('edition_divisions', 'division_id')
-                ->where('edition_id', $edition->id_edition)
-            ]
+                    ->where('edition_id', $edition->id_edition),
+            ],
         ]);
 
         // Get division details for this edition
         $editionDivision = EditionDivision::where('edition_id', $edition->id_edition)
-        ->where('division_id', $validatedData['division_id'])
-        ->firstOrFail();
+            ->where('division_id', $validatedData['division_id'])
+            ->firstOrFail();
 
         // Check if player is already participating in this edition
         $existingParticipation = $edition->participations()
