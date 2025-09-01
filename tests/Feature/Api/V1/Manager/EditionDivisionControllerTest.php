@@ -278,12 +278,178 @@ class EditionDivisionControllerTest extends TestCase
         $response->assertStatus(409)
             ->assertJson([
                 'success' => false,
-                'message' => 'Cannot delete edition division because it has related participations',
+                'message' => 'Edition division cannot be deleted because it has linked data. Please remove all associated participations first.',
             ]);
 
         $this->assertDatabaseHas('edition_divisions', [
             'id_edition_division' => $editionDivision->id_edition_division,
         ]);
+    }
+
+    public function test_manager_can_bulk_delete_edition_divisions()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $editionDivisions = EditionDivision::factory()->count(3)->create();
+
+        $response = $this->deleteJson('/api/v1/manager/edition-divisions/bulk', [
+            'edition_division_ids' => $editionDivisions->pluck('id_edition_division')->toArray(),
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Edition divisions deleted successfully',
+                'data' => [
+                    'total_successful' => 3,
+                    'total_failed' => 0,
+                    'total_requested' => 3,
+                ],
+            ])
+            ->assertJsonStructure([
+                'data' => [
+                    'successful' => [
+                        '*' => [
+                            'id',
+                            'name',
+                        ],
+                    ],
+                    'failed',
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ]);
+
+        // Verify all edition divisions are deleted
+        foreach ($editionDivisions as $editionDivision) {
+            $this->assertDatabaseMissing('edition_divisions', ['id_edition_division' => $editionDivision->id_edition_division]);
+        }
+    }
+
+    public function test_manager_cannot_bulk_delete_edition_divisions_with_linked_data()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $editionDivision1 = EditionDivision::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'division_id' => $this->division->id_division,
+        ]);
+        $editionDivision2 = EditionDivision::factory()->create();
+        $editionDivision3 = EditionDivision::factory()->create();
+
+        // Create linked participation for editionDivision1
+        $player = Player::factory()->create();
+        EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'player_id' => $player->id_player,
+            'division_id' => $this->division->id_division,
+        ]);
+
+        $response = $this->deleteJson('/api/v1/manager/edition-divisions/bulk', [
+            'edition_division_ids' => [$editionDivision1->id_edition_division, $editionDivision2->id_edition_division, $editionDivision3->id_edition_division],
+        ]);
+
+        $response->assertStatus(207)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Some edition divisions failed to delete',
+                'errors' => [
+                    'total_successful' => 2,
+                    'total_failed' => 1,
+                    'total_requested' => 3,
+                ],
+            ])
+            ->assertJsonStructure([
+                'errors' => [
+                    'successful' => [
+                        '*' => [
+                            'id',
+                            'name',
+                        ],
+                    ],
+                    'failed' => [
+                        '*' => [
+                            'id',
+                            'reason',
+                        ],
+                    ],
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ]);
+
+        // Verify successful deletions
+        $this->assertDatabaseMissing('edition_divisions', ['id_edition_division' => $editionDivision2->id_edition_division]);
+        $this->assertDatabaseMissing('edition_divisions', ['id_edition_division' => $editionDivision3->id_edition_division]);
+        // Verify failed deletion still exists
+        $this->assertDatabaseHas('edition_divisions', ['id_edition_division' => $editionDivision1->id_edition_division]);
+    }
+
+    public function test_manager_cannot_bulk_delete_edition_divisions_with_invalid_ids()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/edition-divisions/bulk', [
+            'edition_division_ids' => [99999, 99998],
+        ]);
+
+        $response->assertStatus(409)
+            ->assertJson([
+                'success' => false,
+                'message' => 'All edition divisions failed to delete',
+                'errors' => [
+                    'total_successful' => 0,
+                    'total_failed' => 2,
+                    'total_requested' => 2,
+                ],
+            ])
+            ->assertJsonStructure([
+                'errors' => [
+                    'successful',
+                    'failed' => [
+                        '*' => [
+                            'id',
+                            'reason',
+                        ],
+                    ],
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ]);
+    }
+
+    public function test_manager_cannot_bulk_delete_edition_divisions_with_empty_array()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/edition-divisions/bulk', [
+            'edition_division_ids' => [],
+        ]);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_manager_cannot_bulk_delete_edition_divisions_without_edition_division_ids()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/edition-divisions/bulk', []);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_manager_cannot_bulk_delete_edition_divisions_with_invalid_edition_division_ids_format()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/edition-divisions/bulk', [
+            'edition_division_ids' => ['invalid', 'format'],
+        ]);
+
+        $response->assertStatus(422);
     }
 
     public function test_manager_cannot_create_duplicate_edition_division()

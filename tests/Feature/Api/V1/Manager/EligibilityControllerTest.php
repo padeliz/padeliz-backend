@@ -195,6 +195,112 @@ class EligibilityControllerTest extends TestCase
         ]);
     }
 
+    public function test_manager_can_bulk_delete_eligibilities()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $eligibilities = PlayerEligibility::factory()->count(3)->create();
+
+        $response = $this->deleteJson('/api/v1/manager/eligibility/bulk', [
+            'eligibility_ids' => $eligibilities->pluck('id_eligibility')->toArray(),
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Eligibilities deleted successfully',
+                'data' => [
+                    'total_successful' => 3,
+                    'total_failed' => 0,
+                    'total_requested' => 3,
+                ],
+            ])
+            ->assertJsonStructure([
+                'data' => [
+                    'successful' => [
+                        '*' => [
+                            'id',
+                            'name',
+                        ],
+                    ],
+                    'failed',
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ]);
+
+        // Verify all eligibilities are deleted
+        foreach ($eligibilities as $eligibility) {
+            $this->assertDatabaseMissing('player_eligibilities', ['id_eligibility' => $eligibility->id_eligibility]);
+        }
+    }
+
+    public function test_manager_cannot_bulk_delete_eligibilities_with_invalid_ids()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/eligibility/bulk', [
+            'eligibility_ids' => [99999, 99998],
+        ]);
+
+        $response->assertStatus(207)
+            ->assertJson([
+                'success' => false,
+                'message' => 'All resources failed to delete',
+                'errors' => [
+                    'total_successful' => 0,
+                    'total_failed' => 2,
+                    'total_requested' => 2,
+                ],
+            ])
+            ->assertJsonStructure([
+                'errors' => [
+                    'successful',
+                    'failed' => [
+                        '*' => [
+                            'id',
+                            'reason',
+                        ],
+                    ],
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ]);
+    }
+
+    public function test_manager_cannot_bulk_delete_eligibilities_with_empty_array()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/eligibility/bulk', [
+            'eligibility_ids' => [],
+        ]);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_manager_cannot_bulk_delete_eligibilities_without_eligibility_ids()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/eligibility/bulk', []);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_manager_cannot_bulk_delete_eligibilities_with_invalid_eligibility_ids_format()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/eligibility/bulk', [
+            'eligibility_ids' => ['invalid', 'format'],
+        ]);
+
+        $response->assertStatus(422);
+    }
+
     public function test_manager_cannot_create_duplicate_eligibility()
     {
         Sanctum::actingAs($this->manager);

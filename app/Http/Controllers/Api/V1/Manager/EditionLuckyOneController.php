@@ -314,6 +314,7 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
      *     path="/api/v1/manager/lucky-ones/{luckyOne}",
      *     summary="Delete a lucky one",
      *     tags={"🐧 Manager: Editions Lucky One"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="luckyOne",
      *         in="path",
@@ -329,8 +330,92 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
      */
     public function destroy(EditionLuckyOne $luckyOne)
     {
-        $luckyOne->delete();
+        return $this->deleteResourceWithResponse(
+            $luckyOne,
+            [],
+            'lucky one',
+            'Lucky one deleted successfully'
+        );
+    }
 
-        return $this->successResponse(null, 'Lucky one deleted successfully');
+    /**
+     * @OA\Delete(
+     *     path="/api/v1/manager/lucky-ones/bulk",
+     *     summary="Bulk delete lucky ones",
+     *     tags={"🐧 Manager: Editions Lucky One"},
+     *     security={{"sanctum":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"lucky_one_ids"},
+     *             @OA\Property(
+     *                 property="lucky_one_ids",
+     *                 type="array",
+     *                 description="Array of lucky one IDs to delete",
+     *                 @OA\Items(type="integer")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="All lucky ones deleted successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=207,
+     *         description="Some lucky ones failed to delete (Multi-Status)",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="errors",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="No lucky ones provided for deletion",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     )
+     * )
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'lucky_one_ids' => 'required|array|min:1',
+            'lucky_one_ids.*' => 'integer',
+        ]);
+
+        return $this->deleteBulkResourcesWithResponse(
+            $request->lucky_one_ids,
+            EditionLuckyOne::class,
+            [],
+            'lucky one',
+            'Lucky ones deleted successfully'
+        );
     }
 }

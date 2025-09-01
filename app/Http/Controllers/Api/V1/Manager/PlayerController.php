@@ -215,8 +215,92 @@ class PlayerController extends V1BaseController
      */
     public function destroy(Player $player)
     {
-        $player->delete();
+        return $this->deleteResourceWithResponse(
+            $player,
+            [],
+            'player',
+            'Player deleted successfully'
+        );
+    }
 
-        return $this->successResponse(null, 'Player deleted successfully');
+    /**
+     * @OA\Delete(
+     *     path="/api/v1/manager/players/bulk",
+     *     summary="Bulk delete players",
+     *     tags={"🐧 Manager: Players"},
+     *     security={{"sanctum":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"player_ids"},
+     *             @OA\Property(
+     *                 property="player_ids",
+     *                 type="array",
+     *                 description="Array of player IDs to delete",
+     *                 @OA\Items(type="integer")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="All players deleted successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=207,
+     *         description="Some players failed to delete (Multi-Status)",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="errors",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="No players provided for deletion",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     )
+     * )
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'player_ids' => 'required|array|min:1',
+            'player_ids.*' => 'integer',
+        ]);
+
+        return $this->deleteBulkResourcesWithResponse(
+            $request->player_ids,
+            Player::class,
+            [],
+            'player',
+            'Players deleted successfully'
+        );
     }
 }

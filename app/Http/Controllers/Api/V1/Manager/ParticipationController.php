@@ -377,8 +377,160 @@ class ParticipationController extends V1BaseController
             return $this->notFoundResponse('Participation does not belong to this edition');
         }
 
-        $participation->delete();
+        return $this->deleteResourceWithResponse(
+            $participation,
+            [],
+            'participation',
+            'Participation deleted successfully'
+        );
+    }
 
-        return $this->successResponse(null, 'Participation deleted successfully');
+    /**
+     * @OA\Delete(
+     *     path="/api/v1/manager/editions/{edition}/participations/bulk",
+     *     summary="Bulk remove players from edition",
+     *     tags={"🐧 Manager: Participations"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="edition",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"participation_ids"},
+     *             @OA\Property(
+     *                 property="participation_ids",
+     *                 type="array",
+     *                 description="Array of participation IDs to delete",
+     *                 @OA\Items(type="integer")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="All participations deleted successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=207,
+     *         description="Some participations failed to delete (Multi-Status)",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="errors",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="No participations provided for deletion",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     )
+     * )
+     */
+    public function bulkDestroy(Request $request, Edition $edition)
+    {
+        $request->validate([
+            'participation_ids' => 'required|array|min:1',
+            'participation_ids.*' => 'integer',
+        ]);
+
+        $results = [
+            'successful' => [],
+            'failed' => [],
+            'total_requested' => count($request->participation_ids),
+            'total_successful' => 0,
+            'total_failed' => 0,
+        ];
+
+        foreach ($request->participation_ids as $participationId) {
+            try {
+                $participation = EditionParticipation::find($participationId);
+
+                if (! $participation) {
+                    $results['failed'][] = [
+                        'id' => $participationId,
+                        'reason' => 'Resource not found',
+                    ];
+                    $results['total_failed']++;
+
+                    continue;
+                }
+
+                // Ensure the participation belongs to the specified edition
+                if ($participation->edition_id !== $edition->id_edition) {
+                    $results['failed'][] = [
+                        'id' => $participationId,
+                        'reason' => 'Participation does not belong to this edition',
+                    ];
+                    $results['total_failed']++;
+
+                    continue;
+                }
+
+                $participation->delete();
+
+                $results['successful'][] = [
+                    'id' => $participationId,
+                    'name' => $participation->player->name ?? $participationId,
+                ];
+                $results['total_successful']++;
+
+            } catch (\Exception $e) {
+                $results['failed'][] = [
+                    'id' => $participationId,
+                    'reason' => 'Unexpected error: ' . $e->getMessage(),
+                ];
+                $results['total_failed']++;
+            }
+        }
+
+        // Determine response based on results
+        if ($results['total_failed'] === 0) {
+            return $this->successResponse(
+                $results,
+                'Participations deleted successfully'
+            );
+        } elseif ($results['total_successful'] === 0) {
+            return $this->errorResponse(
+                'All participations failed to delete',
+                409,
+                $results
+            );
+        } else {
+            return $this->errorResponse(
+                'Some participations failed to delete',
+                207, // Multi-Status
+                $results
+            );
+        }
     }
 }

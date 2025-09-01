@@ -198,12 +198,170 @@ class LocationControllerTest extends TestCase
         $response->assertStatus(409)
             ->assertJson([
                 'success' => false,
-                'message' => 'Cannot delete location because it has related editions',
+                'message' => 'Location cannot be deleted because it has linked data. Please remove all associated editions_count first.',
             ]);
 
         $this->assertDatabaseHas('locations', [
             'id_location' => $location->id_location,
         ]);
+    }
+
+    public function test_manager_can_bulk_delete_locations()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $locations = Location::factory()->count(3)->create();
+
+        $response = $this->deleteJson('/api/v1/manager/locations/bulk', [
+            'location_ids' => $locations->pluck('id_location')->toArray(),
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Locations deleted successfully',
+                'data' => [
+                    'total_successful' => 3,
+                    'total_failed' => 0,
+                    'total_requested' => 3,
+                ],
+            ])
+            ->assertJsonStructure([
+                'data' => [
+                    'successful' => [
+                        '*' => [
+                            'id',
+                            'name',
+                        ],
+                    ],
+                    'failed',
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ]);
+
+        // Verify all locations are deleted
+        foreach ($locations as $location) {
+            $this->assertDatabaseMissing('locations', ['id_location' => $location->id_location]);
+        }
+    }
+
+    public function test_manager_cannot_bulk_delete_locations_with_linked_data()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $location1 = Location::factory()->create();
+        $location2 = Location::factory()->create();
+        $location3 = Location::factory()->create();
+
+        // Create linked editions for location1
+        Edition::factory()->create(['location_id' => $location1->id_location]);
+
+        $response = $this->deleteJson('/api/v1/manager/locations/bulk', [
+            'location_ids' => [$location1->id_location, $location2->id_location, $location3->id_location],
+        ]);
+
+        $response->assertStatus(207)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Some resources failed to delete',
+                'errors' => [
+                    'total_successful' => 2,
+                    'total_failed' => 1,
+                    'total_requested' => 3,
+                ],
+            ])
+            ->assertJsonStructure([
+                'errors' => [
+                    'successful' => [
+                        '*' => [
+                            'id',
+                            'name',
+                        ],
+                    ],
+                    'failed' => [
+                        '*' => [
+                            'id',
+                            'reason',
+                        ],
+                    ],
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ]);
+
+        // Verify successful deletions
+        $this->assertDatabaseMissing('locations', ['id_location' => $location2->id_location]);
+        $this->assertDatabaseMissing('locations', ['id_location' => $location3->id_location]);
+        // Verify failed deletion still exists
+        $this->assertDatabaseHas('locations', ['id_location' => $location1->id_location]);
+    }
+
+    public function test_manager_cannot_bulk_delete_locations_with_invalid_ids()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/locations/bulk', [
+            'location_ids' => [99999, 99998],
+        ]);
+
+        $response->assertStatus(207)
+            ->assertJson([
+                'success' => false,
+                'message' => 'All resources failed to delete',
+                'errors' => [
+                    'total_successful' => 0,
+                    'total_failed' => 2,
+                    'total_requested' => 2,
+                ],
+            ])
+            ->assertJsonStructure([
+                'errors' => [
+                    'successful',
+                    'failed' => [
+                        '*' => [
+                            'id',
+                            'reason',
+                        ],
+                    ],
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ]);
+    }
+
+    public function test_manager_cannot_bulk_delete_locations_with_empty_array()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/locations/bulk', [
+            'location_ids' => [],
+        ]);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_manager_cannot_bulk_delete_locations_without_location_ids()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/locations/bulk', []);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_manager_cannot_bulk_delete_locations_with_invalid_location_ids_format()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/locations/bulk', [
+            'location_ids' => ['invalid', 'format'],
+        ]);
+
+        $response->assertStatus(422);
     }
 
     public function test_location_creation_validation()

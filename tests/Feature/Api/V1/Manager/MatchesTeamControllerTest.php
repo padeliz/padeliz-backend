@@ -185,6 +185,112 @@ class MatchesTeamControllerTest extends TestCase
         ]);
     }
 
+    public function test_manager_can_bulk_delete_matches_teams()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $teams = MatchesTeam::factory()->count(3)->create();
+
+        $response = $this->deleteJson('/api/v1/manager/matches-teams/bulk', [
+            'team_ids' => $teams->pluck('id_team')->toArray(),
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Match teams deleted successfully',
+                'data' => [
+                    'total_successful' => 3,
+                    'total_failed' => 0,
+                    'total_requested' => 3,
+                ],
+            ])
+            ->assertJsonStructure([
+                'data' => [
+                    'successful' => [
+                        '*' => [
+                            'id',
+                            'name',
+                        ],
+                    ],
+                    'failed',
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ]);
+
+        // Verify all teams are deleted
+        foreach ($teams as $team) {
+            $this->assertDatabaseMissing('matches_teams', ['id_team' => $team->id_team]);
+        }
+    }
+
+    public function test_manager_cannot_bulk_delete_matches_teams_with_invalid_ids()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/matches-teams/bulk', [
+            'team_ids' => [99999, 99998],
+        ]);
+
+        $response->assertStatus(207)
+            ->assertJson([
+                'success' => false,
+                'message' => 'All resources failed to delete',
+                'errors' => [
+                    'total_successful' => 0,
+                    'total_failed' => 2,
+                    'total_requested' => 2,
+                ],
+            ])
+            ->assertJsonStructure([
+                'errors' => [
+                    'successful',
+                    'failed' => [
+                        '*' => [
+                            'id',
+                            'reason',
+                        ],
+                    ],
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ]);
+    }
+
+    public function test_manager_cannot_bulk_delete_matches_teams_with_empty_array()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/matches-teams/bulk', [
+            'team_ids' => [],
+        ]);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_manager_cannot_bulk_delete_matches_teams_without_team_ids()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/matches-teams/bulk', []);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_manager_cannot_bulk_delete_matches_teams_with_invalid_team_ids_format()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/matches-teams/bulk', [
+            'team_ids' => ['invalid', 'format'],
+        ]);
+
+        $response->assertStatus(422);
+    }
+
     public function test_manager_cannot_create_team_with_same_player()
     {
         Sanctum::actingAs($this->manager);

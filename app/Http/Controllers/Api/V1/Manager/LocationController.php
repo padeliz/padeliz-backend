@@ -266,6 +266,7 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *     path="/api/v1/manager/locations/{location}",
      *     summary="Delete a location",
      *     tags={"🐧 Manager: Locations"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="location",
      *         in="path",
@@ -279,24 +280,140 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *     ),
      *     @OA\Response(
      *         response=409,
-     *         description="Location cannot be deleted due to related records",
-     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *         description="Location cannot be deleted due to linked data",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="linked_data",
+     *                         type="object",
+     *                         description="Information about linked data preventing deletion",
+     *                         @OA\Property(property="editions_count", type="integer", example=3)
+     *                     )
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function destroy(Location $location)
     {
-        // Check if location has related editions
-        if ($location->editions()->exists()) {
-            return $this->errorResponse(
-                'Cannot delete location because it has related editions',
-                409
-            );
-        }
+        $linkedDataRelations = [
+            'editions' => 'editions_count',
+        ];
 
-        $location->delete();
+        return $this->deleteResourceWithResponse(
+            $location,
+            $linkedDataRelations,
+            'location',
+            'Location deleted successfully'
+        );
+    }
 
-        return $this->successResponse(null, 'Location deleted successfully');
+    /**
+     * @OA\Delete(
+     *     path="/api/v1/manager/locations/bulk",
+     *     summary="Bulk delete locations",
+     *     tags={"🐧 Manager: Locations"},
+     *     security={{"sanctum":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"location_ids"},
+     *             @OA\Property(
+     *                 property="location_ids",
+     *                 type="array",
+     *                 description="Array of location IDs to delete",
+     *                 @OA\Items(type="integer")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="All locations deleted successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=207,
+     *         description="Some locations failed to delete (Multi-Status)",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="errors",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="No locations provided for deletion",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=409,
+     *         description="All locations failed to delete due to linked data",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="errors",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     )
+     * )
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'location_ids' => 'required|array|min:1',
+            'location_ids.*' => 'integer',
+        ]);
+
+        $linkedDataRelations = [
+            'editions' => 'editions_count',
+        ];
+
+        return $this->deleteBulkResourcesWithResponse(
+            $request->location_ids,
+            Location::class,
+            $linkedDataRelations,
+            'location',
+            'Locations deleted successfully'
+        );
     }
 
     /**

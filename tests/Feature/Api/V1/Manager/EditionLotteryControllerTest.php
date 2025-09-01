@@ -223,12 +223,170 @@ class EditionLotteryControllerTest extends TestCase
         $response->assertStatus(409)
             ->assertJson([
                 'success' => false,
-                'message' => 'Cannot delete lottery because it has related lucky ones',
+                'message' => 'Lottery cannot be deleted because it has linked data. Please remove all associated lucky_ones_count first.',
             ]);
 
         $this->assertDatabaseHas('edition_lotteries', [
             'id_lottery' => $lottery->id_lottery,
         ]);
+    }
+
+    public function test_manager_can_bulk_delete_lotteries()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $lotteries = EditionLottery::factory()->count(3)->create();
+
+        $response = $this->deleteJson('/api/v1/manager/lotteries/bulk', [
+            'lottery_ids' => $lotteries->pluck('id_lottery')->toArray(),
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Lotteries deleted successfully',
+                'data' => [
+                    'total_successful' => 3,
+                    'total_failed' => 0,
+                    'total_requested' => 3,
+                ],
+            ])
+            ->assertJsonStructure([
+                'data' => [
+                    'successful' => [
+                        '*' => [
+                            'id',
+                            'name',
+                        ],
+                    ],
+                    'failed',
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ]);
+
+        // Verify all lotteries are deleted
+        foreach ($lotteries as $lottery) {
+            $this->assertDatabaseMissing('edition_lotteries', ['id_lottery' => $lottery->id_lottery]);
+        }
+    }
+
+    public function test_manager_cannot_bulk_delete_lotteries_with_linked_data()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $lottery1 = EditionLottery::factory()->create();
+        $lottery2 = EditionLottery::factory()->create();
+        $lottery3 = EditionLottery::factory()->create();
+
+        // Create linked lucky ones for lottery1
+        EditionLuckyOne::factory()->create(['lottery_id' => $lottery1->id_lottery]);
+
+        $response = $this->deleteJson('/api/v1/manager/lotteries/bulk', [
+            'lottery_ids' => [$lottery1->id_lottery, $lottery2->id_lottery, $lottery3->id_lottery],
+        ]);
+
+        $response->assertStatus(207)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Some resources failed to delete',
+                'errors' => [
+                    'total_successful' => 2,
+                    'total_failed' => 1,
+                    'total_requested' => 3,
+                ],
+            ])
+            ->assertJsonStructure([
+                'errors' => [
+                    'successful' => [
+                        '*' => [
+                            'id',
+                            'name',
+                        ],
+                    ],
+                    'failed' => [
+                        '*' => [
+                            'id',
+                            'reason',
+                        ],
+                    ],
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ]);
+
+        // Verify successful deletions
+        $this->assertDatabaseMissing('edition_lotteries', ['id_lottery' => $lottery2->id_lottery]);
+        $this->assertDatabaseMissing('edition_lotteries', ['id_lottery' => $lottery3->id_lottery]);
+        // Verify failed deletion still exists
+        $this->assertDatabaseHas('edition_lotteries', ['id_lottery' => $lottery1->id_lottery]);
+    }
+
+    public function test_manager_cannot_bulk_delete_lotteries_with_invalid_ids()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/lotteries/bulk', [
+            'lottery_ids' => [99999, 99998],
+        ]);
+
+        $response->assertStatus(207)
+            ->assertJson([
+                'success' => false,
+                'message' => 'All resources failed to delete',
+                'errors' => [
+                    'total_successful' => 0,
+                    'total_failed' => 2,
+                    'total_requested' => 2,
+                ],
+            ])
+            ->assertJsonStructure([
+                'errors' => [
+                    'successful',
+                    'failed' => [
+                        '*' => [
+                            'id',
+                            'reason',
+                        ],
+                    ],
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ]);
+    }
+
+    public function test_manager_cannot_bulk_delete_lotteries_with_empty_array()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/lotteries/bulk', [
+            'lottery_ids' => [],
+        ]);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_manager_cannot_bulk_delete_lotteries_without_lottery_ids()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/lotteries/bulk', []);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_manager_cannot_bulk_delete_lotteries_with_invalid_lottery_ids_format()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/lotteries/bulk', [
+            'lottery_ids' => ['invalid', 'format'],
+        ]);
+
+        $response->assertStatus(422);
     }
 
     public function test_lottery_creation_validation()

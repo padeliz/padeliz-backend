@@ -261,16 +261,145 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      *         response=200,
      *         description="Club deleted successfully",
      *         @OA\JsonContent(ref="#/components/schemas/ApiResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=409,
+     *         description="Club cannot be deleted due to linked data",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="linked_data",
+     *                         type="object",
+     *                         description="Information about linked data preventing deletion",
+     *                         @OA\Property(property="locations_count", type="integer", example=3),
+     *                         @OA\Property(property="prizes_count", type="integer", example=2)
+     *                     )
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function destroy(Club $club)
     {
-        $club->delete();
+        $linkedDataRelations = [
+            'locations' => 'locations_count',
+            'prizes' => 'prizes_count',
+        ];
 
-        return $this->successResponse(
-            null,
+        return $this->deleteResourceWithResponse(
+            $club,
+            $linkedDataRelations,
+            'club',
             'Club deleted successfully'
+        );
+    }
+
+    /**
+     * @OA\Delete(
+     *     path="/api/v1/manager/clubs/bulk",
+     *     summary="Bulk delete clubs",
+     *     tags={"🐧 Manager: Clubs"},
+     *     security={{"sanctum":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"club_ids"},
+     *             @OA\Property(
+     *                 property="club_ids",
+     *                 type="array",
+     *                 description="Array of club IDs to delete",
+     *                 @OA\Items(type="integer")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="All clubs deleted successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=207,
+     *         description="Some clubs failed to delete (Multi-Status)",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="errors",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="No clubs provided for deletion",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=409,
+     *         description="All clubs failed to delete due to linked data",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="errors",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     )
+     * )
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'club_ids' => 'required|array|min:1',
+            'club_ids.*' => 'integer',
+        ]);
+
+        $linkedDataRelations = [
+            'locations' => 'locations_count',
+            'prizes' => 'prizes_count',
+        ];
+
+        return $this->deleteBulkResourcesWithResponse(
+            $request->club_ids,
+            Club::class,
+            $linkedDataRelations,
+            'club',
+            'Clubs deleted successfully'
         );
     }
 

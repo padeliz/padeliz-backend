@@ -286,13 +286,88 @@ class EligibilityController extends V1BaseController
      *         response=200,
      *         description="Eligibility deleted successfully",
      *         @OA\JsonContent(ref="#/components/schemas/ApiResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=409,
+     *         description="Cannot delete eligibility due to linked data",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiResponse")
      *     )
      * )
      */
     public function destroy(PlayerEligibility $eligibility)
     {
-        $eligibility->delete();
+        // PlayerEligibility has no relationships that would prevent deletion
+        $linkedDataRelations = [];
 
-        return $this->successResponse(null, 'Eligibility deleted successfully');
+        return $this->deleteResourceWithResponse(
+            $eligibility,
+            $linkedDataRelations,
+            'eligibility',
+            'Eligibility deleted successfully'
+        );
+    }
+
+    /**
+     * @OA\Delete(
+     *     path="/api/v1/manager/eligibility/bulk",
+     *     summary="Bulk delete eligibility records",
+     *     tags={"🐧 Manager: Eligibilities"},
+     *     security={{"sanctum":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"eligibility_ids"},
+     *             @OA\Property(
+     *                 property="eligibility_ids",
+     *                 type="array",
+     *                 @OA\Items(type="integer"),
+     *                 description="Array of eligibility IDs to delete"
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="All eligibilities deleted successfully",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=207,
+     *         description="Some eligibilities failed to delete",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="Bad request - no eligibilities provided",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=409,
+     *         description="All eligibilities failed to delete due to linked data",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiResponse")
+     *     )
+     * )
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'eligibility_ids' => 'required|array|min:1',
+            'eligibility_ids.*' => 'integer',
+        ]);
+
+        // PlayerEligibility has no relationships that would prevent deletion
+        $linkedDataRelations = [];
+
+        return $this->deleteBulkResourcesWithResponse(
+            $request->eligibility_ids,
+            PlayerEligibility::class,
+            $linkedDataRelations,
+            'eligibility',
+            'Eligibilities deleted successfully'
+        );
     }
 }

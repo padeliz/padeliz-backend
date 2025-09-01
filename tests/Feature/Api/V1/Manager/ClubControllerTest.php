@@ -200,6 +200,332 @@ class ClubControllerTest extends TestCase
         ]);
     }
 
+    public function test_manager_cannot_delete_club_with_linked_locations()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $club = Club::factory()->create();
+        Location::factory()->count(3)->create(['club_id' => $club->id_club]);
+
+        $response = $this->deleteJson("/api/v1/manager/clubs/{$club->id_club}");
+
+        $response->assertStatus(409)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'errors' => [
+                    'linked_data' => [
+                        'locations_count',
+                        'prizes_count',
+                    ],
+                ],
+            ])
+            ->assertJson([
+                'success' => false,
+                'message' => 'Club cannot be deleted because it has linked data. Please remove all associated locations_count, prizes_count first.',
+                'errors' => [
+                    'linked_data' => [
+                        'locations_count' => 3,
+                        'prizes_count' => 0,
+                    ],
+                ],
+            ]);
+
+        $this->assertDatabaseHas('clubs', [
+            'id_club' => $club->id_club,
+        ]);
+    }
+
+    public function test_manager_cannot_delete_club_with_linked_prizes()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $club = Club::factory()->create();
+        $prizes = Prize::factory()->count(2)->create();
+
+        // Create prize from club relationships
+        foreach ($prizes as $prize) {
+            \App\Models\PrizeFromClub::factory()->create([
+                'club_id' => $club->id_club,
+                'prize_id' => $prize->id_prize,
+            ]);
+        }
+
+        $response = $this->deleteJson("/api/v1/manager/clubs/{$club->id_club}");
+
+        $response->assertStatus(409)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'errors' => [
+                    'linked_data' => [
+                        'locations_count',
+                        'prizes_count',
+                    ],
+                ],
+            ])
+            ->assertJson([
+                'success' => false,
+                'message' => 'Club cannot be deleted because it has linked data. Please remove all associated locations_count, prizes_count first.',
+                'errors' => [
+                    'linked_data' => [
+                        'locations_count' => 0,
+                        'prizes_count' => 2,
+                    ],
+                ],
+            ]);
+
+        $this->assertDatabaseHas('clubs', [
+            'id_club' => $club->id_club,
+        ]);
+    }
+
+    public function test_manager_cannot_delete_club_with_both_linked_locations_and_prizes()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $club = Club::factory()->create();
+        Location::factory()->count(2)->create(['club_id' => $club->id_club]);
+
+        $prizes = Prize::factory()->count(3)->create();
+        foreach ($prizes as $prize) {
+            \App\Models\PrizeFromClub::factory()->create([
+                'club_id' => $club->id_club,
+                'prize_id' => $prize->id_prize,
+            ]);
+        }
+
+        $response = $this->deleteJson("/api/v1/manager/clubs/{$club->id_club}");
+
+        $response->assertStatus(409)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'errors' => [
+                    'linked_data' => [
+                        'locations_count',
+                        'prizes_count',
+                    ],
+                ],
+            ])
+            ->assertJson([
+                'success' => false,
+                'message' => 'Club cannot be deleted because it has linked data. Please remove all associated locations_count, prizes_count first.',
+                'errors' => [
+                    'linked_data' => [
+                        'locations_count' => 2,
+                        'prizes_count' => 3,
+                    ],
+                ],
+            ]);
+
+        $this->assertDatabaseHas('clubs', [
+            'id_club' => $club->id_club,
+        ]);
+    }
+
+    public function test_manager_can_bulk_delete_clubs()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $clubs = Club::factory()->count(3)->create();
+        $clubIds = $clubs->pluck('id_club')->toArray();
+
+        $response = $this->deleteJson('/api/v1/manager/clubs/bulk', [
+            'club_ids' => $clubIds,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'successful',
+                    'failed',
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ])
+            ->assertJson([
+                'success' => true,
+                'message' => 'Clubs deleted successfully',
+                'data' => [
+                    'total_requested' => 3,
+                    'total_successful' => 3,
+                    'total_failed' => 0,
+                ],
+            ]);
+
+        // Verify all clubs are deleted
+        foreach ($clubIds as $clubId) {
+            $this->assertDatabaseMissing('clubs', ['id_club' => $clubId]);
+        }
+    }
+
+    public function test_manager_cannot_bulk_delete_clubs_with_linked_data()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $clubs = Club::factory()->count(3)->create();
+        $clubIds = $clubs->pluck('id_club')->toArray();
+
+        // Add linked data to the first club
+        Location::factory()->count(2)->create(['club_id' => $clubs[0]->id_club]);
+
+        $response = $this->deleteJson('/api/v1/manager/clubs/bulk', [
+            'club_ids' => $clubIds,
+        ]);
+
+        $response->assertStatus(207) // Multi-Status
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'errors' => [
+                    'successful',
+                    'failed',
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ])
+            ->assertJson([
+                'success' => false,
+                'message' => 'Some resources failed to delete',
+                'errors' => [
+                    'total_requested' => 3,
+                    'total_successful' => 2,
+                    'total_failed' => 1,
+                ],
+            ]);
+
+        // Verify successful deletions
+        $this->assertDatabaseMissing('clubs', ['id_club' => $clubs[1]->id_club]);
+        $this->assertDatabaseMissing('clubs', ['id_club' => $clubs[2]->id_club]);
+
+        // Verify failed deletion (club with linked data still exists)
+        $this->assertDatabaseHas('clubs', ['id_club' => $clubs[0]->id_club]);
+    }
+
+    public function test_manager_cannot_bulk_delete_clubs_with_invalid_ids()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $club = Club::factory()->create();
+        $invalidIds = [999, 1000, 1001];
+
+        $response = $this->deleteJson('/api/v1/manager/clubs/bulk', [
+            'club_ids' => $invalidIds,
+        ]);
+
+        $response->assertStatus(207) // Multi-Status
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'errors' => [
+                    'successful',
+                    'failed',
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ])
+            ->assertJson([
+                'success' => false,
+                'message' => 'All resources failed to delete',
+                'errors' => [
+                    'total_requested' => 3,
+                    'total_successful' => 0,
+                    'total_failed' => 3,
+                ],
+            ]);
+
+        // Verify the valid club still exists
+        $this->assertDatabaseHas('clubs', ['id_club' => $club->id_club]);
+    }
+
+    public function test_manager_cannot_bulk_delete_clubs_with_empty_array()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/clubs/bulk', [
+            'club_ids' => [],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['club_ids']);
+    }
+
+    public function test_manager_cannot_bulk_delete_clubs_without_club_ids()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/clubs/bulk', []);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['club_ids']);
+    }
+
+    public function test_manager_cannot_bulk_delete_clubs_with_invalid_club_ids_format()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/clubs/bulk', [
+            'club_ids' => 'not-an-array',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['club_ids']);
+    }
+
+    public function test_manager_cannot_bulk_delete_clubs_with_mixed_valid_and_invalid_scenarios()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $clubs = Club::factory()->count(4)->create();
+        $clubIds = $clubs->pluck('id_club')->toArray();
+
+        // Add linked data to the first club
+        Location::factory()->count(2)->create(['club_id' => $clubs[0]->id_club]);
+
+        // Add invalid ID
+        $mixedIds = array_merge($clubIds, [999]);
+
+        $response = $this->deleteJson('/api/v1/manager/clubs/bulk', [
+            'club_ids' => $mixedIds,
+        ]);
+
+        $response->assertStatus(207) // Multi-Status
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'errors' => [
+                    'successful',
+                    'failed',
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ])
+            ->assertJson([
+                'success' => false,
+                'message' => 'Some resources failed to delete',
+                'errors' => [
+                    'total_requested' => 5,
+                    'total_successful' => 3, // 3 valid clubs without linked data
+                    'total_failed' => 2,     // 1 with linked data + 1 invalid ID
+                ],
+            ]);
+
+        // Verify successful deletions
+        $this->assertDatabaseMissing('clubs', ['id_club' => $clubs[1]->id_club]);
+        $this->assertDatabaseMissing('clubs', ['id_club' => $clubs[2]->id_club]);
+        $this->assertDatabaseMissing('clubs', ['id_club' => $clubs[3]->id_club]);
+
+        // Verify failed deletion (club with linked data still exists)
+        $this->assertDatabaseHas('clubs', ['id_club' => $clubs[0]->id_club]);
+    }
+
     public function test_manager_can_view_club_locations()
     {
         Sanctum::actingAs($this->manager);

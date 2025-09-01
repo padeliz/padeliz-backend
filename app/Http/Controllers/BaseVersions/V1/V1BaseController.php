@@ -6,6 +6,7 @@ namespace App\Http\Controllers\BaseVersions\V1;
 
 use App\Http\Controllers\Controller;
 use App\Traits\ApiResponse;
+use App\Traits\HandlesResourceDeletion;
 use App\Traits\HasAdvancedPagination;
 
 /**
@@ -84,6 +85,7 @@ class V1BaseController extends Controller
 {
     use ApiResponse;
     use HasAdvancedPagination;
+    use HandlesResourceDeletion;
 
     /**
      * Get the current API version

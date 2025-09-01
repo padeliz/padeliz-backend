@@ -339,6 +339,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *     path="/api/v1/manager/edition-divisions/{editionDivision}",
      *     summary="Delete an edition division",
      *     tags={"🐧 Manager: Editions Divisions"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="editionDivision",
      *         in="path",
@@ -352,29 +353,211 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *     ),
      *     @OA\Response(
      *         response=409,
-     *         description="Edition division cannot be deleted due to related records",
-     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *         description="Edition division cannot be deleted due to linked data",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="linked_data",
+     *                         type="object",
+     *                         description="Information about linked data preventing deletion",
+     *                         @OA\Property(property="participations_count", type="integer", example=15)
+     *                     )
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function destroy(EditionDivision $editionDivision)
     {
         // Check if edition division has related participations
-        $participations = EditionParticipation::where([
+        $participationsCount = EditionParticipation::where([
             'edition_id' => $editionDivision->edition_id,
             'division_id' => $editionDivision->division_id,
-        ])->exists();
+        ])->count();
 
-        if ($participations) {
+        if ($participationsCount > 0) {
             return $this->errorResponse(
-                'Cannot delete edition division because it has related participations',
-                409
+                'Edition division cannot be deleted because it has linked data. Please remove all associated participations first.',
+                409,
+                ['linked_data' => ['participations_count' => $participationsCount]]
             );
         }
 
         $editionDivision->delete();
 
         return $this->successResponse(null, 'Edition division deleted successfully');
+    }
+
+    /**
+     * @OA\Delete(
+     *     path="/api/v1/manager/edition-divisions/bulk",
+     *     summary="Bulk delete edition divisions",
+     *     tags={"🐧 Manager: Editions Divisions"},
+     *     security={{"sanctum":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"edition_division_ids"},
+     *             @OA\Property(
+     *                 property="edition_division_ids",
+     *                 type="array",
+     *                 description="Array of edition division IDs to delete",
+     *                 @OA\Items(type="integer")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="All edition divisions deleted successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=207,
+     *         description="Some edition divisions failed to delete (Multi-Status)",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="errors",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="No edition divisions provided for deletion",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=409,
+     *         description="All edition divisions failed to delete due to linked data",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="errors",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     )
+     * )
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'edition_division_ids' => 'required|array|min:1',
+            'edition_division_ids.*' => 'integer',
+        ]);
+
+        $results = [
+            'successful' => [],
+            'failed' => [],
+            'total_requested' => count($request->edition_division_ids),
+            'total_successful' => 0,
+            'total_failed' => 0,
+        ];
+
+        foreach ($request->edition_division_ids as $editionDivisionId) {
+            try {
+                $editionDivision = EditionDivision::find($editionDivisionId);
+
+                if (! $editionDivision) {
+                    $results['failed'][] = [
+                        'id' => $editionDivisionId,
+                        'reason' => 'Resource not found',
+                    ];
+                    $results['total_failed']++;
+
+                    continue;
+                }
+
+                // Check if edition division has related participations
+                $participationsCount = EditionParticipation::where([
+                    'edition_id' => $editionDivision->edition_id,
+                    'division_id' => $editionDivision->division_id,
+                ])->count();
+
+                if ($participationsCount > 0) {
+                    $results['failed'][] = [
+                        'id' => $editionDivisionId,
+                        'reason' => 'Edition division cannot be deleted because it has linked data. Please remove all associated participations first.',
+                        'linked_data' => ['participations_count' => $participationsCount],
+                    ];
+                    $results['total_failed']++;
+
+                    continue;
+                }
+
+                $editionDivision->delete();
+
+                $results['successful'][] = [
+                    'id' => $editionDivisionId,
+                    'name' => $editionDivision->division->name ?? $editionDivisionId,
+                ];
+                $results['total_successful']++;
+
+            } catch (\Exception $e) {
+                $results['failed'][] = [
+                    'id' => $editionDivisionId,
+                    'reason' => 'Unexpected error: ' . $e->getMessage(),
+                ];
+                $results['total_failed']++;
+            }
+        }
+
+        // Determine response based on results
+        if ($results['total_failed'] === 0) {
+            return $this->successResponse(
+                $results,
+                'Edition divisions deleted successfully'
+            );
+        } elseif ($results['total_successful'] === 0) {
+            return $this->errorResponse(
+                'All edition divisions failed to delete',
+                409,
+                $results
+            );
+        } else {
+            return $this->errorResponse(
+                'Some edition divisions failed to delete',
+                207, // Multi-Status
+                $results
+            );
+        }
     }
 
     /**

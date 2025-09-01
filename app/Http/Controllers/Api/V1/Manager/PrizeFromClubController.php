@@ -308,6 +308,7 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *     path="/api/v1/manager/prizes-from-clubs/{prizeFromClub}",
      *     summary="Delete a prize from club",
      *     tags={"🐧 Manager: Prizes From Clubs"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="prizeFromClub",
      *         in="path",
@@ -323,8 +324,92 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      */
     public function destroy(PrizeFromClub $prizeFromClub)
     {
-        $prizeFromClub->delete();
+        return $this->deleteResourceWithResponse(
+            $prizeFromClub,
+            [],
+            'prize from club',
+            'Prize from club deleted successfully'
+        );
+    }
 
-        return $this->successResponse(null, 'Prize from club deleted successfully');
+    /**
+     * @OA\Delete(
+     *     path="/api/v1/manager/prizes-from-clubs/bulk",
+     *     summary="Bulk delete prizes from clubs",
+     *     tags={"🐧 Manager: Prizes From Clubs"},
+     *     security={{"sanctum":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"prize_from_club_ids"},
+     *             @OA\Property(
+     *                 property="prize_from_club_ids",
+     *                 type="array",
+     *                 description="Array of prize from club IDs to delete",
+     *                 @OA\Items(type="integer")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="All prizes from clubs deleted successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=207,
+     *         description="Some prizes from clubs failed to delete (Multi-Status)",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="errors",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="No prizes from clubs provided for deletion",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     )
+     * )
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'prize_from_club_ids' => 'required|array|min:1',
+            'prize_from_club_ids.*' => 'integer',
+        ]);
+
+        return $this->deleteBulkResourcesWithResponse(
+            $request->prize_from_club_ids,
+            PrizeFromClub::class,
+            [],
+            'prize from club',
+            'Prizes from clubs deleted successfully'
+        );
     }
 }

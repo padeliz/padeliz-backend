@@ -213,6 +213,112 @@ class PrizeFromClubControllerTest extends TestCase
         ]);
     }
 
+    public function test_manager_can_bulk_delete_prizes_from_clubs()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $prizesFromClubs = PrizeFromClub::factory()->count(3)->create();
+
+        $response = $this->deleteJson('/api/v1/manager/prizes-from-clubs/bulk', [
+            'prize_from_club_ids' => $prizesFromClubs->pluck('id_club_prize')->toArray(),
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Prizes from clubs deleted successfully',
+                'data' => [
+                    'total_successful' => 3,
+                    'total_failed' => 0,
+                    'total_requested' => 3,
+                ],
+            ])
+            ->assertJsonStructure([
+                'data' => [
+                    'successful' => [
+                        '*' => [
+                            'id',
+                            'name',
+                        ],
+                    ],
+                    'failed',
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ]);
+
+        // Verify all prizes from clubs are deleted
+        foreach ($prizesFromClubs as $prizeFromClub) {
+            $this->assertDatabaseMissing('prizes_from_clubs', ['id_club_prize' => $prizeFromClub->id_club_prize]);
+        }
+    }
+
+    public function test_manager_cannot_bulk_delete_prizes_from_clubs_with_invalid_ids()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/prizes-from-clubs/bulk', [
+            'prize_from_club_ids' => [99999, 99998],
+        ]);
+
+        $response->assertStatus(207)
+            ->assertJson([
+                'success' => false,
+                'message' => 'All resources failed to delete',
+                'errors' => [
+                    'total_successful' => 0,
+                    'total_failed' => 2,
+                    'total_requested' => 2,
+                ],
+            ])
+            ->assertJsonStructure([
+                'errors' => [
+                    'successful',
+                    'failed' => [
+                        '*' => [
+                            'id',
+                            'reason',
+                        ],
+                    ],
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ]);
+    }
+
+    public function test_manager_cannot_bulk_delete_prizes_from_clubs_with_empty_array()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/prizes-from-clubs/bulk', [
+            'prize_from_club_ids' => [],
+        ]);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_manager_cannot_bulk_delete_prizes_from_clubs_without_club_prize_ids()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/prizes-from-clubs/bulk', []);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_manager_cannot_bulk_delete_prizes_from_clubs_with_invalid_club_prize_ids_format()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/prizes-from-clubs/bulk', [
+            'prize_from_club_ids' => ['invalid', 'format'],
+        ]);
+
+        $response->assertStatus(422);
+    }
+
     public function test_manager_cannot_create_duplicate_club_prize()
     {
         Sanctum::actingAs($this->manager);

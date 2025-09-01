@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Manager;
 
+use App\Models\Club;
+use App\Models\Edition;
 use App\Models\EditionLottery;
 use App\Models\Player;
 use App\Models\Prize;
@@ -174,25 +176,6 @@ class PrizeControllerTest extends TestCase
         ]);
     }
 
-    public function test_manager_can_delete_prize()
-    {
-        Sanctum::actingAs($this->manager);
-
-        $prize = Prize::factory()->create();
-
-        $response = $this->deleteJson("/api/v1/manager/prizes/{$prize->id_prize}");
-
-        $response->assertStatus(200)
-            ->assertJson([
-                'success' => true,
-                'message' => 'Prize deleted successfully',
-            ]);
-
-        $this->assertDatabaseMissing('prizes', [
-            'id_prize' => $prize->id_prize,
-        ]);
-    }
-
     public function test_manager_cannot_delete_prize_with_club_prizes()
     {
         Sanctum::actingAs($this->manager);
@@ -205,7 +188,7 @@ class PrizeControllerTest extends TestCase
         $response->assertStatus(409)
             ->assertJson([
                 'success' => false,
-                'message' => 'Cannot delete prize because it has related club prizes or lotteries',
+                'message' => 'Prize cannot be deleted because it has linked data. Please remove all associated club_prizes_count, lotteries_count first.',
             ]);
 
         $this->assertDatabaseHas('prizes', [
@@ -225,7 +208,7 @@ class PrizeControllerTest extends TestCase
         $response->assertStatus(409)
             ->assertJson([
                 'success' => false,
-                'message' => 'Cannot delete prize because it has related club prizes or lotteries',
+                'message' => 'Prize cannot be deleted because it has linked data. Please remove all associated club_prizes_count, lotteries_count first.',
             ]);
 
         $this->assertDatabaseHas('prizes', [
@@ -335,5 +318,228 @@ class PrizeControllerTest extends TestCase
         $this->assertCount(10, $response->json('data'));
         $this->assertEquals(1, $response->json('meta.current_page'));
         $this->assertEquals(25, $response->json('meta.total'));
+    }
+
+    public function test_manager_can_delete_prize()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $prize = Prize::factory()->create();
+
+        $response = $this->deleteJson("/api/v1/manager/prizes/{$prize->id_prize}");
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Prize deleted successfully',
+            ]);
+
+        $this->assertDatabaseMissing('prizes', ['id_prize' => $prize->id_prize]);
+    }
+
+    public function test_manager_cannot_delete_prize_with_linked_club_prizes()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $prize = Prize::factory()->create();
+        $club = Club::factory()->create();
+        $clubPrize = PrizeFromClub::factory()->create([
+            'club_id' => $club->id_club,
+            'prize_id' => $prize->id_prize,
+        ]);
+
+        $response = $this->deleteJson("/api/v1/manager/prizes/{$prize->id_prize}");
+
+        $response->assertStatus(409)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Prize cannot be deleted because it has linked data. Please remove all associated club_prizes_count, lotteries_count first.',
+            ]);
+
+        $this->assertDatabaseHas('prizes', ['id_prize' => $prize->id_prize]);
+    }
+
+    public function test_manager_cannot_delete_prize_with_linked_lotteries()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $prize = Prize::factory()->create();
+        $edition = Edition::factory()->create();
+        $lottery = EditionLottery::factory()->create([
+            'edition_id' => $edition->id_edition,
+            'prize_id' => $prize->id_prize,
+        ]);
+
+        $response = $this->deleteJson("/api/v1/manager/prizes/{$prize->id_prize}");
+
+        $response->assertStatus(409)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Prize cannot be deleted because it has linked data. Please remove all associated club_prizes_count, lotteries_count first.',
+            ]);
+
+        $this->assertDatabaseHas('prizes', ['id_prize' => $prize->id_prize]);
+    }
+
+    public function test_manager_can_bulk_delete_prizes()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $prizes = Prize::factory()->count(3)->create();
+
+        $response = $this->deleteJson('/api/v1/manager/prizes/bulk', [
+            'prize_ids' => $prizes->pluck('id_prize')->toArray(),
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Prizes deleted successfully',
+                'data' => [
+                    'total_successful' => 3,
+                    'total_failed' => 0,
+                    'total_requested' => 3,
+                ],
+            ])
+            ->assertJsonStructure([
+                'data' => [
+                    'successful' => [
+                        '*' => [
+                            'id',
+                            'name',
+                        ],
+                    ],
+                    'failed',
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ]);
+
+        // Verify all prizes are deleted
+        foreach ($prizes as $prize) {
+            $this->assertDatabaseMissing('prizes', ['id_prize' => $prize->id_prize]);
+        }
+    }
+
+    public function test_manager_cannot_bulk_delete_prizes_with_linked_data()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $prize1 = Prize::factory()->create();
+        $prize2 = Prize::factory()->create();
+        $prize3 = Prize::factory()->create();
+
+        // Create linked club prize for prize1
+        $club = Club::factory()->create();
+        PrizeFromClub::factory()->create([
+            'club_id' => $club->id_club,
+            'prize_id' => $prize1->id_prize,
+        ]);
+
+        $response = $this->deleteJson('/api/v1/manager/prizes/bulk', [
+            'prize_ids' => [$prize1->id_prize, $prize2->id_prize, $prize3->id_prize],
+        ]);
+
+        $response->assertStatus(207)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Some resources failed to delete',
+                'errors' => [
+                    'total_successful' => 2,
+                    'total_failed' => 1,
+                    'total_requested' => 3,
+                ],
+            ])
+            ->assertJsonStructure([
+                'errors' => [
+                    'successful' => [
+                        '*' => [
+                            'id',
+                            'name',
+                        ],
+                    ],
+                    'failed' => [
+                        '*' => [
+                            'id',
+                            'reason',
+                        ],
+                    ],
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ]);
+
+        // Verify successful deletions
+        $this->assertDatabaseMissing('prizes', ['id_prize' => $prize2->id_prize]);
+        $this->assertDatabaseMissing('prizes', ['id_prize' => $prize3->id_prize]);
+        // Verify failed deletion still exists
+        $this->assertDatabaseHas('prizes', ['id_prize' => $prize1->id_prize]);
+    }
+
+    public function test_manager_cannot_bulk_delete_prizes_with_invalid_ids()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/prizes/bulk', [
+            'prize_ids' => [99999, 99998],
+        ]);
+
+        $response->assertStatus(207)
+            ->assertJson([
+                'success' => false,
+                'message' => 'All resources failed to delete',
+                'errors' => [
+                    'total_successful' => 0,
+                    'total_failed' => 2,
+                    'total_requested' => 2,
+                ],
+            ])
+            ->assertJsonStructure([
+                'errors' => [
+                    'successful',
+                    'failed' => [
+                        '*' => [
+                            'id',
+                            'reason',
+                        ],
+                    ],
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ]);
+    }
+
+    public function test_manager_cannot_bulk_delete_prizes_with_empty_array()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/prizes/bulk', [
+            'prize_ids' => [],
+        ]);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_manager_cannot_bulk_delete_prizes_without_prize_ids()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/prizes/bulk', []);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_manager_cannot_bulk_delete_prizes_with_invalid_prize_ids_format()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/prizes/bulk', [
+            'prize_ids' => ['invalid', 'format'],
+        ]);
+
+        $response->assertStatus(422);
     }
 }

@@ -202,7 +202,7 @@ class DivisionControllerTest extends TestCase
         $response->assertStatus(409)
             ->assertJson([
                 'success' => false,
-                'message' => 'Cannot delete division because it has related edition divisions or participations',
+                'message' => 'Division cannot be deleted because it has linked data. Please remove all associated edition_divisions_count, participations_count first.',
             ]);
 
         $this->assertDatabaseHas('divisions', [
@@ -228,12 +228,174 @@ class DivisionControllerTest extends TestCase
         $response->assertStatus(409)
             ->assertJson([
                 'success' => false,
-                'message' => 'Cannot delete division because it has related edition divisions or participations',
+                'message' => 'Division cannot be deleted because it has linked data. Please remove all associated edition_divisions_count, participations_count first.',
             ]);
 
         $this->assertDatabaseHas('divisions', [
             'id_division' => $division->id_division,
         ]);
+    }
+
+    public function test_manager_can_bulk_delete_divisions()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $divisions = Division::factory()->count(3)->create();
+
+        $response = $this->deleteJson('/api/v1/manager/divisions/bulk', [
+            'division_ids' => $divisions->pluck('id_division')->toArray(),
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Divisions deleted successfully',
+                'data' => [
+                    'total_successful' => 3,
+                    'total_failed' => 0,
+                    'total_requested' => 3,
+                ],
+            ])
+            ->assertJsonStructure([
+                'data' => [
+                    'successful' => [
+                        '*' => [
+                            'id',
+                            'name',
+                        ],
+                    ],
+                    'failed',
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ]);
+
+        // Verify all divisions are deleted
+        foreach ($divisions as $division) {
+            $this->assertDatabaseMissing('divisions', ['id_division' => $division->id_division]);
+        }
+    }
+
+    public function test_manager_cannot_bulk_delete_divisions_with_linked_data()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $division1 = Division::factory()->create();
+        $division2 = Division::factory()->create();
+        $division3 = Division::factory()->create();
+
+        // Create linked edition division for division1
+        $edition = Edition::factory()->create();
+        EditionDivision::factory()->create([
+            'edition_id' => $edition->id_edition,
+            'division_id' => $division1->id_division,
+        ]);
+
+        $response = $this->deleteJson('/api/v1/manager/divisions/bulk', [
+            'division_ids' => [$division1->id_division, $division2->id_division, $division3->id_division],
+        ]);
+
+        $response->assertStatus(207)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Some resources failed to delete',
+                'errors' => [
+                    'total_successful' => 2,
+                    'total_failed' => 1,
+                    'total_requested' => 3,
+                ],
+            ])
+            ->assertJsonStructure([
+                'errors' => [
+                    'successful' => [
+                        '*' => [
+                            'id',
+                            'name',
+                        ],
+                    ],
+                    'failed' => [
+                        '*' => [
+                            'id',
+                            'reason',
+                        ],
+                    ],
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ]);
+
+        // Verify successful deletions
+        $this->assertDatabaseMissing('divisions', ['id_division' => $division2->id_division]);
+        $this->assertDatabaseMissing('divisions', ['id_division' => $division3->id_division]);
+        // Verify failed deletion still exists
+        $this->assertDatabaseHas('divisions', ['id_division' => $division1->id_division]);
+    }
+
+    public function test_manager_cannot_bulk_delete_divisions_with_invalid_ids()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/divisions/bulk', [
+            'division_ids' => [99999, 99998],
+        ]);
+
+        $response->assertStatus(207)
+            ->assertJson([
+                'success' => false,
+                'message' => 'All resources failed to delete',
+                'errors' => [
+                    'total_successful' => 0,
+                    'total_failed' => 2,
+                    'total_requested' => 2,
+                ],
+            ])
+            ->assertJsonStructure([
+                'errors' => [
+                    'successful',
+                    'failed' => [
+                        '*' => [
+                            'id',
+                            'reason',
+                        ],
+                    ],
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ]);
+    }
+
+    public function test_manager_cannot_bulk_delete_divisions_with_empty_array()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/divisions/bulk', [
+            'division_ids' => [],
+        ]);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_manager_cannot_bulk_delete_divisions_without_division_ids()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/divisions/bulk', []);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_manager_cannot_bulk_delete_divisions_with_invalid_division_ids_format()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson('/api/v1/manager/divisions/bulk', [
+            'division_ids' => ['invalid', 'format'],
+        ]);
+
+        $response->assertStatus(422);
     }
 
     public function test_division_creation_validation()

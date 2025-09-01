@@ -560,16 +560,148 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *         response=200,
      *         description="Edition deleted successfully",
      *         @OA\JsonContent(ref="#/components/schemas/ApiResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=409,
+     *         description="Edition cannot be deleted due to linked data",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="linked_data",
+     *                         type="object",
+     *                         description="Information about linked data preventing deletion",
+     *                         @OA\Property(property="divisions_count", type="integer", example=3),
+     *                         @OA\Property(property="participations_count", type="integer", example=15),
+     *                         @OA\Property(property="lotteries_count", type="integer", example=2)
+     *                     )
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function destroy(Edition $edition)
     {
-        $edition->delete();
+        $linkedDataRelations = [
+            'divisions' => 'divisions_count',
+            'participations' => 'participations_count',
+            'lotteries' => 'lotteries_count',
+        ];
 
-        return $this->successResponse(
-            null,
+        return $this->deleteResourceWithResponse(
+            $edition,
+            $linkedDataRelations,
+            'edition',
             'Edition deleted successfully'
+        );
+    }
+
+    /**
+     * @OA\Delete(
+     *     path="/api/v1/manager/editions/bulk",
+     *     summary="Bulk delete editions",
+     *     tags={"🐧 Manager: Editions"},
+     *     security={{"sanctum":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"edition_ids"},
+     *             @OA\Property(
+     *                 property="edition_ids",
+     *                 type="array",
+     *                 description="Array of edition IDs to delete",
+     *                 @OA\Items(type="integer")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="All editions deleted successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=207,
+     *         description="Some editions failed to delete (Multi-Status)",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="errors",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="No editions provided for deletion",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=409,
+     *         description="All editions failed to delete due to linked data",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="errors",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     )
+     * )
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'edition_ids' => 'required|array|min:1',
+            'edition_ids.*' => 'integer',
+        ]);
+
+        $linkedDataRelations = [
+            'divisions' => 'divisions_count',
+            'participations' => 'participations_count',
+            'lotteries' => 'lotteries_count',
+        ];
+
+        return $this->deleteBulkResourcesWithResponse(
+            $request->edition_ids,
+            Edition::class,
+            $linkedDataRelations,
+            'edition',
+            'Editions deleted successfully'
         );
     }
 

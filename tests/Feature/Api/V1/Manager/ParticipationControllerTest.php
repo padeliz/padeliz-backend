@@ -245,6 +245,114 @@ class ParticipationControllerTest extends TestCase
         ]);
     }
 
+    public function test_manager_can_bulk_delete_participations()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $participations = EditionParticipation::factory()->count(3)->create([
+            'edition_id' => $this->edition->id_edition,
+        ]);
+
+        $response = $this->deleteJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/bulk", [
+            'participation_ids' => $participations->pluck('id_participation')->toArray(),
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Participations deleted successfully',
+                'data' => [
+                    'total_successful' => 3,
+                    'total_failed' => 0,
+                    'total_requested' => 3,
+                ],
+            ])
+            ->assertJsonStructure([
+                'data' => [
+                    'successful' => [
+                        '*' => [
+                            'id',
+                            'name',
+                        ],
+                    ],
+                    'failed',
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ]);
+
+        // Verify all participations are deleted
+        foreach ($participations as $participation) {
+            $this->assertDatabaseMissing('edition_participations', ['id_participation' => $participation->id_participation]);
+        }
+    }
+
+    public function test_manager_cannot_bulk_delete_participations_with_invalid_ids()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/bulk", [
+            'participation_ids' => [99999, 99998],
+        ]);
+
+        $response->assertStatus(409)
+            ->assertJson([
+                'success' => false,
+                'message' => 'All participations failed to delete',
+                'errors' => [
+                    'total_successful' => 0,
+                    'total_failed' => 2,
+                    'total_requested' => 2,
+                ],
+            ])
+            ->assertJsonStructure([
+                'errors' => [
+                    'successful',
+                    'failed' => [
+                        '*' => [
+                            'id',
+                            'reason',
+                        ],
+                    ],
+                    'total_requested',
+                    'total_successful',
+                    'total_failed',
+                ],
+            ]);
+    }
+
+    public function test_manager_cannot_bulk_delete_participations_with_empty_array()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/bulk", [
+            'participation_ids' => [],
+        ]);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_manager_cannot_bulk_delete_participations_without_participation_ids()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/bulk", []);
+
+        $response->assertStatus(422);
+    }
+
+    public function test_manager_cannot_bulk_delete_participations_with_invalid_participation_ids_format()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->deleteJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/bulk", [
+            'participation_ids' => ['invalid', 'format'],
+        ]);
+
+        $response->assertStatus(422);
+    }
+
     public function test_manager_cannot_create_duplicate_participation()
     {
         Sanctum::actingAs($this->manager);

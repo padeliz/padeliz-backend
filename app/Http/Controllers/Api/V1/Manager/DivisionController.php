@@ -252,6 +252,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *     path="/api/v1/manager/divisions/{division}",
      *     summary="Delete a division",
      *     tags={"🐧 Manager: Divisions"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="division",
      *         in="path",
@@ -265,23 +266,142 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *     ),
      *     @OA\Response(
      *         response=409,
-     *         description="Division cannot be deleted due to related records",
-     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *         description="Division cannot be deleted due to linked data",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="linked_data",
+     *                         type="object",
+     *                         description="Information about linked data preventing deletion",
+     *                         @OA\Property(property="edition_divisions_count", type="integer", example=2),
+     *                         @OA\Property(property="participations_count", type="integer", example=5)
+     *                     )
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function destroy(Division $division)
     {
-        // Check if division has related edition divisions or participations
-        if ($division->editionDivisions()->exists() || $division->participations()->exists()) {
-            return $this->errorResponse(
-                'Cannot delete division because it has related edition divisions or participations',
-                409
-            );
-        }
+        $linkedDataRelations = [
+            'editionDivisions' => 'edition_divisions_count',
+            'participations' => 'participations_count',
+        ];
 
-        $division->delete();
+        return $this->deleteResourceWithResponse(
+            $division,
+            $linkedDataRelations,
+            'division',
+            'Division deleted successfully'
+        );
+    }
 
-        return $this->successResponse(null, 'Division deleted successfully');
+    /**
+     * @OA\Delete(
+     *     path="/api/v1/manager/divisions/bulk",
+     *     summary="Bulk delete divisions",
+     *     tags={"🐧 Manager: Divisions"},
+     *     security={{"sanctum":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"division_ids"},
+     *             @OA\Property(
+     *                 property="division_ids",
+     *                 type="array",
+     *                 description="Array of division IDs to delete",
+     *                 @OA\Items(type="integer")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="All divisions deleted successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=207,
+     *         description="Some divisions failed to delete (Multi-Status)",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="errors",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="No divisions provided for deletion",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=409,
+     *         description="All divisions failed to delete due to linked data",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="errors",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     )
+     * )
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'division_ids' => 'required|array|min:1',
+            'division_ids.*' => 'integer',
+        ]);
+
+        $linkedDataRelations = [
+            'editionDivisions' => 'edition_divisions_count',
+            'participations' => 'participations_count',
+        ];
+
+        return $this->deleteBulkResourcesWithResponse(
+            $request->division_ids,
+            Division::class,
+            $linkedDataRelations,
+            'division',
+            'Divisions deleted successfully'
+        );
     }
 }

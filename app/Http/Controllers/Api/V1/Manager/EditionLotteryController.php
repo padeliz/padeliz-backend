@@ -262,6 +262,7 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
      *     path="/api/v1/manager/lotteries/{lottery}",
      *     summary="Delete a lottery",
      *     tags={"🐧 Manager: Editions Lottery"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="lottery",
      *         in="path",
@@ -275,23 +276,139 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
      *     ),
      *     @OA\Response(
      *         response=409,
-     *         description="Lottery cannot be deleted due to related records",
-     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *         description="Lottery cannot be deleted due to linked data",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="linked_data",
+     *                         type="object",
+     *                         description="Information about linked data preventing deletion",
+     *                         @OA\Property(property="lucky_ones_count", type="integer", example=5)
+     *                     )
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function destroy(EditionLottery $lottery)
     {
-        // Check if lottery has related lucky ones
-        if ($lottery->luckyOnes()->exists()) {
-            return $this->errorResponse(
-                'Cannot delete lottery because it has related lucky ones',
-                409
-            );
-        }
+        $linkedDataRelations = [
+            'luckyOnes' => 'lucky_ones_count',
+        ];
 
-        $lottery->delete();
+        return $this->deleteResourceWithResponse(
+            $lottery,
+            $linkedDataRelations,
+            'lottery',
+            'Lottery deleted successfully'
+        );
+    }
 
-        return $this->successResponse(null, 'Lottery deleted successfully');
+    /**
+     * @OA\Delete(
+     *     path="/api/v1/manager/lotteries/bulk",
+     *     summary="Bulk delete lotteries",
+     *     tags={"🐧 Manager: Editions Lottery"},
+     *     security={{"sanctum":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"lottery_ids"},
+     *             @OA\Property(
+     *                 property="lottery_ids",
+     *                 type="array",
+     *                 description="Array of lottery IDs to delete",
+     *                 @OA\Items(type="integer")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="All lotteries deleted successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=207,
+     *         description="Some lotteries failed to delete (Multi-Status)",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="errors",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="No lotteries provided for deletion",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=409,
+     *         description="All lotteries failed to delete due to linked data",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="errors",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     )
+     * )
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'lottery_ids' => 'required|array|min:1',
+            'lottery_ids.*' => 'integer',
+        ]);
+
+        $linkedDataRelations = [
+            'luckyOnes' => 'lucky_ones_count',
+        ];
+
+        return $this->deleteBulkResourcesWithResponse(
+            $request->lottery_ids,
+            EditionLottery::class,
+            $linkedDataRelations,
+            'lottery',
+            'Lotteries deleted successfully'
+        );
     }
 }

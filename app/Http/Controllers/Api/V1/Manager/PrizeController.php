@@ -269,6 +269,7 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *     path="/api/v1/manager/prizes/{prize}",
      *     summary="Delete a prize",
      *     tags={"🐧 Manager: Prizes"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="prize",
      *         in="path",
@@ -282,23 +283,142 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *     ),
      *     @OA\Response(
      *         response=409,
-     *         description="Prize cannot be deleted due to related records",
-     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *         description="Prize cannot be deleted due to linked data",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="linked_data",
+     *                         type="object",
+     *                         description="Information about linked data preventing deletion",
+     *                         @OA\Property(property="club_prizes_count", type="integer", example=3),
+     *                         @OA\Property(property="lotteries_count", type="integer", example=2)
+     *                     )
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function destroy(Prize $prize)
     {
-        // Check if prize has related club prizes or lotteries
-        if ($prize->clubPrizes()->exists() || $prize->lotteries()->exists()) {
-            return $this->errorResponse(
-                'Cannot delete prize because it has related club prizes or lotteries',
-                409
-            );
-        }
+        $linkedDataRelations = [
+            'clubPrizes' => 'club_prizes_count',
+            'lotteries' => 'lotteries_count',
+        ];
 
-        $prize->delete();
+        return $this->deleteResourceWithResponse(
+            $prize,
+            $linkedDataRelations,
+            'prize',
+            'Prize deleted successfully'
+        );
+    }
 
-        return $this->successResponse(null, 'Prize deleted successfully');
+    /**
+     * @OA\Delete(
+     *     path="/api/v1/manager/prizes/bulk",
+     *     summary="Bulk delete prizes",
+     *     tags={"🐧 Manager: Prizes"},
+     *     security={{"sanctum":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"prize_ids"},
+     *             @OA\Property(
+     *                 property="prize_ids",
+     *                 type="array",
+     *                 description="Array of prize IDs to delete",
+     *                 @OA\Items(type="integer")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="All prizes deleted successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=207,
+     *         description="Some prizes failed to delete (Multi-Status)",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="errors",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=400,
+     *         description="No prizes provided for deletion",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=409,
+     *         description="All prizes failed to delete due to linked data",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiErrorResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="errors",
+     *                         type="object",
+     *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
+     *                         @OA\Property(property="total_requested", type="integer"),
+     *                         @OA\Property(property="total_successful", type="integer"),
+     *                         @OA\Property(property="total_failed", type="integer")
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     )
+     * )
+     */
+    public function bulkDestroy(Request $request)
+    {
+        $request->validate([
+            'prize_ids' => 'required|array|min:1',
+            'prize_ids.*' => 'integer',
+        ]);
+
+        $linkedDataRelations = [
+            'clubPrizes' => 'club_prizes_count',
+            'lotteries' => 'lotteries_count',
+        ];
+
+        return $this->deleteBulkResourcesWithResponse(
+            $request->prize_ids,
+            Prize::class,
+            $linkedDataRelations,
+            'prize',
+            'Prizes deleted successfully'
+        );
     }
 }
