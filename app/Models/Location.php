@@ -27,6 +27,36 @@ class Location extends Model
 {
     use HasFactory;
 
+    /**
+     * Fields that can be searched
+     */
+    public static array $searchableFields = [
+        'name',
+        'address',
+    ];
+
+    /**
+     * Fields that can be filtered
+     */
+    public static array $filterableFields = [
+        'club_id',
+        'total_indoors_courts',
+        'total_outdoor_courts',
+    ];
+
+    /**
+     * Fields that can be sorted
+     */
+    public static array $sortableFields = [
+        'name',
+        'address',
+        'club_id',
+        'total_indoors_courts',
+        'total_outdoor_courts',
+        'inserted_at',
+        'updated_at',
+    ];
+
     protected $table = 'locations';
 
     protected $primaryKey = 'id_location';

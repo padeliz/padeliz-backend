@@ -31,6 +31,41 @@ class EditionLuckyOne extends Model
 {
     use HasFactory;
 
+    /**
+     * Fields that can be searched
+     */
+    public static array $searchableFields = [
+        // No searchable fields for this model
+    ];
+
+    /**
+     * Fields that can be filtered
+     */
+    public static array $filterableFields = [
+        'lottery_id',
+        'drawn_participation_id',
+        'drawn_at',
+        'available_at',
+        'announced_at',
+        'accepted_at',
+        'rejected_at',
+    ];
+
+    /**
+     * Fields that can be sorted
+     */
+    public static array $sortableFields = [
+        'lottery_id',
+        'drawn_participation_id',
+        'drawn_at',
+        'available_at',
+        'announced_at',
+        'accepted_at',
+        'rejected_at',
+        'inserted_at',
+        'updated_at',
+    ];
+
     protected $table = 'edition_lucky_ones';
 
     protected $primaryKey = 'id_lucky_one';

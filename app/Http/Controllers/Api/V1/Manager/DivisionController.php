@@ -22,6 +22,46 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *     summary="Get paginated list of divisions",
      *     tags={"🐧 Manager: Divisions"},
      *     @OA\Parameter(ref="#/components/parameters/page"),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15, maximum=100)
+     *     ),
+     *     @OA\Parameter(
+     *         name="q",
+     *         in="query",
+     *         description="Search term for name field",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="filters",
+     *         in="query",
+     *         description="Filter parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="is_students_only", type="boolean"),
+     *             @OA\Property(property="its_first_edition_id", type="integer")
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Sort parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="name", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="color", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="is_students_only", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="its_first_edition_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *         )
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
@@ -40,11 +80,28 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *     )
      * )
      */
-    public function index()
+    public function index(Request $request)
     {
-        $divisions = Division::query()
-            ->orderByRaw('name ASC')
-            ->paginate($this->paginationLimit);
+        $query = Division::query();
+
+        // Apply advanced pagination
+        $this->applyAdvancedPagination(
+            $query,
+            $request,
+            Division::$searchableFields,
+            Division::$filterableFields,
+            Division::$sortableFields
+        );
+
+        // Get pagination parameters
+        $paginationParams = $this->getPaginationParams($request);
+
+        // Apply default sorting if no sorting is specified
+        if (! $request->has('sort_by')) {
+            $query->orderBy('id_division', 'desc');
+        }
+
+        $divisions = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
         return DivisionResource::collection($divisions);
     }

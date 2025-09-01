@@ -22,6 +22,43 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
      *     summary="Get paginated list of lotteries",
      *     tags={"🐧 Manager: Editions Lottery"},
      *     @OA\Parameter(ref="#/components/parameters/page"),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15, maximum=100)
+     *     ),
+     *     @OA\Parameter(
+     *         name="filters",
+     *         in="query",
+     *         description="Filter parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="edition_id", type="integer"),
+     *             @OA\Property(property="division_id", type="integer"),
+     *             @OA\Property(property="prize_id", type="integer"),
+     *             @OA\Property(property="orderliness", type="integer"),
+     *             @OA\Property(property="total_draws_nr", type="integer")
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Sort parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="edition_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="division_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="prize_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="orderliness", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="total_draws_nr", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *         )
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
@@ -40,11 +77,28 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
      *     )
      * )
      */
-    public function index()
+    public function index(Request $request)
     {
-        $lotteries = EditionLottery::with(['prize', 'division', 'edition'])
-            ->orderBy('orderliness')
-            ->paginate($this->paginationLimit);
+        $query = EditionLottery::with(['prize', 'division', 'edition']);
+
+        // Apply advanced pagination
+        $this->applyAdvancedPagination(
+            $query,
+            $request,
+            EditionLottery::$searchableFields,
+            EditionLottery::$filterableFields,
+            EditionLottery::$sortableFields
+        );
+
+        // Get pagination parameters
+        $paginationParams = $this->getPaginationParams($request);
+
+        // Apply default sorting if no sorting is specified
+        if (! $request->has('sort_by')) {
+            $query->orderBy('id_lottery', 'desc');
+        }
+
+        $lotteries = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
         return EditionLotteryResource::collection($lotteries);
     }

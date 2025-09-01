@@ -35,6 +35,46 @@ class EditionDivision extends Model
 {
     use HasFactory;
 
+    /**
+     * Fields that can be searched
+     */
+    public static array $searchableFields = [
+        'court',
+    ];
+
+    /**
+     * Fields that can be filtered
+     */
+    public static array $filterableFields = [
+        'edition_id',
+        'division_id',
+        'players_limit',
+        'player_opponents_nr',
+        'player_matches_repeat',
+        'include_scores',
+        'has_demonstrative_match',
+        'fixed_teams',
+    ];
+
+    /**
+     * Fields that can be sorted
+     */
+    public static array $sortableFields = [
+        'edition_id',
+        'division_id',
+        'players_limit',
+        'court',
+        'playing_start_time',
+        'playing_end_time',
+        'player_opponents_nr',
+        'player_matches_repeat',
+        'include_scores',
+        'has_demonstrative_match',
+        'fixed_teams',
+        'inserted_at',
+        'updated_at',
+    ];
+
     protected $table = 'edition_divisions';
 
     protected $primaryKey = 'id_edition_division';

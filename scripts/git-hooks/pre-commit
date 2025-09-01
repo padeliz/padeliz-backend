@@ -1,0 +1,30 @@
+#!/bin/sh
+
+# Git pre-commit hook to format PHP files
+# This ensures code is formatted before committing, avoiding conflicts with Cursor AI
+
+echo "🔧 Running pre-commit formatting..."
+
+# Get list of staged PHP files
+STAGED_FILES=$(git diff --cached --name-only --diff-filter=ACM | grep '\.php$')
+
+if [ -z "$STAGED_FILES" ]; then
+    echo "✅ No PHP files to format"
+    exit 0
+fi
+
+echo "📝 Formatting staged PHP files..."
+
+# Format each staged PHP file
+for FILE in $STAGED_FILES; do
+    if [ -f "$FILE" ]; then
+        echo "  Formatting: $FILE"
+        ./vendor/bin/php-cs-fixer fix "$FILE" --config=.php-cs-fixer.php --quiet
+
+        # Re-stage the formatted file
+        git add "$FILE"
+    fi
+done
+
+echo "✅ Pre-commit formatting completed"
+exit 0

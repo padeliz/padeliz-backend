@@ -22,6 +22,48 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *     summary="Get paginated list of prizes from clubs",
      *     tags={"🐧 Manager: Prizes From Clubs"},
      *     @OA\Parameter(ref="#/components/parameters/page"),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15, maximum=100)
+     *     ),
+     *     @OA\Parameter(
+     *         name="q",
+     *         in="query",
+     *         description="Search term for box_1_text, box_2_text fields",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="filters",
+     *         in="query",
+     *         description="Filter parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="club_id", type="integer"),
+     *             @OA\Property(property="prize_id", type="integer"),
+     *             @OA\Property(property="box_1_bg_color", type="string"),
+     *             @OA\Property(property="box_1_text_color", type="string"),
+     *             @OA\Property(property="box_2_bg_color", type="string"),
+     *             @OA\Property(property="box_2_text_color", type="string")
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Sort parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="club_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="prize_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *         )
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
@@ -40,11 +82,28 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *     )
      * )
      */
-    public function index()
+    public function index(Request $request)
     {
-        $prizesFromClubs = PrizeFromClub::with(['club', 'prize'])
-            ->orderBy('id_club_prize', 'desc')
-            ->paginate($this->paginationLimit);
+        $query = PrizeFromClub::with(['club', 'prize']);
+
+        // Apply advanced pagination
+        $this->applyAdvancedPagination(
+            $query,
+            $request,
+            PrizeFromClub::$searchableFields,
+            PrizeFromClub::$filterableFields,
+            PrizeFromClub::$sortableFields
+        );
+
+        // Get pagination parameters
+        $paginationParams = $this->getPaginationParams($request);
+
+        // Apply default sorting if no sorting is specified
+        if (! $request->has('sort_by')) {
+            $query->orderBy('id_club_prize', 'desc');
+        }
+
+        $prizesFromClubs = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
         return PrizeFromClubResource::collection($prizesFromClubs);
     }

@@ -48,6 +48,44 @@ class Player extends Authenticatable
     use HasApiTokens;
     use HasUploadedFiles;
 
+    /**
+     * Fields that can be searched
+     */
+    public static array $searchableFields = [
+        'name',
+        'first_name',
+        'middle_name',
+        'last_name',
+        'phone',
+        'google_email',
+        'playtomic_id',
+        'rankedin_id',
+    ];
+
+    /**
+     * Fields that can be filtered
+     */
+    public static array $filterableFields = [
+        'skill_division',
+        'year_of_birth',
+        'being_student',
+        'user_types',
+    ];
+
+    /**
+     * Fields that can be sorted
+     */
+    public static array $sortableFields = [
+        'name',
+        'first_name',
+        'last_name',
+        'skill_division',
+        'year_of_birth',
+        'being_student',
+        'inserted_at',
+        'updated_at',
+    ];
+
     protected $table = 'players';
 
     protected $primaryKey = 'id_player';

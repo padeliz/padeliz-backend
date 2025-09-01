@@ -29,6 +29,52 @@ class ParticipationController extends V1BaseController
      *         @OA\Schema(type="integer")
      *     ),
      *     @OA\Parameter(ref="#/components/parameters/page"),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15, maximum=100)
+     *     ),
+     *     @OA\Parameter(
+     *         name="q",
+     *         in="query",
+     *         description="Search term for absence_reason, ban_reason fields",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="filters",
+     *         in="query",
+     *         description="Filter parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="player_id", type="integer"),
+     *             @OA\Property(property="division_id", type="integer"),
+     *             @OA\Property(property="is_minor", type="boolean"),
+     *             @OA\Property(property="is_student", type="boolean"),
+     *             @OA\Property(property="discount", type="number"),
+     *             @OA\Property(property="payment", type="number")
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Sort parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="player_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="division_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="is_minor", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="is_student", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="discount", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="payment", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *         )
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
@@ -47,12 +93,28 @@ class ParticipationController extends V1BaseController
      *     )
      * )
      */
-    public function index(Edition $edition)
+    public function index(Request $request, Edition $edition)
     {
-        $participations = $edition->participations()
-            ->with(['player', 'division'])
-            ->orderBy('id_participation', 'desc')
-            ->paginate($this->paginationLimit);
+        $query = $edition->participations()->with(['player', 'division'])->getQuery();
+
+        // Apply advanced pagination
+        $this->applyAdvancedPagination(
+            $query,
+            $request,
+            EditionParticipation::$searchableFields,
+            EditionParticipation::$filterableFields,
+            EditionParticipation::$sortableFields
+        );
+
+        // Get pagination parameters
+        $paginationParams = $this->getPaginationParams($request);
+
+        // Apply default sorting if no sorting is specified
+        if (! $request->has('sort_by')) {
+            $query->orderBy('id_participation', 'desc');
+        }
+
+        $participations = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
         return EditionParticipationResource::collection($participations);
     }

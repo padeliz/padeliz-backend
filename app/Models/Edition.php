@@ -41,6 +41,38 @@ class Edition extends Model
 {
     use HasFactory;
 
+    /**
+     * Fields that can be searched
+     */
+    public static array $searchableFields = [
+        'name',
+    ];
+
+    /**
+     * Fields that can be filtered
+     */
+    public static array $filterableFields = [
+        'location_id',
+        'date',
+        'entry_fee',
+        'students_entry_fee',
+    ];
+
+    /**
+     * Fields that can be sorted
+     */
+    public static array $sortableFields = [
+        'name',
+        'date',
+        'location_id',
+        'entry_fee',
+        'students_entry_fee',
+        'arriving_time',
+        'closing_time',
+        'inserted_at',
+        'updated_at',
+    ];
+
     protected $table = 'editions';
 
     protected $primaryKey = 'id_edition';

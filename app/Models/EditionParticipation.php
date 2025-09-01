@@ -37,6 +37,42 @@ class EditionParticipation extends Model
 {
     use HasFactory;
 
+    /**
+     * Fields that can be searched
+     */
+    public static array $searchableFields = [
+        'absence_reason',
+        'ban_reason',
+    ];
+
+    /**
+     * Fields that can be filtered
+     */
+    public static array $filterableFields = [
+        'edition_id',
+        'player_id',
+        'division_id',
+        'is_minor',
+        'is_student',
+        'discount',
+        'payment',
+    ];
+
+    /**
+     * Fields that can be sorted
+     */
+    public static array $sortableFields = [
+        'edition_id',
+        'player_id',
+        'division_id',
+        'is_minor',
+        'is_student',
+        'discount',
+        'payment',
+        'inserted_at',
+        'updated_at',
+    ];
+
     protected $table = 'edition_participations';
 
     protected $primaryKey = 'id_participation';

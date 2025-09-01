@@ -211,20 +211,29 @@ class ClubControllerTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-            'success',
-            'message',
-            'data' => [
-                '*' => [
-                    'id_location',
-                    'club_id',
-                    'name',
-                    'address',
+                'data' => [
+                    '*' => [
+                        'id_location',
+                        'club_id',
+                        'name',
+                        'address',
+                    ],
                 ],
+                'links' => [
+                    'first',
+                    'last',
+                    'prev',
+                    'next',
                 ],
-            ])
-            ->assertJson([
-                'success' => true,
-                'message' => 'Club locations retrieved successfully',
+                'meta' => [
+                    'current_page',
+                    'from',
+                    'last_page',
+                    'path',
+                    'per_page',
+                    'to',
+                    'total',
+                ],
             ]);
 
         $this->assertCount(3, $response->json('data'));

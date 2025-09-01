@@ -37,6 +37,53 @@ class PlayerEligibility extends Model
 {
     use HasFactory;
 
+    /**
+     * Fields that can be searched
+     */
+    public static array $searchableFields = [
+        'name',
+        'first_name',
+        'middle_name',
+        'last_name',
+        'phone',
+        'playtomic_id',
+        'rankedin_id',
+        'instagram_username',
+        'facebook_username',
+        'review_message',
+    ];
+
+    /**
+     * Fields that can be filtered
+     */
+    public static array $filterableFields = [
+        'edition_id',
+        'player_id',
+        'skill_division',
+        'year_of_birth',
+        'being_student',
+        'review_status',
+    ];
+
+    /**
+     * Fields that can be sorted
+     */
+    public static array $sortableFields = [
+        'edition_id',
+        'player_id',
+        'name',
+        'first_name',
+        'last_name',
+        'skill_division',
+        'year_of_birth',
+        'being_student',
+        'review_status',
+        'reviewed_at',
+        'inserted_at',
+        'updated_at',
+        'resubmitted_at',
+    ];
+
     protected $table = 'player_eligibilities';
 
     protected $primaryKey = 'id_eligibility';

@@ -23,6 +23,33 @@ class Division extends Model
 {
     use HasFactory;
 
+    /**
+     * Fields that can be searched
+     */
+    public static array $searchableFields = [
+        'name',
+    ];
+
+    /**
+     * Fields that can be filtered
+     */
+    public static array $filterableFields = [
+        'is_students_only',
+        'its_first_edition_id',
+    ];
+
+    /**
+     * Fields that can be sorted
+     */
+    public static array $sortableFields = [
+        'name',
+        'color',
+        'is_students_only',
+        'its_first_edition_id',
+        'inserted_at',
+        'updated_at',
+    ];
+
     protected $table = 'divisions';
 
     protected $primaryKey = 'id_division';

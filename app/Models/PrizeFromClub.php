@@ -37,6 +37,36 @@ class PrizeFromClub extends Model
 {
     use HasFactory;
 
+    /**
+     * Fields that can be searched
+     */
+    public static array $searchableFields = [
+        'box_1_text',
+        'box_2_text',
+    ];
+
+    /**
+     * Fields that can be filtered
+     */
+    public static array $filterableFields = [
+        'club_id',
+        'prize_id',
+        'box_1_bg_color',
+        'box_1_text_color',
+        'box_2_bg_color',
+        'box_2_text_color',
+    ];
+
+    /**
+     * Fields that can be sorted
+     */
+    public static array $sortableFields = [
+        'club_id',
+        'prize_id',
+        'inserted_at',
+        'updated_at',
+    ];
+
     protected $table = 'prizes_from_clubs';
 
     protected $primaryKey = 'id_club_prize';

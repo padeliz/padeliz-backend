@@ -24,6 +24,51 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *     tags={"🐧 Manager: Editions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15, maximum=100)
+     *     ),
+     *     @OA\Parameter(
+     *         name="q",
+     *         in="query",
+     *         description="Search term for name field",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="filters",
+     *         in="query",
+     *         description="Filter parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="location_id", type="integer"),
+     *             @OA\Property(property="date", type="string", format="date"),
+     *             @OA\Property(property="entry_fee", type="number"),
+     *             @OA\Property(property="students_entry_fee", type="number")
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Sort parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="name", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="date", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="location_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="entry_fee", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="students_entry_fee", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="arriving_time", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="closing_time", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *         )
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
@@ -42,11 +87,28 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *     )
      * )
      */
-    public function index()
+    public function index(Request $request)
     {
-        $editions = Edition::with(['location', 'divisions'])
-            ->orderBy('date', 'desc')
-            ->paginate($this->paginationLimit);
+        $query = Edition::with(['location', 'divisions']);
+
+        // Apply advanced pagination
+        $this->applyAdvancedPagination(
+            $query,
+            $request,
+            Edition::$searchableFields,
+            Edition::$filterableFields,
+            Edition::$sortableFields
+        );
+
+        // Get pagination parameters
+        $paginationParams = $this->getPaginationParams($request);
+
+        // Apply default sorting if no sorting is specified
+        if (! $request->has('sort_by')) {
+            $query->orderBy('id_edition', 'desc');
+        }
+
+        $editions = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
         return EditionResource::collection($editions);
     }
@@ -58,6 +120,51 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *     tags={"🐧 Manager: Editions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15, maximum=100)
+     *     ),
+     *     @OA\Parameter(
+     *         name="q",
+     *         in="query",
+     *         description="Search term for name field",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="filters",
+     *         in="query",
+     *         description="Filter parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="location_id", type="integer"),
+     *             @OA\Property(property="date", type="string", format="date"),
+     *             @OA\Property(property="entry_fee", type="number"),
+     *             @OA\Property(property="students_entry_fee", type="number")
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Sort parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="name", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="date", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="location_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="entry_fee", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="students_entry_fee", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="arriving_time", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="closing_time", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *         )
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
@@ -76,13 +183,30 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *     )
      * )
      */
-    public function upcoming()
+    public function upcoming(Request $request)
     {
-        return response()->json(
-            Edition::where('date', '>', Carbon::now())
-                ->orderBy('date', 'asc')
-                ->paginate($this->paginationLimit)
+        $query = Edition::where('date', '>', Carbon::now());
+
+        // Apply advanced pagination
+        $this->applyAdvancedPagination(
+            $query,
+            $request,
+            Edition::$searchableFields,
+            Edition::$filterableFields,
+            Edition::$sortableFields
         );
+
+        // Get pagination parameters
+        $paginationParams = $this->getPaginationParams($request);
+
+        // Apply default sorting if no sorting is specified
+        if (! $request->has('sort_by')) {
+            $query->orderBy('id_edition', 'desc');
+        }
+
+        $editions = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
+
+        return EditionResource::collection($editions);
     }
 
     /**
@@ -92,6 +216,51 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *     tags={"🐧 Manager: Editions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15, maximum=100)
+     *     ),
+     *     @OA\Parameter(
+     *         name="q",
+     *         in="query",
+     *         description="Search term for name field",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="filters",
+     *         in="query",
+     *         description="Filter parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="location_id", type="integer"),
+     *             @OA\Property(property="date", type="string", format="date"),
+     *             @OA\Property(property="entry_fee", type="number"),
+     *             @OA\Property(property="students_entry_fee", type="number")
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Sort parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="name", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="date", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="location_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="entry_fee", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="students_entry_fee", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="arriving_time", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="closing_time", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *         )
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
@@ -110,13 +279,30 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *     )
      * )
      */
-    public function ongoing()
+    public function ongoing(Request $request)
     {
-        return response()->json(
-            Edition::where('date', '=', Carbon::today())
-                ->orderBy('date', 'asc')
-                ->paginate($this->paginationLimit)
+        $query = Edition::where('date', '=', Carbon::today());
+
+        // Apply advanced pagination
+        $this->applyAdvancedPagination(
+            $query,
+            $request,
+            Edition::$searchableFields,
+            Edition::$filterableFields,
+            Edition::$sortableFields
         );
+
+        // Get pagination parameters
+        $paginationParams = $this->getPaginationParams($request);
+
+        // Apply default sorting if no sorting is specified
+        if (! $request->has('sort_by')) {
+            $query->orderBy('id_edition', 'desc');
+        }
+
+        $editions = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
+
+        return EditionResource::collection($editions);
     }
 
     /**
@@ -126,6 +312,51 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *     tags={"🐧 Manager: Editions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15, maximum=100)
+     *     ),
+     *     @OA\Parameter(
+     *         name="q",
+     *         in="query",
+     *         description="Search term for name field",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="filters",
+     *         in="query",
+     *         description="Filter parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="location_id", type="integer"),
+     *             @OA\Property(property="date", type="string", format="date"),
+     *             @OA\Property(property="entry_fee", type="number"),
+     *             @OA\Property(property="students_entry_fee", type="number")
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Sort parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="name", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="date", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="location_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="entry_fee", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="students_entry_fee", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="arriving_time", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="closing_time", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *         )
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
@@ -144,13 +375,30 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *     )
      * )
      */
-    public function past()
+    public function past(Request $request)
     {
-        return response()->json(
-            Edition::where('date', '<', Carbon::today())
-                ->orderBy('date', 'desc')
-                ->paginate($this->paginationLimit)
+        $query = Edition::where('date', '<', Carbon::today());
+
+        // Apply advanced pagination
+        $this->applyAdvancedPagination(
+            $query,
+            $request,
+            Edition::$searchableFields,
+            Edition::$filterableFields,
+            Edition::$sortableFields
         );
+
+        // Get pagination parameters
+        $paginationParams = $this->getPaginationParams($request);
+
+        // Apply default sorting if no sorting is specified
+        if (! $request->has('sort_by')) {
+            $query->orderBy('id_edition', 'desc');
+        }
+
+        $editions = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
+
+        return EditionResource::collection($editions);
     }
 
     /**

@@ -29,12 +29,52 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
      *         required=true,
      *         @OA\Schema(type="integer")
      *     ),
+     *     @OA\Parameter(ref="#/components/parameters/page"),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15, maximum=100)
+     *     ),
+     *     @OA\Parameter(
+     *         name="filters",
+     *         in="query",
+     *         description="Filter parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="drawn_participation_id", type="integer"),
+     *             @OA\Property(property="drawn_at", type="integer"),
+     *             @OA\Property(property="available_at", type="integer"),
+     *             @OA\Property(property="announced_at", type="integer"),
+     *             @OA\Property(property="accepted_at", type="integer"),
+     *             @OA\Property(property="rejected_at", type="integer")
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Sort parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="drawn_participation_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="drawn_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="available_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="announced_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="accepted_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="rejected_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *         )
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="List of lucky ones for the lottery",
      *         @OA\JsonContent(
      *             allOf={
-     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
      *                 @OA\Schema(
      *                     @OA\Property(
      *                         property="data",
@@ -47,16 +87,30 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
      *     )
      * )
      */
-    public function index(EditionLottery $lottery)
+    public function index(Request $request, EditionLottery $lottery)
     {
-        $luckyOnes = $lottery->luckyOnes()
-            ->with(['participation.player'])
-            ->get();
+        $query = $lottery->luckyOnes()->with(['participation.player'])->getQuery();
 
-        return $this->resourceResponse(
-            EditionLuckyOneResource::collection($luckyOnes),
-            'Lucky ones retrieved successfully'
+        // Apply advanced pagination
+        $this->applyAdvancedPagination(
+            $query,
+            $request,
+            EditionLuckyOne::$searchableFields,
+            EditionLuckyOne::$filterableFields,
+            EditionLuckyOne::$sortableFields
         );
+
+        // Get pagination parameters
+        $paginationParams = $this->getPaginationParams($request);
+
+        // Apply default sorting if no sorting is specified
+        if (! $request->has('sort_by')) {
+            $query->orderBy('id_lucky_one', 'desc');
+        }
+
+        $luckyOnes = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
+
+        return EditionLuckyOneResource::collection($luckyOnes);
     }
 
     /**

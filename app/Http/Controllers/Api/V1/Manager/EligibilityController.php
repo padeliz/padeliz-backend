@@ -24,6 +24,57 @@ class EligibilityController extends V1BaseController
      *     tags={"🐧 Manager: Eligibilities"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15, maximum=100)
+     *     ),
+     *     @OA\Parameter(
+     *         name="q",
+     *         in="query",
+     *         description="Search term for name, first_name, last_name, phone, playtomic_id, rankedin_id, instagram_username, facebook_username, review_message fields",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="filters",
+     *         in="query",
+     *         description="Filter parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="edition_id", type="integer"),
+     *             @OA\Property(property="player_id", type="integer"),
+     *             @OA\Property(property="skill_division", type="number"),
+     *             @OA\Property(property="year_of_birth", type="integer"),
+     *             @OA\Property(property="being_student", type="boolean"),
+     *             @OA\Property(property="review_status", type="string", enum={"pending", "approved", "rejected"})
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Sort parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="edition_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="player_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="name", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="first_name", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="last_name", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="skill_division", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="year_of_birth", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="being_student", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="review_status", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="reviewed_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="resubmitted_at", type="string", enum={"asc", "desc"})
+     *         )
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="List of all eligibility records",
@@ -42,11 +93,28 @@ class EligibilityController extends V1BaseController
      *     )
      * )
      */
-    public function index()
+    public function index(Request $request)
     {
-        $eligibilities = PlayerEligibility::with(['player'])
-            ->orderBy('id_eligibility', 'desc')
-            ->paginate($this->paginationLimit);
+        $query = PlayerEligibility::with(['player']);
+
+        // Apply advanced pagination
+        $this->applyAdvancedPagination(
+            $query,
+            $request,
+            PlayerEligibility::$searchableFields,
+            PlayerEligibility::$filterableFields,
+            PlayerEligibility::$sortableFields
+        );
+
+        // Get pagination parameters
+        $paginationParams = $this->getPaginationParams($request);
+
+        // Apply default sorting if no sorting is specified
+        if (! $request->has('sort_by')) {
+            $query->orderBy('id_eligibility', 'desc');
+        }
+
+        $eligibilities = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
         return PlayerEligibilityResource::collection($eligibilities);
     }

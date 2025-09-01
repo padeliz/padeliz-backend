@@ -22,6 +22,45 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *     summary="Get paginated list of prizes",
      *     tags={"🐧 Manager: Prizes"},
      *     @OA\Parameter(ref="#/components/parameters/page"),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15, maximum=100)
+     *     ),
+     *     @OA\Parameter(
+     *         name="q",
+     *         in="query",
+     *         description="Search term for name, box_1_text, box_2_text fields",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="filters",
+     *         in="query",
+     *         description="Filter parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="box_1_bg_color", type="string"),
+     *             @OA\Property(property="box_1_text_color", type="string"),
+     *             @OA\Property(property="box_2_bg_color", type="string"),
+     *             @OA\Property(property="box_2_text_color", type="string")
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Sort parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="name", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *         )
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
@@ -40,11 +79,28 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *     )
      * )
      */
-    public function index()
+    public function index(Request $request)
     {
-        $prizes = Prize::with('clubPrizes')
-            ->orderBy('name')
-            ->paginate($this->paginationLimit);
+        $query = Prize::with('clubPrizes');
+
+        // Apply advanced pagination
+        $this->applyAdvancedPagination(
+            $query,
+            $request,
+            Prize::$searchableFields,
+            Prize::$filterableFields,
+            Prize::$sortableFields
+        );
+
+        // Get pagination parameters
+        $paginationParams = $this->getPaginationParams($request);
+
+        // Apply default sorting if no sorting is specified
+        if (! $request->has('sort_by')) {
+            $query->orderBy('id_prize', 'desc');
+        }
+
+        $prizes = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
         return PrizeResource::collection($prizes);
     }

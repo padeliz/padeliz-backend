@@ -15,7 +15,7 @@ This project uses VS Code DevContainers for development with optimized performan
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling.
 
 
-### Prerequisites
+### 📋 Prerequisites
 - [Git](https://git-scm.com/downloads)
 - [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/)
 - WSL2 enabled (Windows Subsystem for Linux)
@@ -23,13 +23,13 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
 - [VS Code](https://code.visualstudio.com/) with the "Dev Containers" extension
 
 
-### Performance Notes
+### ⚡ Performance Notes
 - **WSL2 Users**: The devcontainer is optimized for WSL2 performance issues
 - **Google API Client**: Handles large package installations without timeout issues
 - **Volume Mounting**: Uses optimized mounting strategy for better file I/O performance
 
 
-### First-time setup
+### 🚀 First-time setup
 
 1. **Install VS Code + “Dev Containers” extension**
 
@@ -65,7 +65,7 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
    ```
 
 
-### Available Endpoints
+### 🔗 Available Endpoints
 
 The API is available at `http://localhost:8000`
 
@@ -74,7 +74,7 @@ Its Swagger docs is available at `http://localhost:8000/api/documentation`
 Manage DB data from phpMyAdmin: `http://localhost:8080`
 
 
-### Useful Commands
+### 💻 Useful Commands
 
 Once inside the DevContainer, you can use these commands:
 
@@ -83,7 +83,7 @@ Once inside the DevContainer, you can use these commands:
 
 php artisan migrate # Run migrations
 
-vendor/bin/phpunit # Run tests
+php artisan test # Run tests
 
 composer format # Format all code
 composer format:check # Check formatting without making changes
@@ -108,19 +108,19 @@ php artisan view:clear
 ```
 
 
-### Project Structure
+### 📁 Project Structure
 
   ```bash
+  ├── .devcontainer/     # DevContainer configuration
   ├── app/               # Application core code
   ├── database/          # Migrations and seeders
-  ├── .devcontainer/     # DevContainer configuration
   ├── routes/            # API routes
   ├── tests/             # Test files
   └── docker/            # Docker configuration files
 ```
 
 
-### Database Access
+### 🗄️ Database Access
 
 You can connect to the database using these credentials:
 - Host: localhost
@@ -130,22 +130,7 @@ You can connect to the database using these credentials:
 - Password: db_pass
 
 
-### Troubleshooting
-
-1. **Port Conflicts**
-   - If port 8000 or 3306 is already in use, modify the ports in `docker-compose.yml`
-
-2. **Docker Issues**
-   - Ensure Docker Desktop is running
-   - Try restarting Docker Desktop
-   - Check WSL2 is properly installed: `wsl --status`
-
-3. **Permission Issues**
-   - Run Docker Desktop as administrator
-   - Ensure proper file permissions in WSL
-
-
-### Contributing
+### 🤝 Contributing
 
 1. Create a new branch for your feature
    ```bash
@@ -157,9 +142,16 @@ You can connect to the database using these credentials:
    php artisan test
    ```
 
-3. Commit
+3. Stage changes
    ```bash
    git add .
+
+   # Wait for the staged code formatting...
+   composer format # Or do it manually for the entire code
+   ```
+
+3. Commit
+   ```bash
    git commit -m "Description of changes"
    ```
 
@@ -171,9 +163,15 @@ You can connect to the database using these credentials:
 4. Create a Pull Request on GitHub
 
 
-### Generating Documentation
+### 📚 Generating Documentation
 
-The API documentation is automatically generated for each version and is available at: `http://localhost:8000/api/documentation`
+The API documentation: `http://localhost:8000/api/documentation`
+
+Regenerate the documentation after:
+- making changes to the API endpoints or models
+- creating a new version
+    - *by adding a new version file (e.g., `routes/api/v3.php`)*
+
 
 ```bash
 # to generate documentation for all API versions:
@@ -183,45 +181,57 @@ php artisan api:docs:generate-all
 php artisan l5-swagger:generate v1
 ```
 
-When you add a new version file (e.g., `routes/api/v3.php`), the documentation will be automatically detected and registered. Simply run the generation command to create the documentation for the new version.
 
-If you make changes to the API endpoints or models, regenerate the documentation.
+### 🔧 Troubleshooting
+
+1. **Port Conflicts**
+   - If port 8000 or 3306 is already in use, modify it overall in the project.
+
+2. **Docker Issues**
+   - Ensure Docker Desktop is running
+   - Try restarting Docker Desktop
+   - Check WSL2 is properly installed: `wsl --status`
+
+3. **Permission Issues**
+   - Run Docker Desktop as administrator
+   - Ensure proper file permissions in WSL
+
+4. **No Access to Documentation**
+
+    1. Make sure storage directory is writable:
+        ```bash
+        chmod -R 777 storage/
+        ```
+
+    2. Clear Laravel cache:
+        ```bash
+        php artisan cache:clear
+        ```
+
+    3. Verify L5-Swagger is properly installed:
+        ```bash
+        php artisan vendor:publish --provider "L5Swagger\L5SwaggerServiceProvider"
+        ```
 
 
-### Automatic Code Formatting
+### ✨ Automatic Code Formatting
 
-This project is configured with automatic code formatting that works out of the box. No manual setup required!
+This project is configured with automatic code formatting.
 
 #### What's Configured:
-- **VS Code Settings**: Automatic formatting on save, proper indentation (4 spaces for PHP, 2 for JSON/YAML)
+- **VS Code Settings**: Manual formatting only
+- **Git Pre-commit Hook**: Automatic formatting before commits (shared via scripts/git-hooks/)
 - **PHP CS Fixer**: PSR-12 compliant code formatting with Laravel-specific rules
 - **EditorConfig**: Consistent editor behavior across different IDEs
 - **DevContainer Integration**: All extensions and settings are automatically installed
+- **Cursor AI Compatible**: No automatic formatting during editing to prevent conflicts
 
 #### How It Works:
-1. **On Save**: Code is automatically formatted when you save any PHP file
+1. **Pre-commit Hook**: Code is automatically formatted before Git commits
 2. **Manual Formatting**: Use `Ctrl+Shift+P` → "Format Document" or `Shift+Alt+F`
 3. **VS Code Tasks**: Use `Ctrl+Shift+P` → "Tasks: Run Task" → Choose formatting task
+4. **Composer Commands**: Use `composer format` for bulk formatting
 
-
-### Troubleshooting
-
-If you can't access the documentation:
-
-1. Make sure storage directory is writable:
-    ```bash
-    chmod -R 777 storage/
-    ```
-
-2. Clear Laravel cache:
-    ```bash
-    php artisan cache:clear
-    ```
-
-3. Verify L5-Swagger is properly installed:
-    ```bash
-    php artisan vendor:publish --provider "L5Swagger\L5SwaggerServiceProvider"
-    ```
 
 ## License
 

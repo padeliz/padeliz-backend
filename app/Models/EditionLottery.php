@@ -38,6 +38,37 @@ class EditionLottery extends Model
 {
     use HasFactory;
 
+    /**
+     * Fields that can be searched
+     */
+    public static array $searchableFields = [
+        // No searchable fields for this model
+    ];
+
+    /**
+     * Fields that can be filtered
+     */
+    public static array $filterableFields = [
+        'edition_id',
+        'division_id',
+        'prize_id',
+        'orderliness',
+        'total_draws_nr',
+    ];
+
+    /**
+     * Fields that can be sorted
+     */
+    public static array $sortableFields = [
+        'edition_id',
+        'division_id',
+        'prize_id',
+        'orderliness',
+        'total_draws_nr',
+        'inserted_at',
+        'updated_at',
+    ];
+
     protected $table = 'edition_lotteries';
 
     protected $primaryKey = 'id_lottery';

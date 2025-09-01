@@ -6,6 +6,7 @@ namespace App\Http\Controllers\BaseVersions\V1;
 
 use App\Http\Controllers\Controller;
 use App\Traits\ApiResponse;
+use App\Traits\HasAdvancedPagination;
 
 /**
  * @OA\Info(
@@ -82,6 +83,7 @@ use App\Traits\ApiResponse;
 class V1BaseController extends Controller
 {
     use ApiResponse;
+    use HasAdvancedPagination;
 
     /**
      * Get the current API version
@@ -89,5 +91,14 @@ class V1BaseController extends Controller
     protected function getApiVersion(): string
     {
         return 'v1';
+    }
+
+    /**
+     * Constructor to set default pagination values
+     */
+    public function __construct()
+    {
+        $this->setDefaultPerPage(15);
+        $this->setMaxPerPage(100);
     }
 }

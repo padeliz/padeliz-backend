@@ -22,6 +22,37 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *     summary="Get paginated list of match teams",
      *     tags={"🐧 Manager: Matches Teams"},
      *     @OA\Parameter(ref="#/components/parameters/page"),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15, maximum=100)
+     *     ),
+     *     @OA\Parameter(
+     *         name="filters",
+     *         in="query",
+     *         description="Filter parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="player_1", type="integer"),
+     *             @OA\Property(property="player_2", type="integer")
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Sort parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="player_1", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="player_2", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *         )
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
@@ -40,11 +71,28 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *     )
      * )
      */
-    public function index()
+    public function index(Request $request)
     {
-        $teams = MatchesTeam::with(['player1', 'player2'])
-            ->orderBy('inserted_at', 'desc')
-            ->paginate($this->paginationLimit);
+        $query = MatchesTeam::with(['player1', 'player2']);
+
+        // Apply advanced pagination
+        $this->applyAdvancedPagination(
+            $query,
+            $request,
+            MatchesTeam::$searchableFields,
+            MatchesTeam::$filterableFields,
+            MatchesTeam::$sortableFields
+        );
+
+        // Get pagination parameters
+        $paginationParams = $this->getPaginationParams($request);
+
+        // Apply default sorting if no sorting is specified
+        if (! $request->has('sort_by')) {
+            $query->orderBy('id_team', 'desc');
+        }
+
+        $teams = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
         return MatchesTeamResource::collection($teams);
     }

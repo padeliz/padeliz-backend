@@ -27,6 +27,31 @@ class Club extends Model
 {
     use HasFactory;
 
+    /**
+     * Fields that can be searched
+     */
+    public static array $searchableFields = [
+        'name',
+        'city',
+    ];
+
+    /**
+     * Fields that can be filtered
+     */
+    public static array $filterableFields = [
+        'city',
+    ];
+
+    /**
+     * Fields that can be sorted
+     */
+    public static array $sortableFields = [
+        'name',
+        'city',
+        'inserted_at',
+        'updated_at',
+    ];
+
     protected $table = 'clubs';
 
     protected $primaryKey = 'id_club';

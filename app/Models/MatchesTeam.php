@@ -30,6 +30,31 @@ class MatchesTeam extends Model
 {
     use HasFactory;
 
+    /**
+     * Fields that can be searched
+     */
+    public static array $searchableFields = [
+        // No searchable fields for this model
+    ];
+
+    /**
+     * Fields that can be filtered
+     */
+    public static array $filterableFields = [
+        'player_1',
+        'player_2',
+    ];
+
+    /**
+     * Fields that can be sorted
+     */
+    public static array $sortableFields = [
+        'player_1',
+        'player_2',
+        'inserted_at',
+        'updated_at',
+    ];
+
     protected $table = 'matches_teams';
 
     protected $primaryKey = 'id_team';

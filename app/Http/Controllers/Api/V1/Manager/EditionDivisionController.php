@@ -24,6 +24,59 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *     summary="Get paginated list of edition divisions",
      *     tags={"🐧 Manager: Editions Divisions"},
      *     @OA\Parameter(ref="#/components/parameters/page"),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15, maximum=100)
+     *     ),
+     *     @OA\Parameter(
+     *         name="q",
+     *         in="query",
+     *         description="Search term for court field",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="filters",
+     *         in="query",
+     *         description="Filter parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="edition_id", type="integer"),
+     *             @OA\Property(property="division_id", type="integer"),
+     *             @OA\Property(property="players_limit", type="integer"),
+     *             @OA\Property(property="player_opponents_nr", type="integer"),
+     *             @OA\Property(property="player_matches_repeat", type="integer"),
+     *             @OA\Property(property="include_scores", type="boolean"),
+     *             @OA\Property(property="has_demonstrative_match", type="boolean"),
+     *             @OA\Property(property="fixed_teams", type="boolean")
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Sort parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="edition_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="division_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="players_limit", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="court", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="playing_start_time", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="playing_end_time", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="player_opponents_nr", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="player_matches_repeat", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="include_scores", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="has_demonstrative_match", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="fixed_teams", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *         )
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
@@ -42,11 +95,28 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *     )
      * )
      */
-    public function index()
+    public function index(Request $request)
     {
-        $editionDivisions = EditionDivision::with(['edition', 'division'])
-            ->orderBy('id_edition_division', 'desc')
-            ->paginate($this->paginationLimit);
+        $query = EditionDivision::with(['edition', 'division']);
+
+        // Apply advanced pagination
+        $this->applyAdvancedPagination(
+            $query,
+            $request,
+            EditionDivision::$searchableFields,
+            EditionDivision::$filterableFields,
+            EditionDivision::$sortableFields
+        );
+
+        // Get pagination parameters
+        $paginationParams = $this->getPaginationParams($request);
+
+        // Apply default sorting if no sorting is specified
+        if (! $request->has('sort_by')) {
+            $query->orderBy('id_edition_division', 'desc');
+        }
+
+        $editionDivisions = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
         return EditionDivisionResource::collection($editionDivisions);
     }

@@ -33,6 +33,34 @@ class Prize extends Model
 {
     use HasFactory;
 
+    /**
+     * Fields that can be searched
+     */
+    public static array $searchableFields = [
+        'name',
+        'box_1_text',
+        'box_2_text',
+    ];
+
+    /**
+     * Fields that can be filtered
+     */
+    public static array $filterableFields = [
+        'box_1_bg_color',
+        'box_1_text_color',
+        'box_2_bg_color',
+        'box_2_text_color',
+    ];
+
+    /**
+     * Fields that can be sorted
+     */
+    public static array $sortableFields = [
+        'name',
+        'inserted_at',
+        'updated_at',
+    ];
+
     protected $table = 'prizes';
 
     protected $primaryKey = 'id_prize';

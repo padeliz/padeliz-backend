@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Resources\EditionResource;
 use App\Http\Resources\LocationResource;
+use App\Models\Edition;
 use App\Models\Location;
 use Illuminate\Http\Request;
 
@@ -23,6 +24,48 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *     summary="Get paginated list of locations",
      *     tags={"🐧 Manager: Locations"},
      *     @OA\Parameter(ref="#/components/parameters/page"),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15, maximum=100)
+     *     ),
+     *     @OA\Parameter(
+     *         name="q",
+     *         in="query",
+     *         description="Search term for name and address fields",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="filters",
+     *         in="query",
+     *         description="Filter parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="club_id", type="integer"),
+     *             @OA\Property(property="total_indoors_courts", type="integer"),
+     *             @OA\Property(property="total_outdoor_courts", type="integer")
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Sort parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="name", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="address", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="club_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="total_indoors_courts", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="total_outdoor_courts", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *         )
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
@@ -41,11 +84,30 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *     )
      * )
      */
-    public function index()
+    public function index(Request $request)
     {
-        $locations = Location::with('club')
-            ->orderBy('name')
-            ->paginate($this->paginationLimit);
+        $query = Location::with('club');
+
+        // Apply advanced pagination
+        $this->applyAdvancedPagination(
+            $query,
+            $request,
+            Location::$searchableFields,
+            Location::$filterableFields,
+            Location::$sortableFields
+        );
+
+        // Get pagination parameters
+        $paginationParams = $this->getPaginationParams($request);
+
+        // Apply default sorting if no sorting is specified
+        if (! $request->has('sort_by')) {
+
+            $query->orderBy('id_location', 'desc');
+
+        }
+
+        $locations = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
         return LocationResource::collection($locations);
     }
@@ -249,6 +311,49 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *         @OA\Schema(type="integer")
      *     ),
      *     @OA\Parameter(ref="#/components/parameters/page"),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15, maximum=100)
+     *     ),
+     *     @OA\Parameter(
+     *         name="q",
+     *         in="query",
+     *         description="Search term for name field",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="filters",
+     *         in="query",
+     *         description="Filter parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="date", type="string", format="date"),
+     *             @OA\Property(property="entry_fee", type="number"),
+     *             @OA\Property(property="students_entry_fee", type="number")
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Sort parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="name", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="date", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="entry_fee", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="students_entry_fee", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="arriving_time", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="closing_time", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *         )
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
@@ -267,11 +372,30 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *     )
      * )
      */
-    public function editions(Location $location)
+    public function editions(Request $request, Location $location)
     {
-        $editions = $location->editions()
-            ->orderBy('date', 'desc')
-            ->paginate($this->paginationLimit);
+        $query = $location->editions()->getQuery();
+
+        // Apply advanced pagination
+        $this->applyAdvancedPagination(
+            $query,
+            $request,
+            Edition::$searchableFields,
+            Edition::$filterableFields,
+            Edition::$sortableFields
+        );
+
+        // Get pagination parameters
+        $paginationParams = $this->getPaginationParams($request);
+
+        // Apply default sorting if no sorting is specified
+        if (! $request->has('sort_by')) {
+
+            $query->orderBy('id_edition', 'desc');
+
+        }
+
+        $editions = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
         return EditionResource::collection($editions);
     }

@@ -63,9 +63,36 @@ class EditionLuckyOneControllerTest extends TestCase
         $response = $this->getJson("/api/v1/manager/lotteries/{$this->lottery->id_lottery}/lucky-ones");
 
         $response->assertStatus(200)
-            ->assertJson([
-                'success' => true,
-                'message' => 'Lucky ones retrieved successfully',
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id_lucky_one',
+                        'lottery_id',
+                        'drawn_participation_id',
+                        'drawn_at',
+                        'available_at',
+                        'announced_at',
+                        'accepted_at',
+                        'rejected_at',
+                        'inserted_at',
+                        'updated_at',
+                    ],
+                ],
+                'links' => [
+                    'first',
+                    'last',
+                    'prev',
+                    'next',
+                ],
+                'meta' => [
+                    'current_page',
+                    'from',
+                    'last_page',
+                    'path',
+                    'per_page',
+                    'to',
+                    'total',
+                ],
             ]);
 
         $this->assertCount(3, $response->json('data'));
