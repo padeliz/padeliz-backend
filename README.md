@@ -1,32 +1,36 @@
 <img src="https://github.com/user-attachments/assets/6ea788c4-f033-45b8-8701-bae663d57119" width="400">
 
-## Padeliz API
+### v1: Padeliz API
 
-Service Laravel-based endpoints for:
+Service Laravel-based RESTful endpoints for:
 - padeliz-frontend-app
 - padeliz-frontend-manager
 - padeliz-frontend-admin
+___
 
 
-## Development Setup (Windows)
+### 🛠️ Development Setup (Windows)
 
 This project uses VS Code DevContainers for development with optimized performance for Google API client services.
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling.
+___
 
 
 ### 📋 Prerequisites
-- [Git](https://git-scm.com/downloads)
+- [Git](https://git-scm.com/downloads) pack
 - [Docker Desktop for Windows](https://www.docker.com/products/docker-desktop/)
-- WSL2 enabled (Windows Subsystem for Linux)
-    - *copy `.wslconfig.example` to your Windows user directory for optimal performance*
+  - WSL2 enabled (Windows Subsystem for Linux)
 - [VS Code](https://code.visualstudio.com/) with the "Dev Containers" extension
+___
 
 
 ### ⚡ Performance Notes
 - **WSL2 Users**: The devcontainer is optimized for WSL2 performance issues
 - **Google API Client**: Handles large package installations without timeout issues
 - **Volume Mounting**: Uses optimized mounting strategy for better file I/O performance
+___
+
 
 
 ### 🚀 First-time setup
@@ -37,6 +41,11 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
    ```bash
    ## in the VSCode terminal
    git clone https://github.com/padeliz/padeliz-backend.git
+   ```
+
+   ```bash
+   # Copy the environment file
+   cd padeliz-backend && cp .env.example .env
    ```
 
 3. **Open the repository folder in VS Code**
@@ -57,12 +66,7 @@ Laravel is a web application framework with expressive, elegant syntax. We belie
     - *generating application key*
     - *running database migrations*
     - *setting up the development environment*
-
-6. **Environment Setup**
-   ```bash
-   # Copy the environment file (if not exists)
-   cp .env.example .env
-   ```
+___
 
 
 ### 🔗 Available Endpoints
@@ -72,6 +76,7 @@ The API is available at `http://localhost:8000`
 Its Swagger docs is available at `http://localhost:8000/api/documentation`
 
 Manage DB data from phpMyAdmin: `http://localhost:8080`
+___
 
 
 ### 💻 Useful Commands
@@ -106,6 +111,7 @@ mysql -u [USER] -p [PASS] # Access MySQL CLI
 php artisan route:clear
 php artisan view:clear
 ```
+___
 
 
 ### 📁 Project Structure
@@ -118,6 +124,7 @@ php artisan view:clear
   ├── tests/             # Test files
   └── docker/            # Docker configuration files
 ```
+___
 
 
 ### 🗄️ Database Access
@@ -128,6 +135,7 @@ You can connect to the database using these credentials:
 - Database: db_padeliz
 - Username: db_user
 - Password: db_pass
+___
 
 
 ### 🤝 Contributing
@@ -161,6 +169,7 @@ You can connect to the database using these credentials:
    ```
 
 4. Create a Pull Request on GitHub
+___
 
 
 ### 📚 Generating Documentation
@@ -180,6 +189,7 @@ php artisan api:docs:generate-all
 # to generate documentation for a specific version:
 php artisan l5-swagger:generate v1
 ```
+___
 
 
 ### 🔧 Troubleshooting
@@ -191,6 +201,7 @@ php artisan l5-swagger:generate v1
    - Ensure Docker Desktop is running
    - Try restarting Docker Desktop
    - Check WSL2 is properly installed: `wsl --status`
+     - For optimal performance: ``cp .wslconfig.example C:\Users\[YourUsername]\.wslconfig``
 
 3. **Permission Issues**
    - Run Docker Desktop as administrator
@@ -212,13 +223,14 @@ php artisan l5-swagger:generate v1
         ```bash
         php artisan vendor:publish --provider "L5Swagger\L5SwaggerServiceProvider"
         ```
+___
 
 
 ### ✨ Automatic Code Formatting
 
 This project is configured with automatic code formatting.
 
-#### What's Configured:
+What's Configured:
 - **VS Code Settings**: Manual formatting only
 - **Git Pre-commit Hook**: Automatic formatting before commits (shared via scripts/git-hooks/)
 - **PHP CS Fixer**: PSR-12 compliant code formatting with Laravel-specific rules
@@ -226,13 +238,14 @@ This project is configured with automatic code formatting.
 - **DevContainer Integration**: All extensions and settings are automatically installed
 - **Cursor AI Compatible**: No automatic formatting during editing to prevent conflicts
 
-#### How It Works:
+How It Works:
 1. **Pre-commit Hook**: Code is automatically formatted before Git commits
 2. **Manual Formatting**: Use `Ctrl+Shift+P` → "Format Document" or `Shift+Alt+F`
 3. **VS Code Tasks**: Use `Ctrl+Shift+P` → "Tasks: Run Task" → Choose formatting task
 4. **Composer Commands**: Use `composer format` for bulk formatting
+___
 
 
-## License
+### 📄 License
 
 This project is private. All rights reserved.

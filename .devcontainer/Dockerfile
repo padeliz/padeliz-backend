@@ -9,6 +9,7 @@ RUN apt-get update && apt-get install -y \
     libxml2-dev \
     zip \
     unzip \
+    sudo \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
@@ -25,11 +26,10 @@ COPY --from=composer:latest /usr/bin/composer /usr/bin/composer
 # Set working directory
 WORKDIR /workspaces/padeliz-backend
 
-# Add user for laravel application
+# Add user for laravel application with sudo privileges
 RUN groupadd -g 1000 www \
-    && useradd -u 1000 -ms /bin/bash -g www www
-
-
+    && useradd -u 1000 -ms /bin/bash -g www www \
+    && echo "www ALL=(ALL) NOPASSWD:ALL" >> /etc/sudoers
 
 # Switch to www user
 USER www
