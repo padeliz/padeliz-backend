@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Resources\EditionDivisionResource;
-use App\Http\Resources\EditionParticipationResource;
 use App\Models\EditionDivision;
 use App\Models\EditionParticipation;
 use Illuminate\Http\Request;
@@ -558,109 +557,5 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
                 $results
             );
         }
-    }
-
-    /**
-     * @OA\Get(
-     *     path="/api/v1/manager/edition-divisions/{editionDivision}/participants",
-     *     summary="Get paginated list of participants in this division",
-     *     tags={"🐧 Manager: Editions Divisions"},
-     *     security={{"sanctum":{}}},
-     *     @OA\Parameter(
-     *         name="editionDivision",
-     *         in="path",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Parameter(ref="#/components/parameters/page"),
-     *     @OA\Parameter(
-     *         name="per_page",
-     *         in="query",
-     *         description="Number of items per page",
-     *         required=false,
-     *         @OA\Schema(type="integer", default=15, maximum=100)
-     *     ),
-     *     @OA\Parameter(
-     *         name="q",
-     *         in="query",
-     *         description="Search term for absence_reason, ban_reason fields",
-     *         required=false,
-     *         @OA\Schema(type="string")
-     *     ),
-     *     @OA\Parameter(
-     *         name="filters",
-     *         in="query",
-     *         description="Filter parameters",
-     *         required=false,
-     *         @OA\Schema(
-     *             type="object",
-     *             @OA\Property(property="player_id", type="integer"),
-     *             @OA\Property(property="is_minor", type="integer", enum={0, 1}, description="Is minor player (use 0 or 1, not true/false)"),
-     *             @OA\Property(property="is_student", type="integer", enum={0, 1}, description="Is student (use 0 or 1, not true/false)"),
-     *             @OA\Property(property="discount", type="number"),
-     *             @OA\Property(property="payment", type="number")
-     *         )
-     *     ),
-     *     @OA\Parameter(
-     *         name="sort_by",
-     *         in="query",
-     *         description="Sort parameters",
-     *         required=false,
-     *         @OA\Schema(
-     *             type="object",
-     *             @OA\Property(property="player_id", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="is_minor", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="is_student", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="discount", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="payment", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Successful operation",
-     *         @OA\JsonContent(
-     *             allOf={
-     *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
-     *                 @OA\Schema(
-     *                     @OA\Property(
-     *                         property="data",
-     *                         type="array",
-     *                         @OA\Items(ref="#/components/schemas/EditionParticipation")
-     *                     )
-     *                 )
-     *             }
-     *         )
-     *     )
-     * )
-     */
-    public function participants(Request $request, EditionDivision $editionDivision)
-    {
-        $query = EditionParticipation::where([
-            'edition_id' => $editionDivision->edition_id,
-            'division_id' => $editionDivision->division_id,
-        ])->with(['player']);
-
-        // Apply advanced pagination
-        $this->applyAdvancedPagination(
-            $query,
-            $request,
-            EditionParticipation::$searchableFields,
-            EditionParticipation::$filterableFields,
-            EditionParticipation::$sortableFields
-        );
-
-        // Get pagination parameters
-        $paginationParams = $this->getPaginationParams($request);
-
-        // Apply default sorting if no sorting is specified
-        if (! $request->has('sort_by')) {
-            $query->orderBy('id_participation', 'desc');
-        }
-
-        $participants = $query->with(['player'])->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
-
-        return EditionParticipationResource::collection($participants);
     }
 }

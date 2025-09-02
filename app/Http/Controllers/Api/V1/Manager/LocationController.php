@@ -4,9 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1\Manager;
 
-use App\Http\Resources\EditionResource;
 use App\Http\Resources\LocationResource;
-use App\Models\Edition;
 use App\Models\Location;
 use Illuminate\Http\Request;
 
@@ -414,106 +412,5 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
             'location',
             'Locations deleted successfully'
         );
-    }
-
-    /**
-     * @OA\Get(
-     *     path="/api/v1/manager/locations/{location}/editions",
-     *     summary="Get paginated list of location editions",
-     *     tags={"🐧 Manager: Locations"},
-     *     @OA\Parameter(
-     *         name="location",
-     *         in="path",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Parameter(ref="#/components/parameters/page"),
-     *     @OA\Parameter(
-     *         name="per_page",
-     *         in="query",
-     *         description="Number of items per page",
-     *         required=false,
-     *         @OA\Schema(type="integer", default=15, maximum=100)
-     *     ),
-     *     @OA\Parameter(
-     *         name="q",
-     *         in="query",
-     *         description="Search term for name field",
-     *         required=false,
-     *         @OA\Schema(type="string")
-     *     ),
-     *     @OA\Parameter(
-     *         name="filters",
-     *         in="query",
-     *         description="Filter parameters",
-     *         required=false,
-     *         @OA\Schema(
-     *             type="object",
-     *             @OA\Property(property="date", type="string", format="date"),
-     *             @OA\Property(property="entry_fee", type="number"),
-     *             @OA\Property(property="students_entry_fee", type="number")
-     *         )
-     *     ),
-     *     @OA\Parameter(
-     *         name="sort_by",
-     *         in="query",
-     *         description="Sort parameters",
-     *         required=false,
-     *         @OA\Schema(
-     *             type="object",
-     *             @OA\Property(property="name", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="date", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="entry_fee", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="students_entry_fee", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="arriving_time", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="closing_time", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Successful operation",
-     *         @OA\JsonContent(
-     *             allOf={
-     *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
-     *                 @OA\Schema(
-     *                     @OA\Property(
-     *                         property="data",
-     *                         type="array",
-     *                         @OA\Items(ref="#/components/schemas/Edition")
-     *                     )
-     *                 )
-     *             }
-     *         )
-     *     )
-     * )
-     */
-    public function editions(Request $request, Location $location)
-    {
-        $query = $location->editions()->getQuery();
-
-        // Apply advanced pagination
-        $this->applyAdvancedPagination(
-            $query,
-            $request,
-            Edition::$searchableFields,
-            Edition::$filterableFields,
-            Edition::$sortableFields
-        );
-
-        // Get pagination parameters
-        $paginationParams = $this->getPaginationParams($request);
-
-        // Apply default sorting if no sorting is specified
-        if (! $request->has('sort_by')) {
-
-            $query->orderBy('id_edition', 'desc');
-
-        }
-
-        $editions = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
-
-        return EditionResource::collection($editions);
     }
 }

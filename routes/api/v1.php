@@ -88,8 +88,6 @@ Route::prefix('v1')->group(function () {
             Route::put('{club}', [\App\Http\Controllers\Api\V1\Manager\ClubController::class, 'update']);
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\ClubController::class, 'bulkDestroy']);
             Route::delete('{club}', [\App\Http\Controllers\Api\V1\Manager\ClubController::class, 'destroy']);
-            Route::get('{club}/locations', [\App\Http\Controllers\Api\V1\Manager\ClubController::class, 'locations']);
-            Route::get('{club}/prizes', [\App\Http\Controllers\Api\V1\Manager\ClubController::class, 'prizes']);
         });
 
         // Location management
@@ -100,7 +98,6 @@ Route::prefix('v1')->group(function () {
             Route::put('{location}', [\App\Http\Controllers\Api\V1\Manager\LocationController::class, 'update']);
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\LocationController::class, 'bulkDestroy']);
             Route::delete('{location}', [\App\Http\Controllers\Api\V1\Manager\LocationController::class, 'destroy']);
-            Route::get('{location}/editions', [\App\Http\Controllers\Api\V1\Manager\LocationController::class, 'editions']);
         });
 
         // Division management
@@ -124,9 +121,6 @@ Route::prefix('v1')->group(function () {
             Route::put('{edition}', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'update']);
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'bulkDestroy']);
             Route::delete('{edition}', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'destroy']);
-            Route::get('{edition}/divisions', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'divisions']);
-            Route::get('{edition}/participants', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'participants']);
-            Route::get('{edition}/lotteries', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'lotteries']);
         });
 
         // Prize management
@@ -177,7 +171,6 @@ Route::prefix('v1')->group(function () {
             Route::put('{editionDivision}', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'update']);
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'bulkDestroy']);
             Route::delete('{editionDivision}', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'destroy']);
-            Route::get('{editionDivision}/participants', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'participants']);
         });
 
         // Player management
