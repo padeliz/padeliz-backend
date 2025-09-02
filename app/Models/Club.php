@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 
@@ -26,6 +27,7 @@ use Illuminate\Database\Eloquent\Model;
 class Club extends Model
 {
     use HasFactory;
+    use HasResourceMetadata;
 
     /**
      * Fields that can be searched

@@ -1,0 +1,26 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Resources;
+
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class ResourceMetadataResource extends JsonResource
+{
+    /**
+     * Transform the resource into an array.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        return [
+            'resource' => $this['resource'],
+            'searchable_fields' => $this['searchable_fields'],
+            'filterable_fields' => $this['filterable_fields'],
+            'sortable_fields' => $this['sortable_fields'],
+        ];
+    }
+}

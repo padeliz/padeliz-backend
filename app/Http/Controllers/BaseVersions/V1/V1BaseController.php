@@ -63,6 +63,74 @@ use App\Traits\HasAdvancedPagination;
  *     @OA\Property(property="errors", type="object", description="Validation errors", nullable=true)
  * )
  *
+ * @OA\Schema(
+ *     schema="ResourceMetadata",
+ *     description="Resource metadata information",
+ *     @OA\Property(property="resource", type="string", example="players"),
+ *     @OA\Property(
+ *         property="searchable_fields",
+ *         type="array",
+ *         @OA\Items(type="string"),
+ *         example={"name", "first_name", "last_name", "phone"}
+ *     ),
+ *     @OA\Property(
+ *         property="filterable_fields",
+ *         type="object",
+ *         additionalProperties=@OA\Schema(
+ *             oneOf={
+ *                 @OA\Schema(
+ *                     type="object",
+ *                     @OA\Property(property="type", type="string", example="float"),
+ *                     @OA\Property(
+ *                         property="values",
+ *                         type="array",
+ *                         @OA\Items(type="number"),
+ *                         example={1.0, 2.5, 3.0, 4.5, 5.0}
+ *                     )
+ *                 ),
+ *                 @OA\Schema(
+ *                     type="object",
+ *                     @OA\Property(property="type", type="string", example="boolean"),
+ *                     @OA\Property(
+ *                         property="values",
+ *                         type="array",
+ *                         @OA\Items(type="boolean"),
+ *                         example={true, false}
+ *                     )
+ *                 ),
+ *                 @OA\Schema(
+ *                     type="object",
+ *                     @OA\Property(property="type", type="string", example="string"),
+ *                     @OA\Property(
+ *                         property="values",
+ *                         type="array",
+ *                         @OA\Items(type="string"),
+ *                         example={"Bucharest", "Cluj", "Timisoara"}
+ *                     )
+ *                 ),
+ *                 @OA\Schema(
+ *                     type="object",
+ *                     @OA\Property(property="type", type="string", example="foreign_key"),
+ *                     @OA\Property(property="related_model", type="string", example="clubs"),
+ *                     @OA\Property(property="searchable_field", type="string", example="name"),
+ *                     @OA\Property(
+ *                         property="values",
+ *                         type="array",
+ *                         @OA\Items(type="string"),
+ *                         example={"Club A", "Club B", "Club C"}
+ *                     )
+ *                 )
+ *             }
+ *         )
+ *     ),
+ *     @OA\Property(
+ *         property="sortable_fields",
+ *         type="array",
+ *         @OA\Items(type="string"),
+ *         example={"name", "first_name", "last_name", "skill_division", "inserted_at"}
+ *     )
+ * )
+ *
  * @OA\Parameter(
  *     parameter="page",
  *     name="page",

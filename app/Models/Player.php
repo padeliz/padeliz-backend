@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\HasResourceMetadata;
 use App\Traits\HasUploadedFiles;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -47,6 +48,7 @@ class Player extends Authenticatable
     use HasFactory;
     use HasApiTokens;
     use HasUploadedFiles;
+    use HasResourceMetadata;
 
     /**
      * Fields that can be searched
