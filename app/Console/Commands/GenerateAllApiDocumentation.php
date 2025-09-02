@@ -31,6 +31,9 @@ class GenerateAllApiDocumentation extends Command
     {
         $this->info('Generating API documentation for all versions...');
 
+        // Ensure the ApiDocumentationServiceProvider configuration is applied
+        $this->ensureServiceProviderConfiguration();
+
         // Get all API versions
         $versions = $this->getApiVersions();
 
@@ -94,5 +97,15 @@ class GenerateAllApiDocumentation extends Command
         });
 
         return $versions;
+    }
+
+    /**
+     * Ensure the ApiDocumentationService configuration is applied
+     */
+    protected function ensureServiceProviderConfiguration(): void
+    {
+        // Get the service instance and call its configureL5Swagger method
+        $service = app(\App\Services\ApiDocumentationService::class);
+        $service->configureL5Swagger();
     }
 }

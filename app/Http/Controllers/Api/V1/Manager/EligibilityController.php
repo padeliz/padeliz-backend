@@ -49,7 +49,7 @@ class EligibilityController extends V1BaseController
      *             @OA\Property(property="player_id", type="integer"),
      *             @OA\Property(property="skill_division", type="number"),
      *             @OA\Property(property="year_of_birth", type="integer"),
-     *             @OA\Property(property="being_student", type="boolean"),
+     *             @OA\Property(property="being_student", type="integer", enum={0, 1}, description="Being student (use 0 or 1, not true/false)"),
      *             @OA\Property(property="review_status", type="string", enum={"pending", "approved", "rejected"})
      *         )
      *     ),

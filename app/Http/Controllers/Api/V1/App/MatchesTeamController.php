@@ -22,7 +22,7 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *     path="/api/v1/app/matches/teams",
      *     summary="Get paginated list of matches teams",
      *     tags={"🐥 App: MatchesTeam"},
-     *     security={{"bearerAuth":{}}},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Response(
      *         response=200,
@@ -42,7 +42,8 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *     ),
      *     @OA\Response(
      *         response=401,
-     *         description="Unauthenticated"
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */

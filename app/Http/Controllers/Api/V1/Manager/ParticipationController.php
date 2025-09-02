@@ -52,8 +52,8 @@ class ParticipationController extends V1BaseController
      *             type="object",
      *             @OA\Property(property="player_id", type="integer"),
      *             @OA\Property(property="division_id", type="integer"),
-     *             @OA\Property(property="is_minor", type="boolean"),
-     *             @OA\Property(property="is_student", type="boolean"),
+     *             @OA\Property(property="is_minor", type="integer", enum={0, 1}, description="Is minor player (use 0 or 1, not true/false)"),
+     *             @OA\Property(property="is_student", type="integer", enum={0, 1}, description="Is student (use 0 or 1, not true/false)"),
      *             @OA\Property(property="discount", type="number"),
      *             @OA\Property(property="payment", type="number")
      *         )
@@ -183,8 +183,8 @@ class ParticipationController extends V1BaseController
      *             required={"player_id", "division_id"},
      *             @OA\Property(property="player_id", type="integer"),
      *             @OA\Property(property="division_id", type="integer"),
-     *             @OA\Property(property="is_minor", type="boolean", description="Is minor player"),
-     *             @OA\Property(property="is_student", type="boolean", description="Is student"),
+     *             @OA\Property(property="is_minor", type="integer", enum={0, 1}, description="Is minor player (use 0 or 1, not true/false)"),
+     *             @OA\Property(property="is_student", type="integer", enum={0, 1}, description="Is student (use 0 or 1, not true/false)"),
      *             @OA\Property(property="discount", type="integer", description="Discount amount"),
      *             @OA\Property(property="payment", type="integer", description="Payment amount"),
      *             @OA\Property(property="absence_reason", type="string", enum={"SICK", "FORGOT", "EXAMS", "RECONSIDERED"}, description="Absence reason"),
@@ -274,8 +274,8 @@ class ParticipationController extends V1BaseController
      *         @OA\JsonContent(
      *             @OA\Property(property="player_id", type="integer", description="Player ID"),
      *             @OA\Property(property="division_id", type="integer", description="Division ID"),
-     *             @OA\Property(property="is_minor", type="boolean", description="Is minor player"),
-     *             @OA\Property(property="is_student", type="boolean", description="Is student"),
+     *             @OA\Property(property="is_minor", type="integer", enum={0, 1}, description="Is minor player (use 0 or 1, not true/false)"),
+     *             @OA\Property(property="is_student", type="integer", enum={0, 1}, description="Is student (use 0 or 1, not true/false)"),
      *             @OA\Property(property="discount", type="integer", description="Discount amount"),
      *             @OA\Property(property="payment", type="integer", description="Payment amount"),
      *             @OA\Property(property="absence_reason", type="string", enum={"SICK", "FORGOT", "EXAMS", "RECONSIDERED"}, description="Absence reason"),

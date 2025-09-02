@@ -43,7 +43,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *         required=false,
      *         @OA\Schema(
      *             type="object",
-     *             @OA\Property(property="is_students_only", type="boolean"),
+     *             @OA\Property(property="is_students_only", type="integer", enum={0, 1}, description="Whether division is for students only (use 0 or 1, not true/false)"),
      *             @OA\Property(property="its_first_edition_id", type="integer")
      *         )
      *     ),
@@ -150,7 +150,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *             required={"name", "color"},
      *             @OA\Property(property="name", type="string", maxLength=25, description="Division name"),
      *             @OA\Property(property="color", type="string", maxLength=7, description="Division color (hex)"),
-     *             @OA\Property(property="is_students_only", type="boolean", description="Whether division is for students only"),
+     *             @OA\Property(property="is_students_only", type="integer", enum={0, 1}, description="Whether division is for students only (use 0 or 1, not true/false)"),
      *             @OA\Property(property="its_first_edition_id", type="integer", description="First edition ID for this division")
      *         )
      *     ),
@@ -207,7 +207,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *         @OA\JsonContent(
      *             @OA\Property(property="name", type="string", maxLength=25, description="Division name"),
      *             @OA\Property(property="color", type="string", maxLength=7, description="Division color (hex)"),
-     *             @OA\Property(property="is_students_only", type="boolean", description="Whether division is for students only"),
+     *             @OA\Property(property="is_students_only", type="integer", enum={0, 1}, description="Whether division is for students only (use 0 or 1, not true/false)"),
      *             @OA\Property(property="its_first_edition_id", type="integer", description="First edition ID for this division")
      *         )
      *     ),

@@ -553,7 +553,7 @@ class EditionDivisionControllerTest extends TestCase
             ->assertJsonValidationErrors(['edition_id']);
     }
 
-    public function test_manager_can_view_edition_division_participants()
+    public function test_manager_can_view_edition_division_participants_with_pagination()
     {
         Sanctum::actingAs($this->manager);
 
@@ -562,22 +562,163 @@ class EditionDivisionControllerTest extends TestCase
             'division_id' => $this->division->id_division,
         ]);
 
-        $player = Player::factory()->create();
-        EditionParticipation::factory()->create([
+        // Create multiple participants
+        $players = Player::factory()->count(25)->create();
+        foreach ($players as $player) {
+            EditionParticipation::factory()->create([
+                'edition_id' => $this->edition->id_edition,
+                'player_id' => $player->id_player,
+                'division_id' => $this->division->id_division,
+            ]);
+        }
+
+        $response = $this->getJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}/participants?page=1&per_page=10");
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'data' => [
+                    '*' => [
+                        'id_participation',
+                        'edition_id',
+                        'player_id',
+                        'division_id',
+                        'is_minor',
+                        'is_student',
+                        'discount',
+                        'payment',
+                        'absence_reason',
+                        'ban_reason',
+                        'inserted_at',
+                        'updated_at',
+                        'player' => [
+                            'id_player',
+                            'name',
+                            'phone',
+                        ],
+                    ],
+                ],
+                'links' => [
+                    'first',
+                    'last',
+                    'prev',
+                    'next',
+                ],
+                'meta' => [
+                    'current_page',
+                    'from',
+                    'last_page',
+                    'path',
+                    'per_page',
+                    'to',
+                    'total',
+                ],
+            ]);
+
+        $this->assertCount(10, $response->json('data'));
+        $this->assertEquals(1, $response->json('meta.current_page'));
+        $this->assertEquals(25, $response->json('meta.total'));
+        $this->assertEquals(10, $response->json('meta.per_page'));
+    }
+
+    public function test_manager_can_view_edition_division_participants_with_search()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $editionDivision = EditionDivision::factory()->create([
             'edition_id' => $this->edition->id_edition,
-            'player_id' => $player->id_player,
             'division_id' => $this->division->id_division,
         ]);
 
-        $response = $this->getJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}/participants");
+        $player1 = Player::factory()->create();
+        $player2 = Player::factory()->create();
 
-        $response->assertStatus(200)
-            ->assertJson([
-                'success' => true,
-                'message' => 'Participants retrieved successfully',
-            ]);
+        EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'player_id' => $player1->id_player,
+            'division_id' => $this->division->id_division,
+            'absence_reason' => 'SICK',
+        ]);
 
+        EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'player_id' => $player2->id_player,
+            'division_id' => $this->division->id_division,
+            'absence_reason' => 'EXAMS',
+        ]);
+
+        $response = $this->getJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}/participants?q=SICK");
+
+        $response->assertStatus(200);
         $this->assertCount(1, $response->json('data'));
+        $this->assertEquals('SICK', $response->json('data.0.absence_reason'));
+    }
+
+    public function test_manager_can_view_edition_division_participants_with_filters()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $editionDivision = EditionDivision::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'division_id' => $this->division->id_division,
+        ]);
+
+        $player1 = Player::factory()->create();
+        $player2 = Player::factory()->create();
+
+        EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'player_id' => $player1->id_player,
+            'division_id' => $this->division->id_division,
+            'is_student' => true,
+            'payment' => 25.00,
+        ]);
+
+        EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'player_id' => $player2->id_player,
+            'division_id' => $this->division->id_division,
+            'is_student' => false,
+            'payment' => 50.00,
+        ]);
+
+        $response = $this->getJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}/participants?filters[is_student]=1");
+
+        $response->assertStatus(200);
+        $this->assertCount(1, $response->json('data'));
+        $this->assertTrue((bool) $response->json('data.0.is_student'));
+    }
+
+    public function test_manager_can_view_edition_division_participants_with_sorting()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $editionDivision = EditionDivision::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'division_id' => $this->division->id_division,
+        ]);
+
+        $player1 = Player::factory()->create();
+        $player2 = Player::factory()->create();
+
+        EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'player_id' => $player1->id_player,
+            'division_id' => $this->division->id_division,
+            'payment' => 25.00,
+        ]);
+
+        EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'player_id' => $player2->id_player,
+            'division_id' => $this->division->id_division,
+            'payment' => 50.00,
+        ]);
+
+        $response = $this->getJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}/participants?sort_by[payment]=desc");
+
+        $response->assertStatus(200);
+        $this->assertEquals(50.00, $response->json('data.0.payment'));
+        $this->assertEquals(25.00, $response->json('data.1.payment'));
     }
 
     public function test_edition_division_requires_manager_authentication()

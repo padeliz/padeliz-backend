@@ -47,7 +47,7 @@ class PlayerController extends V1BaseController
      *             type="object",
      *             @OA\Property(property="skill_division", type="number"),
      *             @OA\Property(property="year_of_birth", type="integer"),
-     *             @OA\Property(property="being_student", type="boolean"),
+     *             @OA\Property(property="being_student", type="integer", enum={0, 1}, description="Being student (use 0 or 1, not true/false)"),
      *             @OA\Property(property="user_types", type="array", @OA\Items(type="string"))
      *         )
      *     ),

@@ -124,7 +124,7 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
      *             @OA\Property(property="middle_name", type="string", maxLength=50),
      *             @OA\Property(property="last_name", type="string", maxLength=50),
      *             @OA\Property(property="year_of_birth", type="integer", minimum=1900, maximum=9999),
-     *             @OA\Property(property="being_student", type="boolean"),
+     *             @OA\Property(property="being_student", type="integer", enum={0, 1}, description="Being student (use 0 or 1, not true/false)"),
      *             @OA\Property(property="playtomic_id", type="string", maxLength=10),
      *             @OA\Property(property="rankedin_id", type="string", maxLength=15),
      *             @OA\Property(property="instagram_username", type="string", maxLength=50),

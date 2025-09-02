@@ -29,6 +29,9 @@ class EditionParticipationResource extends JsonResource
             'ban_reason' => $this->ban_reason,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
+            'player' => $this->whenLoaded('player', function () {
+                return new PlayerResource($this->player);
+            }),
             'edition' => $this->whenLoaded('edition', function () {
                 return new EditionResource($this->edition);
             }),

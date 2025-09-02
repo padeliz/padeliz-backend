@@ -50,9 +50,9 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *             @OA\Property(property="players_limit", type="integer"),
      *             @OA\Property(property="player_opponents_nr", type="integer"),
      *             @OA\Property(property="player_matches_repeat", type="integer"),
-     *             @OA\Property(property="include_scores", type="boolean"),
-     *             @OA\Property(property="has_demonstrative_match", type="boolean"),
-     *             @OA\Property(property="fixed_teams", type="boolean")
+     *             @OA\Property(property="include_scores", type="integer", enum={0, 1}, description="Include scores (use 0 or 1, not true/false)"),
+     *             @OA\Property(property="has_demonstrative_match", type="integer", enum={0, 1}, description="Has demonstrative match (use 0 or 1, not true/false)"),
+     *             @OA\Property(property="fixed_teams", type="integer", enum={0, 1}, description="Fixed teams (use 0 or 1, not true/false)")
      *         )
      *     ),
      *     @OA\Parameter(
@@ -173,9 +173,9 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *             @OA\Property(property="playing_end_time", type="string", format="time", description="Playing end time"),
      *             @OA\Property(property="player_opponents_nr", type="integer", description="Number of player opponents"),
      *             @OA\Property(property="player_matches_repeat", type="integer", description="Player matches repeat", default=1),
-     *             @OA\Property(property="include_scores", type="boolean", description="Include scores", default=true),
-     *             @OA\Property(property="has_demonstrative_match", type="boolean", description="Has demonstrative match", default=false),
-     *             @OA\Property(property="fixed_teams", type="boolean", description="Fixed teams", default=false)
+     *             @OA\Property(property="include_scores", type="integer", enum={0, 1}, description="Include scores (use 0 or 1, not true/false)", default=1),
+     *             @OA\Property(property="has_demonstrative_match", type="integer", enum={0, 1}, description="Has demonstrative match (use 0 or 1, not true/false)", default=0),
+     *             @OA\Property(property="fixed_teams", type="integer", enum={0, 1}, description="Fixed teams (use 0 or 1, not true/false)", default=0)
      *         )
      *     ),
      *     @OA\Response(
@@ -257,9 +257,9 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *             @OA\Property(property="playing_end_time", type="string", format="time", description="Playing end time"),
      *             @OA\Property(property="player_opponents_nr", type="integer", description="Number of player opponents"),
      *             @OA\Property(property="player_matches_repeat", type="integer", description="Player matches repeat"),
-     *             @OA\Property(property="include_scores", type="boolean", description="Include scores"),
-     *             @OA\Property(property="has_demonstrative_match", type="boolean", description="Has demonstrative match"),
-     *             @OA\Property(property="fixed_teams", type="boolean", description="Fixed teams")
+     *             @OA\Property(property="include_scores", type="integer", enum={0, 1}, description="Include scores (use 0 or 1, not true/false)"),
+     *             @OA\Property(property="has_demonstrative_match", type="integer", enum={0, 1}, description="Has demonstrative match (use 0 or 1, not true/false)"),
+     *             @OA\Property(property="fixed_teams", type="integer", enum={0, 1}, description="Fixed teams (use 0 or 1, not true/false)")
      *         )
      *     ),
      *     @OA\Response(
@@ -563,20 +563,66 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
     /**
      * @OA\Get(
      *     path="/api/v1/manager/edition-divisions/{editionDivision}/participants",
-     *     summary="Get participants in this division",
+     *     summary="Get paginated list of participants in this division",
      *     tags={"🐧 Manager: Editions Divisions"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="editionDivision",
      *         in="path",
      *         required=true,
      *         @OA\Schema(type="integer")
      *     ),
+     *     @OA\Parameter(ref="#/components/parameters/page"),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15, maximum=100)
+     *     ),
+     *     @OA\Parameter(
+     *         name="q",
+     *         in="query",
+     *         description="Search term for absence_reason, ban_reason fields",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="filters",
+     *         in="query",
+     *         description="Filter parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="player_id", type="integer"),
+     *             @OA\Property(property="is_minor", type="integer", enum={0, 1}, description="Is minor player (use 0 or 1, not true/false)"),
+     *             @OA\Property(property="is_student", type="integer", enum={0, 1}, description="Is student (use 0 or 1, not true/false)"),
+     *             @OA\Property(property="discount", type="number"),
+     *             @OA\Property(property="payment", type="number")
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Sort parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="player_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="is_minor", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="is_student", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="discount", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="payment", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *         )
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
      *         @OA\JsonContent(
      *             allOf={
-     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
      *                 @OA\Schema(
      *                     @OA\Property(
      *                         property="data",
@@ -589,16 +635,32 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *     )
      * )
      */
-    public function participants(EditionDivision $editionDivision)
+    public function participants(Request $request, EditionDivision $editionDivision)
     {
-        $participants = EditionParticipation::where([
+        $query = EditionParticipation::where([
             'edition_id' => $editionDivision->edition_id,
             'division_id' => $editionDivision->division_id,
-        ])->with(['player'])->get();
+        ])->with(['player']);
 
-        return $this->resourceResponse(
-            EditionParticipationResource::collection($participants),
-            'Participants retrieved successfully'
+        // Apply advanced pagination
+        $this->applyAdvancedPagination(
+            $query,
+            $request,
+            EditionParticipation::$searchableFields,
+            EditionParticipation::$filterableFields,
+            EditionParticipation::$sortableFields
         );
+
+        // Get pagination parameters
+        $paginationParams = $this->getPaginationParams($request);
+
+        // Apply default sorting if no sorting is specified
+        if (! $request->has('sort_by')) {
+            $query->orderBy('id_participation', 'desc');
+        }
+
+        $participants = $query->with(['player'])->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
+
+        return EditionParticipationResource::collection($participants);
     }
 }

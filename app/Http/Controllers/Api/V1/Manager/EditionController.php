@@ -4,8 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1\Manager;
 
+use App\Http\Resources\EditionDivisionResource;
+use App\Http\Resources\EditionLotteryResource;
+use App\Http\Resources\EditionParticipationResource;
 use App\Http\Resources\EditionResource;
 use App\Models\Edition;
+use App\Models\EditionDivision;
+use App\Models\EditionLottery;
+use App\Models\EditionParticipation;
 use Carbon\Carbon;
 use Illuminate\Http\Request;
 
@@ -708,7 +714,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
     /**
      * @OA\Get(
      *     path="/api/v1/manager/editions/{edition}/divisions",
-     *     summary="Get edition divisions",
+     *     summary="Get paginated list of edition divisions",
      *     tags={"🐧 Manager: Editions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
@@ -716,33 +722,102 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *         in="path",
      *         required=true,
      *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(ref="#/components/parameters/page"),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15, maximum=100)
+     *     ),
+     *     @OA\Parameter(
+     *         name="q",
+     *         in="query",
+     *         description="Search term for court field",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="filters",
+     *         in="query",
+     *         description="Filter parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="division_id", type="integer"),
+     *             @OA\Property(property="players_limit", type="integer"),
+     *             @OA\Property(property="player_opponents_nr", type="integer"),
+     *             @OA\Property(property="player_matches_repeat", type="integer"),
+     *             @OA\Property(property="include_scores", type="integer", enum={0, 1}, description="Include scores (use 0 or 1, not true/false)"),
+     *             @OA\Property(property="has_demonstrative_match", type="integer", enum={0, 1}, description="Has demonstrative match (use 0 or 1, not true/false)"),
+     *             @OA\Property(property="fixed_teams", type="integer", enum={0, 1}, description="Fixed teams (use 0 or 1, not true/false)")
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Sort parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="division_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="players_limit", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="court", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="playing_start_time", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="playing_end_time", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *         )
      *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
      *         @OA\JsonContent(
      *             allOf={
-     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
      *                 @OA\Schema(
-     *                     @OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/EditionDivision"))
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="array",
+     *                         @OA\Items(ref="#/components/schemas/EditionDivision")
+     *                     )
      *                 )
      *             }
      *         )
      *     )
      * )
      */
-    public function divisions(Edition $edition)
+    public function divisions(Request $request, Edition $edition)
     {
-        return $this->successResponse(
-            $edition->divisions()->with('division')->get(),
-            'Edition divisions retrieved successfully'
+        $query = $edition->divisions()->getQuery();
+
+        // Apply advanced pagination
+        $this->applyAdvancedPagination(
+            $query,
+            $request,
+            EditionDivision::$searchableFields,
+            EditionDivision::$filterableFields,
+            EditionDivision::$sortableFields
         );
+
+        // Get pagination parameters
+        $paginationParams = $this->getPaginationParams($request);
+
+        // Apply default sorting if no sorting is specified
+        if (! $request->has('sort_by')) {
+            $query->orderBy('id_edition_division', 'desc');
+        }
+
+        $divisions = $query->with('division')->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
+
+        return EditionDivisionResource::collection($divisions);
     }
 
     /**
      * @OA\Get(
      *     path="/api/v1/manager/editions/{edition}/participants",
-     *     summary="Get edition participants",
+     *     summary="Get paginated list of edition participants",
      *     tags={"🐧 Manager: Editions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
@@ -751,22 +826,101 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *         required=true,
      *         @OA\Schema(type="integer")
      *     ),
+     *     @OA\Parameter(ref="#/components/parameters/page"),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15, maximum=100)
+     *     ),
+     *     @OA\Parameter(
+     *         name="q",
+     *         in="query",
+     *         description="Search term for absence_reason, ban_reason fields",
+     *         required=false,
+     *         @OA\Schema(type="string")
+     *     ),
+     *     @OA\Parameter(
+     *         name="filters",
+     *         in="query",
+     *         description="Filter parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="player_id", type="integer"),
+     *             @OA\Property(property="division_id", type="integer"),
+     *             @OA\Property(property="is_minor", type="integer", enum={0, 1}, description="Is minor player (use 0 or 1, not true/false)"),
+     *             @OA\Property(property="is_student", type="integer", enum={0, 1}, description="Is student (use 0 or 1, not true/false)"),
+     *             @OA\Property(property="discount", type="number"),
+     *             @OA\Property(property="payment", type="number")
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Sort parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="player_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="division_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="is_minor", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="is_student", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="discount", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="payment", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *         )
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
-     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/EditionParticipation"))
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="array",
+     *                         @OA\Items(ref="#/components/schemas/EditionParticipation")
+     *                     )
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
-    public function participants(Edition $edition)
+    public function participants(Request $request, Edition $edition)
     {
-        return response()->json($edition->participations()->with(['player', 'division'])->get());
+        $query = $edition->participations()->getQuery();
+
+        // Apply advanced pagination
+        $this->applyAdvancedPagination(
+            $query,
+            $request,
+            EditionParticipation::$searchableFields,
+            EditionParticipation::$filterableFields,
+            EditionParticipation::$sortableFields
+        );
+
+        // Get pagination parameters
+        $paginationParams = $this->getPaginationParams($request);
+
+        // Apply default sorting if no sorting is specified
+        if (! $request->has('sort_by')) {
+            $query->orderBy('id_participation', 'desc');
+        }
+
+        $participants = $query->with(['player', 'division'])->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
+
+        return EditionParticipationResource::collection($participants);
     }
 
     /**
      * @OA\Get(
      *     path="/api/v1/manager/editions/{edition}/lotteries",
-     *     summary="Get edition lotteries",
+     *     summary="Get paginated list of edition lotteries",
      *     tags={"🐧 Manager: Editions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
@@ -775,15 +929,83 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *         required=true,
      *         @OA\Schema(type="integer")
      *     ),
+     *     @OA\Parameter(ref="#/components/parameters/page"),
+     *     @OA\Parameter(
+     *         name="per_page",
+     *         in="query",
+     *         description="Number of items per page",
+     *         required=false,
+     *         @OA\Schema(type="integer", default=15, maximum=100)
+     *     ),
+     *     @OA\Parameter(
+     *         name="filters",
+     *         in="query",
+     *         description="Filter parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="division_id", type="integer"),
+     *             @OA\Property(property="prize_id", type="integer"),
+     *             @OA\Property(property="orderliness", type="integer"),
+     *             @OA\Property(property="total_draws_nr", type="integer")
+     *         )
+     *     ),
+     *     @OA\Parameter(
+     *         name="sort_by",
+     *         in="query",
+     *         description="Sort parameters",
+     *         required=false,
+     *         @OA\Schema(
+     *             type="object",
+     *             @OA\Property(property="division_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="prize_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="orderliness", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="total_draws_nr", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *         )
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
-     *         @OA\JsonContent(type="array", @OA\Items(ref="#/components/schemas/EditionLottery"))
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         type="array",
+     *                         @OA\Items(ref="#/components/schemas/EditionLottery")
+     *                     )
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
-    public function lotteries(Edition $edition)
+    public function lotteries(Request $request, Edition $edition)
     {
-        return response()->json($edition->lotteries()->with(['prize', 'division', 'luckyOnes'])->get());
+        $query = $edition->lotteries()->getQuery();
+
+        // Apply advanced pagination
+        $this->applyAdvancedPagination(
+            $query,
+            $request,
+            EditionLottery::$searchableFields,
+            EditionLottery::$filterableFields,
+            EditionLottery::$sortableFields
+        );
+
+        // Get pagination parameters
+        $paginationParams = $this->getPaginationParams($request);
+
+        // Apply default sorting if no sorting is specified
+        if (! $request->has('sort_by')) {
+            $query->orderBy('id_lottery', 'desc');
+        }
+
+        $lotteries = $query->with(['prize', 'division', 'luckyOnes'])->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
+
+        return EditionLotteryResource::collection($lotteries);
     }
 }

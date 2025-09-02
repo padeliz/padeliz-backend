@@ -10,8 +10,10 @@ use App\Traits\HandlesResourceDeletion;
 use App\Traits\HasAdvancedPagination;
 
 /**
+ * @OA\Ignore
+ *
  * @OA\Info(
- *     version="v1",
+ *     version="v1.0",
  *     title="v1: Padeliz API",
  *     description="API endpoints documentation for Padeliz application. Supporting players and managers."
  * )
@@ -19,11 +21,6 @@ use App\Traits\HasAdvancedPagination;
  * @OA\Server(
  *     url="/",
  *     description="API Server"
- * )
- *
- * @OA\Tag(
- *     name="[DEV ONLY]",
- *     description="‼️ These endpoints are not available in production."
  * )
  *
  * @OA\Schema(
@@ -91,12 +88,7 @@ use App\Traits\HasAdvancedPagination;
  *                 @OA\Schema(
  *                     type="object",
  *                     @OA\Property(property="type", type="string", example="boolean"),
- *                     @OA\Property(
- *                         property="values",
- *                         type="array",
- *                         @OA\Items(type="boolean"),
- *                         example={true, false}
- *                     )
+ *                     @OA\Property(property="values", type="array", @OA\Items(type="boolean"), example={true, false})
  *                 ),
  *                 @OA\Schema(
  *                     type="object",
@@ -146,10 +138,10 @@ use App\Traits\HasAdvancedPagination;
  *     securityScheme="sanctum"
  * )
  *
- * Base controller for API v1
- * All v1 controllers should extend this class
+ * Base controller for API v1.
+ * All v1 controllers should extend this class.
  */
-class V1BaseController extends Controller
+abstract class V1BaseController extends Controller
 {
     use ApiResponse;
     use HasAdvancedPagination;
