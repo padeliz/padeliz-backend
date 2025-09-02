@@ -203,7 +203,7 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
     /**
      * @OA\Put(
      *     path="/api/v1/manager/prizes/{prize}",
-     *     summary="Update prize details",
+     *     summary="Update prize details (complete replacement)",
      *     tags={"🐧 Manager: Prizes"},
      *     @OA\Parameter(
      *         name="prize",
@@ -246,7 +246,7 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
     public function update(Request $request, Prize $prize)
     {
         $validated = $request->validate([
-            'name' => 'sometimes|string|max:60|unique:prizes,name,' . $prize->id_prize . ',id_prize',
+            'name' => 'required|string|max:60|unique:prizes,name,' . $prize->id_prize . ',id_prize',
             'image' => 'nullable|string|max:100',
             'box_1_text' => 'nullable|string|max:200',
             'box_1_bg_color' => 'nullable|string|max:7|regex:/^#[0-9A-F]{6}$/i',
@@ -261,6 +261,70 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
         return $this->resourceResponse(
             new PrizeResource($prize),
             'Prize updated successfully'
+        );
+    }
+
+    /**
+     * @OA\Patch(
+     *     path="/api/v1/manager/prizes/{prize}",
+     *     summary="Partially update prize details",
+     *     tags={"🐧 Manager: Prizes"},
+     *     @OA\Parameter(
+     *         name="prize",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="name", type="string", maxLength=60, description="Prize name"),
+     *             @OA\Property(property="image", type="string", maxLength=100, description="Prize image URL"),
+     *             @OA\Property(property="box_1_text", type="string", maxLength=200, description="Box 1 text"),
+     *             @OA\Property(property="box_1_bg_color", type="string", maxLength=7, description="Box 1 background color"),
+     *             @OA\Property(property="box_1_text_color", type="string", maxLength=7, description="Box 1 text color"),
+     *             @OA\Property(property="box_2_text", type="string", maxLength=200, description="Box 2 text"),
+     *             @OA\Property(property="box_2_bg_color", type="string", maxLength=7, description="Box 2 background color"),
+     *             @OA\Property(property="box_2_text_color", type="string", maxLength=7, description="Box 2 text color")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Prize partially updated successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/Prize")
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     )
+     * )
+     */
+    public function patch(Request $request, Prize $prize)
+    {
+        $validated = $request->validate([
+            'name' => 'sometimes|string|max:60|unique:prizes,name,' . $prize->id_prize . ',id_prize',
+            'image' => 'nullable|string|max:100',
+            'box_1_text' => 'nullable|string|max:200',
+            'box_1_bg_color' => 'nullable|string|max:7|regex:/^#[0-9A-F]{6}$/i',
+            'box_1_text_color' => 'nullable|string|max:7|regex:/^#[0-9A-F]{6}$/i',
+            'box_2_text' => 'nullable|string|max:200',
+            'box_2_bg_color' => 'nullable|string|max:7|regex:/^#[0-9A-F]{6}$/i',
+            'box_2_text_color' => 'nullable|string|max:7|regex:/^#[0-9A-F]{6}$/i',
+        ]);
+
+        $prize->update($validated);
+
+        return $this->resourceResponse(
+            new PrizeResource($prize),
+            'Prize partially updated successfully'
         );
     }
 

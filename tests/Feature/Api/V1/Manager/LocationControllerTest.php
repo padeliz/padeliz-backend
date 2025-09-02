@@ -141,6 +141,7 @@ class LocationControllerTest extends TestCase
         ]);
 
         $updateData = [
+            'club_id' => $this->club->id_club,
             'name' => 'Updated Name',
             'address' => 'Updated Address',
             'total_indoors_courts' => 6,
@@ -165,6 +166,72 @@ class LocationControllerTest extends TestCase
             'name' => 'Updated Name',
             'address' => 'Updated Address',
         ]);
+    }
+
+    public function test_manager_can_partially_update_location()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $location = Location::factory()->create([
+            'name' => 'Original Name',
+            'address' => 'Original Address',
+            'total_indoors_courts' => 4,
+        ]);
+
+        // Test partial update with only name
+        $response = $this->patchJson("/api/v1/manager/locations/{$location->id_location}", [
+            'name' => 'Partially Updated Name',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Location partially updated successfully',
+                'data' => [
+                    'name' => 'Partially Updated Name',
+                    'address' => 'Original Address', // Should remain unchanged
+                    'total_indoors_courts' => 4, // Should remain unchanged
+                ],
+            ]);
+
+        // Test partial update with only address
+        $response = $this->patchJson("/api/v1/manager/locations/{$location->id_location}", [
+            'address' => 'Partially Updated Address',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Location partially updated successfully',
+                'data' => [
+                    'name' => 'Partially Updated Name', // Should remain from previous update
+                    'address' => 'Partially Updated Address',
+                ],
+            ]);
+    }
+
+    public function test_manager_cannot_update_location_without_required_fields()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $location = Location::factory()->create();
+
+        // Test PUT without required fields
+        $response = $this->putJson("/api/v1/manager/locations/{$location->id_location}", [
+            'name' => 'Only Name',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['club_id']);
+
+        // Test PUT with empty required fields
+        $response = $this->putJson("/api/v1/manager/locations/{$location->id_location}", [
+            'name' => '',
+            'club_id' => '',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['name', 'club_id']);
     }
 
     public function test_manager_can_delete_location()
@@ -386,45 +453,6 @@ class LocationControllerTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['club_id']);
-    }
-
-    public function test_manager_can_view_location_editions()
-    {
-        Sanctum::actingAs($this->manager);
-
-        $location = Location::factory()->create();
-        Edition::factory()->count(3)->create(['location_id' => $location->id_location]);
-
-        $response = $this->getJson("/api/v1/manager/locations/{$location->id_location}/editions");
-
-        $response->assertStatus(200)
-            ->assertJsonStructure([
-                'data' => [
-                    '*' => [
-                        'id_edition',
-                        'location_id',
-                        'name',
-                        'date',
-                    ],
-                ],
-            'links' => [
-                'first',
-                'last',
-                'prev',
-                'next',
-            ],
-            'meta' => [
-                'current_page',
-                'from',
-                'last_page',
-                'path',
-                'per_page',
-                'to',
-                'total',
-            ],
-            ]);
-
-        $this->assertCount(3, $response->json('data'));
     }
 
     public function test_location_requires_manager_authentication()

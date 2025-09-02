@@ -167,6 +167,73 @@ class DivisionControllerTest extends TestCase
         ]);
     }
 
+    public function test_manager_can_partially_update_division()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $division = Division::factory()->create([
+            'name' => 'Original Name',
+            'color' => '#FF0000',
+            'is_students_only' => false,
+        ]);
+
+        // Test partial update with only name
+        $response = $this->patchJson("/api/v1/manager/divisions/{$division->id_division}", [
+            'name' => 'Partially Updated Name',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Division partially updated successfully',
+                'data' => [
+                    'name' => 'Partially Updated Name',
+                    'color' => '#FF0000', // Should remain unchanged
+                    'is_students_only' => false, // Should remain unchanged
+                ],
+            ]);
+
+        // Test partial update with only color
+        $response = $this->patchJson("/api/v1/manager/divisions/{$division->id_division}", [
+            'color' => '#00FF00',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Division partially updated successfully',
+                'data' => [
+                    'name' => 'Partially Updated Name', // Should remain from previous update
+                    'color' => '#00FF00',
+                ],
+            ]);
+    }
+
+    public function test_manager_cannot_update_division_without_required_fields()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $division = Division::factory()->create();
+
+        // Test PUT without required fields
+        $response = $this->putJson("/api/v1/manager/divisions/{$division->id_division}", [
+            'name' => 'Only Name',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['color', 'is_students_only']);
+
+        // Test PUT with empty required fields
+        $response = $this->putJson("/api/v1/manager/divisions/{$division->id_division}", [
+            'name' => '',
+            'color' => '',
+            'is_students_only' => '',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['name', 'color', 'is_students_only']);
+    }
+
     public function test_manager_can_delete_division()
     {
         Sanctum::actingAs($this->manager);

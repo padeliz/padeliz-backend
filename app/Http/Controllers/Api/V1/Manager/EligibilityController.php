@@ -228,9 +228,9 @@ class EligibilityController extends V1BaseController
     }
 
     /**
-     * @OA\Patch(
+     * @OA\Put(
      *     path="/api/v1/manager/eligibility/{eligibility}",
-     *     summary="Update eligibility status",
+     *     summary="Update eligibility status (complete replacement)",
      *     tags={"🐧 Manager: Eligibilities"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
@@ -249,7 +249,15 @@ class EligibilityController extends V1BaseController
      *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Eligibility updated successfully"
+     *         description="Eligibility updated successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/PlayerEligibility")
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
@@ -268,6 +276,62 @@ class EligibilityController extends V1BaseController
         return $this->resourceResponse(
             new PlayerEligibilityResource($eligibility),
             'Eligibility updated successfully'
+        );
+    }
+
+    /**
+     * @OA\Patch(
+     *     path="/api/v1/manager/eligibility/{eligibility}",
+     *     summary="Partially update eligibility status",
+     *     tags={"🐧 Manager: Eligibilities"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="eligibility",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="status", type="string", enum={"approved", "rejected", "pending"}),
+     *             @OA\Property(property="notes", type="string")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Eligibility partially updated successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/PlayerEligibility")
+     *                 )
+     *             }
+     *         )
+     *     )
+     * )
+     */
+    public function patch(Request $request, PlayerEligibility $eligibility)
+    {
+        $request->validate([
+            'review_status' => 'sometimes|in:approved,rejected,pending',
+            'notes' => 'nullable|string',
+        ]);
+
+        $updateData = [];
+        if ($request->has('review_status')) {
+            $updateData['review_status'] = $request->review_status;
+        }
+        if ($request->has('notes')) {
+            $updateData['review_message'] = $request->notes;
+        }
+
+        $eligibility->update($updateData);
+
+        return $this->resourceResponse(
+            new PlayerEligibilityResource($eligibility),
+            'Eligibility partially updated successfully'
         );
     }
 

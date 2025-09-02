@@ -176,6 +176,74 @@ class EligibilityControllerTest extends TestCase
         ]);
     }
 
+    public function test_manager_can_partially_update_eligibility()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $eligibility = PlayerEligibility::factory()->create([
+            'player_id' => $this->player->id_player,
+            'edition_id' => $this->edition->id_edition,
+            'review_status' => 'pending',
+            'review_message' => 'Under review',
+        ]);
+
+        // Test partial update with only review_status
+        $response = $this->patchJson("/api/v1/manager/eligibility/{$eligibility->id_eligibility}", [
+            'review_status' => 'approved',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Eligibility partially updated successfully',
+                'data' => [
+                    'review_status' => 'approved',
+                    'notes' => 'Under review', // Should remain unchanged
+                ],
+            ]);
+
+        // Test partial update with only notes
+        $response = $this->patchJson("/api/v1/manager/eligibility/{$eligibility->id_eligibility}", [
+            'notes' => 'Partially Updated Notes',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Eligibility partially updated successfully',
+                'data' => [
+                    'review_status' => 'approved', // Should remain from previous update
+                    'notes' => 'Partially Updated Notes',
+                ],
+            ]);
+    }
+
+    public function test_manager_cannot_update_eligibility_without_required_fields()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $eligibility = PlayerEligibility::factory()->create([
+            'player_id' => $this->player->id_player,
+            'edition_id' => $this->edition->id_edition,
+        ]);
+
+        // Test PUT without required fields
+        $response = $this->putJson("/api/v1/manager/eligibility/{$eligibility->id_eligibility}", [
+            'notes' => 'Only Notes',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['review_status']);
+
+        // Test PUT with empty required fields
+        $response = $this->putJson("/api/v1/manager/eligibility/{$eligibility->id_eligibility}", [
+            'review_status' => '',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['review_status']);
+    }
+
     public function test_manager_can_delete_eligibility()
     {
         Sanctum::actingAs($this->manager);

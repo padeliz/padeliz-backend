@@ -204,7 +204,7 @@ class PlayerController extends V1BaseController
     /**
      * @OA\Put(
      *     path="/api/v1/manager/players/{player}",
-     *     summary="Update a player",
+     *     summary="Update a player (complete replacement)",
      *     tags={"🐧 Manager: Players"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
@@ -213,13 +213,89 @@ class PlayerController extends V1BaseController
      *         required=true,
      *         @OA\Schema(type="integer")
      *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="name", type="string", maxLength=255, description="Player name"),
+     *             @OA\Property(property="phone", type="string", maxLength=255, description="Player phone"),
+     *             @OA\Property(property="first_name", type="string", maxLength=50, description="Player first name"),
+     *             @OA\Property(property="last_name", type="string", maxLength=50, description="Player last name"),
+     *             @OA\Property(property="skill_division", type="number", minimum=0, maximum=9.9, description="Player skill division"),
+     *             @OA\Property(property="user_types", type="array", description="User types", @OA\Items(type="string", enum={"player", "manager", "admin"}))
+     *         )
+     *     ),
      *     @OA\Response(
      *         response=200,
-     *         description="Player updated successfully"
+     *         description="Player updated successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/Player")
+     *                 )
+     *             }
+     *         )
      *     )
      * )
      */
     public function update(Request $request, Player $player)
+    {
+        $request->validate([
+            'name' => 'required|string|max:255',
+            'phone' => 'required|string|max:255',
+            'first_name' => 'nullable|string|max:50',
+            'last_name' => 'nullable|string|max:50',
+            'skill_division' => 'nullable|numeric|min:0|max:9.9',
+            'user_types' => 'nullable|array',
+            'user_types.*' => 'string|in:player,manager,admin',
+        ]);
+
+        $player->update($request->all());
+
+        return $this->resourceResponse(
+            new PlayerResource($player),
+            'Player updated successfully'
+        );
+    }
+
+    /**
+     * @OA\Patch(
+     *     path="/api/v1/manager/players/{player}",
+     *     summary="Partially update a player",
+     *     tags={"🐧 Manager: Players"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="player",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="name", type="string", maxLength=255, description="Player name"),
+     *             @OA\Property(property="phone", type="string", maxLength=255, description="Player phone"),
+     *             @OA\Property(property="first_name", type="string", maxLength=50, description="Player first name"),
+     *             @OA\Property(property="last_name", type="string", maxLength=50, description="Player last name"),
+     *             @OA\Property(property="skill_division", type="number", minimum=0, maximum=9.9, description="Player skill division"),
+     *             @OA\Property(property="user_types", type="array", description="User types", @OA\Items(type="string", enum={"player", "manager", "admin"}))
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Player partially updated successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/Player")
+     *                 )
+     *             }
+     *         )
+     *     )
+     * )
+     */
+    public function patch(Request $request, Player $player)
     {
         $request->validate([
             'name' => 'sometimes|required|string|max:255',
@@ -235,7 +311,7 @@ class PlayerController extends V1BaseController
 
         return $this->resourceResponse(
             new PlayerResource($player),
-            'Player updated successfully'
+            'Player partially updated successfully'
         );
     }
 

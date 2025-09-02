@@ -166,6 +166,7 @@ class EditionLotteryControllerTest extends TestCase
         ]);
 
         $updateData = [
+            'edition_id' => $this->edition->id_edition,
             'orderliness' => 2,
             'total_draws_nr' => 10,
             'division_id' => $this->division->id_division,
@@ -190,6 +191,74 @@ class EditionLotteryControllerTest extends TestCase
             'orderliness' => 2,
             'total_draws_nr' => 10,
         ]);
+    }
+
+    public function test_manager_can_partially_update_lottery()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $lottery = EditionLottery::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'orderliness' => 1,
+            'total_draws_nr' => 5,
+        ]);
+
+        // Test partial update with only orderliness
+        $response = $this->patchJson("/api/v1/manager/lotteries/{$lottery->id_lottery}", [
+            'orderliness' => 3,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Lottery partially updated successfully',
+                'data' => [
+                    'orderliness' => 3,
+                    'total_draws_nr' => 5, // Should remain unchanged
+                ],
+            ]);
+
+        // Test partial update with only total_draws_nr
+        $response = $this->patchJson("/api/v1/manager/lotteries/{$lottery->id_lottery}", [
+            'total_draws_nr' => 8,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Lottery partially updated successfully',
+                'data' => [
+                    'orderliness' => 3, // Should remain from previous update
+                    'total_draws_nr' => 8,
+                ],
+            ]);
+    }
+
+    public function test_manager_cannot_update_lottery_without_required_fields()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $lottery = EditionLottery::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+        ]);
+
+        // Test PUT without required fields
+        $response = $this->putJson("/api/v1/manager/lotteries/{$lottery->id_lottery}", [
+            'orderliness' => 1,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['edition_id', 'total_draws_nr']);
+
+        // Test PUT with empty required fields
+        $response = $this->putJson("/api/v1/manager/lotteries/{$lottery->id_lottery}", [
+            'edition_id' => '',
+            'orderliness' => '',
+            'total_draws_nr' => '',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['edition_id', 'orderliness', 'total_draws_nr']);
     }
 
     public function test_manager_can_delete_lottery()

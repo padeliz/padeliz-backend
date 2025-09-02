@@ -194,6 +194,8 @@ class ParticipationControllerTest extends TestCase
         ]);
 
         $updateData = [
+            'player_id' => $this->player->id_player,
+            'division_id' => $this->division->id_division,
             'is_minor' => true,
             'is_student' => true,
             'discount' => 15.00,
@@ -220,6 +222,79 @@ class ParticipationControllerTest extends TestCase
             'is_minor' => true,
             'is_student' => true,
         ]);
+    }
+
+    public function test_manager_can_partially_update_participation()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $participation = EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'player_id' => $this->player->id_player,
+            'division_id' => $this->division->id_division,
+            'is_minor' => false,
+            'is_student' => false,
+        ]);
+
+        // Test partial update with only is_minor
+        $response = $this->patchJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/{$participation->id_participation}", [
+            'is_minor' => true,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Participation partially updated successfully',
+                'data' => [
+                    'is_minor' => true,
+                    'is_student' => false, // Should remain unchanged
+                ],
+            ]);
+
+        // Test partial update with only is_student
+        $response = $this->patchJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/{$participation->id_participation}", [
+            'is_student' => true,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Participation partially updated successfully',
+                'data' => [
+                    'is_minor' => true, // Should remain from previous update
+                    'is_student' => true,
+                ],
+            ]);
+    }
+
+    public function test_manager_cannot_update_participation_without_required_fields()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $participation = EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'player_id' => $this->player->id_player,
+            'division_id' => $this->division->id_division,
+        ]);
+
+        // Test PUT without required fields
+        $response = $this->putJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/{$participation->id_participation}", [
+            'is_minor' => true,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['player_id', 'division_id', 'is_student']);
+
+        // Test PUT with empty required fields
+        $response = $this->putJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/{$participation->id_participation}", [
+            'player_id' => '',
+            'division_id' => '',
+            'is_minor' => '',
+            'is_student' => '',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['player_id', 'division_id', 'is_minor', 'is_student']);
     }
 
     public function test_manager_can_delete_participation()
@@ -368,6 +443,8 @@ class ParticipationControllerTest extends TestCase
         $duplicateData = [
             'player_id' => $this->player->id_player,
             'division_id' => $this->division->id_division,
+            'is_minor' => false,
+            'is_student' => false,
         ];
 
         $response = $this->postJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations", $duplicateData);
@@ -401,6 +478,9 @@ class ParticipationControllerTest extends TestCase
         // Try to update second to match first
         $response = $this->putJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/{$participation2->id_participation}", [
             'player_id' => $this->player->id_player,
+            'division_id' => $this->division->id_division,
+            'is_minor' => false,
+            'is_student' => false,
         ]);
 
         $response->assertStatus(422)

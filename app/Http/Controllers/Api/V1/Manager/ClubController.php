@@ -198,7 +198,7 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
     /**
      * @OA\Put(
      *     path="/api/v1/manager/clubs/{club}",
-     *     summary="Update a club",
+     *     summary="Update a club (complete replacement)",
      *     tags={"🐧 Manager: Clubs"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
@@ -206,6 +206,13 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      *         in="path",
      *         required=true,
      *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="name", type="string", maxLength=255),
+     *             @OA\Property(property="city", type="string", maxLength=255)
+     *         )
      *     ),
      *     @OA\Response(
      *         response=200,
@@ -229,6 +236,59 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
     public function update(Request $request, Club $club)
     {
         $request->validate([
+            'name' => 'required|string|max:255',
+            'city' => 'required|string|max:255',
+        ]);
+
+        $club->update($request->all());
+
+        return $this->resourceResponse(
+            new ClubResource($club),
+            'Club updated successfully'
+        );
+    }
+
+    /**
+     * @OA\Patch(
+     *     path="/api/v1/manager/clubs/{club}",
+     *     summary="Partially update a club",
+     *     tags={"🐧 Manager: Clubs"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="club",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="name", type="string", maxLength=255),
+     *             @OA\Property(property="city", type="string", maxLength=255)
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Club partially updated successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/Club")
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     )
+     * )
+     */
+    public function patch(Request $request, Club $club)
+    {
+        $request->validate([
             'name' => 'sometimes|required|string|max:255',
             'city' => 'sometimes|required|string|max:255',
         ]);
@@ -237,7 +297,7 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
 
         return $this->resourceResponse(
             new ClubResource($club),
-            'Club updated successfully'
+            'Club partially updated successfully'
         );
     }
 

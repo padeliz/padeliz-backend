@@ -194,7 +194,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
     /**
      * @OA\Put(
      *     path="/api/v1/manager/divisions/{division}",
-     *     summary="Update division details",
+     *     summary="Update division details (complete replacement)",
      *     tags={"🐧 Manager: Divisions"},
      *     @OA\Parameter(
      *         name="division",
@@ -233,6 +233,62 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
     public function update(Request $request, Division $division)
     {
         $validated = $request->validate([
+            'name' => 'required|string|max:25',
+            'color' => 'required|string|max:7|regex:/^#[0-9A-F]{6}$/i',
+            'is_students_only' => 'required|boolean',
+            'its_first_edition_id' => 'nullable|integer|exists:editions,id_edition',
+        ]);
+
+        $division->update($validated);
+
+        return $this->resourceResponse(
+            new DivisionResource($division),
+            'Division updated successfully'
+        );
+    }
+
+    /**
+     * @OA\Patch(
+     *     path="/api/v1/manager/divisions/{division}",
+     *     summary="Partially update division details",
+     *     tags={"🐧 Manager: Divisions"},
+     *     @OA\Parameter(
+     *         name="division",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="name", type="string", maxLength=25, description="Division name"),
+     *             @OA\Property(property="color", type="string", maxLength=7, description="Division color (hex)"),
+     *             @OA\Property(property="is_students_only", type="integer", enum={0, 1}, description="Whether division is for students only (use 0 or 1, not true/false)"),
+     *             @OA\Property(property="its_first_edition_id", type="integer", description="First edition ID for this division")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Division partially updated successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/Division")
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     )
+     * )
+     */
+    public function patch(Request $request, Division $division)
+    {
+        $validated = $request->validate([
             'name' => 'sometimes|string|max:25',
             'color' => 'sometimes|string|max:7|regex:/^#[0-9A-F]{6}$/i',
             'is_students_only' => 'boolean',
@@ -243,7 +299,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
 
         return $this->resourceResponse(
             new DivisionResource($division),
-            'Division updated successfully'
+            'Division partially updated successfully'
         );
     }
 

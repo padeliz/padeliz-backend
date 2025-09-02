@@ -255,7 +255,7 @@ class ParticipationController extends V1BaseController
     /**
      * @OA\Put(
      *     path="/api/v1/manager/editions/{edition}/participations/{participation}",
-     *     summary="Update participation details",
+     *     summary="Update participation details (complete replacement)",
      *     tags={"🐧 Manager: Participations"},
      *     @OA\Parameter(
      *         name="edition",
@@ -297,11 +297,99 @@ class ParticipationController extends V1BaseController
      *     @OA\Response(
      *         response=422,
      *         description="Validation error",
-     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *         @OA\JsonContent(ref="#/components/schemas/ApiResponse")
      *     )
      * )
      */
     public function update(Request $request, Edition $edition, EditionParticipation $participation)
+    {
+        // Ensure the participation belongs to the specified edition
+        if ($participation->edition_id !== $edition->id_edition) {
+            return $this->notFoundResponse('Participation does not belong to this edition');
+        }
+
+        $validated = $request->validate([
+            'player_id' => 'required|exists:players,id_player',
+            'division_id' => 'required|exists:divisions,id_division',
+            'is_minor' => 'required|boolean',
+            'is_student' => 'required|boolean',
+            'discount' => 'nullable|integer|min:0',
+            'payment' => 'nullable|integer|min:0',
+            'absence_reason' => 'nullable|in:SICK,FORGOT,EXAMS,RECONSIDERED',
+            'ban_reason' => 'nullable|in:LEFT SUDDENLY,AGGRESSIVE PLAYER,LIBIDINOUS,',
+        ]);
+
+        // Check if player is already participating (excluding current record)
+        if (isset($validated['player_id']) && $validated['player_id'] !== $participation->player_id) {
+            $existingParticipation = EditionParticipation::where([
+                'edition_id' => $edition->id_edition,
+                'player_id' => $validated['player_id'],
+            ])->first();
+
+            if ($existingParticipation) {
+                return $this->errorResponse('This player is already participating in this edition', 422);
+            }
+        }
+
+        $participation->update($validated);
+        $participation->load(['player', 'division']);
+
+        return $this->resourceResponse(
+            new EditionParticipationResource($participation),
+            'Participation updated successfully'
+        );
+    }
+
+    /**
+     * @OA\Patch(
+     *     path="/api/v1/manager/editions/{edition}/participations/{participation}",
+     *     summary="Partially update participation details",
+     *     tags={"🐧 Manager: Participations"},
+     *     @OA\Parameter(
+     *         name="edition",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Parameter(
+     *         name="participation",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="player_id", type="integer", description="Player ID"),
+     *             @OA\Property(property="division_id", type="integer", description="Division ID"),
+     *             @OA\Property(property="is_minor", type="integer", enum={0, 1}, description="Is minor player (use 0 or 1, not true/false)"),
+     *             @OA\Property(property="is_student", type="integer", enum={0, 1}, description="Is student (use 0 or 1, not true/false)"),
+     *             @OA\Property(property="discount", type="integer", description="Discount amount"),
+     *             @OA\Property(property="payment", type="integer", description="Payment amount"),
+     *             @OA\Property(property="absence_reason", type="string", enum={"SICK", "FORGOT", "EXAMS", "RECONSIDERED"}, description="Absence reason"),
+     *             @OA\Property(property="ban_reason", type="string", enum={"LEFT SUDDENLY", "AGGRESSIVE PLAYER", "LIBIDINOUS", ""}, description="Ban reason")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Participation partially updated successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/EditionParticipation")
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     )
+     * )
+     */
+    public function patch(Request $request, Edition $edition, EditionParticipation $participation)
     {
         // Ensure the participation belongs to the specified edition
         if ($participation->edition_id !== $edition->id_edition) {
@@ -336,7 +424,7 @@ class ParticipationController extends V1BaseController
 
         return $this->resourceResponse(
             new EditionParticipationResource($participation),
-            'Participation updated successfully'
+            'Participation partially updated successfully'
         );
     }
 

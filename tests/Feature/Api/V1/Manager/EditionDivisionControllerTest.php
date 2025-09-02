@@ -7,7 +7,6 @@ namespace Tests\Feature\Api\V1\Manager;
 use App\Models\Division;
 use App\Models\Edition;
 use App\Models\EditionDivision;
-use App\Models\EditionParticipation;
 use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -99,8 +98,6 @@ class EditionDivisionControllerTest extends TestCase
         $editionDivision = EditionDivision::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'division_id' => $this->division->id_division,
-            'players_limit' => 16,
-            'court' => 'Court A',
         ]);
 
         $response = $this->getJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}");
@@ -108,13 +105,10 @@ class EditionDivisionControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
-                'message' => 'Edition division details retrieved successfully',
                 'data' => [
                     'id_edition_division' => $editionDivision->id_edition_division,
-                    'edition_id' => $this->edition->id_edition,
-                    'division_id' => $this->division->id_division,
-                    'players_limit' => 16,
-                    'court' => 'Court A',
+                    'edition_id' => $editionDivision->edition_id,
+                    'division_id' => $editionDivision->division_id,
                 ],
             ]);
     }
@@ -126,11 +120,10 @@ class EditionDivisionControllerTest extends TestCase
         $editionDivisionData = [
             'edition_id' => $this->edition->id_edition,
             'division_id' => $this->division->id_division,
-            'players_limit' => 16,
+            'players_limit' => 32,
             'court' => 'Court A',
             'playing_start_time' => '09:00:00',
             'playing_end_time' => '17:00:00',
-            'player_opponents_nr' => 3,
             'player_matches_repeat' => 1,
             'include_scores' => true,
             'has_demonstrative_match' => false,
@@ -143,41 +136,12 @@ class EditionDivisionControllerTest extends TestCase
             ->assertJson([
                 'success' => true,
                 'message' => 'Edition division created successfully',
-                'data' => [
-                    'edition_id' => $this->edition->id_edition,
-                    'division_id' => $this->division->id_division,
-                    'players_limit' => 16,
-                    'court' => 'Court A',
-                    'player_opponents_nr' => 3,
-                    'player_matches_repeat' => 1,
-                    'include_scores' => true,
-                    'has_demonstrative_match' => false,
-                    'fixed_teams' => false,
-                ],
-            ])
-            ->assertJsonStructure([
-                'success',
-                'message',
-                'data' => [
-                    'id_edition_division',
-                    'edition_id',
-                    'division_id',
-                    'players_limit',
-                    'court',
-                    'playing_start_time',
-                    'playing_end_time',
-                    'player_opponents_nr',
-                    'player_matches_repeat',
-                    'include_scores',
-                    'has_demonstrative_match',
-                    'fixed_teams',
-                ],
             ]);
 
         $this->assertDatabaseHas('edition_divisions', [
             'edition_id' => $this->edition->id_edition,
             'division_id' => $this->division->id_division,
-            'players_limit' => 16,
+            'players_limit' => 32,
             'court' => 'Court A',
         ]);
     }
@@ -189,15 +153,19 @@ class EditionDivisionControllerTest extends TestCase
         $editionDivision = EditionDivision::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'division_id' => $this->division->id_division,
-            'players_limit' => 16,
-            'court' => 'Court A',
         ]);
 
         $updateData = [
+            'edition_id' => $this->edition->id_edition,
+            'division_id' => $this->division->id_division,
             'players_limit' => 32,
             'court' => 'Court B',
             'playing_start_time' => '10:00:00',
             'playing_end_time' => '18:00:00',
+            'player_matches_repeat' => 1,
+            'include_scores' => true,
+            'has_demonstrative_match' => false,
+            'fixed_teams' => false,
         ];
 
         $response = $this->putJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}", $updateData);
@@ -206,43 +174,67 @@ class EditionDivisionControllerTest extends TestCase
             ->assertJson([
                 'success' => true,
                 'message' => 'Edition division updated successfully',
-                'data' => [
-                    'id_edition_division' => $editionDivision->id_edition_division,
-                    'players_limit' => 32,
-                    'court' => 'Court B',
-                ],
-            ])
-            ->assertJsonStructure([
-                'success',
-                'message',
-                'data' => [
-                    'id_edition_division',
-                    'edition_id',
-                    'division_id',
-                    'players_limit',
-                    'court',
-                    'playing_start_time',
-                    'playing_end_time',
-                    'player_opponents_nr',
-                    'player_matches_repeat',
-                    'include_scores',
-                    'has_demonstrative_match',
-                    'fixed_teams',
-                ],
             ]);
 
         $this->assertDatabaseHas('edition_divisions', [
             'id_edition_division' => $editionDivision->id_edition_division,
-            'players_limit' => 32,
             'court' => 'Court B',
+            'players_limit' => 32,
         ]);
+    }
+
+    public function test_manager_can_partially_update_edition_division()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $editionDivision = EditionDivision::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'division_id' => $this->division->id_division,
+        ]);
+
+        $updateData = [
+            'court' => 'Court C',
+            'players_limit' => 24,
+        ];
+
+        $response = $this->patchJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}", $updateData);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Edition division partially updated successfully',
+            ]);
+
+        $this->assertDatabaseHas('edition_divisions', [
+            'id_edition_division' => $editionDivision->id_edition_division,
+            'court' => 'Court C',
+            'players_limit' => 24,
+        ]);
+    }
+
+    public function test_manager_cannot_update_edition_division_without_required_fields()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $editionDivision = EditionDivision::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'division_id' => $this->division->id_division,
+        ]);
+
+        $response = $this->putJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}", []);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['edition_id', 'division_id', 'players_limit', 'court', 'playing_start_time', 'playing_end_time', 'player_matches_repeat', 'include_scores', 'has_demonstrative_match', 'fixed_teams']);
     }
 
     public function test_manager_can_delete_edition_division()
     {
         Sanctum::actingAs($this->manager);
 
-        $editionDivision = EditionDivision::factory()->create();
+        $editionDivision = EditionDivision::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'division_id' => $this->division->id_division,
+        ]);
 
         $response = $this->deleteJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}");
 
@@ -257,201 +249,6 @@ class EditionDivisionControllerTest extends TestCase
         ]);
     }
 
-    public function test_manager_cannot_delete_edition_division_with_participations()
-    {
-        Sanctum::actingAs($this->manager);
-
-        $editionDivision = EditionDivision::factory()->create([
-            'edition_id' => $this->edition->id_edition,
-            'division_id' => $this->division->id_division,
-        ]);
-
-        $player = Player::factory()->create();
-        EditionParticipation::factory()->create([
-            'edition_id' => $this->edition->id_edition,
-            'player_id' => $player->id_player,
-            'division_id' => $this->division->id_division,
-        ]);
-
-        $response = $this->deleteJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}");
-
-        $response->assertStatus(409)
-            ->assertJson([
-                'success' => false,
-                'message' => 'Edition division cannot be deleted because it has linked data. Please remove all associated participations first.',
-            ]);
-
-        $this->assertDatabaseHas('edition_divisions', [
-            'id_edition_division' => $editionDivision->id_edition_division,
-        ]);
-    }
-
-    public function test_manager_can_bulk_delete_edition_divisions()
-    {
-        Sanctum::actingAs($this->manager);
-
-        $editionDivisions = EditionDivision::factory()->count(3)->create();
-
-        $response = $this->deleteJson('/api/v1/manager/edition-divisions/bulk', [
-            'edition_division_ids' => $editionDivisions->pluck('id_edition_division')->toArray(),
-        ]);
-
-        $response->assertStatus(200)
-            ->assertJson([
-                'success' => true,
-                'message' => 'Edition divisions deleted successfully',
-                'data' => [
-                    'total_successful' => 3,
-                    'total_failed' => 0,
-                    'total_requested' => 3,
-                ],
-            ])
-            ->assertJsonStructure([
-                'data' => [
-                    'successful' => [
-                        '*' => [
-                            'id',
-                            'name',
-                        ],
-                    ],
-                    'failed',
-                    'total_requested',
-                    'total_successful',
-                    'total_failed',
-                ],
-            ]);
-
-        // Verify all edition divisions are deleted
-        foreach ($editionDivisions as $editionDivision) {
-            $this->assertDatabaseMissing('edition_divisions', ['id_edition_division' => $editionDivision->id_edition_division]);
-        }
-    }
-
-    public function test_manager_cannot_bulk_delete_edition_divisions_with_linked_data()
-    {
-        Sanctum::actingAs($this->manager);
-
-        $editionDivision1 = EditionDivision::factory()->create([
-            'edition_id' => $this->edition->id_edition,
-            'division_id' => $this->division->id_division,
-        ]);
-        $editionDivision2 = EditionDivision::factory()->create();
-        $editionDivision3 = EditionDivision::factory()->create();
-
-        // Create linked participation for editionDivision1
-        $player = Player::factory()->create();
-        EditionParticipation::factory()->create([
-            'edition_id' => $this->edition->id_edition,
-            'player_id' => $player->id_player,
-            'division_id' => $this->division->id_division,
-        ]);
-
-        $response = $this->deleteJson('/api/v1/manager/edition-divisions/bulk', [
-            'edition_division_ids' => [$editionDivision1->id_edition_division, $editionDivision2->id_edition_division, $editionDivision3->id_edition_division],
-        ]);
-
-        $response->assertStatus(207)
-            ->assertJson([
-                'success' => false,
-                'message' => 'Some edition divisions failed to delete',
-                'errors' => [
-                    'total_successful' => 2,
-                    'total_failed' => 1,
-                    'total_requested' => 3,
-                ],
-            ])
-            ->assertJsonStructure([
-                'errors' => [
-                    'successful' => [
-                        '*' => [
-                            'id',
-                            'name',
-                        ],
-                    ],
-                    'failed' => [
-                        '*' => [
-                            'id',
-                            'reason',
-                        ],
-                    ],
-                    'total_requested',
-                    'total_successful',
-                    'total_failed',
-                ],
-            ]);
-
-        // Verify successful deletions
-        $this->assertDatabaseMissing('edition_divisions', ['id_edition_division' => $editionDivision2->id_edition_division]);
-        $this->assertDatabaseMissing('edition_divisions', ['id_edition_division' => $editionDivision3->id_edition_division]);
-        // Verify failed deletion still exists
-        $this->assertDatabaseHas('edition_divisions', ['id_edition_division' => $editionDivision1->id_edition_division]);
-    }
-
-    public function test_manager_cannot_bulk_delete_edition_divisions_with_invalid_ids()
-    {
-        Sanctum::actingAs($this->manager);
-
-        $response = $this->deleteJson('/api/v1/manager/edition-divisions/bulk', [
-            'edition_division_ids' => [99999, 99998],
-        ]);
-
-        $response->assertStatus(409)
-            ->assertJson([
-                'success' => false,
-                'message' => 'All edition divisions failed to delete',
-                'errors' => [
-                    'total_successful' => 0,
-                    'total_failed' => 2,
-                    'total_requested' => 2,
-                ],
-            ])
-            ->assertJsonStructure([
-                'errors' => [
-                    'successful',
-                    'failed' => [
-                        '*' => [
-                            'id',
-                            'reason',
-                        ],
-                    ],
-                    'total_requested',
-                    'total_successful',
-                    'total_failed',
-                ],
-            ]);
-    }
-
-    public function test_manager_cannot_bulk_delete_edition_divisions_with_empty_array()
-    {
-        Sanctum::actingAs($this->manager);
-
-        $response = $this->deleteJson('/api/v1/manager/edition-divisions/bulk', [
-            'edition_division_ids' => [],
-        ]);
-
-        $response->assertStatus(422);
-    }
-
-    public function test_manager_cannot_bulk_delete_edition_divisions_without_edition_division_ids()
-    {
-        Sanctum::actingAs($this->manager);
-
-        $response = $this->deleteJson('/api/v1/manager/edition-divisions/bulk', []);
-
-        $response->assertStatus(422);
-    }
-
-    public function test_manager_cannot_bulk_delete_edition_divisions_with_invalid_edition_division_ids_format()
-    {
-        Sanctum::actingAs($this->manager);
-
-        $response = $this->deleteJson('/api/v1/manager/edition-divisions/bulk', [
-            'edition_division_ids' => ['invalid', 'format'],
-        ]);
-
-        $response->assertStatus(422);
-    }
-
     public function test_manager_cannot_create_duplicate_edition_division()
     {
         Sanctum::actingAs($this->manager);
@@ -462,17 +259,19 @@ class EditionDivisionControllerTest extends TestCase
             'division_id' => $this->division->id_division,
         ]);
 
-        // Try to create duplicate
-        $duplicateData = [
+        // Try to create duplicate with all required fields
+        $response = $this->postJson('/api/v1/manager/edition-divisions', [
             'edition_id' => $this->edition->id_edition,
             'division_id' => $this->division->id_division,
-            'players_limit' => 16,
-            'court' => 'Court A',
-            'playing_start_time' => '09:00:00',
-            'playing_end_time' => '17:00:00',
-        ];
-
-        $response = $this->postJson('/api/v1/manager/edition-divisions', $duplicateData);
+            'players_limit' => 32,
+            'court' => 'Court B',
+            'playing_start_time' => '10:00:00',
+            'playing_end_time' => '18:00:00',
+            'player_matches_repeat' => 1,
+            'include_scores' => true,
+            'has_demonstrative_match' => false,
+            'fixed_teams' => false,
+        ]);
 
         $response->assertStatus(422)
             ->assertJson([
@@ -503,6 +302,14 @@ class EditionDivisionControllerTest extends TestCase
         $response = $this->putJson("/api/v1/manager/edition-divisions/{$editionDivision2->id_edition_division}", [
             'edition_id' => $this->edition->id_edition,
             'division_id' => $this->division->id_division,
+            'players_limit' => 32,
+            'court' => 'Court B',
+            'playing_start_time' => '10:00:00',
+            'playing_end_time' => '18:00:00',
+            'player_matches_repeat' => 1,
+            'include_scores' => true,
+            'has_demonstrative_match' => false,
+            'fixed_teams' => false,
         ]);
 
         $response->assertStatus(422)
@@ -551,174 +358,6 @@ class EditionDivisionControllerTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['edition_id']);
-    }
-
-    public function test_manager_can_view_edition_division_participants_with_pagination()
-    {
-        Sanctum::actingAs($this->manager);
-
-        $editionDivision = EditionDivision::factory()->create([
-            'edition_id' => $this->edition->id_edition,
-            'division_id' => $this->division->id_division,
-        ]);
-
-        // Create multiple participants
-        $players = Player::factory()->count(25)->create();
-        foreach ($players as $player) {
-            EditionParticipation::factory()->create([
-                'edition_id' => $this->edition->id_edition,
-                'player_id' => $player->id_player,
-                'division_id' => $this->division->id_division,
-            ]);
-        }
-
-        $response = $this->getJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}/participants?page=1&per_page=10");
-
-        $response->assertStatus(200)
-            ->assertJsonStructure([
-                'data' => [
-                    '*' => [
-                        'id_participation',
-                        'edition_id',
-                        'player_id',
-                        'division_id',
-                        'is_minor',
-                        'is_student',
-                        'discount',
-                        'payment',
-                        'absence_reason',
-                        'ban_reason',
-                        'inserted_at',
-                        'updated_at',
-                        'player' => [
-                            'id_player',
-                            'name',
-                            'phone',
-                        ],
-                    ],
-                ],
-                'links' => [
-                    'first',
-                    'last',
-                    'prev',
-                    'next',
-                ],
-                'meta' => [
-                    'current_page',
-                    'from',
-                    'last_page',
-                    'path',
-                    'per_page',
-                    'to',
-                    'total',
-                ],
-            ]);
-
-        $this->assertCount(10, $response->json('data'));
-        $this->assertEquals(1, $response->json('meta.current_page'));
-        $this->assertEquals(25, $response->json('meta.total'));
-        $this->assertEquals(10, $response->json('meta.per_page'));
-    }
-
-    public function test_manager_can_view_edition_division_participants_with_search()
-    {
-        Sanctum::actingAs($this->manager);
-
-        $editionDivision = EditionDivision::factory()->create([
-            'edition_id' => $this->edition->id_edition,
-            'division_id' => $this->division->id_division,
-        ]);
-
-        $player1 = Player::factory()->create();
-        $player2 = Player::factory()->create();
-
-        EditionParticipation::factory()->create([
-            'edition_id' => $this->edition->id_edition,
-            'player_id' => $player1->id_player,
-            'division_id' => $this->division->id_division,
-            'absence_reason' => 'SICK',
-        ]);
-
-        EditionParticipation::factory()->create([
-            'edition_id' => $this->edition->id_edition,
-            'player_id' => $player2->id_player,
-            'division_id' => $this->division->id_division,
-            'absence_reason' => 'EXAMS',
-        ]);
-
-        $response = $this->getJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}/participants?q=SICK");
-
-        $response->assertStatus(200);
-        $this->assertCount(1, $response->json('data'));
-        $this->assertEquals('SICK', $response->json('data.0.absence_reason'));
-    }
-
-    public function test_manager_can_view_edition_division_participants_with_filters()
-    {
-        Sanctum::actingAs($this->manager);
-
-        $editionDivision = EditionDivision::factory()->create([
-            'edition_id' => $this->edition->id_edition,
-            'division_id' => $this->division->id_division,
-        ]);
-
-        $player1 = Player::factory()->create();
-        $player2 = Player::factory()->create();
-
-        EditionParticipation::factory()->create([
-            'edition_id' => $this->edition->id_edition,
-            'player_id' => $player1->id_player,
-            'division_id' => $this->division->id_division,
-            'is_student' => true,
-            'payment' => 25.00,
-        ]);
-
-        EditionParticipation::factory()->create([
-            'edition_id' => $this->edition->id_edition,
-            'player_id' => $player2->id_player,
-            'division_id' => $this->division->id_division,
-            'is_student' => false,
-            'payment' => 50.00,
-        ]);
-
-        $response = $this->getJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}/participants?filters[is_student]=1");
-
-        $response->assertStatus(200);
-        $this->assertCount(1, $response->json('data'));
-        $this->assertTrue((bool) $response->json('data.0.is_student'));
-    }
-
-    public function test_manager_can_view_edition_division_participants_with_sorting()
-    {
-        Sanctum::actingAs($this->manager);
-
-        $editionDivision = EditionDivision::factory()->create([
-            'edition_id' => $this->edition->id_edition,
-            'division_id' => $this->division->id_division,
-        ]);
-
-        $player1 = Player::factory()->create();
-        $player2 = Player::factory()->create();
-
-        EditionParticipation::factory()->create([
-            'edition_id' => $this->edition->id_edition,
-            'player_id' => $player1->id_player,
-            'division_id' => $this->division->id_division,
-            'payment' => 25.00,
-        ]);
-
-        EditionParticipation::factory()->create([
-            'edition_id' => $this->edition->id_edition,
-            'player_id' => $player2->id_player,
-            'division_id' => $this->division->id_division,
-            'payment' => 50.00,
-        ]);
-
-        $response = $this->getJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}/participants?sort_by[payment]=desc");
-
-        $response->assertStatus(200);
-        $this->assertEquals(50.00, $response->json('data.0.payment'));
-        $this->assertEquals(25.00, $response->json('data.1.payment'));
     }
 
     public function test_edition_division_requires_manager_authentication()

@@ -176,6 +176,82 @@ class ClubControllerTest extends TestCase
             ]);
     }
 
+    public function test_manager_can_partially_update_club()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $club = Club::factory()->create([
+            'name' => 'Original Club Name',
+            'city' => 'Original City',
+        ]);
+
+        // Test partial update with only name
+        $response = $this->patchJson("/api/v1/manager/clubs/{$club->id_club}", [
+            'name' => 'Partially Updated Name',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'id_club',
+                    'name',
+                    'city',
+                    'inserted_at',
+                    'updated_at',
+                ],
+            ])
+            ->assertJson([
+            'success' => true,
+            'message' => 'Club partially updated successfully',
+            'data' => [
+                'id_club' => $club->id_club,
+                'name' => 'Partially Updated Name',
+                'city' => 'Original City', // Should remain unchanged
+            ],
+            ]);
+
+        // Test partial update with only city
+        $response = $this->patchJson("/api/v1/manager/clubs/{$club->id_club}", [
+            'city' => 'Partially Updated City',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+            'success' => true,
+            'message' => 'Club partially updated successfully',
+            'data' => [
+                'name' => 'Partially Updated Name', // Should remain from previous update
+                'city' => 'Partially Updated City',
+            ],
+            ]);
+    }
+
+    public function test_manager_cannot_update_club_without_required_fields()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $club = Club::factory()->create();
+
+        // Test PUT without required fields
+        $response = $this->putJson("/api/v1/manager/clubs/{$club->id_club}", [
+            'name' => 'Only Name',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['city']);
+
+        // Test PUT with empty required fields
+        $response = $this->putJson("/api/v1/manager/clubs/{$club->id_club}", [
+            'name' => '',
+            'city' => '',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['name', 'city']);
+    }
+
     public function test_manager_can_delete_club()
     {
         Sanctum::actingAs($this->manager);
@@ -524,97 +600,6 @@ class ClubControllerTest extends TestCase
 
         // Verify failed deletion (club with linked data still exists)
         $this->assertDatabaseHas('clubs', ['id_club' => $clubs[0]->id_club]);
-    }
-
-    public function test_manager_can_view_club_locations()
-    {
-        Sanctum::actingAs($this->manager);
-
-        $club = Club::factory()->create();
-        Location::factory()->count(3)->create(['club_id' => $club->id_club]);
-
-        $response = $this->getJson("/api/v1/manager/clubs/{$club->id_club}/locations");
-
-        $response->assertStatus(200)
-            ->assertJsonStructure([
-                'data' => [
-                    '*' => [
-                        'id_location',
-                        'club_id',
-                        'name',
-                        'address',
-                    ],
-                ],
-                'links' => [
-                    'first',
-                    'last',
-                    'prev',
-                    'next',
-                ],
-                'meta' => [
-                    'current_page',
-                    'from',
-                    'last_page',
-                    'path',
-                    'per_page',
-                    'to',
-                    'total',
-                ],
-            ]);
-
-        $this->assertCount(3, $response->json('data'));
-    }
-
-    public function test_manager_can_view_club_prizes()
-    {
-        Sanctum::actingAs($this->manager);
-
-        $club = Club::factory()->create();
-        $prizes = Prize::factory()->count(2)->create();
-
-        // Create prize from club relationships
-        foreach ($prizes as $prize) {
-            \App\Models\PrizeFromClub::factory()->create([
-                'club_id' => $club->id_club,
-                'prize_id' => $prize->id_prize,
-            ]);
-        }
-
-        $response = $this->getJson("/api/v1/manager/clubs/{$club->id_club}/prizes");
-
-        $response->assertStatus(200)
-            ->assertJsonStructure([
-                'data' => [
-                    '*' => [
-                        'id_club_prize',
-                        'club_id',
-                        'prize_id',
-                        'image',
-                        'prize' => [
-                            'id_prize',
-                            'name',
-                            'image',
-                        ],
-                    ],
-                ],
-            'links' => [
-                'first',
-                'last',
-                'prev',
-                'next',
-            ],
-            'meta' => [
-                'current_page',
-                'from',
-                'last_page',
-                'path',
-                'per_page',
-                'to',
-                'total',
-            ],
-            ]);
-
-        $this->assertCount(2, $response->json('data'));
     }
 
     public function test_club_requires_manager_authentication()

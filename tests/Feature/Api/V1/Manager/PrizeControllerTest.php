@@ -176,6 +176,71 @@ class PrizeControllerTest extends TestCase
         ]);
     }
 
+    public function test_manager_can_partially_update_prize()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $prize = Prize::factory()->create([
+            'name' => 'Original Name',
+            'box_1_text' => 'Original Box 1',
+            'box_1_bg_color' => '#FF0000',
+        ]);
+
+        // Test partial update with only name
+        $response = $this->patchJson("/api/v1/manager/prizes/{$prize->id_prize}", [
+            'name' => 'Partially Updated Name',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Prize partially updated successfully',
+                'data' => [
+                    'name' => 'Partially Updated Name',
+                    'box_1_text' => 'Original Box 1', // Should remain unchanged
+                    'box_1_bg_color' => '#FF0000', // Should remain unchanged
+                ],
+            ]);
+
+        // Test partial update with only box_1_text
+        $response = $this->patchJson("/api/v1/manager/prizes/{$prize->id_prize}", [
+            'box_1_text' => 'Partially Updated Box 1',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Prize partially updated successfully',
+                'data' => [
+                    'name' => 'Partially Updated Name', // Should remain from previous update
+                    'box_1_text' => 'Partially Updated Box 1',
+                ],
+            ]);
+    }
+
+    public function test_manager_cannot_update_prize_without_required_fields()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $prize = Prize::factory()->create();
+
+        // Test PUT without required fields
+        $response = $this->putJson("/api/v1/manager/prizes/{$prize->id_prize}", [
+            'box_1_text' => 'Only Box Text',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['name']);
+
+        // Test PUT with empty required fields
+        $response = $this->putJson("/api/v1/manager/prizes/{$prize->id_prize}", [
+            'name' => '',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['name']);
+    }
+
     public function test_manager_cannot_delete_prize_with_club_prizes()
     {
         Sanctum::actingAs($this->manager);

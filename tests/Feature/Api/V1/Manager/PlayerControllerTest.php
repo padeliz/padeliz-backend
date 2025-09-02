@@ -180,6 +180,7 @@ class PlayerControllerTest extends TestCase
 
         $updateData = [
             'name' => 'Updated Player',
+            'phone' => '1234567890',
             'skill_division' => 5.0,
             'being_student' => true,
         ];
@@ -204,6 +205,63 @@ class PlayerControllerTest extends TestCase
             'skill_division' => 5.0,
             'being_student' => true,
         ]);
+    }
+
+    public function test_manager_can_partially_update_player()
+    {
+        Sanctum::actingAs($this->manager);
+
+        // Test partial update with only name
+        $response = $this->patchJson("/api/v1/manager/players/{$this->player->id_player}", [
+            'name' => 'Partially Updated Player',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Player partially updated successfully',
+                'data' => [
+                    'name' => 'Partially Updated Player',
+                    'skill_division' => 4.5, // Should remain unchanged
+                ],
+            ]);
+
+        // Test partial update with only skill_division
+        $response = $this->patchJson("/api/v1/manager/players/{$this->player->id_player}", [
+            'skill_division' => 6.0,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Player partially updated successfully',
+                'data' => [
+                    'name' => 'Partially Updated Player', // Should remain from previous update
+                    'skill_division' => 6.0,
+                ],
+            ]);
+    }
+
+    public function test_manager_cannot_update_player_without_required_fields()
+    {
+        Sanctum::actingAs($this->manager);
+
+        // Test PUT without required fields
+        $response = $this->putJson("/api/v1/manager/players/{$this->player->id_player}", [
+            'skill_division' => 5.0,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['name', 'phone']);
+
+        // Test PUT with empty required fields
+        $response = $this->putJson("/api/v1/manager/players/{$this->player->id_player}", [
+            'name' => '',
+            'phone' => '',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['name', 'phone']);
     }
 
     public function test_manager_can_delete_player()

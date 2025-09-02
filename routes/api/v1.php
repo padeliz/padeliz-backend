@@ -86,6 +86,7 @@ Route::prefix('v1')->group(function () {
             Route::get('{club}', [\App\Http\Controllers\Api\V1\Manager\ClubController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\ClubController::class, 'store']);
             Route::put('{club}', [\App\Http\Controllers\Api\V1\Manager\ClubController::class, 'update']);
+            Route::patch('{club}', [\App\Http\Controllers\Api\V1\Manager\ClubController::class, 'patch']);
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\ClubController::class, 'bulkDestroy']);
             Route::delete('{club}', [\App\Http\Controllers\Api\V1\Manager\ClubController::class, 'destroy']);
         });
@@ -96,6 +97,7 @@ Route::prefix('v1')->group(function () {
             Route::get('{location}', [\App\Http\Controllers\Api\V1\Manager\LocationController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\LocationController::class, 'store']);
             Route::put('{location}', [\App\Http\Controllers\Api\V1\Manager\LocationController::class, 'update']);
+            Route::patch('{location}', [\App\Http\Controllers\Api\V1\Manager\LocationController::class, 'patch']);
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\LocationController::class, 'bulkDestroy']);
             Route::delete('{location}', [\App\Http\Controllers\Api\V1\Manager\LocationController::class, 'destroy']);
         });
@@ -106,6 +108,7 @@ Route::prefix('v1')->group(function () {
             Route::get('{division}', [\App\Http\Controllers\Api\V1\Manager\DivisionController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\DivisionController::class, 'store']);
             Route::put('{division}', [\App\Http\Controllers\Api\V1\Manager\DivisionController::class, 'update']);
+            Route::patch('{division}', [\App\Http\Controllers\Api\V1\Manager\DivisionController::class, 'patch']);
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\DivisionController::class, 'bulkDestroy']);
             Route::delete('{division}', [\App\Http\Controllers\Api\V1\Manager\DivisionController::class, 'destroy']);
         });
@@ -119,6 +122,7 @@ Route::prefix('v1')->group(function () {
             Route::get('{edition}', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'store']);
             Route::put('{edition}', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'update']);
+            Route::patch('{edition}', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'patch']);
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'bulkDestroy']);
             Route::delete('{edition}', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'destroy']);
         });
@@ -129,6 +133,7 @@ Route::prefix('v1')->group(function () {
             Route::get('{prize}', [\App\Http\Controllers\Api\V1\Manager\PrizeController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\PrizeController::class, 'store']);
             Route::put('{prize}', [\App\Http\Controllers\Api\V1\Manager\PrizeController::class, 'update']);
+            Route::patch('{prize}', [\App\Http\Controllers\Api\V1\Manager\PrizeController::class, 'patch']);
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\PrizeController::class, 'bulkDestroy']);
             Route::delete('{prize}', [\App\Http\Controllers\Api\V1\Manager\PrizeController::class, 'destroy']);
         });
@@ -139,6 +144,7 @@ Route::prefix('v1')->group(function () {
             Route::get('{prizeFromClub}', [\App\Http\Controllers\Api\V1\Manager\PrizeFromClubController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\PrizeFromClubController::class, 'store']);
             Route::put('{prizeFromClub}', [\App\Http\Controllers\Api\V1\Manager\PrizeFromClubController::class, 'update']);
+            Route::patch('{prizeFromClub}', [\App\Http\Controllers\Api\V1\Manager\PrizeFromClubController::class, 'patch']);
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\PrizeFromClubController::class, 'bulkDestroy']);
             Route::delete('{prizeFromClub}', [\App\Http\Controllers\Api\V1\Manager\PrizeFromClubController::class, 'destroy']);
         });
@@ -149,6 +155,7 @@ Route::prefix('v1')->group(function () {
             Route::get('{lottery}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'store']);
             Route::put('{lottery}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'update']);
+            Route::patch('{lottery}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'patch']);
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'bulkDestroy']);
             Route::delete('{lottery}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'destroy']);
         });
@@ -159,6 +166,7 @@ Route::prefix('v1')->group(function () {
             Route::get('{luckyOne}', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'store']);
             Route::put('{luckyOne}', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'update']);
+            Route::patch('{luckyOne}', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'patch']);
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'bulkDestroy']);
             Route::delete('{luckyOne}', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'destroy']);
         });
@@ -169,6 +177,7 @@ Route::prefix('v1')->group(function () {
             Route::get('{editionDivision}', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'store']);
             Route::put('{editionDivision}', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'update']);
+            Route::patch('{editionDivision}', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'patch']);
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'bulkDestroy']);
             Route::delete('{editionDivision}', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'destroy']);
         });
@@ -179,6 +188,7 @@ Route::prefix('v1')->group(function () {
             Route::get('{player}', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'store']);
             Route::put('{player}', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'update']);
+            Route::patch('{player}', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'patch']);
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'bulkDestroy']);
             Route::delete('{player}', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'destroy']);
         });
@@ -189,6 +199,7 @@ Route::prefix('v1')->group(function () {
             Route::get('{participation}', [\App\Http\Controllers\Api\V1\Manager\ParticipationController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\ParticipationController::class, 'store']);
             Route::put('{participation}', [\App\Http\Controllers\Api\V1\Manager\ParticipationController::class, 'update']);
+            Route::patch('{participation}', [\App\Http\Controllers\Api\V1\Manager\ParticipationController::class, 'patch']);
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\ParticipationController::class, 'bulkDestroy']);
             Route::delete('{participation}', [\App\Http\Controllers\Api\V1\Manager\ParticipationController::class, 'destroy']);
         });
@@ -199,6 +210,7 @@ Route::prefix('v1')->group(function () {
             Route::get('{eligibility}', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'store']);
             Route::put('{eligibility}', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'update']);
+            Route::patch('{eligibility}', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'patch']);
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'bulkDestroy']);
             Route::delete('{eligibility}', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'destroy']);
         });
@@ -209,6 +221,7 @@ Route::prefix('v1')->group(function () {
             Route::get('{team}', [\App\Http\Controllers\Api\V1\Manager\MatchesTeamController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\MatchesTeamController::class, 'store']);
             Route::put('{team}', [\App\Http\Controllers\Api\V1\Manager\MatchesTeamController::class, 'update']);
+            Route::patch('{team}', [\App\Http\Controllers\Api\V1\Manager\MatchesTeamController::class, 'patch']);
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\MatchesTeamController::class, 'bulkDestroy']);
             Route::delete('{team}', [\App\Http\Controllers\Api\V1\Manager\MatchesTeamController::class, 'destroy']);
         });

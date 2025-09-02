@@ -168,6 +168,8 @@ class PrizeFromClubControllerTest extends TestCase
         ]);
 
         $updateData = [
+            'club_id' => $this->club->id_club,
+            'prize_id' => $this->prize->id_prize,
             'box_1_text' => 'Updated Box 1',
             'box_1_bg_color' => '#0000FF',
             'image' => 'updated-image.jpg',
@@ -192,6 +194,75 @@ class PrizeFromClubControllerTest extends TestCase
             'box_1_text' => 'Updated Box 1',
             'box_1_bg_color' => '#0000FF',
         ]);
+    }
+
+    public function test_manager_can_partially_update_prize_from_club()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $prizeFromClub = PrizeFromClub::factory()->create([
+            'club_id' => $this->club->id_club,
+            'prize_id' => $this->prize->id_prize,
+            'box_1_text' => 'Original Box 1',
+            'box_1_bg_color' => '#FF0000',
+        ]);
+
+        // Test partial update with only box_1_text
+        $response = $this->patchJson("/api/v1/manager/prizes-from-clubs/{$prizeFromClub->id_club_prize}", [
+            'box_1_text' => 'Partially Updated Box 1',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Prize from club partially updated successfully',
+                'data' => [
+                    'box_1_text' => 'Partially Updated Box 1',
+                    'box_1_bg_color' => '#FF0000', // Should remain unchanged
+                ],
+            ]);
+
+        // Test partial update with only box_1_bg_color
+        $response = $this->patchJson("/api/v1/manager/prizes-from-clubs/{$prizeFromClub->id_club_prize}", [
+            'box_1_bg_color' => '#00FF00',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Prize from club partially updated successfully',
+                'data' => [
+                    'box_1_text' => 'Partially Updated Box 1', // Should remain from previous update
+                    'box_1_bg_color' => '#00FF00',
+                ],
+            ]);
+    }
+
+    public function test_manager_cannot_update_prize_from_club_without_required_fields()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $prizeFromClub = PrizeFromClub::factory()->create([
+            'club_id' => $this->club->id_club,
+            'prize_id' => $this->prize->id_prize,
+        ]);
+
+        // Test PUT without required fields
+        $response = $this->putJson("/api/v1/manager/prizes-from-clubs/{$prizeFromClub->id_club_prize}", [
+            'box_1_text' => 'Only Box Text',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['club_id', 'prize_id']);
+
+        // Test PUT with empty required fields
+        $response = $this->putJson("/api/v1/manager/prizes-from-clubs/{$prizeFromClub->id_club_prize}", [
+            'club_id' => '',
+            'prize_id' => '',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['club_id', 'prize_id']);
     }
 
     public function test_manager_can_delete_prize_from_club()

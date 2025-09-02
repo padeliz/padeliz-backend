@@ -143,6 +143,7 @@ class MatchesTeamControllerTest extends TestCase
         ]);
 
         $updateData = [
+            'player_1' => $this->player1->id_player,
             'player_2' => $player3->id_player,
         ];
 
@@ -164,6 +165,74 @@ class MatchesTeamControllerTest extends TestCase
             'player_1' => $this->player1->id_player,
             'player_2' => $player3->id_player,
         ]);
+    }
+
+    public function test_manager_can_partially_update_matches_team()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $player3 = Player::factory()->create();
+        $team = MatchesTeam::factory()->create([
+            'player_1' => $this->player1->id_player,
+            'player_2' => $this->player2->id_player,
+        ]);
+
+        // Test partial update with only player_1
+        $response = $this->patchJson("/api/v1/manager/matches-teams/{$team->id_team}", [
+            'player_1' => $player3->id_player,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Matches team partially updated successfully',
+                'data' => [
+                    'player_1' => $player3->id_player,
+                    'player_2' => $this->player2->id_player, // Should remain unchanged
+                ],
+            ]);
+
+        // Test partial update with only player_2
+        $response = $this->patchJson("/api/v1/manager/matches-teams/{$team->id_team}", [
+            'player_2' => $this->player1->id_player,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Matches team partially updated successfully',
+                'data' => [
+                    'player_1' => $player3->id_player, // Should remain from previous update
+                    'player_2' => $this->player1->id_player,
+                ],
+            ]);
+    }
+
+    public function test_manager_cannot_update_matches_team_without_required_fields()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $team = MatchesTeam::factory()->create([
+            'player_1' => $this->player1->id_player,
+            'player_2' => $this->player2->id_player,
+        ]);
+
+        // Test PUT without required fields
+        $response = $this->putJson("/api/v1/manager/matches-teams/{$team->id_team}", [
+            'player_1' => $this->player1->id_player,
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['player_2']);
+
+        // Test PUT with empty required fields
+        $response = $this->putJson("/api/v1/manager/matches-teams/{$team->id_team}", [
+            'player_1' => '',
+            'player_2' => '',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['player_1', 'player_2']);
     }
 
     public function test_manager_can_delete_matches_team()
@@ -525,6 +594,7 @@ class MatchesTeamControllerTest extends TestCase
 
         $player3 = Player::factory()->create();
         $response = $this->putJson("/api/v1/manager/matches-teams/{$team->id_team}", [
+            'player_1' => $this->player1->id_player,
             'player_2' => $player3->id_player,
         ]);
 

@@ -237,7 +237,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
     /**
      * @OA\Put(
      *     path="/api/v1/manager/edition-divisions/{editionDivision}",
-     *     summary="Update edition division details",
+     *     summary="Update edition division details (complete replacement)",
      *     tags={"🐧 Manager: Editions Divisions"},
      *     @OA\Parameter(
      *         name="editionDivision",
@@ -281,6 +281,105 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      * )
      */
     public function update(Request $request, EditionDivision $editionDivision)
+    {
+        $validated = $request->validate([
+            'edition_id' => 'required|integer|exists:editions,id_edition',
+            'division_id' => 'required|integer|exists:divisions,id_division',
+            'players_limit' => 'required|integer|min:1',
+            'court' => 'required|string|max:30',
+            'playing_start_time' => 'required|date_format:H:i:s',
+            'playing_end_time' => 'required|date_format:H:i:s',
+            'player_opponents_nr' => 'nullable|integer|min:1',
+            'player_matches_repeat' => 'required|integer|min:1',
+            'include_scores' => 'required|boolean',
+            'has_demonstrative_match' => 'required|boolean',
+            'fixed_teams' => 'required|boolean',
+        ]);
+
+        // Validate playing_end_time is after playing_start_time if both are provided
+        if (isset($validated['playing_start_time']) && isset($validated['playing_end_time'])) {
+            if ($validated['playing_end_time'] <= $validated['playing_start_time']) {
+                return $this->errorResponse(
+                    'Playing end time must be after playing start time',
+                    422
+                );
+            }
+        }
+
+        // Check if this edition-division combination already exists (excluding current record)
+        if (isset($validated['edition_id']) || isset($validated['division_id'])) {
+            $editionId = $validated['edition_id'] ?? $editionDivision->edition_id;
+            $divisionId = $validated['division_id'] ?? $editionDivision->division_id;
+
+            $existingDivision = EditionDivision::where('id_edition_division', '!=', $editionDivision->id_edition_division)
+                ->where('edition_id', $editionId)
+                ->where('division_id', $divisionId)
+                ->first();
+
+            if ($existingDivision) {
+                return $this->errorResponse(
+                    'This division is already assigned to this edition',
+                    422
+                );
+            }
+        }
+
+        $editionDivision->update($validated);
+        $editionDivision->load(['edition', 'division']);
+
+        return $this->resourceResponse(
+            new EditionDivisionResource($editionDivision),
+            'Edition division updated successfully'
+        );
+    }
+
+    /**
+     * @OA\Patch(
+     *     path="/api/v1/manager/edition-divisions/{editionDivision}",
+     *     summary="Partially update edition division details",
+     *     tags={"🐧 Manager: Editions Divisions"},
+     *     @OA\Parameter(
+     *         name="editionDivision",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="edition_id", type="integer", description="Edition ID"),
+     *             @OA\Property(property="division_id", type="integer", description="Division ID"),
+     *             @OA\Property(property="players_limit", type="integer", description="Players limit"),
+     *             @OA\Property(property="court", type="string", maxLength=30, description="Court name"),
+     *             @OA\Property(property="playing_start_time", type="string", format="time", description="Playing start time"),
+     *             @OA\Property(property="playing_end_time", type="string", format="time", description="Playing end time"),
+     *             @OA\Property(property="player_opponents_nr", type="integer", description="Number of player opponents"),
+     *             @OA\Property(property="player_matches_repeat", type="integer", description="Player matches repeat"),
+     *             @OA\Property(property="include_scores", type="integer", enum={0, 1}, description="Include scores (use 0 or 1, not true/false)"),
+     *             @OA\Property(property="has_demonstrative_match", type="integer", enum={0, 1}, description="Has demonstrative match (use 0 or 1, not true/false)"),
+     *             @OA\Property(property="fixed_teams", type="integer", enum={0, 1}, description="Fixed teams (use 0 or 1, not true/false)")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Edition division partially updated successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/EditionDivision")
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     )
+     * )
+     */
+    public function patch(Request $request, EditionDivision $editionDivision)
     {
         $validated = $request->validate([
             'edition_id' => 'sometimes|integer|exists:editions,id_edition',
@@ -329,7 +428,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
 
         return $this->resourceResponse(
             new EditionDivisionResource($editionDivision),
-            'Edition division updated successfully'
+            'Edition division partially updated successfully'
         );
     }
 

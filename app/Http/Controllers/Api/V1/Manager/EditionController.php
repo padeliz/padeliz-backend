@@ -497,7 +497,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
     /**
      * @OA\Put(
      *     path="/api/v1/manager/editions/{edition}",
-     *     summary="Update an edition",
+     *     summary="Update an edition (complete replacement)",
      *     tags={"🐧 Manager: Editions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
@@ -505,6 +505,17 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *         in="path",
      *         required=true,
      *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="name", type="string", maxLength=255),
+     *             @OA\Property(property="description", type="string"),
+     *             @OA\Property(property="start_date", type="string", format="date"),
+     *             @OA\Property(property="end_date", type="string", format="date"),
+     *             @OA\Property(property="location_id", type="integer"),
+     *             @OA\Property(property="max_participants", type="integer", minimum=1)
+     *         )
      *     ),
      *     @OA\Response(
      *         response=200,
@@ -528,12 +539,13 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
     public function update(Request $request, Edition $edition)
     {
         $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'description' => 'sometimes|required|string',
-            'start_date' => 'sometimes|required|date',
-            'end_date' => 'sometimes|required|date|after:start_date',
+            'name' => 'required|string|max:255',
+            'date' => 'required|date',
             'location_id' => 'nullable|exists:locations,id',
-            'max_participants' => 'nullable|integer|min:1',
+            'entry_fee' => 'nullable|numeric|min:0',
+            'students_entry_fee' => 'nullable|numeric|min:0',
+            'arriving_time' => 'nullable|date_format:H:i:s',
+            'closing_time' => 'nullable|date_format:H:i:s',
         ]);
 
         $edition->update($request->all());
@@ -541,6 +553,68 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
         return $this->resourceResponse(
             new EditionResource($edition),
             'Edition updated successfully'
+        );
+    }
+
+    /**
+     * @OA\Patch(
+     *     path="/api/v1/manager/editions/{edition}",
+     *     summary="Partially update an edition",
+     *     tags={"🐧 Manager: Editions"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="edition",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="name", type="string", maxLength=255),
+     *             @OA\Property(property="description", type="string"),
+     *             @OA\Property(property="start_date", type="string", format="date"),
+     *             @OA\Property(property="end_date", type="string", format="date"),
+     *             @OA\Property(property="location_id", type="integer"),
+     *             @OA\Property(property="max_participants", type="integer", minimum=1)
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Edition partially updated successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/ApiResponse")
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     )
+     * )
+     */
+    public function patch(Request $request, Edition $edition)
+    {
+        $request->validate([
+            'name' => 'sometimes|string|max:255',
+            'date' => 'sometimes|date',
+            'location_id' => 'nullable|exists:locations,id',
+            'entry_fee' => 'nullable|numeric|min:0',
+            'students_entry_fee' => 'nullable|numeric|min:0',
+            'arriving_time' => 'nullable|date_format:H:i:s',
+            'closing_time' => 'nullable|date_format:H:i:s',
+        ]);
+
+        $edition->update($request->all());
+
+        return $this->resourceResponse(
+            new EditionResource($edition),
+            'Edition partially updated successfully'
         );
     }
 

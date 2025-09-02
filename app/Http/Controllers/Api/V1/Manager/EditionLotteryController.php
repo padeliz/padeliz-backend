@@ -201,7 +201,7 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
     /**
      * @OA\Put(
      *     path="/api/v1/manager/lotteries/{lottery}",
-     *     summary="Update lottery details",
+     *     summary="Update lottery details (complete replacement)",
      *     tags={"🐧 Manager: Editions Lottery"},
      *     @OA\Parameter(
      *         name="lottery",
@@ -241,6 +241,65 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
     public function update(Request $request, EditionLottery $lottery)
     {
         $validated = $request->validate([
+            'edition_id' => 'required|integer|exists:editions,id_edition',
+            'orderliness' => 'required|integer|min:0',
+            'division_id' => 'nullable|integer|exists:divisions,id_division',
+            'prize_id' => 'nullable|integer|exists:prizes,id_prize',
+            'total_draws_nr' => 'required|integer|min:1',
+        ]);
+
+        $lottery->update($validated);
+        $lottery->load(['prize', 'division', 'edition']);
+
+        return $this->resourceResponse(
+            new EditionLotteryResource($lottery),
+            'Lottery updated successfully'
+        );
+    }
+
+    /**
+     * @OA\Patch(
+     *     path="/api/v1/manager/lotteries/{lottery}",
+     *     summary="Partially update lottery details",
+     *     tags={"🐧 Manager: Editions Lottery"},
+     *     @OA\Parameter(
+     *         name="lottery",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="edition_id", type="integer", description="Edition ID"),
+     *             @OA\Property(property="orderliness", type="integer", description="Lottery order"),
+     *             @OA\Property(property="division_id", type="integer", description="Division ID (optional)"),
+     *             @OA\Property(property="prize_id", type="integer", description="Prize ID (optional)"),
+     *             @OA\Property(property="total_draws_nr", type="integer", description="Total number of draws")
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Lottery partially updated successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(property="data", ref="#/components/schemas/EditionLottery")
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     )
+     * )
+     */
+    public function patch(Request $request, EditionLottery $lottery)
+    {
+        $validated = $request->validate([
             'edition_id' => 'sometimes|integer|exists:editions,id_edition',
             'orderliness' => 'integer|min:0',
             'division_id' => 'nullable|integer|exists:divisions,id_division',
@@ -253,7 +312,7 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
 
         return $this->resourceResponse(
             new EditionLotteryResource($lottery),
-            'Lottery updated successfully'
+            'Lottery partially updated successfully'
         );
     }
 

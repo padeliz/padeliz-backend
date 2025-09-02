@@ -191,6 +191,10 @@ class EditionLuckyOneControllerTest extends TestCase
         ]);
 
         $updateData = [
+            'lottery_id' => $this->lottery->id_lottery,
+            'drawn_participation_id' => $this->participation->id_participation,
+            'drawn_at' => time(),
+            'available_at' => time(),
             'announced_at' => time(),
             'accepted_at' => time(),
             'rejected_at' => null,
@@ -215,6 +219,75 @@ class EditionLuckyOneControllerTest extends TestCase
             'announced_at' => $updateData['announced_at'],
             'accepted_at' => $updateData['accepted_at'],
         ]);
+    }
+
+    public function test_manager_can_partially_update_lucky_one()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $luckyOne = EditionLuckyOne::factory()->create([
+            'lottery_id' => $this->lottery->id_lottery,
+            'drawn_participation_id' => $this->participation->id_participation,
+            'drawn_at' => time(),
+            'available_at' => time(),
+        ]);
+
+        // Test partial update with only announced_at
+        $response = $this->patchJson("/api/v1/manager/lucky-ones/{$luckyOne->id_lucky_one}", [
+            'announced_at' => time() + 3600,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Lucky one partially updated successfully',
+                'data' => [
+                    'announced_at' => $response->json('data.announced_at'),
+                ],
+            ]);
+
+        // Test partial update with only accepted_at
+        $response = $this->patchJson("/api/v1/manager/lucky-ones/{$luckyOne->id_lucky_one}", [
+            'accepted_at' => time() + 7200,
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Lucky one partially updated successfully',
+                'data' => [
+                    'accepted_at' => $response->json('data.accepted_at'),
+                ],
+            ]);
+    }
+
+    public function test_manager_cannot_update_lucky_one_without_required_fields()
+    {
+        Sanctum::actingAs($this->manager);
+
+        $luckyOne = EditionLuckyOne::factory()->create([
+            'lottery_id' => $this->lottery->id_lottery,
+            'drawn_participation_id' => $this->participation->id_participation,
+        ]);
+
+        // Test PUT without required fields
+        $response = $this->putJson("/api/v1/manager/lucky-ones/{$luckyOne->id_lucky_one}", [
+            'announced_at' => time(),
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['lottery_id', 'drawn_participation_id', 'drawn_at', 'available_at']);
+
+        // Test PUT with empty required fields
+        $response = $this->putJson("/api/v1/manager/lucky-ones/{$luckyOne->id_lucky_one}", [
+            'lottery_id' => '',
+            'drawn_participation_id' => '',
+            'drawn_at' => '',
+            'available_at' => '',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['lottery_id', 'drawn_participation_id', 'drawn_at', 'available_at']);
     }
 
     public function test_manager_can_delete_lucky_one()
@@ -356,6 +429,8 @@ class EditionLuckyOneControllerTest extends TestCase
         $duplicateData = [
             'lottery_id' => $this->lottery->id_lottery,
             'drawn_participation_id' => $this->participation->id_participation,
+            'drawn_at' => time(),
+            'available_at' => time(),
         ];
 
         $response = $this->postJson('/api/v1/manager/lucky-ones', $duplicateData);
@@ -389,6 +464,8 @@ class EditionLuckyOneControllerTest extends TestCase
         $response = $this->putJson("/api/v1/manager/lucky-ones/{$luckyOne2->id_lucky_one}", [
             'lottery_id' => $this->lottery->id_lottery,
             'drawn_participation_id' => $this->participation->id_participation,
+            'drawn_at' => time(),
+            'available_at' => time(),
         ]);
 
         $response->assertStatus(422)
