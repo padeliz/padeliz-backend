@@ -113,6 +113,50 @@ class PlayerController extends V1BaseController
     }
 
     /**
+     * @OA\Get(
+     *     path="/api/v1/manager/players/{player}",
+     *     summary="Get a specific player",
+     *     tags={"🐧 Manager: Players"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(
+     *         name="player",
+     *         in="path",
+     *         required=true,
+     *         @OA\Schema(type="integer")
+     *     ),
+     *     @OA\Response(
+     *         response=200,
+     *         description="Player details retrieved successfully",
+     *         @OA\JsonContent(
+     *             allOf={
+     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
+     *                 @OA\Schema(
+     *                     @OA\Property(
+     *                         property="data",
+     *                         ref="#/components/schemas/Player"
+     *                     )
+     *                 )
+     *             }
+     *         )
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Player not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     )
+     * )
+     */
+    public function show(Player $player)
+    {
+        $player->load(['participations']);
+
+        return $this->resourceResponse(
+            new PlayerResource($player),
+            'Player details retrieved successfully'
+        );
+    }
+
+    /**
      * @OA\Post(
      *     path="/api/v1/manager/players",
      *     summary="Create a new player",

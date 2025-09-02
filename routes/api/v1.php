@@ -157,11 +157,11 @@ Route::prefix('v1')->group(function () {
             Route::put('{lottery}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'update']);
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'bulkDestroy']);
             Route::delete('{lottery}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'destroy']);
-            Route::get('{lottery}/lucky-ones', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'index']);
         });
 
         // Lucky ones management
         Route::prefix('lucky-ones')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'index']);
             Route::get('{luckyOne}', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'store']);
             Route::put('{luckyOne}', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'update']);
@@ -183,6 +183,7 @@ Route::prefix('v1')->group(function () {
         // Player management
         Route::prefix('players')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'index']);
+            Route::get('{player}', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'store']);
             Route::put('{player}', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'update']);
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'bulkDestroy']);

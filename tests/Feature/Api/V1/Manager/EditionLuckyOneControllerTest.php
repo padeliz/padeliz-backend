@@ -54,13 +54,13 @@ class EditionLuckyOneControllerTest extends TestCase
         ]);
     }
 
-    public function test_manager_can_view_lucky_ones_for_lottery()
+    public function test_manager_can_view_all_lucky_ones()
     {
         Sanctum::actingAs($this->manager);
 
         EditionLuckyOne::factory()->count(3)->create(['lottery_id' => $this->lottery->id_lottery]);
 
-        $response = $this->getJson("/api/v1/manager/lotteries/{$this->lottery->id_lottery}/lucky-ones");
+        $response = $this->getJson('/api/v1/manager/lucky-ones');
 
         $response->assertStatus(200)
             ->assertJsonStructure([

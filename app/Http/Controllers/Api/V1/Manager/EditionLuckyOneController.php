@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Resources\EditionLuckyOneResource;
-use App\Models\EditionLottery;
 use App\Models\EditionLuckyOne;
 use Illuminate\Http\Request;
 
@@ -19,7 +18,7 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
 {
     /**
      * @OA\Get(
-     *     path="/api/v1/manager/lotteries/{lottery}/lucky-ones",
+     *     path="/api/v1/manager/lucky-ones",
      *     summary="Get all lucky ones for a lottery",
      *     tags={"🐧 Manager: Editions Lucky One"},
      *     security={{"sanctum":{}}},
@@ -87,9 +86,9 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
      *     )
      * )
      */
-    public function index(Request $request, EditionLottery $lottery)
+    public function index(Request $request)
     {
-        $query = $lottery->luckyOnes()->with(['participation.player'])->getQuery();
+        $query = EditionLuckyOne::with(['participation.player', 'lottery']);
 
         // Apply advanced pagination
         $this->applyAdvancedPagination(
