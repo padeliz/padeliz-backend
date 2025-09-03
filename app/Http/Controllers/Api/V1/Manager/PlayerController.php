@@ -183,7 +183,7 @@ class PlayerController extends V1BaseController
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|max:250',
             'phone' => 'required|string|max:255',
             'first_name' => 'nullable|string|max:50',
             'last_name' => 'nullable|string|max:50',
@@ -216,7 +216,7 @@ class PlayerController extends V1BaseController
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             @OA\Property(property="name", type="string", maxLength=255, description="Player name"),
+     *             @OA\Property(property="name", type="string", maxLength=250, description="Player name"),
      *             @OA\Property(property="phone", type="string", maxLength=255, description="Player phone"),
      *             @OA\Property(property="first_name", type="string", maxLength=50, description="Player first name"),
      *             @OA\Property(property="last_name", type="string", maxLength=50, description="Player last name"),
@@ -241,7 +241,7 @@ class PlayerController extends V1BaseController
     public function update(Request $request, Player $player)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|max:250',
             'phone' => 'required|string|max:255',
             'first_name' => 'nullable|string|max:50',
             'last_name' => 'nullable|string|max:50',
@@ -273,7 +273,7 @@ class PlayerController extends V1BaseController
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             @OA\Property(property="name", type="string", maxLength=255, description="Player name"),
+     *             @OA\Property(property="name", type="string", maxLength=250, description="Player name"),
      *             @OA\Property(property="phone", type="string", maxLength=255, description="Player phone"),
      *             @OA\Property(property="first_name", type="string", maxLength=50, description="Player first name"),
      *             @OA\Property(property="last_name", type="string", maxLength=50, description="Player last name"),
@@ -298,7 +298,7 @@ class PlayerController extends V1BaseController
     public function patch(Request $request, Player $player)
     {
         $request->validate([
-            'name' => 'sometimes|required|string|max:255',
+            'name' => 'sometimes|required|string|max:250',
             'phone' => 'sometimes|required|string|max:255',
             'first_name' => 'nullable|string|max:50',
             'last_name' => 'nullable|string|max:50',

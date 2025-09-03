@@ -14,11 +14,17 @@ class DivisionResource extends JsonResource
         return [
             'id_division' => $this->id_division,
             'name' => $this->name,
-            'description' => $this->description,
             'color' => $this->color,
             'is_students_only' => $this->is_students_only,
+            'its_first_edition_id' => $this->its_first_edition_id,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
+            'edition_divisions' => $this->whenLoaded('editionDivisions', function () {
+                return EditionDivisionResource::collection($this->editionDivisions);
+            }),
+            'participations' => $this->whenLoaded('participations', function () {
+                return EditionParticipationResource::collection($this->participations);
+            }),
         ];
     }
 }

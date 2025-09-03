@@ -157,13 +157,14 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"name", "description", "start_date", "end_date"},
-     *             @OA\Property(property="name", type="string"),
-     *             @OA\Property(property="description", type="string"),
-     *             @OA\Property(property="start_date", type="string", format="date"),
-     *             @OA\Property(property="end_date", type="string", format="date"),
-     *             @OA\Property(property="location_id", type="integer"),
-     *             @OA\Property(property="max_participants", type="integer")
+     *             required={"name", "date", "location_id"},
+     *             @OA\Property(property="name", type="string", maxLength=25, description="Edition name"),
+     *             @OA\Property(property="date", type="string", format="date", description="Edition date"),
+     *             @OA\Property(property="location_id", type="integer", description="Location ID"),
+     *             @OA\Property(property="entry_fee", type="integer", description="Entry fee in RON", default=55),
+     *             @OA\Property(property="students_entry_fee", type="integer", description="Students entry fee in RON", default=45),
+     *             @OA\Property(property="arriving_time", type="string", format="time", description="Arriving time"),
+     *             @OA\Property(property="closing_time", type="string", format="time", description="Closing time")
      *         )
      *     ),
      *     @OA\Response(
@@ -188,12 +189,13 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'description' => 'required|string',
-            'start_date' => 'required|date',
-            'end_date' => 'required|date|after:start_date',
-            'location_id' => 'nullable|exists:locations,id',
-            'max_participants' => 'nullable|integer|min:1',
+            'name' => 'required|string|max:25',
+            'date' => 'required|date',
+            'location_id' => 'required|exists:locations,id_location',
+            'entry_fee' => 'nullable|integer|min:0',
+            'students_entry_fee' => 'nullable|integer|min:0',
+            'arriving_time' => 'required|date_format:H:i:s',
+            'closing_time' => 'required|date_format:H:i:s|after:arriving_time',
         ]);
 
         $edition = Edition::create($request->all());
@@ -220,12 +222,13 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             @OA\Property(property="name", type="string", maxLength=255),
-     *             @OA\Property(property="description", type="string"),
-     *             @OA\Property(property="start_date", type="string", format="date"),
-     *             @OA\Property(property="end_date", type="string", format="date"),
-     *             @OA\Property(property="location_id", type="integer"),
-     *             @OA\Property(property="max_participants", type="integer", minimum=1)
+     *             @OA\Property(property="name", type="string", maxLength=25, description="Edition name"),
+     *             @OA\Property(property="date", type="string", format="date", description="Edition date"),
+     *             @OA\Property(property="location_id", type="integer", description="Location ID"),
+     *             @OA\Property(property="entry_fee", type="integer", description="Entry fee in RON", minimum=0),
+     *             @OA\Property(property="students_entry_fee", type="integer", description="Students entry fee in RON", minimum=0),
+     *             @OA\Property(property="arriving_time", type="string", format="time", description="Arriving time"),
+     *             @OA\Property(property="closing_time", type="string", format="time", description="Closing time")
      *         )
      *     ),
      *     @OA\Response(
@@ -250,13 +253,13 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
     public function update(Request $request, Edition $edition)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
+            'name' => 'required|string|max:25',
             'date' => 'required|date',
-            'location_id' => 'nullable|exists:locations,id',
-            'entry_fee' => 'nullable|numeric|min:0',
-            'students_entry_fee' => 'nullable|numeric|min:0',
-            'arriving_time' => 'nullable|date_format:H:i:s',
-            'closing_time' => 'nullable|date_format:H:i:s',
+            'location_id' => 'required|exists:locations,id_location',
+            'entry_fee' => 'nullable|integer|min:0',
+            'students_entry_fee' => 'nullable|integer|min:0',
+            'arriving_time' => 'required|date_format:H:i:s',
+            'closing_time' => 'required|date_format:H:i:s|after:arriving_time',
         ]);
 
         $edition->update($request->all());
@@ -282,12 +285,13 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             @OA\Property(property="name", type="string", maxLength=255),
-     *             @OA\Property(property="description", type="string"),
-     *             @OA\Property(property="start_date", type="string", format="date"),
-     *             @OA\Property(property="end_date", type="string", format="date"),
-     *             @OA\Property(property="location_id", type="integer"),
-     *             @OA\Property(property="max_participants", type="integer", minimum=1)
+     *             @OA\Property(property="name", type="string", maxLength=25, description="Edition name"),
+     *             @OA\Property(property="date", type="string", format="date", description="Edition date"),
+     *             @OA\Property(property="location_id", type="integer", description="Location ID"),
+     *             @OA\Property(property="entry_fee", type="integer", description="Entry fee in RON", minimum=0),
+     *             @OA\Property(property="students_entry_fee", type="integer", description="Students entry fee in RON", minimum=0),
+     *             @OA\Property(property="arriving_time", type="string", format="time", description="Arriving time"),
+     *             @OA\Property(property="closing_time", type="string", format="time", description="Closing time")
      *         )
      *     ),
      *     @OA\Response(
@@ -312,7 +316,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
     public function patch(Request $request, Edition $edition)
     {
         $request->validate([
-            'name' => 'sometimes|string|max:255',
+            'name' => 'sometimes|string|max:25',
             'date' => 'sometimes|date',
             'location_id' => 'nullable|exists:locations,id',
             'entry_fee' => 'nullable|numeric|min:0',

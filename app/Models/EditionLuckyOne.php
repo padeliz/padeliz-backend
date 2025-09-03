@@ -11,15 +11,15 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * @OA\Schema(
  *     schema="EditionLuckyOne",
- *     required={"lottery_id", "drawn_participation_id"},
+ *     required={"lottery_id", "drawn_participation_id", "drawn_at", "available_at"},
  *     @OA\Property(property="id_lucky_one", type="integer", format="int64"),
  *     @OA\Property(property="lottery_id", type="integer", format="int64"),
  *     @OA\Property(property="drawn_participation_id", type="integer", format="int64"),
- *     @OA\Property(property="drawn_at", type="integer", format="int64"),
- *     @OA\Property(property="available_at", type="integer", format="int64", nullable=true),
- *     @OA\Property(property="announced_at", type="integer", format="int64", nullable=true),
- *     @OA\Property(property="accepted_at", type="integer", format="int64", nullable=true),
- *     @OA\Property(property="rejected_at", type="integer", format="int64", nullable=true),
+ *     @OA\Property(property="drawn_at", type="integer", format="timestamp"),
+ *     @OA\Property(property="available_at", type="integer", format="timestamp"),
+ *     @OA\Property(property="announced_at", type="integer", format="timestamp", nullable=true),
+ *     @OA\Property(property="accepted_at", type="integer", format="timestamp", nullable=true),
+ *     @OA\Property(property="rejected_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(

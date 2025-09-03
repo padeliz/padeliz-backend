@@ -45,7 +45,7 @@ class EligibilityControllerTest extends TestCase
             'success',
             'message',
             'data' => [
-                'id',
+                'id_eligibility',
                 'player_id',
                 'review_status',
                 ],
@@ -72,7 +72,7 @@ class EligibilityControllerTest extends TestCase
             'success',
             'message',
             'data' => [
-                'id',
+                'id_eligibility',
                 'player_id',
                 'review_status',
                 ],
@@ -99,7 +99,7 @@ class EligibilityControllerTest extends TestCase
             'success',
             'message',
             'data' => [
-                'id',
+                'id_eligibility',
                 'player_id',
                 'review_status',
                 ],
@@ -125,7 +125,7 @@ class EligibilityControllerTest extends TestCase
             'success',
             'message',
             'data' => [
-                'id',
+                'id_eligibility',
                 'player_id',
                 'edition_id',
                 'name',
@@ -153,7 +153,7 @@ class EligibilityControllerTest extends TestCase
             'success',
             'message',
             'data' => [
-                'id',
+                'id_eligibility',
                 'player_id',
                 'edition_id',
                 ],

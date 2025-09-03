@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Model;
  *     required={"name", "date", "location_id"},
  *     @OA\Property(property="id_edition", type="integer", format="int64"),
  *     @OA\Property(property="location_id", type="integer", format="int64"),
- *     @OA\Property(property="name", type="string", maxLength=255),
+ *     @OA\Property(property="name", type="string", maxLength=25),
  *     @OA\Property(property="date", type="string", format="date"),
  *     @OA\Property(property="entry_fee", type="number"),
  *     @OA\Property(property="students_entry_fee", type="number"),

@@ -141,8 +141,8 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *         required=true,
      *         @OA\JsonContent(
      *             required={"player_1", "player_2"},
-     *             @OA\Property(property="player_1", type="integer", description="Player 1 ID"),
-     *             @OA\Property(property="player_2", type="integer", description="Player 2 ID")
+     *             @OA\Property(property="player_1", type="string", maxLength=50, description="Player 1 name"),
+     *             @OA\Property(property="player_2", type="string", maxLength=50, description="Player 2 name")
      *         )
      *     ),
      *     @OA\Response(
@@ -167,8 +167,8 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
     public function store(Request $request)
     {
         $validated = $request->validate([
-            'player_1' => 'required|integer|exists:players,id_player',
-            'player_2' => 'required|integer|exists:players,id_player|different:player_1',
+            'player_1' => 'required|string|max:50',
+            'player_2' => 'required|string|max:50|different:player_1',
         ]);
 
         // Check if team already exists
@@ -214,8 +214,8 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             @OA\Property(property="player_1", type="integer", description="Player 1 ID"),
-     *             @OA\Property(property="player_2", type="integer", description="Player 2 ID")
+     *             @OA\Property(property="player_1", type="string", maxLength=50, description="Player 1 name"),
+     *             @OA\Property(property="player_2", type="string", maxLength=50, description="Player 2 name")
      *         )
      *     ),
      *     @OA\Response(
@@ -240,8 +240,8 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
     public function update(Request $request, MatchesTeam $team)
     {
         $validated = $request->validate([
-            'player_1' => 'required|integer|exists:players,id_player',
-            'player_2' => 'required|integer|exists:players,id_player',
+            'player_1' => 'required|string|max:50',
+            'player_2' => 'required|string|max:50',
         ]);
 
         // Ensure players are different
@@ -298,8 +298,8 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             @OA\Property(property="player_1", type="integer", description="Player 1 ID"),
-     *             @OA\Property(property="player_2", type="integer", description="Player 2 ID")
+     *             @OA\Property(property="player_1", type="string", maxLength=50, description="Player 1 name"),
+     *             @OA\Property(property="player_2", type="string", maxLength=50, description="Player 2 name")
      *         )
      *     ),
      *     @OA\Response(
@@ -324,8 +324,8 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
     public function patch(Request $request, MatchesTeam $team)
     {
         $validated = $request->validate([
-            'player_1' => 'sometimes|integer|exists:players,id_player',
-            'player_2' => 'sometimes|integer|exists:players,id_player',
+            'player_1' => 'sometimes|string|max:50',
+            'player_2' => 'sometimes|string|max:50',
         ]);
 
         // Ensure players are different

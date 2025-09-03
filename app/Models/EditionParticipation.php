@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * @OA\Schema(
  *     schema="EditionParticipation",
- *     required={"edition_id", "player_id", "division_id"},
+ *     required={"edition_id", "player_id", "division_id", "is_minor", "is_student", "payment"},
  *     @OA\Property(property="id_participation", type="integer", format="int64"),
  *     @OA\Property(property="edition_id", type="integer", format="int64"),
  *     @OA\Property(property="player_id", type="integer", format="int64"),
@@ -19,9 +19,9 @@ use Illuminate\Database\Eloquent\Model;
  *     @OA\Property(property="is_minor", type="boolean"),
  *     @OA\Property(property="is_student", type="boolean"),
  *     @OA\Property(property="discount", type="number", nullable=true),
- *     @OA\Property(property="payment", type="number", nullable=true),
- *     @OA\Property(property="absence_reason", type="string", nullable=true),
- *     @OA\Property(property="ban_reason", type="string", nullable=true),
+ *     @OA\Property(property="payment", type="number"),
+ *     @OA\Property(property="absence_reason", type="string", enum={"SICK", "FORGOT", "EXAMS", "RECONSIDERED"}, nullable=true),
+ *     @OA\Property(property="ban_reason", type="string", enum={"LEFT SUDDENLY", "AGGRESSIVE PLAYER", "LIBIDINOUS", ""}, nullable=true),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(

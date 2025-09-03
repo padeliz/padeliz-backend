@@ -31,7 +31,12 @@ class EditionDivisionResource extends JsonResource
             'fixed_teams' => $this->fixed_teams,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
-            'division' => new DivisionResource($this->whenLoaded('division')),
+            'edition' => $this->whenLoaded('edition', function () {
+                return new EditionResource($this->edition);
+            }),
+            'division' => $this->whenLoaded('division', function () {
+                return new DivisionResource($this->division);
+            }),
         ];
     }
 }

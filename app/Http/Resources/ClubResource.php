@@ -20,6 +20,9 @@ class ClubResource extends JsonResource
             'locations' => $this->whenLoaded('locations', function () {
                 return LocationResource::collection($this->locations);
             }),
+            'prizes' => $this->whenLoaded('prizes', function () {
+                return PrizeFromClubResource::collection($this->prizes);
+            }),
         ];
     }
 }

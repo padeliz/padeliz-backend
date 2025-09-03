@@ -11,15 +11,15 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * @OA\Schema(
  *     schema="EditionDivision",
- *     required={"edition_id", "division_id"},
+ *     required={"edition_id", "division_id", "players_limit", "court", "playing_start_time", "playing_end_time", "player_matches_repeat", "include_scores", "has_demonstrative_match", "fixed_teams"},
  *     @OA\Property(property="id_edition_division", type="integer", format="int64"),
  *     @OA\Property(property="edition_id", type="integer", format="int64"),
  *     @OA\Property(property="division_id", type="integer", format="int64"),
  *     @OA\Property(property="players_limit", type="integer"),
- *     @OA\Property(property="court", type="string"),
+ *     @OA\Property(property="court", type="string", maxLength=30),
  *     @OA\Property(property="playing_start_time", type="string", format="time"),
  *     @OA\Property(property="playing_end_time", type="string", format="time"),
- *     @OA\Property(property="player_opponents_nr", type="integer"),
+ *     @OA\Property(property="player_opponents_nr", type="integer", nullable=true),
  *     @OA\Property(property="player_matches_repeat", type="integer"),
  *     @OA\Property(property="include_scores", type="boolean"),
  *     @OA\Property(property="has_demonstrative_match", type="boolean"),

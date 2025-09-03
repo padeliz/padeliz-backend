@@ -11,12 +11,12 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * @OA\Schema(
  *     schema="EditionLottery",
- *     required={"edition_id", "prize_id"},
+ *     required={"edition_id", "orderliness", "total_draws_nr"},
  *     @OA\Property(property="id_lottery", type="integer", format="int64"),
  *     @OA\Property(property="edition_id", type="integer", format="int64"),
- *     @OA\Property(property="division_id", type="integer", format="int64", nullable=true),
- *     @OA\Property(property="prize_id", type="integer", format="int64"),
  *     @OA\Property(property="orderliness", type="integer"),
+ *     @OA\Property(property="division_id", type="integer", format="int64", nullable=true),
+ *     @OA\Property(property="prize_id", type="integer", format="int64", nullable=true),
  *     @OA\Property(property="total_draws_nr", type="integer"),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),

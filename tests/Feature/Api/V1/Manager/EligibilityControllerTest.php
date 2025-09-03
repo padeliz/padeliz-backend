@@ -59,7 +59,7 @@ class EligibilityControllerTest extends TestCase
                         'id_eligibility',
                         'player_id',
                     'review_status',
-                        'notes',
+                        'review_message',
                     ],
                 ],
                 'links' => [
@@ -102,8 +102,8 @@ class EligibilityControllerTest extends TestCase
                 'data' => [
                     'id_eligibility' => $eligibility->id_eligibility,
                     'player_id' => $this->player->id_player,
-                'review_status' => 'approved',
-                    'notes' => 'Player is eligible',
+                                    'review_status' => 'approved',
+                    'review_message' => 'Player is eligible',
                 ],
             ]);
     }
@@ -128,7 +128,7 @@ class EligibilityControllerTest extends TestCase
                 'data' => [
                     'player_id' => $this->player->id_player,
                 'review_status' => 'pending',
-                    'notes' => 'Under review',
+                    'review_message' => 'Under review',
                 ],
             ]);
 
@@ -153,7 +153,7 @@ class EligibilityControllerTest extends TestCase
 
         $updateData = [
             'review_status' => 'approved',
-            'notes' => 'Player approved',
+            'review_message' => 'Player approved',
         ];
 
         $response = $this->putJson("/api/v1/manager/eligibility/{$eligibility->id_eligibility}", $updateData);
@@ -165,7 +165,7 @@ class EligibilityControllerTest extends TestCase
                 'data' => [
                     'id_eligibility' => $eligibility->id_eligibility,
                 'review_status' => 'approved',
-                    'notes' => 'Player approved',
+                    'review_message' => 'Player approved',
                 ],
             ]);
 
@@ -198,13 +198,13 @@ class EligibilityControllerTest extends TestCase
                 'message' => 'Eligibility partially updated successfully',
                 'data' => [
                     'review_status' => 'approved',
-                    'notes' => 'Under review', // Should remain unchanged
+                    'review_message' => 'Under review', // Should remain unchanged
                 ],
             ]);
 
-        // Test partial update with only notes
+        // Test partial update with only review_message
         $response = $this->patchJson("/api/v1/manager/eligibility/{$eligibility->id_eligibility}", [
-            'notes' => 'Partially Updated Notes',
+            'review_message' => 'Partially Updated Notes',
         ]);
 
         $response->assertStatus(200)
@@ -213,7 +213,7 @@ class EligibilityControllerTest extends TestCase
                 'message' => 'Eligibility partially updated successfully',
                 'data' => [
                     'review_status' => 'approved', // Should remain from previous update
-                    'notes' => 'Partially Updated Notes',
+                    'review_message' => 'Partially Updated Notes',
                 ],
             ]);
     }
@@ -229,7 +229,7 @@ class EligibilityControllerTest extends TestCase
 
         // Test PUT without required fields
         $response = $this->putJson("/api/v1/manager/eligibility/{$eligibility->id_eligibility}", [
-            'notes' => 'Only Notes',
+            'review_message' => 'Only Notes',
         ]);
 
         $response->assertStatus(422)

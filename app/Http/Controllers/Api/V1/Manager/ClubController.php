@@ -156,8 +156,8 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      *         required=true,
      *         @OA\JsonContent(
      *             required={"name", "city"},
-     *             @OA\Property(property="name", type="string"),
-     *             @OA\Property(property="city", type="string")
+     *             @OA\Property(property="name", type="string", maxLength=30, description="Club name"),
+     *             @OA\Property(property="city", type="string", maxLength=30, description="Club city")
      *         )
      *     ),
      *     @OA\Response(
@@ -182,8 +182,8 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
     public function store(Request $request)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'city' => 'required|string|max:255',
+            'name' => 'required|string|max:30',
+            'city' => 'required|string|max:30',
         ]);
 
         $club = Club::create($request->all());
@@ -210,8 +210,8 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             @OA\Property(property="name", type="string", maxLength=255),
-     *             @OA\Property(property="city", type="string", maxLength=255)
+     *             @OA\Property(property="name", type="string", maxLength=30),
+     *             @OA\Property(property="city", type="string", maxLength=30)
      *         )
      *     ),
      *     @OA\Response(
@@ -236,8 +236,8 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
     public function update(Request $request, Club $club)
     {
         $request->validate([
-            'name' => 'required|string|max:255',
-            'city' => 'required|string|max:255',
+            'name' => 'required|string|max:30',
+            'city' => 'required|string|max:30',
         ]);
 
         $club->update($request->all());
@@ -263,8 +263,8 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             @OA\Property(property="name", type="string", maxLength=255),
-     *             @OA\Property(property="city", type="string", maxLength=255)
+     *             @OA\Property(property="name", type="string", maxLength=30),
+     *             @OA\Property(property="city", type="string", maxLength=30)
      *         )
      *     ),
      *     @OA\Response(
@@ -289,8 +289,8 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
     public function patch(Request $request, Club $club)
     {
         $request->validate([
-            'name' => 'sometimes|required|string|max:255',
-            'city' => 'sometimes|required|string|max:255',
+            'name' => 'sometimes|required|string|max:30',
+            'city' => 'sometimes|required|string|max:30',
         ]);
 
         $club->update($request->all());

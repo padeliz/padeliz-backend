@@ -31,6 +31,9 @@ class EditionResource extends JsonResource
             'participations' => $this->whenLoaded('participations', function () {
                 return EditionParticipationResource::collection($this->participations);
             }),
+            'lotteries' => $this->whenLoaded('lotteries', function () {
+                return EditionLotteryResource::collection($this->lotteries);
+            }),
         ];
     }
 }

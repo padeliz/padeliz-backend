@@ -194,6 +194,9 @@ class EditionControllerTest extends TestCase
         $updateData = [
             'name' => 'Updated Edition',
             'date' => now()->addDays(60)->format('Y-m-d'),
+            'location_id' => $this->location->id_location,
+            'arriving_time' => '09:00:00',
+            'closing_time' => '18:00:00',
         ];
 
         $response = $this->putJson("/api/v1/manager/editions/{$edition->id_edition}", $updateData);

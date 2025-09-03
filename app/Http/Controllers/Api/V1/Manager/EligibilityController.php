@@ -162,10 +162,11 @@ class EligibilityController extends V1BaseController
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"player_id", "status"},
+     *             required={"player_id", "edition_id", "review_status"},
      *             @OA\Property(property="player_id", type="integer", description="Player ID"),
-     *             @OA\Property(property="status", type="string", enum={"approved", "rejected", "pending"}, description="Eligibility status"),
-     *             @OA\Property(property="notes", type="string", description="Additional notes")
+     *             @OA\Property(property="edition_id", type="integer", description="Edition ID"),
+     *             @OA\Property(property="review_status", type="string", enum={"approved", "rejected", "pending"}, description="Eligibility review status"),
+     *             @OA\Property(property="review_message", type="string", description="Review message")
      *         )
      *     ),
      *     @OA\Response(
@@ -242,9 +243,9 @@ class EligibilityController extends V1BaseController
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"status"},
-     *             @OA\Property(property="status", type="string", enum={"approved", "rejected", "pending"}),
-     *             @OA\Property(property="notes", type="string")
+     *             required={"review_status"},
+     *             @OA\Property(property="review_status", type="string", enum={"approved", "rejected", "pending"}),
+     *             @OA\Property(property="review_message", type="string")
      *         )
      *     ),
      *     @OA\Response(
@@ -265,12 +266,12 @@ class EligibilityController extends V1BaseController
     {
         $request->validate([
             'review_status' => 'required|in:approved,rejected,pending',
-            'notes' => 'nullable|string',
+            'review_message' => 'nullable|string',
         ]);
 
         $eligibility->update([
             'review_status' => $request->review_status,
-            'review_message' => $request->notes,
+            'review_message' => $request->review_message,
         ]);
 
         return $this->resourceResponse(
@@ -294,8 +295,8 @@ class EligibilityController extends V1BaseController
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             @OA\Property(property="status", type="string", enum={"approved", "rejected", "pending"}),
-     *             @OA\Property(property="notes", type="string")
+     *             @OA\Property(property="review_status", type="string", enum={"approved", "rejected", "pending"}),
+     *             @OA\Property(property="review_message", type="string")
      *         )
      *     ),
      *     @OA\Response(
@@ -316,18 +317,10 @@ class EligibilityController extends V1BaseController
     {
         $request->validate([
             'review_status' => 'sometimes|in:approved,rejected,pending',
-            'notes' => 'nullable|string',
+            'review_message' => 'nullable|string',
         ]);
 
-        $updateData = [];
-        if ($request->has('review_status')) {
-            $updateData['review_status'] = $request->review_status;
-        }
-        if ($request->has('notes')) {
-            $updateData['review_message'] = $request->notes;
-        }
-
-        $eligibility->update($updateData);
+        $eligibility->update($request->all());
 
         return $this->resourceResponse(
             new PlayerEligibilityResource($eligibility),

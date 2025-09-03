@@ -27,7 +27,10 @@ class EditionLuckyOneResource extends JsonResource
             'rejected_at' => $this->rejected_at,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
-            'drawn_participation' => $this->whenLoaded('participation', function () {
+            'lottery' => $this->whenLoaded('lottery', function () {
+                return new EditionLotteryResource($this->lottery);
+            }),
+            'participation' => $this->whenLoaded('participation', function () {
                 return new EditionParticipationResource($this->participation);
             }),
         ];

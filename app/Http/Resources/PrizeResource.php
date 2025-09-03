@@ -23,6 +23,9 @@ class PrizeResource extends JsonResource
             'box_2_text_color' => $this->box_2_text_color,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
+            'clubPrizes' => $this->whenLoaded('clubPrizes', function () {
+                return PrizeFromClubResource::collection($this->clubPrizes);
+            }),
         ];
     }
 }

@@ -11,11 +11,12 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * @OA\Schema(
  *     schema="Division",
- *     required={"name", "color"},
+ *     required={"name", "color", "is_students_only", "its_first_edition_id"},
  *     @OA\Property(property="id_division", type="integer", format="int64"),
- *     @OA\Property(property="name", type="string", maxLength=255),
+ *     @OA\Property(property="name", type="string", maxLength=25),
  *     @OA\Property(property="color", type="string", maxLength=7),
  *     @OA\Property(property="is_students_only", type="boolean"),
+ *     @OA\Property(property="its_first_edition_id", type="integer"),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true)
  * )

@@ -172,9 +172,9 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *             @OA\Property(property="playing_end_time", type="string", format="time", description="Playing end time"),
      *             @OA\Property(property="player_opponents_nr", type="integer", description="Number of player opponents"),
      *             @OA\Property(property="player_matches_repeat", type="integer", description="Player matches repeat", default=1),
-     *             @OA\Property(property="include_scores", type="integer", enum={0, 1}, description="Include scores (use 0 or 1, not true/false)", default=1),
-     *             @OA\Property(property="has_demonstrative_match", type="integer", enum={0, 1}, description="Has demonstrative match (use 0 or 1, not true/false)", default=0),
-     *             @OA\Property(property="fixed_teams", type="integer", enum={0, 1}, description="Fixed teams (use 0 or 1, not true/false)", default=0)
+     *             @OA\Property(property="include_scores", type="boolean", description="Include scores", default=1),
+     *             @OA\Property(property="has_demonstrative_match", type="boolean", description="Has demonstrative match", default=0),
+     *             @OA\Property(property="fixed_teams", type="boolean", description="Fixed teams", default=0)
      *         )
      *     ),
      *     @OA\Response(
@@ -256,9 +256,9 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *             @OA\Property(property="playing_end_time", type="string", format="time", description="Playing end time"),
      *             @OA\Property(property="player_opponents_nr", type="integer", description="Number of player opponents"),
      *             @OA\Property(property="player_matches_repeat", type="integer", description="Player matches repeat"),
-     *             @OA\Property(property="include_scores", type="integer", enum={0, 1}, description="Include scores (use 0 or 1, not true/false)"),
-     *             @OA\Property(property="has_demonstrative_match", type="integer", enum={0, 1}, description="Has demonstrative match (use 0 or 1, not true/false)"),
-     *             @OA\Property(property="fixed_teams", type="integer", enum={0, 1}, description="Fixed teams (use 0 or 1, not true/false)")
+     *             @OA\Property(property="include_scores", type="boolean", description="Include scores"),
+     *             @OA\Property(property="has_demonstrative_match", type="boolean", description="Has demonstrative match"),
+     *             @OA\Property(property="fixed_teams", type="boolean", description="Fixed teams")
      *         )
      *     ),
      *     @OA\Response(
@@ -355,9 +355,9 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *             @OA\Property(property="playing_end_time", type="string", format="time", description="Playing end time"),
      *             @OA\Property(property="player_opponents_nr", type="integer", description="Number of player opponents"),
      *             @OA\Property(property="player_matches_repeat", type="integer", description="Player matches repeat"),
-     *             @OA\Property(property="include_scores", type="integer", enum={0, 1}, description="Include scores (use 0 or 1, not true/false)"),
-     *             @OA\Property(property="has_demonstrative_match", type="integer", enum={0, 1}, description="Has demonstrative match (use 0 or 1, not true/false)"),
-     *             @OA\Property(property="fixed_teams", type="integer", enum={0, 1}, description="Fixed teams (use 0 or 1, not true/false)")
+     *             @OA\Property(property="include_scores", type="boolean", description="Include scores"),
+     *             @OA\Property(property="has_demonstrative_match", type="boolean", description="Has demonstrative match"),
+     *             @OA\Property(property="fixed_teams", type="boolean", description="Fixed teams")
      *         )
      *     ),
      *     @OA\Response(

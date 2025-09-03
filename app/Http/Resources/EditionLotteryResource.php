@@ -25,13 +25,16 @@ class EditionLotteryResource extends JsonResource
             'total_draws_nr' => $this->total_draws_nr,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
+            'edition' => $this->whenLoaded('edition', function () {
+                return new EditionResource($this->edition);
+            }),
             'prize' => $this->whenLoaded('prize', function () {
                 return new PrizeResource($this->prize);
             }),
             'division' => $this->whenLoaded('division', function () {
                 return new DivisionResource($this->division);
             }),
-            'lucky_ones' => $this->whenLoaded('luckyOnes', function () {
+            'luckyOnes' => $this->whenLoaded('luckyOnes', function () {
                 return EditionLuckyOneResource::collection($this->luckyOnes);
             }),
         ];
