@@ -116,9 +116,6 @@ Route::prefix('v1')->group(function () {
         // Edition management
         Route::prefix('editions')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'index']);
-            Route::get('upcoming', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'upcoming']);
-            Route::get('ongoing', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'ongoing']);
-            Route::get('past', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'past']);
             Route::get('{edition}', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'store']);
             Route::put('{edition}', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'update']);
