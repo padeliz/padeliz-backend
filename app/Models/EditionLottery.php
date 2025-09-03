@@ -14,10 +14,22 @@ use Illuminate\Database\Eloquent\Model;
  *     required={"edition_id", "orderliness", "total_draws_nr"},
  *     @OA\Property(property="id_lottery", type="integer", format="int64"),
  *     @OA\Property(property="edition_id", type="integer", format="int64"),
- *     @OA\Property(property="orderliness", type="integer"),
+ *     @OA\Property(
+ *         property="orderliness",
+ *         type="integer",
+ *         minimum=0,
+ *         description="Orderliness score",
+ *         example=5
+ *     ),
  *     @OA\Property(property="division_id", type="integer", format="int64", nullable=true),
  *     @OA\Property(property="prize_id", type="integer", format="int64", nullable=true),
- *     @OA\Property(property="total_draws_nr", type="integer"),
+ *     @OA\Property(
+ *         property="total_draws_nr",
+ *         type="integer",
+ *         minimum=1,
+ *         description="Total number of draws",
+ *         example=10
+ *     ),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(

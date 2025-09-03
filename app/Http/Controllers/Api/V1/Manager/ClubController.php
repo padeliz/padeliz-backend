@@ -75,6 +75,21 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -173,8 +188,23 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -227,8 +257,28 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Club not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -280,8 +330,28 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Club not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -319,6 +389,21 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      *         @OA\JsonContent(ref="#/components/schemas/ApiResponse")
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Club not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=409,
      *         description="Club cannot be deleted due to linked data",
      *         @OA\JsonContent(
@@ -335,6 +420,11 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -417,6 +507,16 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=409,
      *         description="All clubs failed to delete due to linked data",
      *         @OA\JsonContent(
@@ -435,6 +535,16 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */

@@ -14,12 +14,51 @@ use Illuminate\Database\Eloquent\Model;
  *     required={"name", "date", "location_id"},
  *     @OA\Property(property="id_edition", type="integer", format="int64"),
  *     @OA\Property(property="location_id", type="integer", format="int64"),
- *     @OA\Property(property="name", type="string", maxLength=25),
- *     @OA\Property(property="date", type="string", format="date"),
- *     @OA\Property(property="entry_fee", type="number"),
- *     @OA\Property(property="students_entry_fee", type="number"),
- *     @OA\Property(property="arriving_time", type="string", format="time"),
- *     @OA\Property(property="closing_time", type="string", format="time"),
+ *     @OA\Property(
+ *         property="name",
+ *         type="string",
+ *         maxLength=25,
+ *         description="Edition name",
+ *         example="Summer 2024"
+ *     ),
+ *     @OA\Property(
+ *         property="date",
+ *         type="string",
+ *         format="date",
+ *         pattern="^\\d{4}-\\d{2}-\\d{2}$",
+ *         description="Edition date in YYYY-MM-DD format",
+ *         example="2024-06-15"
+ *     ),
+ *     @OA\Property(
+ *         property="entry_fee",
+ *         type="integer",
+ *         minimum=0,
+ *         description="Entry fee in RON",
+ *         example=55
+ *     ),
+ *     @OA\Property(
+ *         property="students_entry_fee",
+ *         type="integer",
+ *         minimum=0,
+ *         description="Students entry fee in RON",
+ *         example=45
+ *     ),
+ *     @OA\Property(
+ *         property="arriving_time",
+ *         type="string",
+ *         format="time",
+ *         pattern="^([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$",
+ *         description="Arriving time in HH:MM:SS format",
+ *         example="09:00:00"
+ *     ),
+ *     @OA\Property(
+ *         property="closing_time",
+ *         type="string",
+ *         format="time",
+ *         pattern="^([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$",
+ *         description="Closing time in HH:MM:SS format",
+ *         example="18:00:00"
+ *     ),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(

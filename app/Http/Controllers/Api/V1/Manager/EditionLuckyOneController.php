@@ -83,6 +83,21 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -135,6 +150,26 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Lucky one not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -153,6 +188,7 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
      *     path="/api/v1/manager/lucky-ones",
      *     summary="Create a new lucky one",
      *     tags={"🐧 Manager: Editions Lucky One"},
+     *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -179,8 +215,23 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -232,6 +283,7 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
      *     path="/api/v1/manager/lucky-ones/{luckyOne}",
      *     summary="Update lucky one details (complete replacement)",
      *     tags={"🐧 Manager: Editions Lucky One"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="luckyOne",
      *         in="path",
@@ -263,8 +315,28 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Lucky one not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -313,6 +385,7 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
      *     path="/api/v1/manager/lucky-ones/{luckyOne}",
      *     summary="Partially update lucky one details",
      *     tags={"🐧 Manager: Editions Lucky One"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="luckyOne",
      *         in="path",
@@ -344,8 +417,28 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Lucky one not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -405,6 +498,26 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
      *         response=200,
      *         description="Lucky one deleted successfully",
      *         @OA\JsonContent(ref="#/components/schemas/ApiResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Lucky one not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -479,6 +592,26 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
      *     @OA\Response(
      *         response=400,
      *         description="No lucky ones provided for deletion",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )

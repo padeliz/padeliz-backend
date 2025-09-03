@@ -21,6 +21,7 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *     path="/api/v1/manager/matches-teams",
      *     summary="Get paginated list of match teams",
      *     tags={"🐧 Manager: Matches Teams"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Parameter(
      *         name="per_page",
@@ -68,6 +69,21 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -102,6 +118,7 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *     path="/api/v1/manager/matches-teams/{team}",
      *     summary="Get match team details",
      *     tags={"🐧 Manager: Matches Teams"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="team",
      *         in="path",
@@ -119,6 +136,26 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Match team not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -137,6 +174,7 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *     path="/api/v1/manager/matches-teams",
      *     summary="Create a new match team",
      *     tags={"🐧 Manager: Matches Teams"},
+     *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -158,8 +196,23 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -205,6 +258,7 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *     path="/api/v1/manager/matches-teams/{team}",
      *     summary="Update match team details (complete replacement)",
      *     tags={"🐧 Manager: Matches Teams"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="team",
      *         in="path",
@@ -231,8 +285,28 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Match team not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -289,6 +363,7 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *     path="/api/v1/manager/matches-teams/{team}",
      *     summary="Partially update match team details",
      *     tags={"🐧 Manager: Matches Teams"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="team",
      *         in="path",
@@ -315,8 +390,28 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Match team not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -384,6 +479,26 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *         response=200,
      *         description="Match team deleted successfully",
      *         @OA\JsonContent(ref="#/components/schemas/ApiResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Match team not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -458,6 +573,26 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *     @OA\Response(
      *         response=400,
      *         description="No match teams provided for deletion",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )

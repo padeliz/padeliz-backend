@@ -16,11 +16,41 @@ use Illuminate\Database\Eloquent\Model;
  *     @OA\Property(property="name", type="string", maxLength=60),
  *     @OA\Property(property="image", type="string", maxLength=100, nullable=true),
  *     @OA\Property(property="box_1_text", type="string", maxLength=200),
- *     @OA\Property(property="box_1_bg_color", type="string", maxLength=7),
- *     @OA\Property(property="box_1_text_color", type="string", maxLength=7),
+ *     @OA\Property(
+ *         property="box_1_bg_color",
+ *         type="string",
+ *         maxLength=7,
+ *         pattern="^#[0-9A-F]{6}$",
+ *         description="Box 1 background hex color",
+ *         example="#FF0000"
+ *     ),
+ *     @OA\Property(
+ *         property="box_1_text_color",
+ *         type="string",
+ *         maxLength=7,
+ *         pattern="^#[0-9A-F]{6}$",
+ *         description="Box 1 text hex color",
+ *         example="#FFFFFF"
+ *     ),
  *     @OA\Property(property="box_2_text", type="string", maxLength=200, nullable=true),
- *     @OA\Property(property="box_2_bg_color", type="string", maxLength=7, nullable=true),
- *     @OA\Property(property="box_2_text_color", type="string", maxLength=7, nullable=true),
+ *     @OA\Property(
+ *         property="box_2_bg_color",
+ *         type="string",
+ *         maxLength=7,
+ *         nullable=true,
+ *         pattern="^#[0-9A-F]{6}$",
+ *         description="Box 2 background hex color",
+ *         example="#0000FF"
+ *     ),
+ *     @OA\Property(
+ *         property="box_2_text_color",
+ *         type="string",
+ *         maxLength=7,
+ *         nullable=true,
+ *         pattern="^#[0-9A-F]{6}$",
+ *         description="Box 2 text hex color",
+ *         example="#FFFFFF"
+ *     ),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(

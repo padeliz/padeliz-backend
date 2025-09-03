@@ -18,8 +18,21 @@ use Illuminate\Database\Eloquent\Model;
  *     @OA\Property(property="division_id", type="integer", format="int64"),
  *     @OA\Property(property="is_minor", type="boolean"),
  *     @OA\Property(property="is_student", type="boolean"),
- *     @OA\Property(property="discount", type="number", nullable=true),
- *     @OA\Property(property="payment", type="number"),
+ *     @OA\Property(
+ *         property="discount",
+ *         type="integer",
+ *         nullable=true,
+ *         minimum=0,
+ *         description="Discount amount in RON",
+ *         example=10
+ *     ),
+ *     @OA\Property(
+ *         property="payment",
+ *         type="integer",
+ *         minimum=0,
+ *         description="Payment amount in RON",
+ *         example=45
+ *     ),
  *     @OA\Property(property="absence_reason", type="string", enum={"SICK", "FORGOT", "EXAMS", "RECONSIDERED"}, nullable=true),
  *     @OA\Property(property="ban_reason", type="string", enum={"LEFT SUDDENLY", "AGGRESSIVE PLAYER", "LIBIDINOUS", ""}, nullable=true),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),

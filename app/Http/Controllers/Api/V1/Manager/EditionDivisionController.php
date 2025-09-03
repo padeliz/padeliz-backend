@@ -22,6 +22,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *     path="/api/v1/manager/edition-divisions",
      *     summary="Get paginated list of edition divisions",
      *     tags={"🐧 Manager: Editions Divisions"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Parameter(
      *         name="per_page",
@@ -91,6 +92,21 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -125,6 +141,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *     path="/api/v1/manager/edition-divisions/{editionDivision}",
      *     summary="Get edition division details",
      *     tags={"🐧 Manager: Editions Divisions"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="editionDivision",
      *         in="path",
@@ -142,6 +159,26 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Edition division not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -160,6 +197,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *     path="/api/v1/manager/edition-divisions",
      *     summary="Create a new edition division",
      *     tags={"🐧 Manager: Editions Divisions"},
+     *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -190,8 +228,23 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -239,6 +292,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *     path="/api/v1/manager/edition-divisions/{editionDivision}",
      *     summary="Update edition division details (complete replacement)",
      *     tags={"🐧 Manager: Editions Divisions"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="editionDivision",
      *         in="path",
@@ -274,8 +328,28 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Edition division not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -338,6 +412,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *     path="/api/v1/manager/edition-divisions/{editionDivision}",
      *     summary="Partially update edition division details",
      *     tags={"🐧 Manager: Editions Divisions"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="editionDivision",
      *         in="path",
@@ -373,8 +448,28 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Edition division not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -450,6 +545,21 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *         @OA\JsonContent(ref="#/components/schemas/ApiResponse")
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Edition division not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=409,
      *         description="Edition division cannot be deleted due to linked data",
      *         @OA\JsonContent(
@@ -465,6 +575,11 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -553,6 +668,16 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=409,
      *         description="All edition divisions failed to delete due to linked data",
      *         @OA\JsonContent(
@@ -571,6 +696,16 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */

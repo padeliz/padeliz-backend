@@ -15,12 +15,51 @@ use Illuminate\Database\Eloquent\Model;
  *     @OA\Property(property="id_edition_division", type="integer", format="int64"),
  *     @OA\Property(property="edition_id", type="integer", format="int64"),
  *     @OA\Property(property="division_id", type="integer", format="int64"),
- *     @OA\Property(property="players_limit", type="integer"),
- *     @OA\Property(property="court", type="string", maxLength=30),
- *     @OA\Property(property="playing_start_time", type="string", format="time"),
- *     @OA\Property(property="playing_end_time", type="string", format="time"),
- *     @OA\Property(property="player_opponents_nr", type="integer", nullable=true),
- *     @OA\Property(property="player_matches_repeat", type="integer"),
+ *     @OA\Property(
+ *         property="players_limit",
+ *         type="integer",
+ *         minimum=1,
+ *         description="Maximum number of players allowed",
+ *         example=16
+ *     ),
+ *     @OA\Property(
+ *         property="court",
+ *         type="string",
+ *         maxLength=30,
+ *         description="Court name or identifier",
+ *         example="Court A"
+ *     ),
+ *     @OA\Property(
+ *         property="playing_start_time",
+ *         type="string",
+ *         format="time",
+ *         pattern="^([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$",
+ *         description="Playing start time in HH:MM:SS format",
+ *         example="10:00:00"
+ *     ),
+ *     @OA\Property(
+ *         property="playing_end_time",
+ *         type="string",
+ *         format="time",
+ *         pattern="^([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$",
+ *         description="Playing end time in HH:MM:SS format",
+ *         example="16:00:00"
+ *     ),
+ *     @OA\Property(
+ *         property="player_opponents_nr",
+ *         type="integer",
+ *         nullable=true,
+ *         minimum=1,
+ *         description="Number of opponents per player",
+ *         example=3
+ *     ),
+ *     @OA\Property(
+ *         property="player_matches_repeat",
+ *         type="integer",
+ *         minimum=1,
+ *         description="Number of times matches repeat",
+ *         example=1
+ *     ),
  *     @OA\Property(property="include_scores", type="boolean"),
  *     @OA\Property(property="has_demonstrative_match", type="boolean"),
  *     @OA\Property(property="fixed_teams", type="boolean"),

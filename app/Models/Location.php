@@ -14,10 +14,34 @@ use Illuminate\Database\Eloquent\Model;
  *     required={"name", "club_id", "address", "total_indoors_courts", "total_outdoor_courts"},
  *     @OA\Property(property="id_location", type="integer", format="int64"),
  *     @OA\Property(property="club_id", type="integer", format="int64"),
- *     @OA\Property(property="name", type="string", maxLength=30),
- *     @OA\Property(property="address", type="string", maxLength=200),
- *     @OA\Property(property="total_indoors_courts", type="integer"),
- *     @OA\Property(property="total_outdoor_courts", type="integer"),
+ *     @OA\Property(
+ *         property="name",
+ *         type="string",
+ *         maxLength=30,
+ *         description="Location name",
+ *         example="Central Court"
+ *     ),
+ *     @OA\Property(
+ *         property="address",
+ *         type="string",
+ *         maxLength=200,
+ *         description="Full address of the location",
+ *         example="123 Sports Street, Bucharest"
+ *     ),
+ *     @OA\Property(
+ *         property="total_indoors_courts",
+ *         type="integer",
+ *         minimum=0,
+ *         description="Number of indoor courts",
+ *         example=4
+ *     ),
+ *     @OA\Property(
+ *         property="total_outdoor_courts",
+ *         type="integer",
+ *         minimum=0,
+ *         description="Number of outdoor courts",
+ *         example=2
+ *     ),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(

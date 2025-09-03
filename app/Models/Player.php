@@ -20,8 +20,24 @@ use Laravel\Sanctum\HasApiTokens;
  *     @OA\Property(property="google_name", type="string"),
  *     @OA\Property(property="google_email", type="string"),
  *     @OA\Property(property="google_avatar", type="string"),
- *     @OA\Property(property="phone", type="string", maxLength=255, nullable=true),
- *     @OA\Property(property="skill_division", type="number", format="float", nullable=true),
+ *     @OA\Property(
+ *         property="phone",
+ *         type="string",
+ *         maxLength=255,
+ *         nullable=true,
+ *         description="Phone number",
+ *         example="+40712345678"
+ *     ),
+ *     @OA\Property(
+ *         property="skill_division",
+ *         type="number",
+ *         format="float",
+ *         nullable=true,
+ *         minimum=0.0,
+ *         maximum=9.9,
+ *         description="Skill level from 0.0 to 9.9",
+ *         example=4.5
+ *     ),
  *     @OA\Property(property="first_name", type="string", maxLength=50, nullable=true),
  *     @OA\Property(property="middle_name", type="string", maxLength=50, nullable=true),
  *     @OA\Property(property="last_name", type="string", maxLength=50, nullable=true),
@@ -29,7 +45,14 @@ use Laravel\Sanctum\HasApiTokens;
  *     @OA\Property(property="being_student", type="boolean", default=false),
  *     @OA\Property(property="playtomic_id", type="string", maxLength=10, nullable=true),
  *     @OA\Property(property="rankedin_id", type="string", maxLength=15, nullable=true),
- *     @OA\Property(property="user_types", type="array", nullable=true, @OA\Items(type="string")),
+ *     @OA\Property(
+ *         property="user_types",
+ *         type="array",
+ *         nullable=true,
+ *         @OA\Items(type="string", enum={"player", "manager", "admin"}),
+ *         description="Array of user roles",
+ *         example={"player", "manager"}
+ *     ),
  *     @OA\Property(property="instagram_username", type="string", maxLength=50, nullable=true),
  *     @OA\Property(property="facebook_username", type="string", maxLength=50, nullable=true),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),

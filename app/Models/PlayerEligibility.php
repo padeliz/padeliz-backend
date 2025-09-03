@@ -16,23 +16,63 @@ use Illuminate\Database\Eloquent\Model;
  *     @OA\Property(property="edition_id", type="integer", format="int64"),
  *     @OA\Property(property="player_id", type="integer", format="int64"),
  *     @OA\Property(property="name", type="string", maxLength=255),
- *     @OA\Property(property="phone", type="string", maxLength=255, nullable=true),
- *     @OA\Property(property="skill_division", type="number", format="float", nullable=true),
+ *     @OA\Property(
+ *         property="phone",
+ *         type="string",
+ *         maxLength=255,
+ *         nullable=true,
+ *         description="Phone number",
+ *         example="+40712345678"
+ *     ),
+ *     @OA\Property(
+ *         property="skill_division",
+ *         type="number",
+ *         format="float",
+ *         nullable=true,
+ *         minimum=0.0,
+ *         maximum=9.9,
+ *         description="Skill level from 0.0 to 9.9",
+ *         example=4.5
+ *     ),
  *     @OA\Property(property="first_name", type="string", maxLength=50, nullable=true),
  *     @OA\Property(property="middle_name", type="string", maxLength=50, nullable=true),
  *     @OA\Property(property="last_name", type="string", maxLength=50, nullable=true),
- *     @OA\Property(property="year_of_birth", type="integer", nullable=true),
+ *     @OA\Property(
+ *         property="year_of_birth",
+ *         type="integer",
+ *         nullable=true,
+ *         minimum=1900,
+ *         maximum=9999,
+ *         description="Year of birth",
+ *         example=1990
+ *     ),
  *     @OA\Property(property="being_student", type="boolean"),
  *     @OA\Property(property="playtomic_id", type="string", maxLength=10, nullable=true),
  *     @OA\Property(property="rankedin_id", type="string", maxLength=15, nullable=true),
  *     @OA\Property(property="instagram_username", type="string", maxLength=50, nullable=true),
  *     @OA\Property(property="facebook_username", type="string", maxLength=50, nullable=true),
- *     @OA\Property(property="reviewed_at", type="integer", format="timestamp", nullable=true),
+ *     @OA\Property(
+ *         property="reviewed_at",
+ *         type="integer",
+ *         format="timestamp",
+ *         nullable=true,
+ *         minimum=0,
+ *         description="Unix timestamp when reviewed",
+ *         example=1704067200
+ *     ),
  *     @OA\Property(property="review_status", type="string", enum={"pending", "approved", "rejected"}),
  *     @OA\Property(property="review_message", type="string", nullable=true),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp"),
- *     @OA\Property(property="resubmitted_at", type="integer", format="timestamp", nullable=true)
+ *     @OA\Property(
+ *         property="resubmitted_at",
+ *         type="integer",
+ *         format="timestamp",
+ *         nullable=true,
+ *         minimum=0,
+ *         description="Unix timestamp when resubmitted",
+ *         example=1704153600
+ *     )
  * )
  */
 class PlayerEligibility extends Model

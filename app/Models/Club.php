@@ -14,7 +14,13 @@ use Illuminate\Database\Eloquent\Model;
  *     required={"name", "city"},
  *     @OA\Property(property="id_club", type="integer", format="int64"),
  *     @OA\Property(property="name", type="string", maxLength=30),
- *     @OA\Property(property="city", type="string", maxLength=30),
+ *     @OA\Property(
+ *         property="city",
+ *         type="string",
+ *         maxLength=30,
+ *         description="City where the club is located",
+ *         example="Bucharest"
+ *     ),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(

@@ -21,6 +21,7 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *     path="/api/v1/manager/prizes-from-clubs",
      *     summary="Get paginated list of prizes from clubs",
      *     tags={"🐧 Manager: Prizes From Clubs"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Parameter(
      *         name="per_page",
@@ -79,6 +80,21 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -113,6 +129,7 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *     path="/api/v1/manager/prizes-from-clubs/{prizeFromClub}",
      *     summary="Get prize from club details",
      *     tags={"🐧 Manager: Prizes From Clubs"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="prizeFromClub",
      *         in="path",
@@ -130,6 +147,26 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Prize from club not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -148,6 +185,7 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *     path="/api/v1/manager/prizes-from-clubs",
      *     summary="Create a new prize from club",
      *     tags={"🐧 Manager: Prizes From Clubs"},
+     *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -176,8 +214,23 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -223,6 +276,7 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *     path="/api/v1/manager/prizes-from-clubs/{prizeFromClub}",
      *     summary="Update prize from club details (complete replacement)",
      *     tags={"🐧 Manager: Prizes From Clubs"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="prizeFromClub",
      *         in="path",
@@ -256,8 +310,28 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Prize from club not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -308,6 +382,7 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *     path="/api/v1/manager/prizes-from-clubs/{prizeFromClub}",
      *     summary="Partially update prize from club details",
      *     tags={"🐧 Manager: Prizes From Clubs"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="prizeFromClub",
      *         in="path",
@@ -341,8 +416,28 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Prize from club not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -404,6 +499,26 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *         response=200,
      *         description="Prize from club deleted successfully",
      *         @OA\JsonContent(ref="#/components/schemas/ApiResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Prize from club not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -478,6 +593,26 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *     @OA\Response(
      *         response=400,
      *         description="No prizes from clubs provided for deletion",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )

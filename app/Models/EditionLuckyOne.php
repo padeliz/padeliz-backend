@@ -15,11 +15,49 @@ use Illuminate\Database\Eloquent\Model;
  *     @OA\Property(property="id_lucky_one", type="integer", format="int64"),
  *     @OA\Property(property="lottery_id", type="integer", format="int64"),
  *     @OA\Property(property="drawn_participation_id", type="integer", format="int64"),
- *     @OA\Property(property="drawn_at", type="integer", format="timestamp"),
- *     @OA\Property(property="available_at", type="integer", format="timestamp"),
- *     @OA\Property(property="announced_at", type="integer", format="timestamp", nullable=true),
- *     @OA\Property(property="accepted_at", type="integer", format="timestamp", nullable=true),
- *     @OA\Property(property="rejected_at", type="integer", format="timestamp", nullable=true),
+ *     @OA\Property(
+ *         property="drawn_at",
+ *         type="integer",
+ *         format="timestamp",
+ *         minimum=0,
+ *         description="Unix timestamp when drawn",
+ *         example=1704067200
+ *     ),
+ *     @OA\Property(
+ *         property="available_at",
+ *         type="integer",
+ *         format="timestamp",
+ *         minimum=0,
+ *         description="Unix timestamp when available",
+ *         example=1704153600
+ *     ),
+ *     @OA\Property(
+ *         property="announced_at",
+ *         type="integer",
+ *         format="timestamp",
+ *         nullable=true,
+ *         minimum=0,
+ *         description="Unix timestamp when announced",
+ *         example=1704240000
+ *     ),
+ *     @OA\Property(
+ *         property="accepted_at",
+ *         type="integer",
+ *         format="timestamp",
+ *         nullable=true,
+ *         minimum=0,
+ *         description="Unix timestamp when accepted",
+ *         example=1704326400
+ *     ),
+ *     @OA\Property(
+ *         property="rejected_at",
+ *         type="integer",
+ *         format="timestamp",
+ *         nullable=true,
+ *         minimum=0,
+ *         description="Unix timestamp when rejected",
+ *         example=1704412800
+ *     ),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(

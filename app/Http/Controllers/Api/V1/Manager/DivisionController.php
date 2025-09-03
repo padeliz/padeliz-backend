@@ -21,6 +21,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *     path="/api/v1/manager/divisions",
      *     summary="Get paginated list of divisions",
      *     tags={"🐧 Manager: Divisions"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Parameter(
      *         name="per_page",
@@ -77,6 +78,21 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -111,6 +127,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *     path="/api/v1/manager/divisions/{division}",
      *     summary="Get division details",
      *     tags={"🐧 Manager: Divisions"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="division",
      *         in="path",
@@ -128,6 +145,26 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Division not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -144,6 +181,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *     path="/api/v1/manager/divisions",
      *     summary="Create a new division",
      *     tags={"🐧 Manager: Divisions"},
+     *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -167,8 +205,23 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -196,6 +249,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *     path="/api/v1/manager/divisions/{division}",
      *     summary="Update division details (complete replacement)",
      *     tags={"🐧 Manager: Divisions"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="division",
      *         in="path",
@@ -224,8 +278,28 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Division not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -252,6 +326,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *     path="/api/v1/manager/divisions/{division}",
      *     summary="Partially update division details",
      *     tags={"🐧 Manager: Divisions"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="division",
      *         in="path",
@@ -280,8 +355,28 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Division not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -321,6 +416,21 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *         @OA\JsonContent(ref="#/components/schemas/ApiResponse")
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Division not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=409,
      *         description="Division cannot be deleted due to linked data",
      *         @OA\JsonContent(
@@ -337,6 +447,11 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -419,6 +534,16 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=409,
      *         description="All divisions failed to delete due to linked data",
      *         @OA\JsonContent(
@@ -437,6 +562,16 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */

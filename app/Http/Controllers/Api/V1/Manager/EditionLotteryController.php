@@ -21,6 +21,7 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
      *     path="/api/v1/manager/lotteries",
      *     summary="Get paginated list of lotteries",
      *     tags={"🐧 Manager: Editions Lottery"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Parameter(
      *         name="per_page",
@@ -74,6 +75,21 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -126,6 +142,26 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Lottery not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -148,6 +184,7 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
      *     path="/api/v1/manager/lotteries",
      *     summary="Create a new lottery",
      *     tags={"🐧 Manager: Editions Lottery"},
+     *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -172,8 +209,23 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -203,6 +255,7 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
      *     path="/api/v1/manager/lotteries/{lottery}",
      *     summary="Update lottery details (complete replacement)",
      *     tags={"🐧 Manager: Editions Lottery"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="lottery",
      *         in="path",
@@ -232,8 +285,28 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Lottery not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -262,6 +335,7 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
      *     path="/api/v1/manager/lotteries/{lottery}",
      *     summary="Partially update lottery details",
      *     tags={"🐧 Manager: Editions Lottery"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="lottery",
      *         in="path",
@@ -291,8 +365,28 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Lottery not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -334,6 +428,21 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
      *         @OA\JsonContent(ref="#/components/schemas/ApiResponse")
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Lottery not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=409,
      *         description="Lottery cannot be deleted due to linked data",
      *         @OA\JsonContent(
@@ -349,6 +458,11 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -430,6 +544,16 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=409,
      *         description="All lotteries failed to delete due to linked data",
      *         @OA\JsonContent(
@@ -440,7 +564,6 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
      *                         property="errors",
      *                         type="object",
      *                         @OA\Property(property="successful", type="array", @OA\Items(type="object")),
-     *                         @OA\Property(property="failed", type="array", @OA\Items(type="object")),
      *                         @OA\Property(property="total_requested", type="integer"),
      *                         @OA\Property(property="total_successful", type="integer"),
      *                         @OA\Property(property="total_failed", type="integer")
@@ -448,6 +571,16 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */

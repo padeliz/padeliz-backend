@@ -21,6 +21,7 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *     path="/api/v1/manager/prizes",
      *     summary="Get paginated list of prizes",
      *     tags={"🐧 Manager: Prizes"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Parameter(
      *         name="per_page",
@@ -76,6 +77,21 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -110,6 +126,7 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *     path="/api/v1/manager/prizes/{prize}",
      *     summary="Get prize details",
      *     tags={"🐧 Manager: Prizes"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="prize",
      *         in="path",
@@ -127,6 +144,26 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Prize not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -145,6 +182,7 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *     path="/api/v1/manager/prizes",
      *     summary="Create a new prize",
      *     tags={"🐧 Manager: Prizes"},
+     *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -172,8 +210,23 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -205,6 +258,7 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *     path="/api/v1/manager/prizes/{prize}",
      *     summary="Update prize details (complete replacement)",
      *     tags={"🐧 Manager: Prizes"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="prize",
      *         in="path",
@@ -237,8 +291,28 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Prize not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -269,6 +343,7 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *     path="/api/v1/manager/prizes/{prize}",
      *     summary="Partially update prize details",
      *     tags={"🐧 Manager: Prizes"},
+     *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="prize",
      *         in="path",
@@ -301,8 +376,28 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *         )
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Prize not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
@@ -346,6 +441,21 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *         @OA\JsonContent(ref="#/components/schemas/ApiResponse")
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=404,
+     *         description="Prize not found",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=409,
      *         description="Prize cannot be deleted due to linked data",
      *         @OA\JsonContent(
@@ -362,6 +472,11 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -444,6 +559,16 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     ),
      *     @OA\Response(
+     *         response=401,
+     *         description="Unauthenticated",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Access denied. Required user type: manager",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
      *         response=409,
      *         description="All prizes failed to delete due to linked data",
      *         @OA\JsonContent(
@@ -462,6 +587,16 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=500,
+     *         description="Internal server error",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
