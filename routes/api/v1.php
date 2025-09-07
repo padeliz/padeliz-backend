@@ -225,8 +225,8 @@ Route::prefix('v1')->group(function () {
 
         // Resource metadata management
         Route::prefix('metadata')->group(function () {
-            Route::get('{resource}', [\App\Http\Controllers\Api\V1\Manager\ResourceMetadataController::class, 'show']);
-            Route::delete('{resource}/cache', [\App\Http\Controllers\Api\V1\Manager\ResourceMetadataController::class, 'clearCache']);
+            Route::get('{schema}', [\App\Http\Controllers\Api\V1\Manager\ResourceMetadataController::class, 'show']);
+            Route::delete('{schema}/cache', [\App\Http\Controllers\Api\V1\Manager\ResourceMetadataController::class, 'clearCache']);
             Route::delete('cache', [\App\Http\Controllers\Api\V1\Manager\ResourceMetadataController::class, 'clearAllCache']);
         });
     });

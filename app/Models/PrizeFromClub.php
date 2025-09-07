@@ -12,9 +12,27 @@ use Illuminate\Database\Eloquent\Model;
  * @OA\Schema(
  *     schema="PrizeFromClub",
  *     required={"club_id", "prize_id"},
- *     @OA\Property(property="id_club_prize", type="integer", format="int64"),
- *     @OA\Property(property="club_id", type="integer", format="int64"),
- *     @OA\Property(property="prize_id", type="integer", format="int64"),
+ *     @OA\Property(
+ *         property="id_club_prize",
+ *         type="integer",
+ *         format="int64",
+ *         readOnly=true,
+ *         description="Primary key - Club Prize ID"
+ *     ),
+ *     @OA\Property(
+ *         property="club_id",
+ *         type="integer",
+ *         format="int64",
+ *         minimum=1,
+ *         description="Foreign key - References Club.id_club"
+ *     ),
+ *     @OA\Property(
+ *         property="prize_id",
+ *         type="integer",
+ *         format="int64",
+ *         minimum=1,
+ *         description="Foreign key - References Prize.id_prize"
+ *     ),
  *     @OA\Property(property="image", type="string", maxLength=100, nullable=true),
  *     @OA\Property(property="box_1_text", type="string", maxLength=200, nullable=true),
  *     @OA\Property(
@@ -58,11 +76,15 @@ use Illuminate\Database\Eloquent\Model;
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(
  *         property="club",
- *         ref="#/components/schemas/Club"
+ *         ref="#/components/schemas/Club",
+ *         description="Related club object (loaded when requested)",
+ *         nullable=true
  *     ),
  *     @OA\Property(
  *         property="prize",
- *         ref="#/components/schemas/Prize"
+ *         ref="#/components/schemas/Prize",
+ *         description="Related prize object (loaded when requested)",
+ *         nullable=true
  *     )
  * )
  */

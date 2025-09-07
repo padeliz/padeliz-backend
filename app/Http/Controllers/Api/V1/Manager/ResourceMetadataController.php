@@ -25,17 +25,17 @@ class ResourceMetadataController extends V1BaseController
 
     /**
      * @OA\Get(
-     *     path="/api/v1/manager/metadata/{resource}",
+     *     path="/api/v1/manager/metadata/{schema}",
      *     summary="Get resource metadata",
-     *     description="Get metadata information for a specific resource including searchable, filterable, and sortable fields",
+     *     description="Get metadata information for a specific schema/model including Swagger schema, searchable, filterable, and sortable fields",
      *     tags={"🐧 Manager: Resource Metadata"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
-     *         name="resource",
+     *         name="schema",
      *         in="path",
      *         required=true,
-     *         description="Resource name (e.g., players, clubs, locations)",
-     *         @OA\Schema(type="string", example="players")
+     *         description="Schema/Model name (e.g., Player, Club, Location, EditionParticipation)",
+     *         @OA\Schema(type="string", example="EditionParticipation")
      *     ),
      *     @OA\Response(
      *         response=200,
@@ -79,14 +79,17 @@ class ResourceMetadataController extends V1BaseController
      *     )
      * )
      */
-    public function show(Request $request, string $resource): \Illuminate\Http\JsonResponse
+    public function show(Request $request, string $schema): \Illuminate\Http\JsonResponse
     {
         try {
-            // Validate resource name
-            $this->validateResourceName($resource);
+            // Extract version from the request path
+            $version = $this->extractVersionFromRequest($request);
+
+            // Validate schema name
+            $this->validateSchemaName($schema);
 
             // Get metadata from service
-            $metadata = $this->metadataService->getMetadata($resource);
+            $metadata = $this->metadataService->getMetadata($schema, $version);
 
             return $this->resourceResponse(
                 new ResourceMetadataResource($metadata),
@@ -95,7 +98,7 @@ class ResourceMetadataController extends V1BaseController
         } catch (\InvalidArgumentException $e) {
             return $this->notFoundResponse($e->getMessage());
         } catch (ValidationException $e) {
-            return $this->validationErrorResponse($e->errors(), 'Invalid resource name');
+            return $this->validationErrorResponse($e->errors(), 'Invalid schema name');
         } catch (\Exception $e) {
             return $this->errorResponse(
                 'Failed to retrieve resource metadata',
@@ -106,17 +109,17 @@ class ResourceMetadataController extends V1BaseController
 
     /**
      * @OA\Delete(
-     *     path="/api/v1/manager/metadata/{resource}/cache",
+     *     path="/api/v1/manager/metadata/{schema}/cache",
      *     summary="Clear resource metadata cache",
-     *     description="Clear the cached metadata for a specific resource",
+     *     description="Clear the cached metadata for a specific schema/model",
      *     tags={"🐧 Manager: Resource Metadata"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
-     *         name="resource",
+     *         name="schema",
      *         in="path",
      *         required=true,
-     *         description="Resource name to clear cache for",
-     *         @OA\Schema(type="string", example="players")
+     *         description="Schema/Model name to clear cache for",
+     *         @OA\Schema(type="string", example="EditionParticipation")
      *     ),
      *     @OA\Response(
      *         response=200,
@@ -152,14 +155,17 @@ class ResourceMetadataController extends V1BaseController
      *     )
      * )
      */
-    public function clearCache(Request $request, string $resource): \Illuminate\Http\JsonResponse
+    public function clearCache(Request $request, string $schema): \Illuminate\Http\JsonResponse
     {
         try {
-            // Validate resource name
-            $this->validateResourceName($resource);
+            // Extract version from the request path
+            $version = $this->extractVersionFromRequest($request);
+
+            // Validate schema name
+            $this->validateSchemaName($schema);
 
             // Clear cache
-            $this->metadataService->clearCache($resource);
+            $this->metadataService->clearCache($schema, $version);
 
             return $this->successResponse(
                 null,
@@ -168,7 +174,7 @@ class ResourceMetadataController extends V1BaseController
         } catch (\InvalidArgumentException $e) {
             return $this->notFoundResponse($e->getMessage());
         } catch (ValidationException $e) {
-            return $this->validationErrorResponse($e->errors(), 'Invalid resource name');
+            return $this->validationErrorResponse($e->errors(), 'Invalid schema name');
         }
     }
 
@@ -227,23 +233,39 @@ class ResourceMetadataController extends V1BaseController
     }
 
     /**
-     * Validate resource name
+     * Extract version from request path
      */
-    private function validateResourceName(string $resource): void
+    private function extractVersionFromRequest(Request $request): string
+    {
+        $path = $request->path();
+
+        // Extract version from path like /api/v1/manager/metadata/{schema}
+        if (preg_match('/\/api\/(v\d+)\//', $path, $matches)) {
+            return $matches[1];
+        }
+
+        // Default to v1 if no version found
+        return 'v1';
+    }
+
+    /**
+     * Validate schema name
+     */
+    private function validateSchemaName(string $schema): void
     {
         $validator = \Illuminate\Support\Facades\Validator::make(
-            ['resource' => $resource],
+            ['schema' => $schema],
             [
-                'resource' => [
+                'schema' => [
                     'required',
                     'string',
                     'min:1',
                     'max:50',
-                    'regex:/^[a-z_]+$/',
+                    'regex:/^[A-Z][a-zA-Z0-9]*$/',
                 ],
             ],
             [
-                'resource.regex' => 'Resource name must contain only lowercase letters and underscores.',
+                'schema.regex' => 'Schema name must start with uppercase letter and contain only letters and numbers (e.g., EditionParticipation).',
             ]
         );
 

@@ -12,8 +12,20 @@ use Illuminate\Database\Eloquent\Model;
  * @OA\Schema(
  *     schema="EditionLottery",
  *     required={"edition_id", "orderliness", "total_draws_nr"},
- *     @OA\Property(property="id_lottery", type="integer", format="int64"),
- *     @OA\Property(property="edition_id", type="integer", format="int64"),
+ *     @OA\Property(
+ *         property="id_lottery",
+ *         type="integer",
+ *         format="int64",
+ *         readOnly=true,
+ *         description="Primary key - Edition Lottery ID"
+ *     ),
+ *     @OA\Property(
+ *         property="edition_id",
+ *         type="integer",
+ *         format="int64",
+ *         minimum=1,
+ *         description="Foreign key - References Edition.id_edition"
+ *     ),
  *     @OA\Property(
  *         property="orderliness",
  *         type="integer",
@@ -21,8 +33,22 @@ use Illuminate\Database\Eloquent\Model;
  *         description="Orderliness score",
  *         example=5
  *     ),
- *     @OA\Property(property="division_id", type="integer", format="int64", nullable=true),
- *     @OA\Property(property="prize_id", type="integer", format="int64", nullable=true),
+ *     @OA\Property(
+ *         property="division_id",
+ *         type="integer",
+ *         format="int64",
+ *         nullable=true,
+ *         minimum=1,
+ *         description="Foreign key - References Division.id_division"
+ *     ),
+ *     @OA\Property(
+ *         property="prize_id",
+ *         type="integer",
+ *         format="int64",
+ *         nullable=true,
+ *         minimum=1,
+ *         description="Foreign key - References Prize.id_prize"
+ *     ),
  *     @OA\Property(
  *         property="total_draws_nr",
  *         type="integer",
@@ -33,17 +59,29 @@ use Illuminate\Database\Eloquent\Model;
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(
- *         property="prize",
- *         ref="#/components/schemas/Prize"
+ *         property="edition",
+ *         ref="#/components/schemas/Edition",
+ *         description="Related edition object (loaded when requested)",
+ *         nullable=true
  *     ),
  *     @OA\Property(
  *         property="division",
- *         ref="#/components/schemas/Division"
+ *         ref="#/components/schemas/Division",
+ *         description="Related division object (loaded when requested)",
+ *         nullable=true
+ *     ),
+ *     @OA\Property(
+ *         property="prize",
+ *         ref="#/components/schemas/Prize",
+ *         description="Related prize object (loaded when requested)",
+ *         nullable=true
  *     ),
  *     @OA\Property(
  *         property="luckyOnes",
  *         type="array",
- *         @OA\Items(ref="#/components/schemas/EditionLuckyOne")
+ *         @OA\Items(ref="#/components/schemas/EditionLuckyOne"),
+ *         description="Array of related edition lucky ones",
+ *         nullable=true
  *     )
  * )
  */

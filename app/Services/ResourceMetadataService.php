@@ -7,6 +7,7 @@ namespace App\Services;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Str;
 
@@ -23,28 +24,34 @@ class ResourceMetadataService
     private const CACHE_TTL = 3600;
 
     /**
-     * Get metadata for a specific resource
+     * Get metadata for a specific schema/model
      */
-    public function getMetadata(string $resourceName): array
+    public function getMetadata(string $schemaName, string $version = 'v1'): array
     {
-        $cacheKey = "resource_metadata_{$resourceName}";
+        $cacheKey = "resource_metadata_{$version}_{$schemaName}";
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($resourceName) {
-            return $this->generateMetadata($resourceName);
+        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($schemaName, $version) {
+            return $this->generateMetadata($schemaName, $version);
         });
     }
 
     /**
-     * Generate metadata for a resource
+     * Generate metadata for a schema/model
      */
-    private function generateMetadata(string $resourceName): array
+    private function generateMetadata(string $schemaName, string $version): array
     {
-        $modelClass = $this->getModelClass($resourceName);
+        $modelClass = $this->getModelClassFromSchema($schemaName);
         $model = new $modelClass();
         $tableName = $model->getTable();
 
+        // Get schema from Swagger docs
+        $swaggerSchema = $this->getSwaggerSchema($schemaName, $version);
+
         return [
-            'resource' => $resourceName,
+            'version' => $version,
+            'schema_name' => $schemaName,
+            'swagger_schema' => $swaggerSchema,
+            'request_body' => $this->getRequestBodySchemas($schemaName, $version),
             'searchable_fields' => $this->getSearchableFields($modelClass),
             'filterable_fields' => $this->getFilterableFields($modelClass, $tableName),
             'sortable_fields' => $this->getSortableFields($modelClass),
@@ -52,12 +59,12 @@ class ResourceMetadataService
     }
 
     /**
-     * Get model class from resource name
+     * Get model class from schema name
      */
-    private function getModelClass(string $resourceName): string
+    private function getModelClassFromSchema(string $schemaName): string
     {
-        $modelName = Str::studly(Str::singular($resourceName));
-        $modelClass = "App\\Models\\{$modelName}";
+        // Schema name is already the model class name (e.g., "EditionParticipation")
+        $modelClass = "App\\Models\\{$schemaName}";
 
         if (! class_exists($modelClass)) {
             throw new \InvalidArgumentException("Model class {$modelClass} not found");
@@ -68,6 +75,101 @@ class ResourceMetadataService
         }
 
         return $modelClass;
+    }
+
+    /**
+     * Get Swagger schema for a model
+     */
+    private function getSwaggerSchema(string $schemaName, string $version): ?array
+    {
+        $swaggerFile = $this->getSwaggerFilePath($version);
+
+        if (! File::exists($swaggerFile)) {
+            return null;
+        }
+
+        $swaggerContent = File::get($swaggerFile);
+        $swaggerData = json_decode($swaggerContent, true);
+
+        if (! isset($swaggerData['components']['schemas'][$schemaName])) {
+            return null;
+        }
+
+        return $swaggerData['components']['schemas'][$schemaName];
+    }
+
+    /**
+     * Get Swagger file path for version
+     */
+    private function getSwaggerFilePath(string $version): string
+    {
+        return storage_path("api-docs/api-docs-{$version}.json");
+    }
+
+    /**
+     * Get request body schemas for a schema/model
+     */
+    private function getRequestBodySchemas(string $schemaName, string $version): array
+    {
+        $swaggerFile = $this->getSwaggerFilePath($version);
+
+        if (! File::exists($swaggerFile)) {
+            return [];
+        }
+
+        $swaggerContent = File::get($swaggerFile);
+        $swaggerData = json_decode($swaggerContent, true);
+
+        if (! isset($swaggerData['paths'])) {
+            return [];
+        }
+
+        $requestBodies = [];
+        $resourceName = $this->getResourceNameFromSchema($schemaName);
+
+        foreach ($swaggerData['paths'] as $path => $pathData) {
+            // Check if this path is related to our resource
+            if (strpos($path, "/api/{$version}/manager/{$resourceName}") !== false) {
+                foreach ($pathData as $method => $methodData) {
+                    if (isset($methodData['requestBody']['content']['application/json']['schema']['properties'])) {
+                        $methodUpper = strtoupper($method);
+                        $pathShort = $this->getShortPath($path, $resourceName);
+
+                        if (! isset($requestBodies[$methodUpper])) {
+                            $requestBodies[$methodUpper] = [];
+                        }
+
+                        $requestBodies[$methodUpper][$pathShort] = $methodData['requestBody']['content']['application/json']['schema']['properties'];
+                    }
+                }
+            }
+        }
+
+        return $requestBodies;
+    }
+
+    /**
+     * Get resource name from schema name
+     */
+    private function getResourceNameFromSchema(string $schemaName): string
+    {
+        $modelName = class_basename($schemaName);
+
+        return Str::plural(Str::snake($modelName));
+    }
+
+    /**
+     * Get short path from full API path
+     */
+    private function getShortPath(string $fullPath, string $resourceName): string
+    {
+        // Convert /api/v1/manager/clubs/{club} to /clubs/{club}
+        $pattern = "/\/api\/v\d+\/manager\/{$resourceName}(.*)/";
+        if (preg_match($pattern, $fullPath, $matches)) {
+            return "/{$resourceName}{$matches[1]}";
+        }
+
+        return "/{$resourceName}";
     }
 
     /**
@@ -126,7 +228,7 @@ class ResourceMetadataService
 
         return [
             'type' => $this->getFieldType($columnInfo),
-            'values' => $this->getFieldValues($modelClass, $tableName, $field, $columnInfo),
+            'values' => $this->getFieldValues($modelClass, $field, $columnInfo),
         ];
     }
 
@@ -208,8 +310,6 @@ class ResourceMetadataService
         }
 
         $relatedModelClass = get_class($relationship->getRelated());
-        $relatedModel = new $relatedModelClass();
-        $relatedTableName = $relatedModel->getTable();
 
         // Check if related model has searchable fields
         if (! property_exists($relatedModelClass, 'searchableFields') || empty($relatedModelClass::$searchableFields)) {
@@ -224,9 +324,9 @@ class ResourceMetadataService
 
         return [
             'type' => 'foreign_key',
-            'related_model' => $this->getResourceNameFromModel($relatedModelClass),
-            'searchable_field' => $searchableField,
-            'values' => $this->getRelatedModelValues($relatedModelClass, $relatedTableName, $searchableField),
+            'related_schema_name' => class_basename($relatedModelClass),
+            'related_schema_field' => $searchableField,
+            'values' => $this->getRelatedModelValuesAsObject($relatedModelClass, $searchableField),
         ];
     }
 
@@ -260,16 +360,6 @@ class ResourceMetadataService
     }
 
     /**
-     * Get resource name from model class
-     */
-    private function getResourceNameFromModel(string $modelClass): string
-    {
-        $modelName = class_basename($modelClass);
-
-        return Str::plural(Str::snake($modelName));
-    }
-
-    /**
      * Get field type from column info
      */
     private function getFieldType(?array $columnInfo): string
@@ -298,22 +388,22 @@ class ResourceMetadataService
     /**
      * Get field values based on type
      */
-    private function getFieldValues(string $modelClass, string $tableName, string $field, ?array $columnInfo): array
+    private function getFieldValues(string $modelClass, string $field, ?array $columnInfo): array
     {
         $type = $this->getFieldType($columnInfo);
 
         return match ($type) {
             'boolean' => [true, false],
-            'integer', 'float' => $this->getDistinctValues($modelClass, $tableName, $field),
-            'string' => $this->getDistinctValues($modelClass, $tableName, $field),
-            default => $this->getDistinctValues($modelClass, $tableName, $field),
+            'integer', 'float' => $this->getDistinctValues($modelClass, $field),
+            'string' => $this->getDistinctValues($modelClass, $field),
+            default => $this->getDistinctValues($modelClass, $field),
         };
     }
 
     /**
      * Get distinct values from database
      */
-    private function getDistinctValues(string $modelClass, string $tableName, string $field): array
+    private function getDistinctValues(string $modelClass, string $field): array
     {
         $query = $modelClass::select($field)
             ->whereNotNull($field)
@@ -329,29 +419,36 @@ class ResourceMetadataService
     }
 
     /**
-     * Get values from related model
+     * Get values from related model as object with foreign key IDs as keys
      */
-    private function getRelatedModelValues(string $relatedModelClass, string $relatedTableName, string $searchableField): array
+    private function getRelatedModelValuesAsObject(string $relatedModelClass, string $searchableField): \stdClass
     {
-        $query = $relatedModelClass::select($searchableField)
+        $relatedModel = new $relatedModelClass();
+        $primaryKey = $relatedModel->getKeyName();
+
+        $query = $relatedModelClass::select([$primaryKey, $searchableField])
             ->whereNotNull($searchableField)
             ->where($searchableField, '!=', '')
-            ->distinct()
             ->limit(self::DEFAULT_FILTER_LIMIT)
             ->orderBy($searchableField);
 
-        $values = $query->pluck($searchableField)->toArray();
+        $results = $query->get();
 
-        // Remove null and empty values
-        return array_filter($values, fn ($value) => $value !== null && $value !== '');
+        $values = new \stdClass();
+        foreach ($results as $result) {
+            // Convert to string to ensure JSON object serialization
+            $values->{(string) $result->{$primaryKey}} = $result->{$searchableField};
+        }
+
+        return $values;
     }
 
     /**
-     * Clear cache for a specific resource
+     * Clear cache for a specific schema/model
      */
-    public function clearCache(string $resourceName): void
+    public function clearCache(string $schemaName, string $version = 'v1'): void
     {
-        $cacheKey = "resource_metadata_{$resourceName}";
+        $cacheKey = "resource_metadata_{$version}_{$schemaName}";
         Cache::forget($cacheKey);
     }
 

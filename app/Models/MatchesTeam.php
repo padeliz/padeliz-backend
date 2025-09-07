@@ -12,18 +12,28 @@ use Illuminate\Database\Eloquent\Model;
  * @OA\Schema(
  *     schema="MatchesTeam",
  *     required={"player_1", "player_2"},
- *     @OA\Property(property="id_team", type="integer", format="int64"),
+ *     @OA\Property(
+ *         property="id_team",
+ *         type="integer",
+ *         format="int64",
+ *         readOnly=true,
+ *         description="Primary key - Matches Team ID"
+ *     ),
  *     @OA\Property(property="player_1", type="string", maxLength=50),
  *     @OA\Property(property="player_2", type="string", maxLength=50),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(
  *         property="player1",
- *         ref="#/components/schemas/Player"
+ *         ref="#/components/schemas/Player",
+ *         description="Related player 1 object (loaded when requested)",
+ *         nullable=true
  *     ),
  *     @OA\Property(
  *         property="player2",
- *         ref="#/components/schemas/Player"
+ *         ref="#/components/schemas/Player",
+ *         description="Related player 2 object (loaded when requested)",
+ *         nullable=true
  *     )
  * )
  */

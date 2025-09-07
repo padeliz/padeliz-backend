@@ -12,8 +12,19 @@ use Illuminate\Database\Eloquent\Model;
  * @OA\Schema(
  *     schema="Location",
  *     required={"name", "club_id", "address", "total_indoors_courts", "total_outdoor_courts"},
- *     @OA\Property(property="id_location", type="integer", format="int64"),
- *     @OA\Property(property="club_id", type="integer", format="int64"),
+ *     @OA\Property(
+ *         property="id_location",
+ *         type="integer",
+ *         format="int64",
+ *         readOnly=true,
+ *         description="Primary key - Location ID"
+ *     ),
+ *     @OA\Property(
+ *         property="club_id",
+ *         type="integer",
+ *         format="int64",
+ *         description="Foreign key - References Club.id_club"
+ *     ),
  *     @OA\Property(
  *         property="name",
  *         type="string",
@@ -46,7 +57,16 @@ use Illuminate\Database\Eloquent\Model;
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(
  *         property="club",
- *         ref="#/components/schemas/Club"
+ *         ref="#/components/schemas/Club",
+ *         description="Related club object (loaded when requested)",
+ *         nullable=true
+ *     ),
+ *     @OA\Property(
+ *         property="editions",
+ *         type="array",
+ *         @OA\Items(ref="#/components/schemas/Edition"),
+ *         description="Array of related editions",
+ *         nullable=true
  *     )
  * )
  */

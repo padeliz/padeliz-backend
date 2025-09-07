@@ -12,7 +12,13 @@ use Illuminate\Database\Eloquent\Model;
  * @OA\Schema(
  *     schema="Club",
  *     required={"name", "city"},
- *     @OA\Property(property="id_club", type="integer", format="int64"),
+ *     @OA\Property(
+ *         property="id_club",
+ *         type="integer",
+ *         format="int64",
+ *         readOnly=true,
+ *         description="Primary key - Club ID"
+ *     ),
  *     @OA\Property(property="name", type="string", maxLength=30),
  *     @OA\Property(
  *         property="city",
@@ -26,7 +32,16 @@ use Illuminate\Database\Eloquent\Model;
  *     @OA\Property(
  *         property="locations",
  *         type="array",
- *         @OA\Items(ref="#/components/schemas/Location")
+ *         @OA\Items(ref="#/components/schemas/Location"),
+ *         description="Array of related locations",
+ *         nullable=true
+ *     ),
+ *     @OA\Property(
+ *         property="prizes",
+ *         type="array",
+ *         @OA\Items(ref="#/components/schemas/PrizeFromClub"),
+ *         description="Array of related club prizes",
+ *         nullable=true
  *     )
  * )
  */

@@ -14,7 +14,7 @@ class ResourceMetadataControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_get_players_metadata_endpoint(): void
+    public function test_get_player_metadata_endpoint(): void
     {
         // Create a manager user
         /** @var Player $manager */
@@ -26,14 +26,17 @@ class ResourceMetadataControllerTest extends TestCase
         Player::factory()->create(['name' => 'Jane Smith', 'skill_division' => 3.0]);
 
         $response = $this->actingAs($manager)
-            ->getJson('/api/v1/manager/metadata/players');
+            ->getJson('/api/v1/manager/metadata/Player');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'success',
                 'message',
                 'data' => [
-                    'resource',
+                    'version',
+                    'schema_name',
+                    'swagger_schema',
+                    'request_body',
                     'searchable_fields',
                     'filterable_fields',
                     'sortable_fields',
@@ -42,16 +45,19 @@ class ResourceMetadataControllerTest extends TestCase
             ->assertJson([
                 'success' => true,
                 'data' => [
-                    'resource' => 'players',
+                    'version' => 'v1',
+                    'schema_name' => 'Player',
                 ],
             ]);
 
         $this->assertContains('name', $response->json('data.searchable_fields'));
         $this->assertArrayHasKey('skill_division', $response->json('data.filterable_fields'));
         $this->assertContains('name', $response->json('data.sortable_fields'));
+        $this->assertNotNull($response->json('data.swagger_schema'));
+        $this->assertIsArray($response->json('data.request_body'));
     }
 
-    public function test_get_clubs_metadata_endpoint(): void
+    public function test_get_club_metadata_endpoint(): void
     {
         // Create a manager user
         /** @var Player $manager */
@@ -63,14 +69,17 @@ class ResourceMetadataControllerTest extends TestCase
         Club::factory()->create(['name' => 'Club B', 'city' => 'Cluj']);
 
         $response = $this->actingAs($manager)
-            ->getJson('/api/v1/manager/metadata/clubs');
+            ->getJson('/api/v1/manager/metadata/Club');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'success',
                 'message',
                 'data' => [
-                    'resource',
+                    'version',
+                    'schema_name',
+                    'swagger_schema',
+                    'request_body',
                     'searchable_fields',
                     'filterable_fields',
                     'sortable_fields',
@@ -79,15 +88,25 @@ class ResourceMetadataControllerTest extends TestCase
             ->assertJson([
                 'success' => true,
                 'data' => [
-                    'resource' => 'clubs',
+                    'version' => 'v1',
+                    'schema_name' => 'Club',
                 ],
             ]);
 
         $this->assertContains('name', $response->json('data.searchable_fields'));
         $this->assertArrayHasKey('city', $response->json('data.filterable_fields'));
+        $this->assertNotNull($response->json('data.swagger_schema'));
+        $this->assertIsArray($response->json('data.request_body'));
+
+        // Test request body structure for Club
+        $requestBody = $response->json('data.request_body');
+        $this->assertArrayHasKey('POST', $requestBody);
+        $this->assertArrayHasKey('/clubs', $requestBody['POST']);
+        $this->assertArrayHasKey('name', $requestBody['POST']['/clubs']);
+        $this->assertArrayHasKey('city', $requestBody['POST']['/clubs']);
     }
 
-    public function test_get_locations_metadata_with_foreign_key(): void
+    public function test_get_location_metadata_with_foreign_key(): void
     {
         // Create a manager user
         /** @var Player $manager */
@@ -105,28 +124,40 @@ class ResourceMetadataControllerTest extends TestCase
         ]);
 
         $response = $this->actingAs($manager)
-            ->getJson('/api/v1/manager/metadata/locations');
+            ->getJson('/api/v1/manager/metadata/Location');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'success',
                 'message',
                 'data' => [
-                    'resource',
+                    'version',
+                    'schema_name',
+                    'swagger_schema',
+                    'request_body',
                     'searchable_fields',
                     'filterable_fields',
                     'sortable_fields',
+                ],
+            ])
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'version' => 'v1',
+                    'schema_name' => 'Location',
                 ],
             ]);
 
         $filterableFields = $response->json('data.filterable_fields');
         $this->assertArrayHasKey('club_id', $filterableFields);
         $this->assertEquals('foreign_key', $filterableFields['club_id']['type']);
-        $this->assertEquals('clubs', $filterableFields['club_id']['related_model']);
-        $this->assertEquals('name', $filterableFields['club_id']['searchable_field']);
+        $this->assertEquals('Club', $filterableFields['club_id']['related_schema_name']);
+        $this->assertEquals('name', $filterableFields['club_id']['related_schema_field']);
+        $this->assertIsArray($filterableFields['club_id']['values']); // JSON decodes objects as arrays
+        $this->assertNotNull($response->json('data.swagger_schema'));
     }
 
-    public function test_invalid_resource_returns_404(): void
+    public function test_invalid_schema_returns_404(): void
     {
         // Create a manager user
         /** @var Player $manager */
@@ -134,7 +165,7 @@ class ResourceMetadataControllerTest extends TestCase
         $manager->addUserType('manager');
 
         $response = $this->actingAs($manager)
-            ->getJson('/api/v1/manager/metadata/invalid_resource');
+            ->getJson('/api/v1/manager/metadata/InvalidModel');
 
         $response->assertStatus(404)
             ->assertJsonStructure([
@@ -146,7 +177,7 @@ class ResourceMetadataControllerTest extends TestCase
             ]);
     }
 
-    public function test_invalid_resource_name_returns_422(): void
+    public function test_invalid_schema_name_returns_422(): void
     {
         // Create a manager user
         /** @var Player $manager */
@@ -154,7 +185,7 @@ class ResourceMetadataControllerTest extends TestCase
         $manager->addUserType('manager');
 
         $response = $this->actingAs($manager)
-            ->getJson('/api/v1/manager/metadata/InvalidResource');
+            ->getJson('/api/v1/manager/metadata/invalidSchema');
 
         $response->assertStatus(422)
             ->assertJsonStructure([
@@ -169,7 +200,7 @@ class ResourceMetadataControllerTest extends TestCase
 
     public function test_unauthenticated_request_returns_401(): void
     {
-        $response = $this->getJson('/api/v1/manager/metadata/players');
+        $response = $this->getJson('/api/v1/manager/metadata/Player');
 
         $response->assertStatus(401);
     }
@@ -182,7 +213,7 @@ class ResourceMetadataControllerTest extends TestCase
         $player->addUserType('player');
 
         $response = $this->actingAs($player)
-            ->getJson('/api/v1/manager/metadata/players');
+            ->getJson('/api/v1/manager/metadata/Player');
 
         $response->assertStatus(403);
     }
@@ -195,7 +226,7 @@ class ResourceMetadataControllerTest extends TestCase
         $manager->addUserType('manager');
 
         $response = $this->actingAs($manager)
-            ->deleteJson('/api/v1/manager/metadata/players/cache');
+            ->deleteJson('/api/v1/manager/metadata/Player/cache');
 
         $response->assertStatus(200)
             ->assertJsonStructure([

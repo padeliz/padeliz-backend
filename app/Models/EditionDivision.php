@@ -12,9 +12,27 @@ use Illuminate\Database\Eloquent\Model;
  * @OA\Schema(
  *     schema="EditionDivision",
  *     required={"edition_id", "division_id", "players_limit", "court", "playing_start_time", "playing_end_time", "player_matches_repeat", "include_scores", "has_demonstrative_match", "fixed_teams"},
- *     @OA\Property(property="id_edition_division", type="integer", format="int64"),
- *     @OA\Property(property="edition_id", type="integer", format="int64"),
- *     @OA\Property(property="division_id", type="integer", format="int64"),
+ *     @OA\Property(
+ *         property="id_edition_division",
+ *         type="integer",
+ *         format="int64",
+ *         readOnly=true,
+ *         description="Primary key - Edition Division ID"
+ *     ),
+ *     @OA\Property(
+ *         property="edition_id",
+ *         type="integer",
+ *         format="int64",
+ *         minimum=1,
+ *         description="Foreign key - References Edition.id_edition"
+ *     ),
+ *     @OA\Property(
+ *         property="division_id",
+ *         type="integer",
+ *         format="int64",
+ *         minimum=1,
+ *         description="Foreign key - References Division.id_division"
+ *     ),
  *     @OA\Property(
  *         property="players_limit",
  *         type="integer",
@@ -66,8 +84,16 @@ use Illuminate\Database\Eloquent\Model;
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(
+ *         property="edition",
+ *         ref="#/components/schemas/Edition",
+ *         description="Related edition object (loaded when requested)",
+ *         nullable=true
+ *     ),
+ *     @OA\Property(
  *         property="division",
- *         ref="#/components/schemas/Division"
+ *         ref="#/components/schemas/Division",
+ *         description="Related division object (loaded when requested)",
+ *         nullable=true
  *     )
  * )
  */

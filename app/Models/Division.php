@@ -12,7 +12,13 @@ use Illuminate\Database\Eloquent\Model;
  * @OA\Schema(
  *     schema="Division",
  *     required={"name", "color", "is_students_only", "its_first_edition_id"},
- *     @OA\Property(property="id_division", type="integer", format="int64"),
+ *     @OA\Property(
+ *         property="id_division",
+ *         type="integer",
+ *         format="int64",
+ *         readOnly=true,
+ *         description="Primary key - Division ID"
+ *     ),
  *     @OA\Property(
  *         property="name",
  *         type="string",
@@ -37,7 +43,21 @@ use Illuminate\Database\Eloquent\Model;
  *         example=1
  *     ),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
- *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true)
+ *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
+ *     @OA\Property(
+ *         property="editionDivisions",
+ *         type="array",
+ *         @OA\Items(ref="#/components/schemas/EditionDivision"),
+ *         description="Array of related edition divisions",
+ *         nullable=true
+ *     ),
+ *     @OA\Property(
+ *         property="participations",
+ *         type="array",
+ *         @OA\Items(ref="#/components/schemas/EditionParticipation"),
+ *         description="Array of related participations",
+ *         nullable=true
+ *     )
  * )
  */
 class Division extends Model

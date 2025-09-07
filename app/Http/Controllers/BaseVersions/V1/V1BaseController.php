@@ -62,8 +62,25 @@ use App\Traits\HasAdvancedPagination;
  *
  * @OA\Schema(
  *     schema="ResourceMetadata",
- *     description="Resource metadata information",
- *     @OA\Property(property="resource", type="string", example="players"),
+ *     description="Resource metadata information including Swagger schema",
+ *     @OA\Property(property="version", type="string", example="v1", description="API version"),
+ *     @OA\Property(property="schema_name", type="string", example="EditionParticipation", description="Schema/Model name"),
+ *     @OA\Property(
+ *         property="swagger_schema",
+ *         type="object",
+ *         description="Complete OpenAPI schema from Swagger documentation",
+ *         @OA\Property(property="required", type="array", @OA\Items(type="string"), example={"field1", "field2", "field3"}),
+ *         @OA\Property(
+ *             property="properties",
+ *             type="object",
+ *             description="Schema properties with validation rules, formats, and constraints"
+ *         )
+ *     ),
+ *     @OA\Property(
+ *         property="request_body",
+ *         type="object",
+ *         description="Request body schemas for different HTTP methods and endpoints"
+ *     ),
  *     @OA\Property(
  *         property="searchable_fields",
  *         type="array",
@@ -103,13 +120,13 @@ use App\Traits\HasAdvancedPagination;
  *                 @OA\Schema(
  *                     type="object",
  *                     @OA\Property(property="type", type="string", example="foreign_key"),
- *                     @OA\Property(property="related_model", type="string", example="clubs"),
- *                     @OA\Property(property="searchable_field", type="string", example="name"),
+ *                     @OA\Property(property="related_schema_name", type="string", example="Club"),
+ *                     @OA\Property(property="related_schema_field", type="string", example="name"),
  *                     @OA\Property(
  *                         property="values",
- *                         type="array",
- *                         @OA\Items(type="string"),
- *                         example={"Club A", "Club B", "Club C"}
+ *                         type="object",
+ *                         description="Object with foreign key IDs as keys and field values as values",
+ *                         example={"14": "Club A", "2": "Club B", "30": "Club C"}
  *                     )
  *                 )
  *             }

@@ -12,8 +12,20 @@ use Illuminate\Database\Eloquent\Model;
  * @OA\Schema(
  *     schema="Edition",
  *     required={"name", "date", "location_id"},
- *     @OA\Property(property="id_edition", type="integer", format="int64"),
- *     @OA\Property(property="location_id", type="integer", format="int64"),
+ *     @OA\Property(
+ *         property="id_edition",
+ *         type="integer",
+ *         format="int64",
+ *         readOnly=true,
+ *         description="Primary key - Edition ID"
+ *     ),
+ *     @OA\Property(
+ *         property="location_id",
+ *         type="integer",
+ *         format="int64",
+ *         minimum=1,
+ *         description="Foreign key - References Location.id_location"
+ *     ),
  *     @OA\Property(
  *         property="name",
  *         type="string",
@@ -63,17 +75,30 @@ use Illuminate\Database\Eloquent\Model;
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(
  *         property="location",
- *         ref="#/components/schemas/Location"
+ *         ref="#/components/schemas/Location",
+ *         description="Related location object (loaded when requested)",
+ *         nullable=true
  *     ),
  *     @OA\Property(
  *         property="divisions",
  *         type="array",
- *         @OA\Items(ref="#/components/schemas/EditionDivision")
+ *         @OA\Items(ref="#/components/schemas/EditionDivision"),
+ *         description="Array of related edition divisions",
+ *         nullable=true
  *     ),
  *     @OA\Property(
  *         property="participations",
  *         type="array",
- *         @OA\Items(ref="#/components/schemas/EditionParticipation")
+ *         @OA\Items(ref="#/components/schemas/EditionParticipation"),
+ *         description="Array of related participations",
+ *         nullable=true
+ *     ),
+ *     @OA\Property(
+ *         property="lotteries",
+ *         type="array",
+ *         @OA\Items(ref="#/components/schemas/EditionLottery"),
+ *         description="Array of related edition lotteries",
+ *         nullable=true
  *     )
  * )
  */

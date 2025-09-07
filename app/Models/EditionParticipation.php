@@ -12,10 +12,34 @@ use Illuminate\Database\Eloquent\Model;
  * @OA\Schema(
  *     schema="EditionParticipation",
  *     required={"edition_id", "player_id", "division_id", "is_minor", "is_student", "payment"},
- *     @OA\Property(property="id_participation", type="integer", format="int64"),
- *     @OA\Property(property="edition_id", type="integer", format="int64"),
- *     @OA\Property(property="player_id", type="integer", format="int64"),
- *     @OA\Property(property="division_id", type="integer", format="int64"),
+ *     @OA\Property(
+ *         property="id_participation",
+ *         type="integer",
+ *         format="int64",
+ *         readOnly=true,
+ *         description="Primary key - Edition Participation ID"
+ *     ),
+ *     @OA\Property(
+ *         property="edition_id",
+ *         type="integer",
+ *         format="int64",
+ *         minimum=1,
+ *         description="Foreign key - References Edition.id_edition"
+ *     ),
+ *     @OA\Property(
+ *         property="player_id",
+ *         type="integer",
+ *         format="int64",
+ *         minimum=1,
+ *         description="Foreign key - References Player.id_player"
+ *     ),
+ *     @OA\Property(
+ *         property="division_id",
+ *         type="integer",
+ *         format="int64",
+ *         minimum=1,
+ *         description="Foreign key - References Division.id_division"
+ *     ),
  *     @OA\Property(property="is_minor", type="boolean"),
  *     @OA\Property(property="is_student", type="boolean"),
  *     @OA\Property(
@@ -38,12 +62,22 @@ use Illuminate\Database\Eloquent\Model;
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(
+ *         property="edition",
+ *         ref="#/components/schemas/Edition",
+ *         description="Related edition object (loaded when requested)",
+ *         nullable=true
+ *     ),
+ *     @OA\Property(
  *         property="player",
- *         ref="#/components/schemas/Player"
+ *         ref="#/components/schemas/Player",
+ *         description="Related player object (loaded when requested)",
+ *         nullable=true
  *     ),
  *     @OA\Property(
  *         property="division",
- *         ref="#/components/schemas/Division"
+ *         ref="#/components/schemas/Division",
+ *         description="Related division object (loaded when requested)",
+ *         nullable=true
  *     )
  * )
  */

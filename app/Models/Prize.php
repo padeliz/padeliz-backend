@@ -12,7 +12,13 @@ use Illuminate\Database\Eloquent\Model;
  * @OA\Schema(
  *     schema="Prize",
  *     required={"name", "box_1_text", "box_1_bg_color", "box_1_text_color"},
- *     @OA\Property(property="id_prize", type="integer", format="int64"),
+ *     @OA\Property(
+ *         property="id_prize",
+ *         type="integer",
+ *         format="int64",
+ *         readOnly=true,
+ *         description="Primary key - Prize ID"
+ *     ),
  *     @OA\Property(property="name", type="string", maxLength=60),
  *     @OA\Property(property="image", type="string", maxLength=100, nullable=true),
  *     @OA\Property(property="box_1_text", type="string", maxLength=200),
@@ -56,7 +62,16 @@ use Illuminate\Database\Eloquent\Model;
  *     @OA\Property(
  *         property="clubPrizes",
  *         type="array",
- *         @OA\Items(ref="#/components/schemas/PrizeFromClub")
+ *         @OA\Items(ref="#/components/schemas/PrizeFromClub"),
+ *         description="Array of related club prizes",
+ *         nullable=true
+ *     ),
+ *     @OA\Property(
+ *         property="lotteries",
+ *         type="array",
+ *         @OA\Items(ref="#/components/schemas/EditionLottery"),
+ *         description="Array of related edition lotteries",
+ *         nullable=true
  *     )
  * )
  */

@@ -23,17 +23,26 @@ class ResourceMetadataServiceTest extends TestCase
         $this->metadataService = app(ResourceMetadataService::class);
     }
 
-    public function test_get_players_metadata(): void
+    public function test_get_player_metadata(): void
     {
         // Create some test data
         Player::factory()->create(['name' => 'John Doe', 'skill_division' => 2.5]);
         Player::factory()->create(['name' => 'Jane Smith', 'skill_division' => 3.0]);
         Player::factory()->create(['name' => 'Bob Johnson', 'skill_division' => 4.5]);
 
-        $metadata = $this->metadataService->getMetadata('players');
+        $metadata = $this->metadataService->getMetadata('Player', 'v1');
 
-        $this->assertArrayHasKey('resource', $metadata);
-        $this->assertEquals('players', $metadata['resource']);
+        $this->assertArrayHasKey('version', $metadata);
+        $this->assertEquals('v1', $metadata['version']);
+
+        $this->assertArrayHasKey('schema_name', $metadata);
+        $this->assertEquals('Player', $metadata['schema_name']);
+
+        $this->assertArrayHasKey('swagger_schema', $metadata);
+        $this->assertNotNull($metadata['swagger_schema']);
+
+        $this->assertArrayHasKey('request_body', $metadata);
+        $this->assertIsArray($metadata['request_body']);
 
         $this->assertArrayHasKey('searchable_fields', $metadata);
         $this->assertContains('name', $metadata['searchable_fields']);
@@ -52,17 +61,26 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertContains('skill_division', $metadata['sortable_fields']);
     }
 
-    public function test_get_clubs_metadata(): void
+    public function test_get_club_metadata(): void
     {
         // Create some test data
         Club::factory()->create(['name' => 'Club A', 'city' => 'Bucharest']);
         Club::factory()->create(['name' => 'Club B', 'city' => 'Cluj']);
         Club::factory()->create(['name' => 'Club C', 'city' => 'Bucharest']);
 
-        $metadata = $this->metadataService->getMetadata('clubs');
+        $metadata = $this->metadataService->getMetadata('Club', 'v1');
 
-        $this->assertArrayHasKey('resource', $metadata);
-        $this->assertEquals('clubs', $metadata['resource']);
+        $this->assertArrayHasKey('version', $metadata);
+        $this->assertEquals('v1', $metadata['version']);
+
+        $this->assertArrayHasKey('schema_name', $metadata);
+        $this->assertEquals('Club', $metadata['schema_name']);
+
+        $this->assertArrayHasKey('swagger_schema', $metadata);
+        $this->assertNotNull($metadata['swagger_schema']);
+
+        $this->assertArrayHasKey('request_body', $metadata);
+        $this->assertIsArray($metadata['request_body']);
 
         $this->assertArrayHasKey('searchable_fields', $metadata);
         $this->assertContains('name', $metadata['searchable_fields']);
@@ -79,7 +97,7 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertContains('city', $metadata['sortable_fields']);
     }
 
-    public function test_get_locations_metadata_with_foreign_key(): void
+    public function test_get_location_metadata_with_foreign_key(): void
     {
         // Create test data with relationships
         $club = Club::factory()->create(['name' => 'Test Club']);
@@ -96,34 +114,41 @@ class ResourceMetadataServiceTest extends TestCase
             'total_outdoor_courts' => 4,
         ]);
 
-        $metadata = $this->metadataService->getMetadata('locations');
+        $metadata = $this->metadataService->getMetadata('Location', 'v1');
 
-        $this->assertArrayHasKey('resource', $metadata);
-        $this->assertEquals('locations', $metadata['resource']);
+        $this->assertArrayHasKey('version', $metadata);
+        $this->assertEquals('v1', $metadata['version']);
+
+        $this->assertArrayHasKey('schema_name', $metadata);
+        $this->assertEquals('Location', $metadata['schema_name']);
+
+        $this->assertArrayHasKey('swagger_schema', $metadata);
+        $this->assertNotNull($metadata['swagger_schema']);
 
         $this->assertArrayHasKey('filterable_fields', $metadata);
         $this->assertArrayHasKey('club_id', $metadata['filterable_fields']);
         $this->assertEquals('foreign_key', $metadata['filterable_fields']['club_id']['type']);
-        $this->assertEquals('clubs', $metadata['filterable_fields']['club_id']['related_model']);
-        $this->assertEquals('name', $metadata['filterable_fields']['club_id']['searchable_field']);
-        $this->assertContains('Test Club', $metadata['filterable_fields']['club_id']['values']);
+        $this->assertEquals('Club', $metadata['filterable_fields']['club_id']['related_schema_name']);
+        $this->assertEquals('name', $metadata['filterable_fields']['club_id']['related_schema_field']);
+        $this->assertIsObject($metadata['filterable_fields']['club_id']['values']);
+        $this->assertContains('Test Club', (array) $metadata['filterable_fields']['club_id']['values']);
     }
 
-    public function test_invalid_resource_throws_exception(): void
+    public function test_invalid_schema_throws_exception(): void
     {
         $this->expectException(\InvalidArgumentException::class);
         $this->expectExceptionMessage('Model class App\Models\InvalidModel not found');
 
-        $this->metadataService->getMetadata('invalid_model');
+        $this->metadataService->getMetadata('InvalidModel', 'v1');
     }
 
     public function test_metadata_is_cached(): void
     {
         // First call should cache the result
-        $metadata1 = $this->metadataService->getMetadata('players');
+        $metadata1 = $this->metadataService->getMetadata('Player', 'v1');
 
         // Second call should return cached result
-        $metadata2 = $this->metadataService->getMetadata('players');
+        $metadata2 = $this->metadataService->getMetadata('Player', 'v1');
 
         $this->assertEquals($metadata1, $metadata2);
     }
@@ -131,15 +156,15 @@ class ResourceMetadataServiceTest extends TestCase
     public function test_clear_cache_works(): void
     {
         // Get metadata to populate cache
-        $this->metadataService->getMetadata('players');
+        $this->metadataService->getMetadata('Player', 'v1');
 
         // Clear cache
-        $this->metadataService->clearCache('players');
+        $this->metadataService->clearCache('Player', 'v1');
 
         // Should still work after clearing cache
-        $metadata = $this->metadataService->getMetadata('players');
-        $this->assertArrayHasKey('resource', $metadata);
-        $this->assertEquals('players', $metadata['resource']);
+        $metadata = $this->metadataService->getMetadata('Player', 'v1');
+        $this->assertArrayHasKey('schema_name', $metadata);
+        $this->assertEquals('Player', $metadata['schema_name']);
     }
 
     public function test_boolean_field_values(): void
@@ -147,7 +172,7 @@ class ResourceMetadataServiceTest extends TestCase
         Player::factory()->create(['being_student' => true]);
         Player::factory()->create(['being_student' => false]);
 
-        $metadata = $this->metadataService->getMetadata('players');
+        $metadata = $this->metadataService->getMetadata('Player', 'v1');
 
         $this->assertArrayHasKey('being_student', $metadata['filterable_fields']);
         $this->assertEquals('boolean', $metadata['filterable_fields']['being_student']['type']);

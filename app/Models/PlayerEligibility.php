@@ -12,9 +12,27 @@ use Illuminate\Database\Eloquent\Model;
  * @OA\Schema(
  *     schema="PlayerEligibility",
  *     required={"edition_id", "player_id", "name", "being_student", "review_status"},
- *     @OA\Property(property="id_eligibility", type="integer", format="int64"),
- *     @OA\Property(property="edition_id", type="integer", format="int64"),
- *     @OA\Property(property="player_id", type="integer", format="int64"),
+ *     @OA\Property(
+ *         property="id_eligibility",
+ *         type="integer",
+ *         format="int64",
+ *         readOnly=true,
+ *         description="Primary key - Player Eligibility ID"
+ *     ),
+ *     @OA\Property(
+ *         property="edition_id",
+ *         type="integer",
+ *         format="int64",
+ *         minimum=1,
+ *         description="Foreign key - References Edition.id_edition"
+ *     ),
+ *     @OA\Property(
+ *         property="player_id",
+ *         type="integer",
+ *         format="int64",
+ *         minimum=1,
+ *         description="Foreign key - References Player.id_player"
+ *     ),
  *     @OA\Property(property="name", type="string", maxLength=255),
  *     @OA\Property(
  *         property="phone",
@@ -72,6 +90,18 @@ use Illuminate\Database\Eloquent\Model;
  *         minimum=0,
  *         description="Unix timestamp when resubmitted",
  *         example=1704153600
+ *     ),
+ *     @OA\Property(
+ *         property="player",
+ *         ref="#/components/schemas/Player",
+ *         description="Related player object (loaded when requested)",
+ *         nullable=true
+ *     ),
+ *     @OA\Property(
+ *         property="edition",
+ *         ref="#/components/schemas/Edition",
+ *         description="Related edition object (loaded when requested)",
+ *         nullable=true
  *     )
  * )
  */

@@ -14,7 +14,13 @@ use Laravel\Sanctum\HasApiTokens;
  * @OA\Schema(
  *     schema="Player",
  *     required={"name"},
- *     @OA\Property(property="id_player", type="integer", format="int64"),
+ *     @OA\Property(
+ *         property="id_player",
+ *         type="integer",
+ *         format="int64",
+ *         readOnly=true,
+ *         description="Primary key - Player ID"
+ *     ),
  *     @OA\Property(property="name", type="string", maxLength=250),
  *     @OA\Property(property="google_id", type="string"),
  *     @OA\Property(property="google_name", type="string"),

@@ -17,7 +17,10 @@ class ResourceMetadataResource extends JsonResource
     public function toArray(Request $request): array
     {
         return [
-            'resource' => $this['resource'],
+            'version' => $this['version'],
+            'schema_name' => $this['schema_name'],
+            'swagger_schema' => $this['swagger_schema'],
+            'request_body' => $this['request_body'],
             'searchable_fields' => $this['searchable_fields'],
             'filterable_fields' => $this['filterable_fields'],
             'sortable_fields' => $this['sortable_fields'],

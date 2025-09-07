@@ -12,9 +12,27 @@ use Illuminate\Database\Eloquent\Model;
  * @OA\Schema(
  *     schema="EditionLuckyOne",
  *     required={"lottery_id", "drawn_participation_id", "drawn_at", "available_at"},
- *     @OA\Property(property="id_lucky_one", type="integer", format="int64"),
- *     @OA\Property(property="lottery_id", type="integer", format="int64"),
- *     @OA\Property(property="drawn_participation_id", type="integer", format="int64"),
+ *     @OA\Property(
+ *         property="id_lucky_one",
+ *         type="integer",
+ *         format="int64",
+ *         readOnly=true,
+ *         description="Primary key - Edition Lucky One ID"
+ *     ),
+ *     @OA\Property(
+ *         property="lottery_id",
+ *         type="integer",
+ *         format="int64",
+ *         minimum=1,
+ *         description="Foreign key - References EditionLottery.id_lottery"
+ *     ),
+ *     @OA\Property(
+ *         property="drawn_participation_id",
+ *         type="integer",
+ *         format="int64",
+ *         minimum=1,
+ *         description="Foreign key - References EditionParticipation.id_participation"
+ *     ),
  *     @OA\Property(
  *         property="drawn_at",
  *         type="integer",
@@ -61,8 +79,16 @@ use Illuminate\Database\Eloquent\Model;
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(
+ *         property="lottery",
+ *         ref="#/components/schemas/EditionLottery",
+ *         description="Related lottery object (loaded when requested)",
+ *         nullable=true
+ *     ),
+ *     @OA\Property(
  *         property="drawnParticipation",
- *         ref="#/components/schemas/EditionParticipation"
+ *         ref="#/components/schemas/EditionParticipation",
+ *         description="Related drawn participation object (loaded when requested)",
+ *         nullable=true
  *     )
  * )
  */
