@@ -119,7 +119,6 @@ class Edition extends Model
      */
     public static array $filterableFields = [
         'location_id',
-        'date',
         'entry_fee',
         'students_entry_fee',
     ];

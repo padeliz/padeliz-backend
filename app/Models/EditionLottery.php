@@ -104,7 +104,6 @@ class EditionLottery extends Model
         'edition_id',
         'division_id',
         'prize_id',
-        'orderliness',
         'total_draws_nr',
     ];
 

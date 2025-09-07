@@ -5,8 +5,13 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Club;
+use App\Models\Division;
+use App\Models\Edition;
+use App\Models\EditionParticipation;
 use App\Models\Location;
 use App\Models\Player;
+use App\Models\PlayerEligibility;
+use App\Models\Prize;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -258,5 +263,278 @@ class ResourceMetadataControllerTest extends TestCase
                 'success' => true,
                 'message' => 'All resource metadata cache cleared successfully',
             ]);
+    }
+
+    /**
+     * Test metadata endpoint for all models
+     * @dataProvider modelDataProvider
+     */
+    public function test_get_metadata_for_all_models(string $modelName, string $expectedSchemaName): void
+    {
+        // Create a manager user
+        /** @var Player $manager */
+        $manager = Player::factory()->create();
+        $manager->addUserType('manager');
+
+        $response = $this->actingAs($manager)
+            ->getJson("/api/v1/manager/metadata/{$modelName}");
+
+        $response->assertStatus(200)
+            ->assertJsonStructure([
+                'success',
+                'message',
+                'data' => [
+                    'version',
+                    'schema_name',
+                    'swagger_schema',
+                    'request_body',
+                    'searchable_fields',
+                    'filterable_fields',
+                    'sortable_fields',
+                ],
+            ])
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'version' => 'v1',
+                    'schema_name' => $expectedSchemaName,
+                ],
+            ]);
+
+        // Verify all required fields are present
+        $this->assertIsString($response->json('data.version'));
+        $this->assertIsString($response->json('data.schema_name'));
+        $this->assertIsArray($response->json('data.swagger_schema'));
+        $this->assertIsArray($response->json('data.request_body'));
+        $this->assertIsArray($response->json('data.searchable_fields'));
+        $this->assertIsArray($response->json('data.filterable_fields'));
+        $this->assertIsArray($response->json('data.sortable_fields'));
+    }
+
+    public static function modelDataProvider(): array
+    {
+        return [
+            'Club' => ['Club', 'Club'],
+            'Division' => ['Division', 'Division'],
+            'Edition' => ['Edition', 'Edition'],
+            'EditionDivision' => ['EditionDivision', 'EditionDivision'],
+            'EditionLottery' => ['EditionLottery', 'EditionLottery'],
+            'EditionLuckyOne' => ['EditionLuckyOne', 'EditionLuckyOne'],
+            'EditionParticipation' => ['EditionParticipation', 'EditionParticipation'],
+            'Location' => ['Location', 'Location'],
+            'MatchesTeam' => ['MatchesTeam', 'MatchesTeam'],
+            'Player' => ['Player', 'Player'],
+            'PlayerEligibility' => ['PlayerEligibility', 'PlayerEligibility'],
+            'Prize' => ['Prize', 'Prize'],
+            'PrizeFromClub' => ['PrizeFromClub', 'PrizeFromClub'],
+        ];
+    }
+
+    public function test_division_metadata_endpoint(): void
+    {
+        // Create a manager user
+        /** @var Player $manager */
+        $manager = Player::factory()->create();
+        $manager->addUserType('manager');
+
+        // Create test data
+        Division::factory()->create(['name' => 'Beginner', 'color' => '#FF0000', 'is_students_only' => false]);
+        Division::factory()->create(['name' => 'Intermediate', 'color' => '#00FF00', 'is_students_only' => true]);
+
+        $response = $this->actingAs($manager)
+            ->getJson('/api/v1/manager/metadata/Division');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'version' => 'v1',
+                    'schema_name' => 'Division',
+                ],
+            ]);
+
+        $this->assertContains('name', $response->json('data.searchable_fields'));
+        $this->assertArrayHasKey('is_students_only', $response->json('data.filterable_fields'));
+        $this->assertArrayHasKey('its_first_edition_id', $response->json('data.filterable_fields'));
+        $this->assertIsArray($response->json('data.request_body'));
+    }
+
+    public function test_edition_metadata_endpoint(): void
+    {
+        // Create a manager user
+        /** @var Player $manager */
+        $manager = Player::factory()->create();
+        $manager->addUserType('manager');
+
+        // Create test data
+        Edition::factory()->create(['name' => 'Summer 2024', 'date' => '2024-06-01']);
+        Edition::factory()->create(['name' => 'Winter 2024', 'date' => '2024-12-01']);
+
+        $response = $this->actingAs($manager)
+            ->getJson('/api/v1/manager/metadata/Edition');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'version' => 'v1',
+                    'schema_name' => 'Edition',
+                ],
+            ]);
+
+        $this->assertContains('name', $response->json('data.searchable_fields'));
+        $this->assertIsArray($response->json('data.request_body'));
+    }
+
+    public function test_edition_participation_metadata_endpoint(): void
+    {
+        // Create a manager user
+        /** @var Player $manager */
+        $manager = Player::factory()->create();
+        $manager->addUserType('manager');
+
+        // Create test data with relationships
+        $player = Player::factory()->create();
+        $edition = Edition::factory()->create();
+        $division = Division::factory()->create();
+
+        EditionParticipation::factory()->create([
+            'player_id' => $player->id_player,
+            'edition_id' => $edition->id_edition,
+            'division_id' => $division->id_division,
+        ]);
+
+        $response = $this->actingAs($manager)
+            ->getJson('/api/v1/manager/metadata/EditionParticipation');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'version' => 'v1',
+                    'schema_name' => 'EditionParticipation',
+                ],
+            ]);
+
+        $filterableFields = $response->json('data.filterable_fields');
+        $this->assertArrayHasKey('player_id', $filterableFields);
+        $this->assertArrayHasKey('edition_id', $filterableFields);
+        $this->assertArrayHasKey('division_id', $filterableFields);
+
+        // Test foreign key relationships
+        if (isset($filterableFields['player_id']['type']) && $filterableFields['player_id']['type'] === 'foreign_key') {
+            $this->assertEquals('Player', $filterableFields['player_id']['related_schema_name']);
+            $this->assertEquals('name', $filterableFields['player_id']['related_schema_field']);
+        }
+
+        $this->assertIsArray($response->json('data.request_body'));
+    }
+
+    public function test_player_eligibility_metadata_endpoint(): void
+    {
+        // Create a manager user
+        /** @var Player $manager */
+        $manager = Player::factory()->create();
+        $manager->addUserType('manager');
+
+        // Create test data
+        $player = Player::factory()->create();
+        PlayerEligibility::factory()->create([
+            'player_id' => $player->id_player,
+            'phone' => '+40712345678',
+        ]);
+
+        $response = $this->actingAs($manager)
+            ->getJson('/api/v1/manager/metadata/PlayerEligibility');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'version' => 'v1',
+                    'schema_name' => 'PlayerEligibility',
+                ],
+            ]);
+
+        $this->assertContains('phone', $response->json('data.searchable_fields'));
+        $this->assertIsArray($response->json('data.request_body'));
+    }
+
+    public function test_prize_metadata_endpoint(): void
+    {
+        // Create a manager user
+        /** @var Player $manager */
+        $manager = Player::factory()->create();
+        $manager->addUserType('manager');
+
+        // Create test data
+        Prize::factory()->create(['name' => 'First Place', 'box_1_bg_color' => '#FF0000']);
+        Prize::factory()->create(['name' => 'Second Place', 'box_1_bg_color' => '#00FF00']);
+
+        $response = $this->actingAs($manager)
+            ->getJson('/api/v1/manager/metadata/Prize');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'version' => 'v1',
+                    'schema_name' => 'Prize',
+                ],
+            ]);
+
+        $this->assertContains('name', $response->json('data.searchable_fields'));
+        $this->assertArrayHasKey('box_1_bg_color', $response->json('data.filterable_fields'));
+        $this->assertIsArray($response->json('data.request_body'));
+    }
+
+    public function test_request_body_structure_validation(): void
+    {
+        // Create a manager user
+        /** @var Player $manager */
+        $manager = Player::factory()->create();
+        $manager->addUserType('manager');
+
+        $response = $this->actingAs($manager)
+            ->getJson('/api/v1/manager/metadata/Club');
+
+        $requestBody = $response->json('data.request_body');
+
+        // Validate request body structure
+        $this->assertIsArray($requestBody);
+
+        // Check that methods are properly organized
+        $expectedMethods = ['POST', 'PUT', 'PATCH', 'DELETE'];
+        foreach ($expectedMethods as $method) {
+            if (isset($requestBody[$method])) {
+                $this->assertIsArray($requestBody[$method]);
+
+                // Check that paths are properly formatted
+                foreach ($requestBody[$method] as $path => $schema) {
+                    $this->assertStringStartsWith('/', $path);
+                    $this->assertIsArray($schema);
+                }
+            }
+        }
+    }
+
+    public function test_swagger_schema_structure(): void
+    {
+        // Create a manager user
+        /** @var Player $manager */
+        $manager = Player::factory()->create();
+        $manager->addUserType('manager');
+
+        $response = $this->actingAs($manager)
+            ->getJson('/api/v1/manager/metadata/Player');
+
+        $swaggerSchema = $response->json('data.swagger_schema');
+
+        // Validate swagger schema structure
+        $this->assertIsArray($swaggerSchema);
+        $this->assertArrayHasKey('type', $swaggerSchema);
+        $this->assertEquals('object', $swaggerSchema['type']);
+        $this->assertArrayHasKey('properties', $swaggerSchema);
+        $this->assertIsArray($swaggerSchema['properties']);
     }
 }

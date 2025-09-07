@@ -155,7 +155,8 @@ class ResourceMetadataService
     {
         $modelName = class_basename($schemaName);
 
-        return Str::plural(Str::snake($modelName));
+        // Convert camelCase to kebab-case and pluralize
+        return Str::plural(Str::kebab($modelName));
     }
 
     /**

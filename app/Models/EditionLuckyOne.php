@@ -108,13 +108,11 @@ class EditionLuckyOne extends Model
      * Fields that can be filtered
      */
     public static array $filterableFields = [
-        'lottery_id',
-        'drawn_participation_id',
-        'drawn_at',
-        'available_at',
-        'announced_at',
-        'accepted_at',
-        'rejected_at',
+        // Error: Related model App\Models\EditionLottery does not have searchable fields defined
+        // 'lottery_id',
+
+        // Error: No relationship found for foreign key field: drawn_participation_id
+        // 'drawn_participation_id',
     ];
 
     /**
