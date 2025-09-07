@@ -11,7 +11,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
-class EligibilityControllerTest extends TestCase
+class PlayerEligibilityControllerTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -50,7 +50,7 @@ class EligibilityControllerTest extends TestCase
 
         PlayerEligibility::factory()->count(5)->create();
 
-        $response = $this->getJson('/api/v1/manager/eligibility');
+        $response = $this->getJson('/api/v1/manager/player-eligibilities');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -86,21 +86,21 @@ class EligibilityControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $eligibility = PlayerEligibility::factory()->create([
+        $playerEligibility = PlayerEligibility::factory()->create([
             'player_id' => $this->player->id_player,
             'edition_id' => $this->edition->id_edition,
             'review_status' => 'approved',
             'review_message' => 'Player is eligible',
         ]);
 
-        $response = $this->getJson("/api/v1/manager/eligibility/{$eligibility->id_eligibility}");
+        $response = $this->getJson("/api/v1/manager/player-eligibilities/{$playerEligibility->id_eligibility}");
 
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
                 'message' => 'Eligibility details retrieved successfully',
                 'data' => [
-                    'id_eligibility' => $eligibility->id_eligibility,
+                    'id_eligibility' => $playerEligibility->id_eligibility,
                     'player_id' => $this->player->id_player,
                                     'review_status' => 'approved',
                     'review_message' => 'Player is eligible',
@@ -112,14 +112,14 @@ class EligibilityControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $eligibilityData = [
+        $playerEligibilityData = [
             'player_id' => $this->player->id_player,
             'edition_id' => $this->edition->id_edition,
             'review_status' => 'pending',
             'notes' => 'Under review',
         ];
 
-        $response = $this->postJson('/api/v1/manager/eligibility', $eligibilityData);
+        $response = $this->postJson('/api/v1/manager/player-eligibilities', $playerEligibilityData);
 
         $response->assertStatus(201)
             ->assertJson([
@@ -144,7 +144,7 @@ class EligibilityControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $eligibility = PlayerEligibility::factory()->create([
+        $playerEligibility = PlayerEligibility::factory()->create([
             'player_id' => $this->player->id_player,
             'edition_id' => $this->edition->id_edition,
             'review_status' => 'pending',
@@ -156,21 +156,21 @@ class EligibilityControllerTest extends TestCase
             'review_message' => 'Player approved',
         ];
 
-        $response = $this->putJson("/api/v1/manager/eligibility/{$eligibility->id_eligibility}", $updateData);
+        $response = $this->putJson("/api/v1/manager/player-eligibilities/{$playerEligibility->id_eligibility}", $updateData);
 
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
                 'message' => 'Eligibility updated successfully',
                 'data' => [
-                    'id_eligibility' => $eligibility->id_eligibility,
+                    'id_eligibility' => $playerEligibility->id_eligibility,
                 'review_status' => 'approved',
                     'review_message' => 'Player approved',
                 ],
             ]);
 
         $this->assertDatabaseHas('player_eligibilities', [
-            'id_eligibility' => $eligibility->id_eligibility,
+            'id_eligibility' => $playerEligibility->id_eligibility,
             'review_status' => 'approved',
             'review_message' => 'Player approved',
         ]);
@@ -180,7 +180,7 @@ class EligibilityControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $eligibility = PlayerEligibility::factory()->create([
+        $playerEligibility = PlayerEligibility::factory()->create([
             'player_id' => $this->player->id_player,
             'edition_id' => $this->edition->id_edition,
             'review_status' => 'pending',
@@ -188,7 +188,7 @@ class EligibilityControllerTest extends TestCase
         ]);
 
         // Test partial update with only review_status
-        $response = $this->patchJson("/api/v1/manager/eligibility/{$eligibility->id_eligibility}", [
+        $response = $this->patchJson("/api/v1/manager/player-eligibilities/{$playerEligibility->id_eligibility}", [
             'review_status' => 'approved',
         ]);
 
@@ -203,7 +203,7 @@ class EligibilityControllerTest extends TestCase
             ]);
 
         // Test partial update with only review_message
-        $response = $this->patchJson("/api/v1/manager/eligibility/{$eligibility->id_eligibility}", [
+        $response = $this->patchJson("/api/v1/manager/player-eligibilities/{$playerEligibility->id_eligibility}", [
             'review_message' => 'Partially Updated Notes',
         ]);
 
@@ -222,13 +222,13 @@ class EligibilityControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $eligibility = PlayerEligibility::factory()->create([
+        $playerEligibility = PlayerEligibility::factory()->create([
             'player_id' => $this->player->id_player,
             'edition_id' => $this->edition->id_edition,
         ]);
 
         // Test PUT without required fields
-        $response = $this->putJson("/api/v1/manager/eligibility/{$eligibility->id_eligibility}", [
+        $response = $this->putJson("/api/v1/manager/player-eligibilities/{$playerEligibility->id_eligibility}", [
             'review_message' => 'Only Notes',
         ]);
 
@@ -236,7 +236,7 @@ class EligibilityControllerTest extends TestCase
             ->assertJsonValidationErrors(['review_status']);
 
         // Test PUT with empty required fields
-        $response = $this->putJson("/api/v1/manager/eligibility/{$eligibility->id_eligibility}", [
+        $response = $this->putJson("/api/v1/manager/player-eligibilities/{$playerEligibility->id_eligibility}", [
             'review_status' => '',
         ]);
 
@@ -248,9 +248,9 @@ class EligibilityControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $eligibility = PlayerEligibility::factory()->create();
+        $playerEligibility = PlayerEligibility::factory()->create();
 
-        $response = $this->deleteJson("/api/v1/manager/eligibility/{$eligibility->id_eligibility}");
+        $response = $this->deleteJson("/api/v1/manager/player-eligibilities/{$playerEligibility->id_eligibility}");
 
         $response->assertStatus(200)
             ->assertJson([
@@ -259,7 +259,7 @@ class EligibilityControllerTest extends TestCase
             ]);
 
         $this->assertDatabaseMissing('player_eligibilities', [
-            'id_eligibility' => $eligibility->id_eligibility,
+            'id_eligibility' => $playerEligibility->id_eligibility,
         ]);
     }
 
@@ -269,7 +269,7 @@ class EligibilityControllerTest extends TestCase
 
         $eligibilities = PlayerEligibility::factory()->count(3)->create();
 
-        $response = $this->deleteJson('/api/v1/manager/eligibility/bulk', [
+        $response = $this->deleteJson('/api/v1/manager/player-eligibilities/bulk', [
             'eligibility_ids' => $eligibilities->pluck('id_eligibility')->toArray(),
         ]);
 
@@ -299,8 +299,8 @@ class EligibilityControllerTest extends TestCase
             ]);
 
         // Verify all eligibilities are deleted
-        foreach ($eligibilities as $eligibility) {
-            $this->assertDatabaseMissing('player_eligibilities', ['id_eligibility' => $eligibility->id_eligibility]);
+        foreach ($eligibilities as $playerEligibility) {
+            $this->assertDatabaseMissing('player_eligibilities', ['id_eligibility' => $playerEligibility->id_eligibility]);
         }
     }
 
@@ -308,7 +308,7 @@ class EligibilityControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->deleteJson('/api/v1/manager/eligibility/bulk', [
+        $response = $this->deleteJson('/api/v1/manager/player-eligibilities/bulk', [
             'eligibility_ids' => [99999, 99998],
         ]);
 
@@ -342,7 +342,7 @@ class EligibilityControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->deleteJson('/api/v1/manager/eligibility/bulk', [
+        $response = $this->deleteJson('/api/v1/manager/player-eligibilities/bulk', [
             'eligibility_ids' => [],
         ]);
 
@@ -353,7 +353,7 @@ class EligibilityControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->deleteJson('/api/v1/manager/eligibility/bulk', []);
+        $response = $this->deleteJson('/api/v1/manager/player-eligibilities/bulk', []);
 
         $response->assertStatus(422);
     }
@@ -362,7 +362,7 @@ class EligibilityControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->deleteJson('/api/v1/manager/eligibility/bulk', [
+        $response = $this->deleteJson('/api/v1/manager/player-eligibilities/bulk', [
             'eligibility_ids' => ['invalid', 'format'],
         ]);
 
@@ -387,7 +387,7 @@ class EligibilityControllerTest extends TestCase
             'review_status' => 'pending',
         ];
 
-        $response = $this->postJson('/api/v1/manager/eligibility', $duplicateData);
+        $response = $this->postJson('/api/v1/manager/player-eligibilities', $duplicateData);
 
         $response->assertStatus(422)
             ->assertJson([
@@ -400,7 +400,7 @@ class EligibilityControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->postJson('/api/v1/manager/eligibility', []);
+        $response = $this->postJson('/api/v1/manager/player-eligibilities', []);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['player_id']);
@@ -410,7 +410,7 @@ class EligibilityControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->postJson('/api/v1/manager/eligibility', [
+        $response = $this->postJson('/api/v1/manager/player-eligibilities', [
             'player_id' => 99999, // Non-existent player
             'review_status' => 'approved',
         ]);
@@ -423,7 +423,7 @@ class EligibilityControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->postJson('/api/v1/manager/eligibility', [
+        $response = $this->postJson('/api/v1/manager/player-eligibilities', [
             'player_id' => $this->player->id_player,
             'review_status' => 'invalid_status', // Invalid status
         ]);
@@ -436,9 +436,9 @@ class EligibilityControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $eligibility = PlayerEligibility::factory()->create();
+        $playerEligibility = PlayerEligibility::factory()->create();
 
-        $response = $this->putJson("/api/v1/manager/eligibility/{$eligibility->id_eligibility}", [
+        $response = $this->putJson("/api/v1/manager/player-eligibilities/{$playerEligibility->id_eligibility}", [
             'review_status' => 'invalid_status', // Invalid status
         ]);
 
@@ -448,7 +448,7 @@ class EligibilityControllerTest extends TestCase
 
     public function test_eligibility_requires_manager_authentication()
     {
-        $response = $this->getJson('/api/v1/manager/eligibility');
+        $response = $this->getJson('/api/v1/manager/player-eligibilities');
 
         $response->assertStatus(401);
     }
@@ -458,7 +458,7 @@ class EligibilityControllerTest extends TestCase
         $player = Player::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
 
-        $response = $this->getJson('/api/v1/manager/eligibility');
+        $response = $this->getJson('/api/v1/manager/player-eligibilities');
 
         $response->assertStatus(403);
     }
@@ -467,7 +467,7 @@ class EligibilityControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->getJson('/api/v1/manager/eligibility/99999');
+        $response = $this->getJson('/api/v1/manager/player-eligibilities/99999');
 
         $response->assertStatus(404);
     }
@@ -478,7 +478,7 @@ class EligibilityControllerTest extends TestCase
 
         PlayerEligibility::factory()->count(25)->create();
 
-        $response = $this->getJson('/api/v1/manager/eligibility?page=1&per_page=10');
+        $response = $this->getJson('/api/v1/manager/player-eligibilities?page=1&per_page=10');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -515,14 +515,14 @@ class EligibilityControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $eligibilityData = [
+        $playerEligibilityData = [
             'player_id' => $this->player->id_player,
             'edition_id' => $this->edition->id_edition,
             'review_status' => 'pending',
             // Not providing notes (optional)
         ];
 
-        $response = $this->postJson('/api/v1/manager/eligibility', $eligibilityData);
+        $response = $this->postJson('/api/v1/manager/player-eligibilities', $playerEligibilityData);
 
         $response->assertStatus(201)
             ->assertJson([
@@ -551,14 +551,14 @@ class EligibilityControllerTest extends TestCase
         foreach ($statuses as $index => $status) {
             $player = [$this->player, $player2, $player3][$index];
 
-            $eligibilityData = [
+            $playerEligibilityData = [
                 'player_id' => $player->id_player,
                 'edition_id' => $this->edition->id_edition,
                 'review_status' => $status,
                 'notes' => "Status: {$status}",
             ];
 
-            $response = $this->postJson('/api/v1/manager/eligibility', $eligibilityData);
+            $response = $this->postJson('/api/v1/manager/player-eligibilities', $playerEligibilityData);
 
             $response->assertStatus(201)
                 ->assertJson([

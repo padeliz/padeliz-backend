@@ -12,7 +12,7 @@ use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
-class ParticipationControllerTest extends TestCase
+class EditionParticipationControllerTest extends TestCase
 {
     use RefreshDatabase;
 
@@ -59,7 +59,7 @@ class ParticipationControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition,
         ]);
 
-        $response = $this->getJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations");
+        $response = $this->getJson("/api/v1/manager/edition-participations");
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -101,7 +101,7 @@ class ParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $participation = EditionParticipation::factory()->create([
+        $editionParticipation = EditionParticipation::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
             'division_id' => $this->division->id_division,
@@ -109,14 +109,14 @@ class ParticipationControllerTest extends TestCase
             'is_student' => false,
         ]);
 
-        $response = $this->getJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/{$participation->id_participation}");
+        $response = $this->getJson("/api/v1/manager/edition-participations/{$editionParticipation->id_participation}");
 
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
                 'message' => 'Participation details retrieved successfully',
                 'data' => [
-                    'id_participation' => $participation->id_participation,
+                    'id_participation' => $editionParticipation->id_participation,
                     'edition_id' => $this->edition->id_edition,
                     'player_id' => $this->player->id_player,
                     'division_id' => $this->division->id_division,
@@ -126,27 +126,13 @@ class ParticipationControllerTest extends TestCase
             ]);
     }
 
-    public function test_manager_cannot_view_participation_from_different_edition()
-    {
-        Sanctum::actingAs($this->manager);
-
-        $otherEdition = Edition::factory()->create();
-        $participation = EditionParticipation::factory()->create([
-            'edition_id' => $otherEdition->id_edition,
-            'player_id' => $this->player->id_player,
-            'division_id' => $this->division->id_division,
-        ]);
-
-        $response = $this->getJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/{$participation->id_participation}");
-
-        $response->assertStatus(404);
-    }
 
     public function test_manager_can_create_participation()
     {
         Sanctum::actingAs($this->manager);
 
-        $participationData = [
+        $editionParticipationData = [
+            'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
             'division_id' => $this->division->id_division,
             'is_minor' => true,
@@ -157,7 +143,7 @@ class ParticipationControllerTest extends TestCase
             'ban_reason' => null,
         ];
 
-        $response = $this->postJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations", $participationData);
+        $response = $this->postJson("/api/v1/manager/edition-participations", $editionParticipationData);
 
         $response->assertStatus(201)
             ->assertJson([
@@ -185,7 +171,7 @@ class ParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $participation = EditionParticipation::factory()->create([
+        $editionParticipation = EditionParticipation::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
             'division_id' => $this->division->id_division,
@@ -194,6 +180,7 @@ class ParticipationControllerTest extends TestCase
         ]);
 
         $updateData = [
+            'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
             'division_id' => $this->division->id_division,
             'is_minor' => true,
@@ -202,14 +189,14 @@ class ParticipationControllerTest extends TestCase
             'payment' => 45.00,
         ];
 
-        $response = $this->putJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/{$participation->id_participation}", $updateData);
+        $response = $this->putJson("/api/v1/manager/edition-participations/{$editionParticipation->id_participation}", $updateData);
 
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
                 'message' => 'Participation updated successfully',
                 'data' => [
-                    'id_participation' => $participation->id_participation,
+                    'id_participation' => $editionParticipation->id_participation,
                     'is_minor' => true,
                     'is_student' => true,
                     'discount' => 15.00,
@@ -218,7 +205,7 @@ class ParticipationControllerTest extends TestCase
             ]);
 
         $this->assertDatabaseHas('edition_participations', [
-            'id_participation' => $participation->id_participation,
+            'id_participation' => $editionParticipation->id_participation,
             'is_minor' => true,
             'is_student' => true,
         ]);
@@ -228,7 +215,7 @@ class ParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $participation = EditionParticipation::factory()->create([
+        $editionParticipation = EditionParticipation::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
             'division_id' => $this->division->id_division,
@@ -237,7 +224,7 @@ class ParticipationControllerTest extends TestCase
         ]);
 
         // Test partial update with only is_minor
-        $response = $this->patchJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/{$participation->id_participation}", [
+        $response = $this->patchJson("/api/v1/manager/edition-participations/{$editionParticipation->id_participation}", [
             'is_minor' => true,
         ]);
 
@@ -252,7 +239,7 @@ class ParticipationControllerTest extends TestCase
             ]);
 
         // Test partial update with only is_student
-        $response = $this->patchJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/{$participation->id_participation}", [
+        $response = $this->patchJson("/api/v1/manager/edition-participations/{$editionParticipation->id_participation}", [
             'is_student' => true,
         ]);
 
@@ -271,22 +258,23 @@ class ParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $participation = EditionParticipation::factory()->create([
+        $editionParticipation = EditionParticipation::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
             'division_id' => $this->division->id_division,
         ]);
 
         // Test PUT without required fields
-        $response = $this->putJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/{$participation->id_participation}", [
+        $response = $this->putJson("/api/v1/manager/edition-participations/{$editionParticipation->id_participation}", [
             'is_minor' => true,
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['player_id', 'division_id', 'is_student']);
+            ->assertJsonValidationErrors(['edition_id', 'player_id', 'division_id', 'is_student']);
 
         // Test PUT with empty required fields
-        $response = $this->putJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/{$participation->id_participation}", [
+        $response = $this->putJson("/api/v1/manager/edition-participations/{$editionParticipation->id_participation}", [
+            'edition_id' => '',
             'player_id' => '',
             'division_id' => '',
             'is_minor' => '',
@@ -294,20 +282,20 @@ class ParticipationControllerTest extends TestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['player_id', 'division_id', 'is_minor', 'is_student']);
+            ->assertJsonValidationErrors(['edition_id', 'player_id', 'division_id', 'is_minor', 'is_student']);
     }
 
     public function test_manager_can_delete_participation()
     {
         Sanctum::actingAs($this->manager);
 
-        $participation = EditionParticipation::factory()->create([
+        $editionParticipation = EditionParticipation::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
             'division_id' => $this->division->id_division,
         ]);
 
-        $response = $this->deleteJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/{$participation->id_participation}");
+        $response = $this->deleteJson("/api/v1/manager/edition-participations/{$editionParticipation->id_participation}");
 
         $response->assertStatus(200)
             ->assertJson([
@@ -316,7 +304,7 @@ class ParticipationControllerTest extends TestCase
             ]);
 
         $this->assertDatabaseMissing('edition_participations', [
-            'id_participation' => $participation->id_participation,
+            'id_participation' => $editionParticipation->id_participation,
         ]);
     }
 
@@ -324,12 +312,12 @@ class ParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $participations = EditionParticipation::factory()->count(3)->create([
+        $editionParticipations = EditionParticipation::factory()->count(3)->create([
             'edition_id' => $this->edition->id_edition,
         ]);
 
-        $response = $this->deleteJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/bulk", [
-            'participation_ids' => $participations->pluck('id_participation')->toArray(),
+        $response = $this->deleteJson("/api/v1/manager/edition-participations/bulk", [
+            'participation_ids' => $editionParticipations->pluck('id_participation')->toArray(),
         ]);
 
         $response->assertStatus(200)
@@ -358,8 +346,8 @@ class ParticipationControllerTest extends TestCase
             ]);
 
         // Verify all participations are deleted
-        foreach ($participations as $participation) {
-            $this->assertDatabaseMissing('edition_participations', ['id_participation' => $participation->id_participation]);
+        foreach ($editionParticipations as $editionParticipation) {
+            $this->assertDatabaseMissing('edition_participations', ['id_participation' => $editionParticipation->id_participation]);
         }
     }
 
@@ -367,7 +355,7 @@ class ParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->deleteJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/bulk", [
+        $response = $this->deleteJson("/api/v1/manager/edition-participations/bulk", [
             'participation_ids' => [99999, 99998],
         ]);
 
@@ -401,7 +389,7 @@ class ParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->deleteJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/bulk", [
+        $response = $this->deleteJson("/api/v1/manager/edition-participations/bulk", [
             'participation_ids' => [],
         ]);
 
@@ -412,7 +400,7 @@ class ParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->deleteJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/bulk", []);
+        $response = $this->deleteJson("/api/v1/manager/edition-participations/bulk", []);
 
         $response->assertStatus(422);
     }
@@ -421,7 +409,7 @@ class ParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->deleteJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/bulk", [
+        $response = $this->deleteJson("/api/v1/manager/edition-participations/bulk", [
             'participation_ids' => ['invalid', 'format'],
         ]);
 
@@ -441,13 +429,14 @@ class ParticipationControllerTest extends TestCase
 
         // Try to create duplicate
         $duplicateData = [
+            'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
             'division_id' => $this->division->id_division,
             'is_minor' => false,
             'is_student' => false,
         ];
 
-        $response = $this->postJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations", $duplicateData);
+        $response = $this->postJson("/api/v1/manager/edition-participations", $duplicateData);
 
         $response->assertStatus(422)
             ->assertJson([
@@ -463,20 +452,21 @@ class ParticipationControllerTest extends TestCase
         $player2 = Player::factory()->create();
 
         // Create two different participations
-        $participation1 = EditionParticipation::factory()->create([
+        $editionParticipation1 = EditionParticipation::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
             'division_id' => $this->division->id_division,
         ]);
 
-        $participation2 = EditionParticipation::factory()->create([
+        $editionParticipation2 = EditionParticipation::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'player_id' => $player2->id_player,
             'division_id' => $this->division->id_division,
         ]);
 
         // Try to update second to match first
-        $response = $this->putJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/{$participation2->id_participation}", [
+        $response = $this->putJson("/api/v1/manager/edition-participations/{$editionParticipation2->id_participation}", [
+            'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
             'division_id' => $this->division->id_division,
             'is_minor' => false,
@@ -494,17 +484,18 @@ class ParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->postJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations", []);
+        $response = $this->postJson("/api/v1/manager/edition-participations", []);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['player_id', 'division_id']);
+            ->assertJsonValidationErrors(['edition_id', 'player_id', 'division_id']);
     }
 
     public function test_participation_creation_validation_invalid_player()
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->postJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations", [
+        $response = $this->postJson("/api/v1/manager/edition-participations", [
+            'edition_id' => $this->edition->id_edition,
             'player_id' => 99999, // Non-existent player
             'division_id' => $this->division->id_division,
         ]);
@@ -517,7 +508,8 @@ class ParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->postJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations", [
+        $response = $this->postJson("/api/v1/manager/edition-participations", [
+            'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
             'division_id' => 99999, // Non-existent division
         ]);
@@ -530,11 +522,12 @@ class ParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $participation = EditionParticipation::factory()->create([
+        $editionParticipation = EditionParticipation::factory()->create([
             'edition_id' => $this->edition->id_edition,
         ]);
 
-        $response = $this->putJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/{$participation->id_participation}", [
+        $response = $this->putJson("/api/v1/manager/edition-participations/{$editionParticipation->id_participation}", [
+            'edition_id' => $this->edition->id_edition,
             'player_id' => 99999, // Non-existent player
         ]);
 
@@ -544,7 +537,7 @@ class ParticipationControllerTest extends TestCase
 
     public function test_participation_requires_manager_authentication()
     {
-        $response = $this->getJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations");
+        $response = $this->getJson("/api/v1/manager/edition-participations");
 
         $response->assertStatus(401);
     }
@@ -554,7 +547,7 @@ class ParticipationControllerTest extends TestCase
         $player = Player::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
 
-        $response = $this->getJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations");
+        $response = $this->getJson("/api/v1/manager/edition-participations");
 
         $response->assertStatus(403);
     }
@@ -563,7 +556,7 @@ class ParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->getJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations/99999");
+        $response = $this->getJson("/api/v1/manager/edition-participations/99999");
 
         $response->assertStatus(404);
     }
@@ -576,7 +569,7 @@ class ParticipationControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition,
         ]);
 
-        $response = $this->getJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations?page=1&per_page=10");
+        $response = $this->getJson("/api/v1/manager/edition-participations?page=1&per_page=10");
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -614,13 +607,14 @@ class ParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $participationData = [
+        $editionParticipationData = [
+            'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
             'division_id' => $this->division->id_division,
             // Not providing optional fields
         ];
 
-        $response = $this->postJson("/api/v1/manager/editions/{$this->edition->id_edition}/participations", $participationData);
+        $response = $this->postJson("/api/v1/manager/edition-participations", $editionParticipationData);
 
         $response->assertStatus(201)
             ->assertJson([

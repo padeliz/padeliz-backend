@@ -190,26 +190,26 @@ Route::prefix('v1')->group(function () {
             Route::delete('{player}', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'destroy']);
         });
 
-        // Participation management
-        Route::prefix('editions/{edition}/participations')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\ParticipationController::class, 'index']);
-            Route::get('{participation}', [\App\Http\Controllers\Api\V1\Manager\ParticipationController::class, 'show']);
-            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\ParticipationController::class, 'store']);
-            Route::put('{participation}', [\App\Http\Controllers\Api\V1\Manager\ParticipationController::class, 'update']);
-            Route::patch('{participation}', [\App\Http\Controllers\Api\V1\Manager\ParticipationController::class, 'patch']);
-            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\ParticipationController::class, 'bulkDestroy']);
-            Route::delete('{participation}', [\App\Http\Controllers\Api\V1\Manager\ParticipationController::class, 'destroy']);
+        // Edition participation management
+        Route::prefix('edition-participations')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EditionParticipationController::class, 'index']);
+            Route::get('{editionParticipation}', [\App\Http\Controllers\Api\V1\Manager\EditionParticipationController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionParticipationController::class, 'store']);
+            Route::put('{editionParticipation}', [\App\Http\Controllers\Api\V1\Manager\EditionParticipationController::class, 'update']);
+            Route::patch('{editionParticipation}', [\App\Http\Controllers\Api\V1\Manager\EditionParticipationController::class, 'patch']);
+            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EditionParticipationController::class, 'bulkDestroy']);
+            Route::delete('{editionParticipation}', [\App\Http\Controllers\Api\V1\Manager\EditionParticipationController::class, 'destroy']);
         });
 
-        // Eligibility management
-        Route::prefix('eligibility')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'index']);
-            Route::get('{eligibility}', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'show']);
-            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'store']);
-            Route::put('{eligibility}', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'update']);
-            Route::patch('{eligibility}', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'patch']);
-            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'bulkDestroy']);
-            Route::delete('{eligibility}', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'destroy']);
+        // Player eligibility management
+        Route::prefix('player-eligibilities')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\PlayerEligibilityController::class, 'index']);
+            Route::get('{playerEligibility}', [\App\Http\Controllers\Api\V1\Manager\PlayerEligibilityController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\PlayerEligibilityController::class, 'store']);
+            Route::put('{playerEligibility}', [\App\Http\Controllers\Api\V1\Manager\PlayerEligibilityController::class, 'update']);
+            Route::patch('{playerEligibility}', [\App\Http\Controllers\Api\V1\Manager\PlayerEligibilityController::class, 'patch']);
+            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\PlayerEligibilityController::class, 'bulkDestroy']);
+            Route::delete('{playerEligibility}', [\App\Http\Controllers\Api\V1\Manager\PlayerEligibilityController::class, 'destroy']);
         });
 
         // Matches teams management

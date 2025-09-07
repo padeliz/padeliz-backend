@@ -11,24 +11,18 @@ use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
- *     name="🐧 Manager: Participations",
- *     description="(v1) Participation management and operations"
+ *     name="🐧 Manager: Edition Participations",
+ *     description="(v1) Edition participation management and operations"
  * )
  */
-class ParticipationController extends V1BaseController
+class EditionParticipationController extends V1BaseController
 {
     /**
      * @OA\Get(
-     *     path="/api/v1/manager/editions/{edition}/participations",
-     *     summary="Get all participations for an edition",
-     *     tags={"🐧 Manager: Participations"},
+     *     path="/api/v1/manager/edition-participations",
+     *     summary="Get all edition participations",
+     *     tags={"🐧 Manager: Edition Participations"},
      *     security={{"sanctum":{}}},
-     *     @OA\Parameter(
-     *         name="edition",
-     *         in="path",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Parameter(
      *         name="per_page",
@@ -103,20 +97,15 @@ class ParticipationController extends V1BaseController
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     ),
      *     @OA\Response(
-     *         response=404,
-     *         description="Edition not found",
-     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
-     *     ),
-     *     @OA\Response(
      *         response=500,
      *         description="Internal server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
-    public function index(Request $request, Edition $edition)
+    public function index(Request $request)
     {
-        $query = $edition->participations()->with(['player', 'division'])->getQuery();
+        $query = EditionParticipation::with(['player', 'division', 'edition']);
 
         // Apply advanced pagination
         $this->applyAdvancedPagination(
@@ -135,25 +124,19 @@ class ParticipationController extends V1BaseController
             $query->orderBy('id_participation', 'desc');
         }
 
-        $participations = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
+        $editionParticipations = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
-        return EditionParticipationResource::collection($participations);
+        return EditionParticipationResource::collection($editionParticipations);
     }
 
     /**
      * @OA\Get(
-     *     path="/api/v1/manager/editions/{edition}/participations/{participation}",
-     *     summary="Get participation details",
-     *     tags={"🐧 Manager: Participations"},
+     *     path="/api/v1/manager/edition-participations/{editionParticipation}",
+     *     summary="Get edition participation details",
+     *     tags={"🐧 Manager: Edition Participations"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
-     *         name="edition",
-     *         in="path",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Parameter(
-     *         name="participation",
+     *         name="editionParticipation",
      *         in="path",
      *         required=true,
      *         @OA\Schema(type="integer")
@@ -182,7 +165,7 @@ class ParticipationController extends V1BaseController
      *     ),
      *     @OA\Response(
      *         response=404,
-     *         description="Edition or participation not found",
+     *         description="Participation not found",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     ),
      *     @OA\Response(
@@ -192,37 +175,27 @@ class ParticipationController extends V1BaseController
      *     )
      * )
      */
-    public function show(Edition $edition, EditionParticipation $participation)
+    public function show(EditionParticipation $editionParticipation)
     {
-        // Ensure the participation belongs to the specified edition
-        if ($participation->edition_id !== $edition->id_edition) {
-            return $this->notFoundResponse('Participation does not belong to this edition');
-        }
-
-        $participation->load(['player', 'division']);
+        $editionParticipation->load(['player', 'division', 'edition']);
 
         return $this->resourceResponse(
-            new EditionParticipationResource($participation),
+            new EditionParticipationResource($editionParticipation),
             'Participation details retrieved successfully'
         );
     }
 
     /**
      * @OA\Post(
-     *     path="/api/v1/manager/editions/{edition}/participations",
-     *     summary="Add player to edition",
-     *     tags={"🐧 Manager: Participations"},
+     *     path="/api/v1/manager/edition-participations",
+     *     summary="Create edition participation",
+     *     tags={"🐧 Manager: Edition Participations"},
      *     security={{"sanctum":{}}},
-     *     @OA\Parameter(
-     *         name="edition",
-     *         in="path",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"player_id", "division_id"},
+     *             required={"edition_id", "player_id", "division_id"},
+     *             @OA\Property(property="edition_id", type="integer"),
      *             @OA\Property(property="player_id", type="integer"),
      *             @OA\Property(property="division_id", type="integer"),
      *             @OA\Property(property="is_minor", type="boolean", description="Is minor player"),
@@ -256,11 +229,6 @@ class ParticipationController extends V1BaseController
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     ),
      *     @OA\Response(
-     *         response=404,
-     *         description="Edition not found",
-     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
-     *     ),
-     *     @OA\Response(
      *         response=422,
      *         description="Validation error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
@@ -272,9 +240,10 @@ class ParticipationController extends V1BaseController
      *     )
      * )
      */
-    public function store(Request $request, Edition $edition)
+    public function store(Request $request)
     {
         $validated = $request->validate([
+            'edition_id' => 'required|exists:editions,id_edition',
             'player_id' => 'required|exists:players,id_player',
             'division_id' => 'required|exists:divisions,id_division',
             'is_minor' => 'boolean',
@@ -287,7 +256,7 @@ class ParticipationController extends V1BaseController
 
         // Check if player is already participating
         $existingParticipation = EditionParticipation::where([
-            'edition_id' => $edition->id_edition,
+            'edition_id' => $validated['edition_id'],
             'player_id' => $validated['player_id'],
         ])->first();
 
@@ -295,20 +264,18 @@ class ParticipationController extends V1BaseController
             return $this->errorResponse('This player is already participating in this edition', 422);
         }
 
-        $validated['edition_id'] = $edition->id_edition;
-
         // Set default values for optional fields
         $validated['is_minor'] = $validated['is_minor'] ?? false;
         $validated['is_student'] = $validated['is_student'] ?? false;
         $validated['discount'] = $validated['discount'] ?? 0;
         $validated['payment'] = $validated['payment'] ?? 0;
 
-        $participation = EditionParticipation::create($validated);
+        $editionParticipation = EditionParticipation::create($validated);
 
-        $participation->load(['player', 'division']);
+        $editionParticipation->load(['player', 'division', 'edition']);
 
         return $this->resourceResponse(
-            new EditionParticipationResource($participation),
+            new EditionParticipationResource($editionParticipation),
             'Participation created successfully',
             201
         );
@@ -316,18 +283,12 @@ class ParticipationController extends V1BaseController
 
     /**
      * @OA\Put(
-     *     path="/api/v1/manager/editions/{edition}/participations/{participation}",
-     *     summary="Update participation details (complete replacement)",
-     *     tags={"🐧 Manager: Participations"},
+     *     path="/api/v1/manager/edition-participations/{editionParticipation}",
+     *     summary="Update edition participation details (complete replacement)",
+     *     tags={"🐧 Manager: Edition Participations"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
-     *         name="edition",
-     *         in="path",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Parameter(
-     *         name="participation",
+     *         name="editionParticipation",
      *         in="path",
      *         required=true,
      *         @OA\Schema(type="integer")
@@ -384,14 +345,11 @@ class ParticipationController extends V1BaseController
      *     )
      * )
      */
-    public function update(Request $request, Edition $edition, EditionParticipation $participation)
+    public function update(Request $request, EditionParticipation $editionParticipation)
     {
-        // Ensure the participation belongs to the specified edition
-        if ($participation->edition_id !== $edition->id_edition) {
-            return $this->notFoundResponse('Participation does not belong to this edition');
-        }
 
         $validated = $request->validate([
+            'edition_id' => 'required|exists:editions,id_edition',
             'player_id' => 'required|exists:players,id_player',
             'division_id' => 'required|exists:divisions,id_division',
             'is_minor' => 'required|boolean',
@@ -403,9 +361,9 @@ class ParticipationController extends V1BaseController
         ]);
 
         // Check if player is already participating (excluding current record)
-        if (isset($validated['player_id']) && $validated['player_id'] !== $participation->player_id) {
+        if (isset($validated['player_id']) && $validated['player_id'] !== $editionParticipation->player_id) {
             $existingParticipation = EditionParticipation::where([
-                'edition_id' => $edition->id_edition,
+                'edition_id' => $validated['edition_id'],
                 'player_id' => $validated['player_id'],
             ])->first();
 
@@ -414,29 +372,23 @@ class ParticipationController extends V1BaseController
             }
         }
 
-        $participation->update($validated);
-        $participation->load(['player', 'division']);
+        $editionParticipation->update($validated);
+        $editionParticipation->load(['player', 'division', 'edition']);
 
         return $this->resourceResponse(
-            new EditionParticipationResource($participation),
+            new EditionParticipationResource($editionParticipation),
             'Participation updated successfully'
         );
     }
 
     /**
      * @OA\Patch(
-     *     path="/api/v1/manager/editions/{edition}/participations/{participation}",
-     *     summary="Partially update participation details",
-     *     tags={"🐧 Manager: Participations"},
+     *     path="/api/v1/manager/edition-participations/{editionParticipation}",
+     *     summary="Partially update edition participation details",
+     *     tags={"🐧 Manager: Edition Participations"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
-     *         name="edition",
-     *         in="path",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Parameter(
-     *         name="participation",
+     *         name="editionParticipation",
      *         in="path",
      *         required=true,
      *         @OA\Schema(type="integer")
@@ -493,14 +445,10 @@ class ParticipationController extends V1BaseController
      *     )
      * )
      */
-    public function patch(Request $request, Edition $edition, EditionParticipation $participation)
+    public function patch(Request $request, EditionParticipation $editionParticipation)
     {
-        // Ensure the participation belongs to the specified edition
-        if ($participation->edition_id !== $edition->id_edition) {
-            return $this->notFoundResponse('Participation does not belong to this edition');
-        }
-
         $validated = $request->validate([
+            'edition_id' => 'sometimes|exists:editions,id_edition',
             'player_id' => 'sometimes|exists:players,id_player',
             'division_id' => 'sometimes|exists:divisions,id_division',
             'is_minor' => 'boolean',
@@ -512,9 +460,9 @@ class ParticipationController extends V1BaseController
         ]);
 
         // Check if player is already participating (excluding current record)
-        if (isset($validated['player_id']) && $validated['player_id'] !== $participation->player_id) {
+        if (isset($validated['player_id']) && $validated['player_id'] !== $editionParticipation->player_id) {
             $existingParticipation = EditionParticipation::where([
-                'edition_id' => $edition->id_edition,
+                'edition_id' => $validated['edition_id'],
                 'player_id' => $validated['player_id'],
             ])->first();
 
@@ -523,29 +471,23 @@ class ParticipationController extends V1BaseController
             }
         }
 
-        $participation->update($validated);
-        $participation->load(['player', 'division']);
+        $editionParticipation->update($validated);
+        $editionParticipation->load(['player', 'division', 'edition']);
 
         return $this->resourceResponse(
-            new EditionParticipationResource($participation),
+            new EditionParticipationResource($editionParticipation),
             'Participation partially updated successfully'
         );
     }
 
     /**
      * @OA\Delete(
-     *     path="/api/v1/manager/editions/{edition}/participations/{participation}",
-     *     summary="Remove player from edition",
-     *     tags={"🐧 Manager: Participations"},
+     *     path="/api/v1/manager/edition-participations/{editionParticipation}",
+     *     summary="Delete edition participation",
+     *     tags={"🐧 Manager: Edition Participations"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
-     *         name="edition",
-     *         in="path",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
-     *     @OA\Parameter(
-     *         name="participation",
+     *         name="editionParticipation",
      *         in="path",
      *         required=true,
      *         @OA\Schema(type="integer")
@@ -577,15 +519,11 @@ class ParticipationController extends V1BaseController
      *     )
      * )
      */
-    public function destroy(Edition $edition, EditionParticipation $participation)
+    public function destroy(EditionParticipation $editionParticipation)
     {
-        // Ensure the participation belongs to the specified edition
-        if ($participation->edition_id !== $edition->id_edition) {
-            return $this->notFoundResponse('Participation does not belong to this edition');
-        }
 
         return $this->deleteResourceWithResponse(
-            $participation,
+            $editionParticipation,
             [],
             'participation',
             'Participation deleted successfully'
@@ -594,16 +532,10 @@ class ParticipationController extends V1BaseController
 
     /**
      * @OA\Delete(
-     *     path="/api/v1/manager/editions/{edition}/participations/bulk",
-     *     summary="Bulk remove players from edition",
-     *     tags={"🐧 Manager: Participations"},
+     *     path="/api/v1/manager/edition-participations/bulk",
+     *     summary="Bulk delete edition participations",
+     *     tags={"🐧 Manager: Edition Participations"},
      *     security={{"sanctum":{}}},
-     *     @OA\Parameter(
-     *         name="edition",
-     *         in="path",
-     *         required=true,
-     *         @OA\Schema(type="integer")
-     *     ),
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
@@ -688,7 +620,7 @@ class ParticipationController extends V1BaseController
      *     )
      * )
      */
-    public function bulkDestroy(Request $request, Edition $edition)
+    public function bulkDestroy(Request $request)
     {
         $request->validate([
             'participation_ids' => 'required|array|min:1',
@@ -703,13 +635,13 @@ class ParticipationController extends V1BaseController
             'total_failed' => 0,
         ];
 
-        foreach ($request->participation_ids as $participationId) {
+        foreach ($request->participation_ids as $editionParticipationId) {
             try {
-                $participation = EditionParticipation::find($participationId);
+                $editionParticipation = EditionParticipation::find($editionParticipationId);
 
-                if (! $participation) {
+                if (! $editionParticipation) {
                     $results['failed'][] = [
-                        'id' => $participationId,
+                        'id' => $editionParticipationId,
                         'reason' => 'Resource not found',
                     ];
                     $results['total_failed']++;
@@ -717,28 +649,18 @@ class ParticipationController extends V1BaseController
                     continue;
                 }
 
-                // Ensure the participation belongs to the specified edition
-                if ($participation->edition_id !== $edition->id_edition) {
-                    $results['failed'][] = [
-                        'id' => $participationId,
-                        'reason' => 'Participation does not belong to this edition',
-                    ];
-                    $results['total_failed']++;
 
-                    continue;
-                }
-
-                $participation->delete();
+                $editionParticipation->delete();
 
                 $results['successful'][] = [
-                    'id' => $participationId,
-                    'name' => $participation->player->name ?? $participationId,
+                    'id' => $editionParticipationId,
+                    'name' => $editionParticipation->player->name ?? $editionParticipationId,
                 ];
                 $results['total_successful']++;
 
             } catch (\Exception $e) {
                 $results['failed'][] = [
-                    'id' => $participationId,
+                    'id' => $editionParticipationId,
                     'reason' => 'Unexpected error: ' . $e->getMessage(),
                 ];
                 $results['total_failed']++;

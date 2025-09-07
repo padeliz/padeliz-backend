@@ -11,17 +11,17 @@ use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
- *     name="🐧 Manager: Eligibilities",
- *     description="(v1) Eligibility management and operations"
+ *     name="🐧 Manager: Player Eligibilities",
+ *     description="(v1) Player eligibility management and operations"
  * )
  */
-class EligibilityController extends V1BaseController
+class PlayerEligibilityController extends V1BaseController
 {
     /**
      * @OA\Get(
-     *     path="/api/v1/manager/eligibility",
+     *     path="/api/v1/manager/player-eligibilities",
      *     summary="Get all eligibility records",
-     *     tags={"🐧 Manager: Eligibilities"},
+     *     tags={"🐧 Manager: Player Eligibilities"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Parameter(
@@ -136,12 +136,12 @@ class EligibilityController extends V1BaseController
 
     /**
      * @OA\Get(
-     *     path="/api/v1/manager/eligibility/{eligibility}",
+     *     path="/api/v1/manager/player-eligibilities/{playerEligibility}",
      *     summary="Get eligibility details",
-     *     tags={"🐧 Manager: Eligibilities"},
+     *     tags={"🐧 Manager: Player Eligibilities"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
-     *         name="eligibility",
+     *         name="playerEligibility",
      *         in="path",
      *         required=true,
      *         @OA\Schema(type="integer")
@@ -180,21 +180,21 @@ class EligibilityController extends V1BaseController
      *     )
      * )
      */
-    public function show(PlayerEligibility $eligibility)
+    public function show(PlayerEligibility $playerEligibility)
     {
-        $eligibility->load('player');
+        $playerEligibility->load('player');
 
         return $this->resourceResponse(
-            new PlayerEligibilityResource($eligibility),
+            new PlayerEligibilityResource($playerEligibility),
             'Eligibility details retrieved successfully'
         );
     }
 
     /**
      * @OA\Post(
-     *     path="/api/v1/manager/eligibility",
+     *     path="/api/v1/manager/player-eligibilities",
      *     summary="Create a new eligibility record",
-     *     tags={"🐧 Manager: Eligibilities"},
+     *     tags={"🐧 Manager: Player Eligibilities"},
      *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,
@@ -262,7 +262,7 @@ class EligibilityController extends V1BaseController
         }
 
         // Map the fields to the correct database columns
-        $eligibilityData = [
+        $playerEligibilityData = [
             'player_id' => $validated['player_id'],
             'edition_id' => $validated['edition_id'],
             'review_status' => $validated['review_status'],
@@ -270,11 +270,11 @@ class EligibilityController extends V1BaseController
             'name' => 'Player Eligibility', // Default name
         ];
 
-        $eligibility = PlayerEligibility::create($eligibilityData);
-        $eligibility->load('player');
+        $playerEligibility = PlayerEligibility::create($playerEligibilityData);
+        $playerEligibility->load('player');
 
         return $this->resourceResponse(
-            new PlayerEligibilityResource($eligibility),
+            new PlayerEligibilityResource($playerEligibility),
             'Eligibility created successfully',
             201
         );
@@ -282,12 +282,12 @@ class EligibilityController extends V1BaseController
 
     /**
      * @OA\Put(
-     *     path="/api/v1/manager/eligibility/{eligibility}",
+     *     path="/api/v1/manager/player-eligibilities/{playerEligibility}",
      *     summary="Update eligibility status (complete replacement)",
-     *     tags={"🐧 Manager: Eligibilities"},
+     *     tags={"🐧 Manager: Player Eligibilities"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
-     *         name="eligibility",
+     *         name="playerEligibility",
      *         in="path",
      *         required=true,
      *         @OA\Schema(type="integer")
@@ -339,32 +339,32 @@ class EligibilityController extends V1BaseController
      *     )
      * )
      */
-    public function update(Request $request, PlayerEligibility $eligibility)
+    public function update(Request $request, PlayerEligibility $playerEligibility)
     {
         $request->validate([
             'review_status' => 'required|in:approved,rejected,pending',
             'review_message' => 'nullable|string',
         ]);
 
-        $eligibility->update([
+        $playerEligibility->update([
             'review_status' => $request->review_status,
             'review_message' => $request->review_message,
         ]);
 
         return $this->resourceResponse(
-            new PlayerEligibilityResource($eligibility),
+            new PlayerEligibilityResource($playerEligibility),
             'Eligibility updated successfully'
         );
     }
 
     /**
      * @OA\Patch(
-     *     path="/api/v1/manager/eligibility/{eligibility}",
+     *     path="/api/v1/manager/player-eligibilities/{playerEligibility}",
      *     summary="Partially update eligibility status",
-     *     tags={"🐧 Manager: Eligibilities"},
+     *     tags={"🐧 Manager: Player Eligibilities"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
-     *         name="eligibility",
+     *         name="playerEligibility",
      *         in="path",
      *         required=true,
      *         @OA\Schema(type="integer")
@@ -415,29 +415,29 @@ class EligibilityController extends V1BaseController
      *     )
      * )
      */
-    public function patch(Request $request, PlayerEligibility $eligibility)
+    public function patch(Request $request, PlayerEligibility $playerEligibility)
     {
         $request->validate([
             'review_status' => 'sometimes|in:approved,rejected,pending',
             'review_message' => 'nullable|string',
         ]);
 
-        $eligibility->update($request->all());
+        $playerEligibility->update($request->all());
 
         return $this->resourceResponse(
-            new PlayerEligibilityResource($eligibility),
+            new PlayerEligibilityResource($playerEligibility),
             'Eligibility partially updated successfully'
         );
     }
 
     /**
      * @OA\Delete(
-     *     path="/api/v1/manager/eligibility/{eligibility}",
+     *     path="/api/v1/manager/player-eligibilities/{playerEligibility}",
      *     summary="Delete an eligibility record",
-     *     tags={"🐧 Manager: Eligibilities"},
+     *     tags={"🐧 Manager: Player Eligibilities"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
-     *         name="eligibility",
+     *         name="playerEligibility",
      *         in="path",
      *         required=true,
      *         @OA\Schema(type="integer")
@@ -474,13 +474,13 @@ class EligibilityController extends V1BaseController
      *     )
      * )
      */
-    public function destroy(PlayerEligibility $eligibility)
+    public function destroy(PlayerEligibility $playerEligibility)
     {
         // PlayerEligibility has no relationships that would prevent deletion
         $linkedDataRelations = [];
 
         return $this->deleteResourceWithResponse(
-            $eligibility,
+            $playerEligibility,
             $linkedDataRelations,
             'eligibility',
             'Eligibility deleted successfully'
@@ -491,7 +491,7 @@ class EligibilityController extends V1BaseController
      * @OA\Delete(
      *     path="/api/v1/manager/eligibility/bulk",
      *     summary="Bulk delete eligibility records",
-     *     tags={"🐧 Manager: Eligibilities"},
+     *     tags={"🐧 Manager: Player Eligibilities"},
      *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,
