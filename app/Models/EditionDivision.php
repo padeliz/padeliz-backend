@@ -17,21 +17,22 @@ use Illuminate\Database\Eloquent\Model;
  *         type="integer",
  *         format="int64",
  *         readOnly=true,
- *         description="Primary key - Edition Division ID"
+ *         title="ID",
+         description="Unique Identifier"
  *     ),
  *     @OA\Property(
  *         property="edition_id",
  *         type="integer",
  *         format="int64",
  *         minimum=1,
- *         description="Foreign key - References Edition.id_edition"
+ *         title="Edition"
  *     ),
  *     @OA\Property(
  *         property="division_id",
  *         type="integer",
  *         format="int64",
  *         minimum=1,
- *         description="Foreign key - References Division.id_division"
+ *         title="Division"
  *     ),
  *     @OA\Property(
  *         property="players_limit",

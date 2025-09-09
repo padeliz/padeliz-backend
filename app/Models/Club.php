@@ -17,22 +17,44 @@ use Illuminate\Database\Eloquent\Model;
  *         type="integer",
  *         format="int64",
  *         readOnly=true,
- *         description="Primary key - Club ID"
+ *         title="ID",
+ *         description="Unique Identifier"
  *     ),
- *     @OA\Property(property="name", type="string", maxLength=30),
+ *     @OA\Property(
+ *         property="name",
+ *         type="string",
+ *         maxLength=30,
+ *         title="Club Name",
+ *         description="Name of the padel club"
+ *     ),
  *     @OA\Property(
  *         property="city",
  *         type="string",
  *         maxLength=30,
+ *         title="City",
  *         description="City where the club is located",
  *         example="Bucharest"
  *     ),
- *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
- *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
+ *     @OA\Property(
+ *         property="inserted_at",
+ *         type="integer",
+ *         format="timestamp",
+ *         title="Created At",
+ *         description="Timestamp when the club was created"
+ *     ),
+ *     @OA\Property(
+ *         property="updated_at",
+ *         type="integer",
+ *         format="timestamp",
+ *         nullable=true,
+ *         title="Updated At",
+ *         description="Timestamp when the club was last updated"
+ *     ),
  *     @OA\Property(
  *         property="locations",
  *         type="array",
  *         @OA\Items(ref="#/components/schemas/Location"),
+ *         title="Locations",
  *         description="Array of related locations",
  *         nullable=true
  *     ),
@@ -40,6 +62,7 @@ use Illuminate\Database\Eloquent\Model;
  *         property="prizes",
  *         type="array",
  *         @OA\Items(ref="#/components/schemas/PrizeFromClub"),
+ *         title="Prizes",
  *         description="Array of related club prizes",
  *         nullable=true
  *     )

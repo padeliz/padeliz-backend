@@ -17,21 +17,22 @@ use Illuminate\Database\Eloquent\Model;
  *         type="integer",
  *         format="int64",
  *         readOnly=true,
- *         description="Primary key - Edition Lucky One ID"
+ *         title="ID",
+         description="Unique Identifier"
  *     ),
  *     @OA\Property(
  *         property="lottery_id",
  *         type="integer",
  *         format="int64",
  *         minimum=1,
- *         description="Foreign key - References EditionLottery.id_lottery"
+ *         title="EditionLottery"
  *     ),
  *     @OA\Property(
  *         property="drawn_participation_id",
  *         type="integer",
  *         format="int64",
  *         minimum=1,
- *         description="Foreign key - References EditionParticipation.id_participation"
+ *         title="EditionParticipation"
  *     ),
  *     @OA\Property(
  *         property="drawn_at",

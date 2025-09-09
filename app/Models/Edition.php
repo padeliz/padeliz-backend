@@ -17,14 +17,14 @@ use Illuminate\Database\Eloquent\Model;
  *         type="integer",
  *         format="int64",
  *         readOnly=true,
- *         description="Primary key - Edition ID"
+ *         description="Unique Identifier"
  *     ),
  *     @OA\Property(
  *         property="location_id",
  *         type="integer",
  *         format="int64",
  *         minimum=1,
- *         description="Foreign key - References Location.id_location"
+ *         title="Location"
  *     ),
  *     @OA\Property(
  *         property="name",

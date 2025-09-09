@@ -19,18 +19,46 @@ use Laravel\Sanctum\HasApiTokens;
  *         type="integer",
  *         format="int64",
  *         readOnly=true,
- *         description="Primary key - Player ID"
+ *         title="ID",
+ *         description="Unique Identifier"
  *     ),
- *     @OA\Property(property="name", type="string", maxLength=250),
- *     @OA\Property(property="google_id", type="string"),
- *     @OA\Property(property="google_name", type="string"),
- *     @OA\Property(property="google_email", type="string"),
- *     @OA\Property(property="google_avatar", type="string"),
+ *     @OA\Property(
+ *         property="name",
+ *         type="string",
+ *         maxLength=250,
+ *         title="Full Name",
+ *         description="Player's full name"
+ *     ),
+ *     @OA\Property(
+ *         property="google_id",
+ *         type="string",
+ *         title="Google ID",
+ *         description="Google account identifier"
+ *     ),
+ *     @OA\Property(
+ *         property="google_name",
+ *         type="string",
+ *         title="Google Name",
+ *         description="Name from Google account"
+ *     ),
+ *     @OA\Property(
+ *         property="google_email",
+ *         type="string",
+ *         title="Google Email",
+ *         description="Email from Google account"
+ *     ),
+ *     @OA\Property(
+ *         property="google_avatar",
+ *         type="string",
+ *         title="Google Avatar",
+ *         description="Avatar URL from Google account"
+ *     ),
  *     @OA\Property(
  *         property="phone",
  *         type="string",
  *         maxLength=255,
  *         nullable=true,
+ *         title="Phone",
  *         description="Phone number",
  *         example="+40712345678"
  *     ),
@@ -41,37 +69,119 @@ use Laravel\Sanctum\HasApiTokens;
  *         nullable=true,
  *         minimum=0.0,
  *         maximum=9.9,
+ *         title="Skill Level",
  *         description="Skill level from 0.0 to 9.9",
  *         example=4.5
  *     ),
- *     @OA\Property(property="first_name", type="string", maxLength=50, nullable=true),
- *     @OA\Property(property="middle_name", type="string", maxLength=50, nullable=true),
- *     @OA\Property(property="last_name", type="string", maxLength=50, nullable=true),
- *     @OA\Property(property="year_of_birth", type="integer", nullable=true, minimum=1900, maximum=9999),
- *     @OA\Property(property="being_student", type="boolean", default=false),
- *     @OA\Property(property="playtomic_id", type="string", maxLength=10, nullable=true),
- *     @OA\Property(property="rankedin_id", type="string", maxLength=15, nullable=true),
+ *     @OA\Property(
+ *         property="first_name",
+ *         type="string",
+ *         maxLength=50,
+ *         nullable=true,
+ *         title="First Name",
+ *         description="Player's first name"
+ *     ),
+ *     @OA\Property(
+ *         property="middle_name",
+ *         type="string",
+ *         maxLength=50,
+ *         nullable=true,
+ *         title="Middle Name",
+ *         description="Player's middle name"
+ *     ),
+ *     @OA\Property(
+ *         property="last_name",
+ *         type="string",
+ *         maxLength=50,
+ *         nullable=true,
+ *         title="Last Name",
+ *         description="Player's last name"
+ *     ),
+ *     @OA\Property(
+ *         property="year_of_birth",
+ *         type="integer",
+ *         nullable=true,
+ *         minimum=1900,
+ *         maximum=9999,
+ *         title="Birth Year",
+ *         description="Year of birth"
+ *     ),
+ *     @OA\Property(
+ *         property="being_student",
+ *         type="boolean",
+ *         default=false,
+ *         title="Student",
+ *         description="Whether the player is a student"
+ *     ),
+ *     @OA\Property(
+ *         property="playtomic_id",
+ *         type="string",
+ *         maxLength=10,
+ *         nullable=true,
+ *         title="Playtomic ID",
+ *         description="Playtomic platform identifier"
+ *     ),
+ *     @OA\Property(
+ *         property="rankedin_id",
+ *         type="string",
+ *         maxLength=15,
+ *         nullable=true,
+ *         title="Rankedin ID",
+ *         description="Rankedin platform identifier"
+ *     ),
  *     @OA\Property(
  *         property="user_types",
  *         type="array",
  *         nullable=true,
  *         @OA\Items(type="string", enum={"player", "manager", "admin"}),
+ *         title="User Types",
  *         description="Array of user roles",
  *         example={"player", "manager"}
  *     ),
- *     @OA\Property(property="instagram_username", type="string", maxLength=50, nullable=true),
- *     @OA\Property(property="facebook_username", type="string", maxLength=50, nullable=true),
- *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
- *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
+ *     @OA\Property(
+ *         property="instagram_username",
+ *         type="string",
+ *         maxLength=50,
+ *         nullable=true,
+ *         title="Instagram",
+ *         description="Instagram username"
+ *     ),
+ *     @OA\Property(
+ *         property="facebook_username",
+ *         type="string",
+ *         maxLength=50,
+ *         nullable=true,
+ *         title="Facebook",
+ *         description="Facebook username"
+ *     ),
+ *     @OA\Property(
+ *         property="inserted_at",
+ *         type="integer",
+ *         format="timestamp",
+ *         title="Created At",
+ *         description="Timestamp when the player was created"
+ *     ),
+ *     @OA\Property(
+ *         property="updated_at",
+ *         type="integer",
+ *         format="timestamp",
+ *         nullable=true,
+ *         title="Updated At",
+ *         description="Timestamp when the player was last updated"
+ *     ),
  *     @OA\Property(
  *         property="uploaded_profile_urls",
  *         type="array",
- *         @OA\Items(type="string")
+ *         @OA\Items(type="string"),
+ *         title="Profile Images",
+ *         description="Array of uploaded profile image URLs"
  *     ),
  *     @OA\Property(
  *         property="participations",
  *         type="array",
- *         @OA\Items(ref="#/components/schemas/EditionParticipation")
+ *         @OA\Items(ref="#/components/schemas/EditionParticipation"),
+ *         title="Participations",
+ *         description="Array of edition participations"
  *     )
  * )
  */

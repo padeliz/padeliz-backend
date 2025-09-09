@@ -17,25 +17,30 @@ use Illuminate\Database\Eloquent\Model;
  *         type="integer",
  *         format="int64",
  *         readOnly=true,
- *         description="Primary key - Location ID"
+ *         title="ID",
+ *         description="Unique Identifier"
  *     ),
  *     @OA\Property(
  *         property="club_id",
  *         type="integer",
  *         format="int64",
+ *         minimum=1,
+ *         title="Club",
  *         description="Foreign key - References Club.id_club"
  *     ),
  *     @OA\Property(
  *         property="name",
  *         type="string",
  *         maxLength=30,
- *         description="Location name",
+ *         title="Location Name",
+ *         description="Name of the padel location",
  *         example="Central Court"
  *     ),
  *     @OA\Property(
  *         property="address",
  *         type="string",
  *         maxLength=200,
+ *         title="Address",
  *         description="Full address of the location",
  *         example="123 Sports Street, Bucharest"
  *     ),
@@ -43,6 +48,7 @@ use Illuminate\Database\Eloquent\Model;
  *         property="total_indoors_courts",
  *         type="integer",
  *         minimum=0,
+ *         title="Indoor Courts",
  *         description="Number of indoor courts",
  *         example=4
  *     ),
@@ -50,14 +56,29 @@ use Illuminate\Database\Eloquent\Model;
  *         property="total_outdoor_courts",
  *         type="integer",
  *         minimum=0,
+ *         title="Outdoor Courts",
  *         description="Number of outdoor courts",
  *         example=2
  *     ),
- *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
- *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
+ *     @OA\Property(
+ *         property="inserted_at",
+ *         type="integer",
+ *         format="timestamp",
+ *         title="Created At",
+ *         description="Timestamp when the location was created"
+ *     ),
+ *     @OA\Property(
+ *         property="updated_at",
+ *         type="integer",
+ *         format="timestamp",
+ *         nullable=true,
+ *         title="Updated At",
+ *         description="Timestamp when the location was last updated"
+ *     ),
  *     @OA\Property(
  *         property="club",
  *         ref="#/components/schemas/Club",
+ *         title="Club",
  *         description="Related club object (loaded when requested)",
  *         nullable=true
  *     ),
@@ -65,6 +86,7 @@ use Illuminate\Database\Eloquent\Model;
  *         property="editions",
  *         type="array",
  *         @OA\Items(ref="#/components/schemas/Edition"),
+ *         title="Editions",
  *         description="Array of related editions",
  *         nullable=true
  *     )

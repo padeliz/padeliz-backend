@@ -17,13 +17,15 @@ use Illuminate\Database\Eloquent\Model;
  *         type="integer",
  *         format="int64",
  *         readOnly=true,
- *         description="Primary key - Edition Participation ID"
+ *         title="ID",
+ *         description="Unique Identifier"
  *     ),
  *     @OA\Property(
  *         property="edition_id",
  *         type="integer",
  *         format="int64",
  *         minimum=1,
+ *         title="Edition",
  *         description="Foreign key - References Edition.id_edition"
  *     ),
  *     @OA\Property(
@@ -31,6 +33,7 @@ use Illuminate\Database\Eloquent\Model;
  *         type="integer",
  *         format="int64",
  *         minimum=1,
+ *         title="Player",
  *         description="Foreign key - References Player.id_player"
  *     ),
  *     @OA\Property(
@@ -38,15 +41,27 @@ use Illuminate\Database\Eloquent\Model;
  *         type="integer",
  *         format="int64",
  *         minimum=1,
+ *         title="Division",
  *         description="Foreign key - References Division.id_division"
  *     ),
- *     @OA\Property(property="is_minor", type="boolean"),
- *     @OA\Property(property="is_student", type="boolean"),
+ *     @OA\Property(
+ *         property="is_minor",
+ *         type="boolean",
+ *         title="Minor",
+ *         description="Whether the participant is a minor"
+ *     ),
+ *     @OA\Property(
+ *         property="is_student",
+ *         type="boolean",
+ *         title="Student",
+ *         description="Whether the participant is a student"
+ *     ),
  *     @OA\Property(
  *         property="discount",
  *         type="integer",
  *         nullable=true,
  *         minimum=0,
+ *         title="Discount",
  *         description="Discount amount in RON",
  *         example=10
  *     ),
@@ -54,28 +69,59 @@ use Illuminate\Database\Eloquent\Model;
  *         property="payment",
  *         type="integer",
  *         minimum=0,
+ *         title="Payment",
  *         description="Payment amount in RON",
  *         example=45
  *     ),
- *     @OA\Property(property="absence_reason", type="string", enum={"SICK", "FORGOT", "EXAMS", "RECONSIDERED"}, nullable=true),
- *     @OA\Property(property="ban_reason", type="string", enum={"LEFT SUDDENLY", "AGGRESSIVE PLAYER", "LIBIDINOUS", ""}, nullable=true),
- *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
- *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
+ *     @OA\Property(
+ *         property="absence_reason",
+ *         type="string",
+ *         enum={"SICK", "FORGOT", "EXAMS", "RECONSIDERED"},
+ *         nullable=true,
+ *         title="Absence Reason",
+ *         description="Reason for absence from the edition"
+ *     ),
+ *     @OA\Property(
+ *         property="ban_reason",
+ *         type="string",
+ *         enum={"LEFT SUDDENLY", "AGGRESSIVE PLAYER", "LIBIDINOUS", ""},
+ *         nullable=true,
+ *         title="Ban Reason",
+ *         description="Reason for banning the participant"
+ *     ),
+ *     @OA\Property(
+ *         property="inserted_at",
+ *         type="integer",
+ *         format="timestamp",
+ *         title="Created At",
+ *         description="Timestamp when the participation was created"
+ *     ),
+ *     @OA\Property(
+ *         property="updated_at",
+ *         type="integer",
+ *         format="timestamp",
+ *         nullable=true,
+ *         title="Updated At",
+ *         description="Timestamp when the participation was last updated"
+ *     ),
  *     @OA\Property(
  *         property="edition",
  *         ref="#/components/schemas/Edition",
+ *         title="Edition",
  *         description="Related edition object (loaded when requested)",
  *         nullable=true
  *     ),
  *     @OA\Property(
  *         property="player",
  *         ref="#/components/schemas/Player",
+ *         title="Player",
  *         description="Related player object (loaded when requested)",
  *         nullable=true
  *     ),
  *     @OA\Property(
  *         property="division",
  *         ref="#/components/schemas/Division",
+ *         title="Division",
  *         description="Related division object (loaded when requested)",
  *         nullable=true
  *     )

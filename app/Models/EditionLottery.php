@@ -17,14 +17,15 @@ use Illuminate\Database\Eloquent\Model;
  *         type="integer",
  *         format="int64",
  *         readOnly=true,
- *         description="Primary key - Edition Lottery ID"
+ *         title="ID",
+         description="Unique Identifier"
  *     ),
  *     @OA\Property(
  *         property="edition_id",
  *         type="integer",
  *         format="int64",
  *         minimum=1,
- *         description="Foreign key - References Edition.id_edition"
+ *         title="Edition"
  *     ),
  *     @OA\Property(
  *         property="orderliness",
@@ -39,7 +40,7 @@ use Illuminate\Database\Eloquent\Model;
  *         format="int64",
  *         nullable=true,
  *         minimum=1,
- *         description="Foreign key - References Division.id_division"
+ *         title="Division"
  *     ),
  *     @OA\Property(
  *         property="prize_id",
@@ -47,7 +48,7 @@ use Illuminate\Database\Eloquent\Model;
  *         format="int64",
  *         nullable=true,
  *         minimum=1,
- *         description="Foreign key - References Prize.id_prize"
+ *         title="Prize"
  *     ),
  *     @OA\Property(
  *         property="total_draws_nr",

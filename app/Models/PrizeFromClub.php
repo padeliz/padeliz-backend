@@ -17,21 +17,22 @@ use Illuminate\Database\Eloquent\Model;
  *         type="integer",
  *         format="int64",
  *         readOnly=true,
- *         description="Primary key - Club Prize ID"
+ *         title="ID",
+         description="Unique Identifier"
  *     ),
  *     @OA\Property(
  *         property="club_id",
  *         type="integer",
  *         format="int64",
  *         minimum=1,
- *         description="Foreign key - References Club.id_club"
+ *         title="Club"
  *     ),
  *     @OA\Property(
  *         property="prize_id",
  *         type="integer",
  *         format="int64",
  *         minimum=1,
- *         description="Foreign key - References Prize.id_prize"
+ *         title="Prize"
  *     ),
  *     @OA\Property(property="image", type="string", maxLength=100, nullable=true),
  *     @OA\Property(property="box_1_text", type="string", maxLength=200, nullable=true),

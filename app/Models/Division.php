@@ -17,13 +17,15 @@ use Illuminate\Database\Eloquent\Model;
  *         type="integer",
  *         format="int64",
  *         readOnly=true,
- *         description="Primary key - Division ID"
+ *         title="ID",
+ *         description="Unique Identifier"
  *     ),
  *     @OA\Property(
  *         property="name",
  *         type="string",
  *         maxLength=25,
- *         description="Division name",
+ *         title="Division Name",
+ *         description="Name of the skill division",
  *         example="Advanced"
  *     ),
  *     @OA\Property(
@@ -31,23 +33,44 @@ use Illuminate\Database\Eloquent\Model;
  *         type="string",
  *         maxLength=7,
  *         pattern="^#[0-9A-F]{6}$",
- *         description="Hex color code (e.g., #FF0000)",
+ *         title="Color",
+ *         description="Hex color code for the division",
  *         example="#FF0000"
  *     ),
- *     @OA\Property(property="is_students_only", type="boolean"),
+ *     @OA\Property(
+ *         property="is_students_only",
+ *         type="boolean",
+ *         title="Students Only",
+ *         description="Whether this division is restricted to students only"
+ *     ),
  *     @OA\Property(
  *         property="its_first_edition_id",
  *         type="integer",
  *         minimum=1,
+ *         title="First Edition ID",
  *         description="ID of the first edition for this division",
  *         example=1
  *     ),
- *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
- *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
+ *     @OA\Property(
+ *         property="inserted_at",
+ *         type="integer",
+ *         format="timestamp",
+ *         title="Created At",
+ *         description="Timestamp when the division was created"
+ *     ),
+ *     @OA\Property(
+ *         property="updated_at",
+ *         type="integer",
+ *         format="timestamp",
+ *         nullable=true,
+ *         title="Updated At",
+ *         description="Timestamp when the division was last updated"
+ *     ),
  *     @OA\Property(
  *         property="editionDivisions",
  *         type="array",
  *         @OA\Items(ref="#/components/schemas/EditionDivision"),
+ *         title="Edition Divisions",
  *         description="Array of related edition divisions",
  *         nullable=true
  *     ),
@@ -55,6 +78,7 @@ use Illuminate\Database\Eloquent\Model;
  *         property="participations",
  *         type="array",
  *         @OA\Items(ref="#/components/schemas/EditionParticipation"),
+ *         title="Participations",
  *         description="Array of related participations",
  *         nullable=true
  *     )

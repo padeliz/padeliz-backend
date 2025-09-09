@@ -17,7 +17,8 @@ use Illuminate\Database\Eloquent\Model;
  *         type="integer",
  *         format="int64",
  *         readOnly=true,
- *         description="Primary key - Matches Team ID"
+ *         title="ID",
+         description="Unique Identifier"
  *     ),
  *     @OA\Property(property="player_1", type="string", maxLength=50),
  *     @OA\Property(property="player_2", type="string", maxLength=50),
