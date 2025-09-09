@@ -11,7 +11,7 @@ use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
- *     name="🐧 Manager: Editions Divisions",
+ *     name="🐧 Manager: Edition Divisions",
  *     description="(v1) API Endpoints for edition divisions"
  * )
  */
@@ -21,7 +21,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      * @OA\Get(
      *     path="/api/v1/manager/edition-divisions",
      *     summary="Get paginated list of edition divisions",
-     *     tags={"🐧 Manager: Editions Divisions"},
+     *     tags={"🐧 Manager: Edition Divisions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Parameter(
@@ -140,7 +140,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      * @OA\Get(
      *     path="/api/v1/manager/edition-divisions/{editionDivision}",
      *     summary="Get edition division details",
-     *     tags={"🐧 Manager: Editions Divisions"},
+     *     tags={"🐧 Manager: Edition Divisions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="editionDivision",
@@ -196,7 +196,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      * @OA\Post(
      *     path="/api/v1/manager/edition-divisions",
      *     summary="Create a new edition division",
-     *     tags={"🐧 Manager: Editions Divisions"},
+     *     tags={"🐧 Manager: Edition Divisions"},
      *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,
@@ -291,7 +291,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      * @OA\Put(
      *     path="/api/v1/manager/edition-divisions/{editionDivision}",
      *     summary="Update edition division details (complete replacement)",
-     *     tags={"🐧 Manager: Editions Divisions"},
+     *     tags={"🐧 Manager: Edition Divisions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="editionDivision",
@@ -411,7 +411,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      * @OA\Patch(
      *     path="/api/v1/manager/edition-divisions/{editionDivision}",
      *     summary="Partially update edition division details",
-     *     tags={"🐧 Manager: Editions Divisions"},
+     *     tags={"🐧 Manager: Edition Divisions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="editionDivision",
@@ -531,7 +531,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      * @OA\Delete(
      *     path="/api/v1/manager/edition-divisions/{editionDivision}",
      *     summary="Delete an edition division",
-     *     tags={"🐧 Manager: Editions Divisions"},
+     *     tags={"🐧 Manager: Edition Divisions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="editionDivision",
@@ -608,7 +608,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      * @OA\Delete(
      *     path="/api/v1/manager/edition-divisions/bulk",
      *     summary="Bulk delete edition divisions",
-     *     tags={"🐧 Manager: Editions Divisions"},
+     *     tags={"🐧 Manager: Edition Divisions"},
      *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,

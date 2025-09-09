@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
- *     name="🐧 Manager: Editions Lottery",
+ *     name="🐧 Manager: Edition Lotteries",
  *     description="(v1) Edition lottery management and operations"
  * )
  */
@@ -18,9 +18,9 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
 {
     /**
      * @OA\Get(
-     *     path="/api/v1/manager/lotteries",
+     *     path="/api/v1/manager/edition-lotteries",
      *     summary="Get paginated list of lotteries",
-     *     tags={"🐧 Manager: Editions Lottery"},
+     *     tags={"🐧 Manager: Edition Lotteries"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Parameter(
@@ -121,9 +121,9 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
 
     /**
      * @OA\Get(
-     *     path="/api/v1/manager/lotteries/{lottery}",
+     *     path="/api/v1/manager/edition-lotteries/{lottery}",
      *     summary="Get lottery details",
-     *     tags={"🐧 Manager: Editions Lottery"},
+     *     tags={"🐧 Manager: Edition Lotteries"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="lottery",
@@ -181,9 +181,9 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
 
     /**
      * @OA\Post(
-     *     path="/api/v1/manager/lotteries",
+     *     path="/api/v1/manager/edition-lotteries",
      *     summary="Create a new lottery",
-     *     tags={"🐧 Manager: Editions Lottery"},
+     *     tags={"🐧 Manager: Edition Lotteries"},
      *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,
@@ -252,9 +252,9 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
 
     /**
      * @OA\Put(
-     *     path="/api/v1/manager/lotteries/{lottery}",
+     *     path="/api/v1/manager/edition-lotteries/{lottery}",
      *     summary="Update lottery details (complete replacement)",
-     *     tags={"🐧 Manager: Editions Lottery"},
+     *     tags={"🐧 Manager: Edition Lotteries"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="lottery",
@@ -332,9 +332,9 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
 
     /**
      * @OA\Patch(
-     *     path="/api/v1/manager/lotteries/{lottery}",
+     *     path="/api/v1/manager/edition-lotteries/{lottery}",
      *     summary="Partially update lottery details",
-     *     tags={"🐧 Manager: Editions Lottery"},
+     *     tags={"🐧 Manager: Edition Lotteries"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="lottery",
@@ -412,9 +412,9 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
 
     /**
      * @OA\Delete(
-     *     path="/api/v1/manager/lotteries/{lottery}",
+     *     path="/api/v1/manager/edition-lotteries/{lottery}",
      *     summary="Delete a lottery",
-     *     tags={"🐧 Manager: Editions Lottery"},
+     *     tags={"🐧 Manager: Edition Lotteries"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="lottery",
@@ -482,9 +482,9 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
 
     /**
      * @OA\Delete(
-     *     path="/api/v1/manager/lotteries/bulk",
+     *     path="/api/v1/manager/edition-lotteries/bulk",
      *     summary="Bulk delete lotteries",
-     *     tags={"🐧 Manager: Editions Lottery"},
+     *     tags={"🐧 Manager: Edition Lotteries"},
      *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,

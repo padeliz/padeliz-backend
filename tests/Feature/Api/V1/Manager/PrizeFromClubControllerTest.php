@@ -52,7 +52,7 @@ class PrizeFromClubControllerTest extends TestCase
 
         PrizeFromClub::factory()->count(5)->create();
 
-        $response = $this->getJson('/api/v1/manager/prizes-from-clubs');
+        $response = $this->getJson('/api/v1/manager/prize-from-clubs');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -100,7 +100,7 @@ class PrizeFromClubControllerTest extends TestCase
             'box_1_text' => 'Test Box 1',
         ]);
 
-        $response = $this->getJson("/api/v1/manager/prizes-from-clubs/{$prizeFromClub->id_club_prize}");
+        $response = $this->getJson("/api/v1/manager/prize-from-clubs/{$prizeFromClub->id_club_prize}");
 
         $response->assertStatus(200)
             ->assertJson([
@@ -131,7 +131,7 @@ class PrizeFromClubControllerTest extends TestCase
             'box_2_text_color' => '#000000',
         ];
 
-        $response = $this->postJson('/api/v1/manager/prizes-from-clubs', $prizeFromClubData);
+        $response = $this->postJson('/api/v1/manager/prize-from-clubs', $prizeFromClubData);
 
         $response->assertStatus(201)
             ->assertJson([
@@ -175,7 +175,7 @@ class PrizeFromClubControllerTest extends TestCase
             'image' => 'updated-image.jpg',
         ];
 
-        $response = $this->putJson("/api/v1/manager/prizes-from-clubs/{$prizeFromClub->id_club_prize}", $updateData);
+        $response = $this->putJson("/api/v1/manager/prize-from-clubs/{$prizeFromClub->id_club_prize}", $updateData);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -208,7 +208,7 @@ class PrizeFromClubControllerTest extends TestCase
         ]);
 
         // Test partial update with only box_1_text
-        $response = $this->patchJson("/api/v1/manager/prizes-from-clubs/{$prizeFromClub->id_club_prize}", [
+        $response = $this->patchJson("/api/v1/manager/prize-from-clubs/{$prizeFromClub->id_club_prize}", [
             'box_1_text' => 'Partially Updated Box 1',
         ]);
 
@@ -223,7 +223,7 @@ class PrizeFromClubControllerTest extends TestCase
             ]);
 
         // Test partial update with only box_1_bg_color
-        $response = $this->patchJson("/api/v1/manager/prizes-from-clubs/{$prizeFromClub->id_club_prize}", [
+        $response = $this->patchJson("/api/v1/manager/prize-from-clubs/{$prizeFromClub->id_club_prize}", [
             'box_1_bg_color' => '#00FF00',
         ]);
 
@@ -248,7 +248,7 @@ class PrizeFromClubControllerTest extends TestCase
         ]);
 
         // Test PUT without required fields
-        $response = $this->putJson("/api/v1/manager/prizes-from-clubs/{$prizeFromClub->id_club_prize}", [
+        $response = $this->putJson("/api/v1/manager/prize-from-clubs/{$prizeFromClub->id_club_prize}", [
             'box_1_text' => 'Only Box Text',
         ]);
 
@@ -256,7 +256,7 @@ class PrizeFromClubControllerTest extends TestCase
             ->assertJsonValidationErrors(['club_id', 'prize_id']);
 
         // Test PUT with empty required fields
-        $response = $this->putJson("/api/v1/manager/prizes-from-clubs/{$prizeFromClub->id_club_prize}", [
+        $response = $this->putJson("/api/v1/manager/prize-from-clubs/{$prizeFromClub->id_club_prize}", [
             'club_id' => '',
             'prize_id' => '',
         ]);
@@ -271,7 +271,7 @@ class PrizeFromClubControllerTest extends TestCase
 
         $prizeFromClub = PrizeFromClub::factory()->create();
 
-        $response = $this->deleteJson("/api/v1/manager/prizes-from-clubs/{$prizeFromClub->id_club_prize}");
+        $response = $this->deleteJson("/api/v1/manager/prize-from-clubs/{$prizeFromClub->id_club_prize}");
 
         $response->assertStatus(200)
             ->assertJson([
@@ -290,7 +290,7 @@ class PrizeFromClubControllerTest extends TestCase
 
         $prizesFromClubs = PrizeFromClub::factory()->count(3)->create();
 
-        $response = $this->deleteJson('/api/v1/manager/prizes-from-clubs/bulk', [
+        $response = $this->deleteJson('/api/v1/manager/prize-from-clubs/bulk', [
             'prize_from_club_ids' => $prizesFromClubs->pluck('id_club_prize')->toArray(),
         ]);
 
@@ -329,7 +329,7 @@ class PrizeFromClubControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->deleteJson('/api/v1/manager/prizes-from-clubs/bulk', [
+        $response = $this->deleteJson('/api/v1/manager/prize-from-clubs/bulk', [
             'prize_from_club_ids' => [99999, 99998],
         ]);
 
@@ -363,7 +363,7 @@ class PrizeFromClubControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->deleteJson('/api/v1/manager/prizes-from-clubs/bulk', [
+        $response = $this->deleteJson('/api/v1/manager/prize-from-clubs/bulk', [
             'prize_from_club_ids' => [],
         ]);
 
@@ -374,7 +374,7 @@ class PrizeFromClubControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->deleteJson('/api/v1/manager/prizes-from-clubs/bulk', []);
+        $response = $this->deleteJson('/api/v1/manager/prize-from-clubs/bulk', []);
 
         $response->assertStatus(422);
     }
@@ -383,7 +383,7 @@ class PrizeFromClubControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->deleteJson('/api/v1/manager/prizes-from-clubs/bulk', [
+        $response = $this->deleteJson('/api/v1/manager/prize-from-clubs/bulk', [
             'prize_from_club_ids' => ['invalid', 'format'],
         ]);
 
@@ -407,7 +407,7 @@ class PrizeFromClubControllerTest extends TestCase
             'image' => 'duplicate-image.jpg',
         ];
 
-        $response = $this->postJson('/api/v1/manager/prizes-from-clubs', $duplicateData);
+        $response = $this->postJson('/api/v1/manager/prize-from-clubs', $duplicateData);
 
         $response->assertStatus(422)
             ->assertJson([
@@ -435,7 +435,7 @@ class PrizeFromClubControllerTest extends TestCase
         ]);
 
         // Try to update second to match first
-        $response = $this->putJson("/api/v1/manager/prizes-from-clubs/{$prizeFromClub2->id_club_prize}", [
+        $response = $this->putJson("/api/v1/manager/prize-from-clubs/{$prizeFromClub2->id_club_prize}", [
             'club_id' => $this->club->id_club,
             'prize_id' => $this->prize->id_prize,
         ]);
@@ -451,7 +451,7 @@ class PrizeFromClubControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->postJson('/api/v1/manager/prizes-from-clubs', []);
+        $response = $this->postJson('/api/v1/manager/prize-from-clubs', []);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['club_id', 'prize_id']);
@@ -461,7 +461,7 @@ class PrizeFromClubControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->postJson('/api/v1/manager/prizes-from-clubs', [
+        $response = $this->postJson('/api/v1/manager/prize-from-clubs', [
             'club_id' => $this->club->id_club,
             'prize_id' => $this->prize->id_prize,
             'box_1_bg_color' => 'invalid-color',
@@ -478,7 +478,7 @@ class PrizeFromClubControllerTest extends TestCase
 
         $prizeFromClub = PrizeFromClub::factory()->create();
 
-        $response = $this->putJson("/api/v1/manager/prizes-from-clubs/{$prizeFromClub->id_club_prize}", [
+        $response = $this->putJson("/api/v1/manager/prize-from-clubs/{$prizeFromClub->id_club_prize}", [
             'club_id' => 99999, // Non-existent club
         ]);
 
@@ -488,7 +488,7 @@ class PrizeFromClubControllerTest extends TestCase
 
     public function test_prize_from_club_requires_manager_authentication()
     {
-        $response = $this->getJson('/api/v1/manager/prizes-from-clubs');
+        $response = $this->getJson('/api/v1/manager/prize-from-clubs');
 
         $response->assertStatus(401);
     }
@@ -498,7 +498,7 @@ class PrizeFromClubControllerTest extends TestCase
         $player = Player::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
 
-        $response = $this->getJson('/api/v1/manager/prizes-from-clubs');
+        $response = $this->getJson('/api/v1/manager/prize-from-clubs');
 
         $response->assertStatus(403);
     }
@@ -507,7 +507,7 @@ class PrizeFromClubControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->getJson('/api/v1/manager/prizes-from-clubs/99999');
+        $response = $this->getJson('/api/v1/manager/prize-from-clubs/99999');
 
         $response->assertStatus(404);
     }
@@ -518,7 +518,7 @@ class PrizeFromClubControllerTest extends TestCase
 
         PrizeFromClub::factory()->count(25)->create();
 
-        $response = $this->getJson('/api/v1/manager/prizes-from-clubs?page=1&per_page=10');
+        $response = $this->getJson('/api/v1/manager/prize-from-clubs?page=1&per_page=10');
 
         $response->assertStatus(200)
             ->assertJsonStructure([

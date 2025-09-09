@@ -136,7 +136,7 @@ Route::prefix('v1')->group(function () {
         });
 
         // Club prizes management
-        Route::prefix('prizes-from-clubs')->group(function () {
+        Route::prefix('prize-from-clubs')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\Manager\PrizeFromClubController::class, 'index']);
             Route::get('{prizeFromClub}', [\App\Http\Controllers\Api\V1\Manager\PrizeFromClubController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\PrizeFromClubController::class, 'store']);
@@ -147,7 +147,7 @@ Route::prefix('v1')->group(function () {
         });
 
         // Lottery management
-        Route::prefix('lotteries')->group(function () {
+        Route::prefix('edition-lotteries')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'index']);
             Route::get('{lottery}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'store']);
@@ -158,7 +158,7 @@ Route::prefix('v1')->group(function () {
         });
 
         // Lucky ones management
-        Route::prefix('lucky-ones')->group(function () {
+        Route::prefix('edition-lucky-ones')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'index']);
             Route::get('{luckyOne}', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'store']);

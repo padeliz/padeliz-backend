@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
- *     name="🐧 Manager: Editions Lucky One",
+ *     name="🐧 Manager: Edition Lucky One",
  *     description="(v1) Edition lucky one management and operations"
  * )
  */
@@ -18,9 +18,9 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
 {
     /**
      * @OA\Get(
-     *     path="/api/v1/manager/lucky-ones",
+     *     path="/api/v1/manager/edition-lucky-ones",
      *     summary="Get all lucky ones for a lottery",
-     *     tags={"🐧 Manager: Editions Lucky One"},
+     *     tags={"🐧 Manager: Edition Lucky One"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="lottery",
@@ -129,9 +129,9 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
 
     /**
      * @OA\Get(
-     *     path="/api/v1/manager/lucky-ones/{luckyOne}",
+     *     path="/api/v1/manager/edition-lucky-ones/{luckyOne}",
      *     summary="Get lucky one details",
-     *     tags={"🐧 Manager: Editions Lucky One"},
+     *     tags={"🐧 Manager: Edition Lucky One"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="luckyOne",
@@ -185,9 +185,9 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
 
     /**
      * @OA\Post(
-     *     path="/api/v1/manager/lucky-ones",
+     *     path="/api/v1/manager/edition-lucky-ones",
      *     summary="Create a new lucky one",
-     *     tags={"🐧 Manager: Editions Lucky One"},
+     *     tags={"🐧 Manager: Edition Lucky One"},
      *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,
@@ -280,9 +280,9 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
 
     /**
      * @OA\Put(
-     *     path="/api/v1/manager/lucky-ones/{luckyOne}",
+     *     path="/api/v1/manager/edition-lucky-ones/{luckyOne}",
      *     summary="Update lucky one details (complete replacement)",
-     *     tags={"🐧 Manager: Editions Lucky One"},
+     *     tags={"🐧 Manager: Edition Lucky One"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="luckyOne",
@@ -382,9 +382,9 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
 
     /**
      * @OA\Patch(
-     *     path="/api/v1/manager/lucky-ones/{luckyOne}",
+     *     path="/api/v1/manager/edition-lucky-ones/{luckyOne}",
      *     summary="Partially update lucky one details",
-     *     tags={"🐧 Manager: Editions Lucky One"},
+     *     tags={"🐧 Manager: Edition Lucky One"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="luckyOne",
@@ -484,9 +484,9 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
 
     /**
      * @OA\Delete(
-     *     path="/api/v1/manager/lucky-ones/{luckyOne}",
+     *     path="/api/v1/manager/edition-lucky-ones/{luckyOne}",
      *     summary="Delete a lucky one",
-     *     tags={"🐧 Manager: Editions Lucky One"},
+     *     tags={"🐧 Manager: Edition Lucky One"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="luckyOne",
@@ -533,9 +533,9 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
 
     /**
      * @OA\Delete(
-     *     path="/api/v1/manager/lucky-ones/bulk",
+     *     path="/api/v1/manager/edition-lucky-ones/bulk",
      *     summary="Bulk delete lucky ones",
-     *     tags={"🐧 Manager: Editions Lucky One"},
+     *     tags={"🐧 Manager: Edition Lucky One"},
      *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,

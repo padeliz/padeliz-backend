@@ -60,7 +60,7 @@ class EditionLuckyOneControllerTest extends TestCase
 
         EditionLuckyOne::factory()->count(3)->create(['lottery_id' => $this->lottery->id_lottery]);
 
-        $response = $this->getJson('/api/v1/manager/lucky-ones');
+        $response = $this->getJson('/api/v1/manager/edition-lucky-ones');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -109,7 +109,7 @@ class EditionLuckyOneControllerTest extends TestCase
             'available_at' => time(),
         ]);
 
-        $response = $this->getJson("/api/v1/manager/lucky-ones/{$luckyOne->id_lucky_one}");
+        $response = $this->getJson("/api/v1/manager/edition-lucky-ones/{$luckyOne->id_lucky_one}");
 
         $response->assertStatus(200)
             ->assertJson([
@@ -137,7 +137,7 @@ class EditionLuckyOneControllerTest extends TestCase
             'rejected_at' => null,
         ];
 
-        $response = $this->postJson('/api/v1/manager/lucky-ones', $luckyOneData);
+        $response = $this->postJson('/api/v1/manager/edition-lucky-ones', $luckyOneData);
 
         $response->assertStatus(201)
             ->assertJson([
@@ -165,7 +165,7 @@ class EditionLuckyOneControllerTest extends TestCase
             // Not providing timestamps - should use defaults
         ];
 
-        $response = $this->postJson('/api/v1/manager/lucky-ones', $luckyOneData);
+        $response = $this->postJson('/api/v1/manager/edition-lucky-ones', $luckyOneData);
 
         $response->assertStatus(201)
             ->assertJson([
@@ -200,7 +200,7 @@ class EditionLuckyOneControllerTest extends TestCase
             'rejected_at' => null,
         ];
 
-        $response = $this->putJson("/api/v1/manager/lucky-ones/{$luckyOne->id_lucky_one}", $updateData);
+        $response = $this->putJson("/api/v1/manager/edition-lucky-ones/{$luckyOne->id_lucky_one}", $updateData);
 
         $response->assertStatus(200)
             ->assertJson([
@@ -233,7 +233,7 @@ class EditionLuckyOneControllerTest extends TestCase
         ]);
 
         // Test partial update with only announced_at
-        $response = $this->patchJson("/api/v1/manager/lucky-ones/{$luckyOne->id_lucky_one}", [
+        $response = $this->patchJson("/api/v1/manager/edition-lucky-ones/{$luckyOne->id_lucky_one}", [
             'announced_at' => time() + 3600,
         ]);
 
@@ -247,7 +247,7 @@ class EditionLuckyOneControllerTest extends TestCase
             ]);
 
         // Test partial update with only accepted_at
-        $response = $this->patchJson("/api/v1/manager/lucky-ones/{$luckyOne->id_lucky_one}", [
+        $response = $this->patchJson("/api/v1/manager/edition-lucky-ones/{$luckyOne->id_lucky_one}", [
             'accepted_at' => time() + 7200,
         ]);
 
@@ -271,7 +271,7 @@ class EditionLuckyOneControllerTest extends TestCase
         ]);
 
         // Test PUT without required fields
-        $response = $this->putJson("/api/v1/manager/lucky-ones/{$luckyOne->id_lucky_one}", [
+        $response = $this->putJson("/api/v1/manager/edition-lucky-ones/{$luckyOne->id_lucky_one}", [
             'announced_at' => time(),
         ]);
 
@@ -279,7 +279,7 @@ class EditionLuckyOneControllerTest extends TestCase
             ->assertJsonValidationErrors(['lottery_id', 'drawn_participation_id', 'drawn_at', 'available_at']);
 
         // Test PUT with empty required fields
-        $response = $this->putJson("/api/v1/manager/lucky-ones/{$luckyOne->id_lucky_one}", [
+        $response = $this->putJson("/api/v1/manager/edition-lucky-ones/{$luckyOne->id_lucky_one}", [
             'lottery_id' => '',
             'drawn_participation_id' => '',
             'drawn_at' => '',
@@ -296,7 +296,7 @@ class EditionLuckyOneControllerTest extends TestCase
 
         $luckyOne = EditionLuckyOne::factory()->create();
 
-        $response = $this->deleteJson("/api/v1/manager/lucky-ones/{$luckyOne->id_lucky_one}");
+        $response = $this->deleteJson("/api/v1/manager/edition-lucky-ones/{$luckyOne->id_lucky_one}");
 
         $response->assertStatus(200)
             ->assertJson([
@@ -315,7 +315,7 @@ class EditionLuckyOneControllerTest extends TestCase
 
         $luckyOnes = EditionLuckyOne::factory()->count(3)->create();
 
-        $response = $this->deleteJson('/api/v1/manager/lucky-ones/bulk', [
+        $response = $this->deleteJson('/api/v1/manager/edition-lucky-ones/bulk', [
             'lucky_one_ids' => $luckyOnes->pluck('id_lucky_one')->toArray(),
         ]);
 
@@ -354,7 +354,7 @@ class EditionLuckyOneControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->deleteJson('/api/v1/manager/lucky-ones/bulk', [
+        $response = $this->deleteJson('/api/v1/manager/edition-lucky-ones/bulk', [
             'lucky_one_ids' => [99999, 99998],
         ]);
 
@@ -388,7 +388,7 @@ class EditionLuckyOneControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->deleteJson('/api/v1/manager/lucky-ones/bulk', [
+        $response = $this->deleteJson('/api/v1/manager/edition-lucky-ones/bulk', [
             'lucky_one_ids' => [],
         ]);
 
@@ -399,7 +399,7 @@ class EditionLuckyOneControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->deleteJson('/api/v1/manager/lucky-ones/bulk', []);
+        $response = $this->deleteJson('/api/v1/manager/edition-lucky-ones/bulk', []);
 
         $response->assertStatus(422);
     }
@@ -408,7 +408,7 @@ class EditionLuckyOneControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->deleteJson('/api/v1/manager/lucky-ones/bulk', [
+        $response = $this->deleteJson('/api/v1/manager/edition-lucky-ones/bulk', [
             'lucky_one_ids' => ['invalid', 'format'],
         ]);
 
@@ -433,7 +433,7 @@ class EditionLuckyOneControllerTest extends TestCase
             'available_at' => time(),
         ];
 
-        $response = $this->postJson('/api/v1/manager/lucky-ones', $duplicateData);
+        $response = $this->postJson('/api/v1/manager/edition-lucky-ones', $duplicateData);
 
         $response->assertStatus(422)
             ->assertJson([
@@ -461,7 +461,7 @@ class EditionLuckyOneControllerTest extends TestCase
         ]);
 
         // Try to update second to match first
-        $response = $this->putJson("/api/v1/manager/lucky-ones/{$luckyOne2->id_lucky_one}", [
+        $response = $this->putJson("/api/v1/manager/edition-lucky-ones/{$luckyOne2->id_lucky_one}", [
             'lottery_id' => $this->lottery->id_lottery,
             'drawn_participation_id' => $this->participation->id_participation,
             'drawn_at' => time(),
@@ -479,7 +479,7 @@ class EditionLuckyOneControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->postJson('/api/v1/manager/lucky-ones', []);
+        $response = $this->postJson('/api/v1/manager/edition-lucky-ones', []);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['lottery_id', 'drawn_participation_id']);
@@ -489,7 +489,7 @@ class EditionLuckyOneControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->postJson('/api/v1/manager/lucky-ones', [
+        $response = $this->postJson('/api/v1/manager/edition-lucky-ones', [
             'lottery_id' => 99999, // Non-existent lottery
             'drawn_participation_id' => $this->participation->id_participation,
         ]);
@@ -502,7 +502,7 @@ class EditionLuckyOneControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->postJson('/api/v1/manager/lucky-ones', [
+        $response = $this->postJson('/api/v1/manager/edition-lucky-ones', [
             'lottery_id' => $this->lottery->id_lottery,
             'drawn_participation_id' => 99999, // Non-existent participation
         ]);
@@ -517,7 +517,7 @@ class EditionLuckyOneControllerTest extends TestCase
 
         $luckyOne = EditionLuckyOne::factory()->create();
 
-        $response = $this->putJson("/api/v1/manager/lucky-ones/{$luckyOne->id_lucky_one}", [
+        $response = $this->putJson("/api/v1/manager/edition-lucky-ones/{$luckyOne->id_lucky_one}", [
             'lottery_id' => 99999, // Non-existent lottery
         ]);
 
@@ -527,7 +527,7 @@ class EditionLuckyOneControllerTest extends TestCase
 
     public function test_lucky_one_requires_manager_authentication()
     {
-        $response = $this->getJson('/api/v1/manager/lucky-ones/1');
+        $response = $this->getJson('/api/v1/manager/edition-lucky-ones/1');
 
         $response->assertStatus(401);
     }
@@ -540,7 +540,7 @@ class EditionLuckyOneControllerTest extends TestCase
         // Create a lucky one first so the route model binding works
         $luckyOne = EditionLuckyOne::factory()->create();
 
-        $response = $this->getJson("/api/v1/manager/lucky-ones/{$luckyOne->id_lucky_one}");
+        $response = $this->getJson("/api/v1/manager/edition-lucky-ones/{$luckyOne->id_lucky_one}");
 
         $response->assertStatus(403);
     }
@@ -549,7 +549,7 @@ class EditionLuckyOneControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->getJson('/api/v1/manager/lucky-ones/99999');
+        $response = $this->getJson('/api/v1/manager/edition-lucky-ones/99999');
 
         $response->assertStatus(404);
     }
@@ -568,7 +568,7 @@ class EditionLuckyOneControllerTest extends TestCase
             'rejected_at' => null,
         ];
 
-        $response = $this->postJson('/api/v1/manager/lucky-ones', $luckyOneData);
+        $response = $this->postJson('/api/v1/manager/edition-lucky-ones', $luckyOneData);
 
         $response->assertStatus(201)
             ->assertJson([

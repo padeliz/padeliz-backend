@@ -154,9 +154,20 @@ class ResourceMetadataService
     private function getResourceNameFromSchema(string $schemaName): string
     {
         $modelName = class_basename($schemaName);
+        $kebabCase = Str::kebab($modelName);
 
-        // Convert camelCase to kebab-case and pluralize
-        return Str::plural(Str::kebab($modelName));
+        // For hyphenated strings, only pluralize the last word
+        if (str_contains($kebabCase, '-')) {
+            $parts = explode('-', $kebabCase);
+            $lastPart = array_pop($parts);
+            $pluralizedLastPart = Str::plural($lastPart);
+            $parts[] = $pluralizedLastPart;
+
+            return implode('-', $parts);
+        }
+
+        // For single words, pluralize normally
+        return Str::plural($kebabCase);
     }
 
     /**

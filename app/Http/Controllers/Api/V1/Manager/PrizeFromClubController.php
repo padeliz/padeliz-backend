@@ -10,7 +10,7 @@ use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
- *     name="🐧 Manager: Prizes From Clubs",
+ *     name="🐧 Manager: Prize From Clubs",
  *     description="(v1) API Endpoints for prizes from clubs"
  * )
  */
@@ -18,9 +18,9 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
 {
     /**
      * @OA\Get(
-     *     path="/api/v1/manager/prizes-from-clubs",
+     *     path="/api/v1/manager/prize-from-clubs",
      *     summary="Get paginated list of prizes from clubs",
-     *     tags={"🐧 Manager: Prizes From Clubs"},
+     *     tags={"🐧 Manager: Prize From Clubs"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Parameter(
@@ -126,9 +126,9 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
 
     /**
      * @OA\Get(
-     *     path="/api/v1/manager/prizes-from-clubs/{prizeFromClub}",
+     *     path="/api/v1/manager/prize-from-clubs/{prizeFromClub}",
      *     summary="Get prize from club details",
-     *     tags={"🐧 Manager: Prizes From Clubs"},
+     *     tags={"🐧 Manager: Prize From Clubs"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="prizeFromClub",
@@ -182,9 +182,9 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
 
     /**
      * @OA\Post(
-     *     path="/api/v1/manager/prizes-from-clubs",
+     *     path="/api/v1/manager/prize-from-clubs",
      *     summary="Create a new prize from club",
-     *     tags={"🐧 Manager: Prizes From Clubs"},
+     *     tags={"🐧 Manager: Prize From Clubs"},
      *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,
@@ -273,9 +273,9 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
 
     /**
      * @OA\Put(
-     *     path="/api/v1/manager/prizes-from-clubs/{prizeFromClub}",
+     *     path="/api/v1/manager/prize-from-clubs/{prizeFromClub}",
      *     summary="Update prize from club details (complete replacement)",
-     *     tags={"🐧 Manager: Prizes From Clubs"},
+     *     tags={"🐧 Manager: Prize From Clubs"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="prizeFromClub",
@@ -379,9 +379,9 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
 
     /**
      * @OA\Patch(
-     *     path="/api/v1/manager/prizes-from-clubs/{prizeFromClub}",
+     *     path="/api/v1/manager/prize-from-clubs/{prizeFromClub}",
      *     summary="Partially update prize from club details",
-     *     tags={"🐧 Manager: Prizes From Clubs"},
+     *     tags={"🐧 Manager: Prize From Clubs"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="prizeFromClub",
@@ -485,9 +485,9 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
 
     /**
      * @OA\Delete(
-     *     path="/api/v1/manager/prizes-from-clubs/{prizeFromClub}",
+     *     path="/api/v1/manager/prize-from-clubs/{prizeFromClub}",
      *     summary="Delete a prize from club",
-     *     tags={"🐧 Manager: Prizes From Clubs"},
+     *     tags={"🐧 Manager: Prize From Clubs"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
      *         name="prizeFromClub",
@@ -534,9 +534,9 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
 
     /**
      * @OA\Delete(
-     *     path="/api/v1/manager/prizes-from-clubs/bulk",
+     *     path="/api/v1/manager/prize-from-clubs/bulk",
      *     summary="Bulk delete prizes from clubs",
-     *     tags={"🐧 Manager: Prizes From Clubs"},
+     *     tags={"🐧 Manager: Prize From Clubs"},
      *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,

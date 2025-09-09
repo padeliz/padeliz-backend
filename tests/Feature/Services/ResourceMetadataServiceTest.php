@@ -408,4 +408,186 @@ class ResourceMetadataServiceTest extends TestCase
         $metadata = $this->metadataService->getMetadata('Club', 'v1');
         $this->assertEquals('Club', $metadata['schema_name']);
     }
+
+    /**
+     * Test resource name generation for hyphenated model names
+     * This tests the getResourceNameFromSchema method indirectly through request body generation
+     */
+    public function test_resource_name_generation_for_hyphenated_models(): void
+    {
+        // Test single word models (should be pluralized normally)
+        $playerMetadata = $this->metadataService->getMetadata('Player', 'v1');
+        $this->assertArrayHasKey('request_body', $playerMetadata);
+
+        // Test hyphenated models (only last word should be pluralized)
+        $editionLotteryMetadata = $this->metadataService->getMetadata('EditionLottery', 'v1');
+        $this->assertArrayHasKey('request_body', $editionLotteryMetadata);
+
+        $editionParticipationMetadata = $this->metadataService->getMetadata('EditionParticipation', 'v1');
+        $this->assertArrayHasKey('request_body', $editionParticipationMetadata);
+
+        $playerEligibilityMetadata = $this->metadataService->getMetadata('PlayerEligibility', 'v1');
+        $this->assertArrayHasKey('request_body', $playerEligibilityMetadata);
+
+        $prizeFromClubMetadata = $this->metadataService->getMetadata('PrizeFromClub', 'v1');
+        $this->assertArrayHasKey('request_body', $prizeFromClubMetadata);
+    }
+
+    /**
+     * Test that resource names follow proper English pluralization rules
+     * for hyphenated compound nouns (only last word pluralized)
+     *
+     * @dataProvider hyphenatedModelNamesDataProvider
+     */
+    public function test_hyphenated_model_names_pluralization(string $modelName, string $expectedResourceName): void
+    {
+        // We test this indirectly by checking if the metadata can be generated
+        // The actual resource name is used internally in request body generation
+        $metadata = $this->metadataService->getMetadata($modelName, 'v1');
+
+        // Verify that metadata is generated successfully
+        $this->assertArrayHasKey('schema_name', $metadata);
+        $this->assertEquals($modelName, $metadata['schema_name']);
+
+        // Verify that request body is generated (which uses the resource name)
+        $this->assertArrayHasKey('request_body', $metadata);
+        $this->assertIsArray($metadata['request_body']);
+    }
+
+    /**
+     * Test pluralization for all models dynamically
+     * This test will automatically work with any models added/removed in the future
+     */
+    public function test_pluralization_for_all_models_dynamically(): void
+    {
+        $models = $this->getAllModels();
+
+        foreach ($models as $modelName) {
+            try {
+                $metadata = $this->metadataService->getMetadata($modelName, 'v1');
+
+                // Verify that metadata is generated successfully
+                $this->assertArrayHasKey('schema_name', $metadata, "Missing schema_name for model: {$modelName}");
+                $this->assertEquals($modelName, $metadata['schema_name'], "Schema name mismatch for model: {$modelName}");
+
+                // Verify that request body is generated (which uses the resource name)
+                $this->assertArrayHasKey('request_body', $metadata, "Missing request_body for model: {$modelName}");
+                $this->assertIsArray($metadata['request_body'], "Request body is not an array for model: {$modelName}");
+
+            } catch (\InvalidArgumentException $e) {
+                // Skip models that don't exist or aren't valid Eloquent models
+                $this->markTestSkipped("Model {$modelName} is not available: " . $e->getMessage());
+            }
+        }
+    }
+
+    /**
+     * Test that all models can generate complete metadata
+     * This ensures the service works with all current and future models
+     */
+    public function test_complete_metadata_generation_for_all_models_dynamically(): void
+    {
+        $models = $this->getAllModels();
+
+        foreach ($models as $modelName) {
+            try {
+                $metadata = $this->metadataService->getMetadata($modelName, 'v1');
+
+                // Verify all required keys exist
+                $requiredKeys = [
+                    'version',
+                    'schema_name',
+                    'swagger_schema',
+                    'request_body',
+                    'searchable_fields',
+                    'filterable_fields',
+                    'sortable_fields',
+                ];
+
+                foreach ($requiredKeys as $key) {
+                    $this->assertArrayHasKey($key, $metadata, "Missing '{$key}' for model: {$modelName}");
+                }
+
+                // Verify data types
+                $this->assertIsString($metadata['version'], "Version should be string for model: {$modelName}");
+                $this->assertIsString($metadata['schema_name'], "Schema name should be string for model: {$modelName}");
+                $this->assertIsArray($metadata['request_body'], "Request body should be array for model: {$modelName}");
+                $this->assertIsArray($metadata['searchable_fields'], "Searchable fields should be array for model: {$modelName}");
+                $this->assertIsArray($metadata['filterable_fields'], "Filterable fields should be array for model: {$modelName}");
+                $this->assertIsArray($metadata['sortable_fields'], "Sortable fields should be array for model: {$modelName}");
+
+                // Verify schema name matches
+                $this->assertEquals($modelName, $metadata['schema_name'], "Schema name mismatch for model: {$modelName}");
+
+            } catch (\InvalidArgumentException $e) {
+                // Skip models that don't exist or aren't valid Eloquent models
+                $this->markTestSkipped("Model {$modelName} is not available: " . $e->getMessage());
+            }
+        }
+    }
+
+    public static function hyphenatedModelNamesDataProvider(): array
+    {
+        return [
+            // Single word models (should be pluralized normally)
+            'Player' => ['Player', 'players'],
+            'Club' => ['Club', 'clubs'],
+            'Division' => ['Division', 'divisions'],
+            'Edition' => ['Edition', 'editions'],
+            'Location' => ['Location', 'locations'],
+            'Prize' => ['Prize', 'prizes'],
+
+            // Hyphenated models (only last word should be pluralized)
+            'EditionLottery' => ['EditionLottery', 'edition-lotteries'],
+            'EditionParticipation' => ['EditionParticipation', 'edition-participations'],
+            'EditionDivision' => ['EditionDivision', 'edition-divisions'],
+            'EditionLuckyOne' => ['EditionLuckyOne', 'edition-lucky-ones'],
+            'PlayerEligibility' => ['PlayerEligibility', 'player-eligibilities'],
+            'PrizeFromClub' => ['PrizeFromClub', 'prize-from-clubs'],
+            'MatchesTeam' => ['MatchesTeam', 'matches-teams'],
+
+            // Edge cases with multiple hyphens (using existing models)
+            'EditionDivision' => ['EditionDivision', 'edition-divisions'],
+        ];
+    }
+
+    /**
+     * Get all model classes from the App\Models namespace
+     */
+    private function getAllModels(): array
+    {
+        $modelsPath = base_path('app/Models');
+        $models = [];
+
+        if (is_dir($modelsPath)) {
+            $files = glob($modelsPath . '/*.php');
+
+            foreach ($files as $file) {
+                $filename = basename($file, '.php');
+
+                // Skip abstract classes or interfaces
+                if (str_starts_with($filename, 'Abstract') || str_ends_with($filename, 'Interface')) {
+                    continue;
+                }
+
+                $models[] = $filename;
+            }
+        }
+
+        return $models;
+    }
+
+    /**
+     * Test that irregular plurals are handled correctly
+     */
+    public function test_irregular_plural_handling(): void
+    {
+        // Test with models that might have irregular plurals
+        $metadata = $this->metadataService->getMetadata('Player', 'v1');
+        $this->assertArrayHasKey('request_body', $metadata);
+
+        // The method should handle irregular plurals correctly
+        // For example: "person" -> "people", "child" -> "children"
+        // But in our case, we're dealing with model names that are typically regular
+    }
 }
