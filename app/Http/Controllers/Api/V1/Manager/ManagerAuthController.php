@@ -34,8 +34,8 @@ class ManagerAuthController extends V1BaseController
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"token"},
-     *             @OA\Property(property="token", type="string", description="Google OAuth token")
+     *             required={"id_token"},
+     *             @OA\Property(property="id_token", type="string", description="Google OAuth ID token")
      *         )
      *     ),
      *     @OA\Response(
@@ -65,12 +65,12 @@ class ManagerAuthController extends V1BaseController
     {
         // Validate request first
         $request->validate([
-            'token' => 'required|string',
+            'id_token' => 'required|string',
         ]);
 
         try {
             // Verify token with Google
-            $payload = $googleClient->verifyIdToken($request->token);
+            $payload = $googleClient->verifyIdToken($request->id_token);
 
             if (! $payload) {
                 throw new InvalidGoogleTokenException();
@@ -106,7 +106,7 @@ class ManagerAuthController extends V1BaseController
         } catch (\Exception $e) {
             // Log the error with context
             $this->authLogger->logError($e, [
-                'token_length' => strlen($request->token ?? ''),
+                'token_length' => strlen($request->id_token ?? ''),
                 'ip' => $request->ip(),
                 'user_agent' => $request->userAgent(),
                 'auth_type' => 'manager_google',

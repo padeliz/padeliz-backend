@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\Model;
  *         property="name",
  *         type="string",
  *         maxLength=25,
- *         title="Division Name",
+ *         title="Name",
  *         description="Name of the skill division",
  *         example="Advanced"
  *     ),
@@ -47,8 +47,8 @@ use Illuminate\Database\Eloquent\Model;
  *         property="its_first_edition_id",
  *         type="integer",
  *         minimum=1,
- *         title="First Edition ID",
- *         description="ID of the first edition for this division",
+ *         title="First Edition",
+ *         description="First edition for this division",
  *         example=1
  *     ),
  *     @OA\Property(

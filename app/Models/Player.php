@@ -26,7 +26,7 @@ use Laravel\Sanctum\HasApiTokens;
  *         property="name",
  *         type="string",
  *         maxLength=250,
- *         title="Full Name",
+ *         title="Name",
  *         description="Player's full name"
  *     ),
  *     @OA\Property(

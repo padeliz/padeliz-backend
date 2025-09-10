@@ -18,21 +18,23 @@ use Illuminate\Database\Eloquent\Model;
  *         format="int64",
  *         readOnly=true,
  *         title="ID",
-         description="Unique Identifier"
+ *         description="Unique Identifier"
  *     ),
  *     @OA\Property(
  *         property="edition_id",
  *         type="integer",
  *         format="int64",
  *         minimum=1,
- *         title="Edition"
+ *         title="Edition",
+ *         description="Edition of the eligibility"
  *     ),
  *     @OA\Property(
  *         property="player_id",
  *         type="integer",
  *         format="int64",
  *         minimum=1,
- *         title="Player"
+ *         title="Player",
+ *         description="Player of the eligibility"
  *     ),
  *     @OA\Property(property="name", type="string", maxLength=255),
  *     @OA\Property(
@@ -40,6 +42,7 @@ use Illuminate\Database\Eloquent\Model;
  *         type="string",
  *         maxLength=255,
  *         nullable=true,
+ *         title="Phone",
  *         description="Phone number",
  *         example="+40712345678"
  *     ),
@@ -50,58 +53,64 @@ use Illuminate\Database\Eloquent\Model;
  *         nullable=true,
  *         minimum=0.0,
  *         maximum=9.9,
+ *         title="Skill Division",
  *         description="Skill level from 0.0 to 9.9",
  *         example=4.5
  *     ),
- *     @OA\Property(property="first_name", type="string", maxLength=50, nullable=true),
- *     @OA\Property(property="middle_name", type="string", maxLength=50, nullable=true),
- *     @OA\Property(property="last_name", type="string", maxLength=50, nullable=true),
+ *     @OA\Property(property="first_name", type="string", maxLength=50, nullable=true, title="First Name", description="Player's first name"),
+ *     @OA\Property(property="middle_name", type="string", maxLength=50, nullable=true, title="Middle Name", description="Player's middle name"),
+ *     @OA\Property(property="last_name", type="string", maxLength=50, nullable=true, title="Last Name", description="Player's last name"),
  *     @OA\Property(
  *         property="year_of_birth",
  *         type="integer",
  *         nullable=true,
  *         minimum=1900,
  *         maximum=9999,
+ *         title="Year of Birth",
  *         description="Year of birth",
  *         example=1990
  *     ),
- *     @OA\Property(property="being_student", type="boolean"),
- *     @OA\Property(property="playtomic_id", type="string", maxLength=10, nullable=true),
- *     @OA\Property(property="rankedin_id", type="string", maxLength=15, nullable=true),
- *     @OA\Property(property="instagram_username", type="string", maxLength=50, nullable=true),
- *     @OA\Property(property="facebook_username", type="string", maxLength=50, nullable=true),
+ *     @OA\Property(property="being_student", type="boolean", title="Student", description="Whether the player is a student"),
+ *     @OA\Property(property="playtomic_id", type="string", maxLength=10, nullable=true, title="Playtomic ID", description="Playtomic platform identifier"),
+ *     @OA\Property(property="rankedin_id", type="string", maxLength=15, nullable=true, title="Rankedin ID", description="Rankedin platform identifier"),
+ *     @OA\Property(property="instagram_username", type="string", maxLength=50, nullable=true, title="Instagram Username", description="Instagram username"),
+ *     @OA\Property(property="facebook_username", type="string", maxLength=50, nullable=true, title="Facebook Username", description="Facebook username"),
  *     @OA\Property(
  *         property="reviewed_at",
  *         type="integer",
  *         format="timestamp",
  *         nullable=true,
  *         minimum=0,
+ *         title="Reviewed At",
  *         description="Unix timestamp when reviewed",
  *         example=1704067200
  *     ),
  *     @OA\Property(property="review_status", type="string", enum={"pending", "approved", "rejected"}),
- *     @OA\Property(property="review_message", type="string", nullable=true),
- *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
- *     @OA\Property(property="updated_at", type="integer", format="timestamp"),
+ *     @OA\Property(property="review_message", type="string", nullable=true, title="Review Message", description="Review message"),
+ *     @OA\Property(property="inserted_at", type="integer", format="timestamp", title="Created At", description="Timestamp when the eligibility was created"),
+ *     @OA\Property(property="updated_at", type="integer", format="timestamp", title="Updated At", description="Timestamp when the eligibility was last updated"),
  *     @OA\Property(
  *         property="resubmitted_at",
  *         type="integer",
  *         format="timestamp",
  *         nullable=true,
  *         minimum=0,
+ *         title="Resubmitted At",
  *         description="Unix timestamp when resubmitted",
  *         example=1704153600
  *     ),
  *     @OA\Property(
  *         property="player",
  *         ref="#/components/schemas/Player",
- *         description="Related player object (loaded when requested)",
+ *         title="Player",
+ *         description="Related player object",
  *         nullable=true
  *     ),
  *     @OA\Property(
  *         property="edition",
  *         ref="#/components/schemas/Edition",
- *         description="Related edition object (loaded when requested)",
+ *         title="Edition",
+ *         description="Related edition object",
  *         nullable=true
  *     )
  * )

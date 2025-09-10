@@ -18,26 +18,29 @@ use Illuminate\Database\Eloquent\Model;
  *         format="int64",
  *         readOnly=true,
  *         title="ID",
-         description="Unique Identifier"
+ *         description="Unique Identifier"
  *     ),
  *     @OA\Property(
  *         property="edition_id",
  *         type="integer",
  *         format="int64",
  *         minimum=1,
- *         title="Edition"
+ *         title="Edition",
+ *         description="Edition of the division"
  *     ),
  *     @OA\Property(
  *         property="division_id",
  *         type="integer",
  *         format="int64",
  *         minimum=1,
- *         title="Division"
+ *         title="Division",
+ *         description="Division of the edition"
  *     ),
  *     @OA\Property(
  *         property="players_limit",
  *         type="integer",
  *         minimum=1,
+ *         title="Players Limit",
  *         description="Maximum number of players allowed",
  *         example=16
  *     ),
@@ -45,6 +48,7 @@ use Illuminate\Database\Eloquent\Model;
  *         property="court",
  *         type="string",
  *         maxLength=30,
+ *         title="Court",
  *         description="Court name or identifier",
  *         example="Court A"
  *     ),
@@ -53,6 +57,7 @@ use Illuminate\Database\Eloquent\Model;
  *         type="string",
  *         format="time",
  *         pattern="^([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$",
+ *         title="Playing Start Time",
  *         description="Playing start time in HH:MM:SS format",
  *         example="10:00:00"
  *     ),
@@ -61,6 +66,7 @@ use Illuminate\Database\Eloquent\Model;
  *         type="string",
  *         format="time",
  *         pattern="^([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$",
+ *         title="Playing End Time",
  *         description="Playing end time in HH:MM:SS format",
  *         example="16:00:00"
  *     ),
@@ -69,6 +75,7 @@ use Illuminate\Database\Eloquent\Model;
  *         type="integer",
  *         nullable=true,
  *         minimum=1,
+ *         title="Player Opponents NR",
  *         description="Number of opponents per player",
  *         example=3
  *     ),
@@ -76,24 +83,27 @@ use Illuminate\Database\Eloquent\Model;
  *         property="player_matches_repeat",
  *         type="integer",
  *         minimum=1,
+ *         title="Player Matches Repeat",
  *         description="Number of times matches repeat",
  *         example=1
  *     ),
- *     @OA\Property(property="include_scores", type="boolean"),
- *     @OA\Property(property="has_demonstrative_match", type="boolean"),
- *     @OA\Property(property="fixed_teams", type="boolean"),
- *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
- *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
+ *     @OA\Property(property="include_scores", type="boolean", title="Include Scores", description="Whether to include scores"),
+ *     @OA\Property(property="has_demonstrative_match", type="boolean", title="Has Demonstrative Match", description="Whether to include a demonstrative match"),
+ *     @OA\Property(property="fixed_teams", type="boolean", title="Fixed Teams", description="Whether to include fixed teams"),
+ *     @OA\Property(property="inserted_at", type="integer", format="timestamp", title="Created At", description="Timestamp when the edition division was created"),
+ *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, title="Updated At", description="Timestamp when the edition division was last updated"),
  *     @OA\Property(
  *         property="edition",
  *         ref="#/components/schemas/Edition",
- *         description="Related edition object (loaded when requested)",
+ *         title="Edition",
+ *         description="Related edition object",
  *         nullable=true
  *     ),
  *     @OA\Property(
  *         property="division",
  *         ref="#/components/schemas/Division",
- *         description="Related division object (loaded when requested)",
+ *         title="Division",
+ *         description="Related division object",
  *         nullable=true
  *     )
  * )
@@ -175,6 +185,11 @@ class EditionDivision extends Model
         'playing_end_time' => 'datetime:H:i:s',
     ];
 
+    protected $appends = [
+        'formatted_playing_start_time',
+        'formatted_playing_end_time',
+    ];
+
     public function edition()
     {
         return $this->belongsTo(Edition::class, 'edition_id');
@@ -183,5 +198,29 @@ class EditionDivision extends Model
     public function division()
     {
         return $this->belongsTo(Division::class, 'division_id');
+    }
+
+    /**
+     * Get the formatted playing start time as H:i:s
+     */
+    public function getFormattedPlayingStartTimeAttribute()
+    {
+        if ($this->attributes['playing_start_time']) {
+            return $this->asDateTime($this->attributes['playing_start_time'])->format('H:i:s');
+        }
+
+        return null;
+    }
+
+    /**
+     * Get the formatted playing end time as H:i:s
+     */
+    public function getFormattedPlayingEndTimeAttribute()
+    {
+        if ($this->attributes['playing_end_time']) {
+            return $this->asDateTime($this->attributes['playing_end_time'])->format('H:i:s');
+        }
+
+        return null;
     }
 }

@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\Model;
  *         property="name",
  *         type="string",
  *         maxLength=30,
- *         title="Club Name",
+ *         title="Name",
  *         description="Name of the padel club"
  *     ),
  *     @OA\Property(

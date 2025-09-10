@@ -26,13 +26,13 @@ use Illuminate\Database\Eloquent\Model;
  *         format="int64",
  *         minimum=1,
  *         title="Club",
- *         description="Foreign key - References Club.id_club"
+ *         description="Club of the location"
  *     ),
  *     @OA\Property(
  *         property="name",
  *         type="string",
  *         maxLength=30,
- *         title="Location Name",
+ *         title="Name",
  *         description="Name of the padel location",
  *         example="Central Court"
  *     ),
@@ -79,7 +79,7 @@ use Illuminate\Database\Eloquent\Model;
  *         property="club",
  *         ref="#/components/schemas/Club",
  *         title="Club",
- *         description="Related club object (loaded when requested)",
+ *         description="Related club object",
  *         nullable=true
  *     ),
  *     @OA\Property(

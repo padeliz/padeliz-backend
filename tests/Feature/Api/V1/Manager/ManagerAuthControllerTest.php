@@ -47,7 +47,7 @@ class ManagerAuthControllerTest extends TestCase
         });
 
         $response = $this->postJson('/api/v1/manager/auth/google', [
-            'token' => 'any.test.token',
+            'id_token' => 'any.test.token',
         ]);
 
         $response->assertStatus(404)
@@ -75,7 +75,7 @@ class ManagerAuthControllerTest extends TestCase
         });
 
         $response = $this->postJson('/api/v1/manager/auth/google', [
-            'token' => 'valid.token',
+            'id_token' => 'valid.token',
         ]);
 
         $response->assertStatus(200)
@@ -127,7 +127,7 @@ class ManagerAuthControllerTest extends TestCase
         });
 
         $response = $this->postJson('/api/v1/manager/auth/google', [
-            'token' => 'valid.token',
+            'id_token' => 'valid.token',
         ]);
 
         $response->assertStatus(403)

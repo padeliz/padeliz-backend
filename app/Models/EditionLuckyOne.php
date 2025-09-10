@@ -18,27 +18,30 @@ use Illuminate\Database\Eloquent\Model;
  *         format="int64",
  *         readOnly=true,
  *         title="ID",
-         description="Unique Identifier"
+ *         description="Unique Identifier"
  *     ),
  *     @OA\Property(
  *         property="lottery_id",
  *         type="integer",
  *         format="int64",
  *         minimum=1,
- *         title="EditionLottery"
+ *         title="EditionLottery",
+ *         description="Edition lottery of the lucky one"
  *     ),
  *     @OA\Property(
  *         property="drawn_participation_id",
  *         type="integer",
  *         format="int64",
  *         minimum=1,
- *         title="EditionParticipation"
+ *         title="EditionParticipation",
+ *         description="Edition participation of the lucky one"
  *     ),
  *     @OA\Property(
  *         property="drawn_at",
  *         type="integer",
  *         format="timestamp",
  *         minimum=0,
+ *         title="Drawn At",
  *         description="Unix timestamp when drawn",
  *         example=1704067200
  *     ),
@@ -47,6 +50,7 @@ use Illuminate\Database\Eloquent\Model;
  *         type="integer",
  *         format="timestamp",
  *         minimum=0,
+ *         title="Available At",
  *         description="Unix timestamp when available",
  *         example=1704153600
  *     ),
@@ -56,6 +60,7 @@ use Illuminate\Database\Eloquent\Model;
  *         format="timestamp",
  *         nullable=true,
  *         minimum=0,
+ *         title="Announced At",
  *         description="Unix timestamp when announced",
  *         example=1704240000
  *     ),
@@ -65,6 +70,7 @@ use Illuminate\Database\Eloquent\Model;
  *         format="timestamp",
  *         nullable=true,
  *         minimum=0,
+ *         title="Accepted At",
  *         description="Unix timestamp when accepted",
  *         example=1704326400
  *     ),
@@ -74,21 +80,24 @@ use Illuminate\Database\Eloquent\Model;
  *         format="timestamp",
  *         nullable=true,
  *         minimum=0,
+ *         title="Rejected At",
  *         description="Unix timestamp when rejected",
  *         example=1704412800
  *     ),
- *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
- *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
+ *     @OA\Property(property="inserted_at", type="integer", format="timestamp", title="Created At", description="Timestamp when the edition lucky one was created"),
+ *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, title="Updated At", description="Timestamp when the edition lucky one was last updated"),
  *     @OA\Property(
  *         property="lottery",
  *         ref="#/components/schemas/EditionLottery",
- *         description="Related lottery object (loaded when requested)",
+ *         title="Lottery",
+ *         description="Related lottery object",
  *         nullable=true
  *     ),
  *     @OA\Property(
  *         property="drawnParticipation",
  *         ref="#/components/schemas/EditionParticipation",
- *         description="Related drawn participation object (loaded when requested)",
+ *         title="Drawn Participation",
+ *         description="Related drawn participation object",
  *         nullable=true
  *     )
  * )

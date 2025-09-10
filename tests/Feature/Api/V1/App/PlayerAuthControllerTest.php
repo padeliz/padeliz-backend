@@ -43,7 +43,7 @@ class PlayerAuthControllerTest extends TestCase
         });
 
         $response = $this->postJson('/api/v1/app/auth/google', [
-            'token' => 'any.test.token',
+            'id_token' => 'any.test.token',
         ]);
 
         $response->assertStatus(404)
@@ -71,7 +71,7 @@ class PlayerAuthControllerTest extends TestCase
         });
 
         $response = $this->postJson('/api/v1/app/auth/google', [
-            'token' => 'valid.token',
+            'id_token' => 'valid.token',
         ]);
 
         $response->assertStatus(200)
@@ -123,7 +123,7 @@ class PlayerAuthControllerTest extends TestCase
         });
 
         $response = $this->postJson('/api/v1/app/auth/google', [
-            'token' => 'valid.token',
+            'id_token' => 'valid.token',
         ]);
 
         $response->assertStatus(403)
@@ -149,7 +149,7 @@ class PlayerAuthControllerTest extends TestCase
         });
 
         $response = $this->postJson('/api/v1/app/auth/google', [
-            'token' => 'invalid.token',
+            'id_token' => 'invalid.token',
         ]);
 
         $response->assertStatus(401);
@@ -275,7 +275,7 @@ class PlayerAuthControllerTest extends TestCase
         $startTime = microtime(true);
 
         $response = $this->postJson('/api/v1/app/auth/google', [
-            'token' => 'any.test.token',
+            'id_token' => 'any.test.token',
         ]);
 
         $endTime = microtime(true);
@@ -301,7 +301,7 @@ class PlayerAuthControllerTest extends TestCase
         // Make multiple requests quickly
         for ($i = 0; $i < 5; $i++) {
             $response = $this->postJson('/api/v1/app/auth/google', [
-                'token' => 'any.test.token',
+                'id_token' => 'any.test.token',
             ]);
             $response->assertStatus(200);
         }
@@ -324,7 +324,7 @@ class PlayerAuthControllerTest extends TestCase
         $responses = [];
         for ($i = 0; $i < 3; $i++) {
             $responses[] = $this->postJson('/api/v1/app/auth/google', [
-                'token' => 'any.test.token',
+                'id_token' => 'any.test.token',
             ]);
         }
 
@@ -374,7 +374,7 @@ class PlayerAuthControllerTest extends TestCase
         });
 
         $response = $this->postJson('/api/v1/app/auth/google', [
-            'token' => 'any.test.token',
+            'id_token' => 'any.test.token',
         ]);
 
         $response->assertStatus(200);

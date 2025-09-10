@@ -34,7 +34,7 @@ use Illuminate\Database\Eloquent\Model;
  *         format="int64",
  *         minimum=1,
  *         title="Player",
- *         description="Foreign key - References Player.id_player"
+ *         description="Player of the participation"
  *     ),
  *     @OA\Property(
  *         property="division_id",
@@ -42,7 +42,7 @@ use Illuminate\Database\Eloquent\Model;
  *         format="int64",
  *         minimum=1,
  *         title="Division",
- *         description="Foreign key - References Division.id_division"
+ *         description="Division of the participation"
  *     ),
  *     @OA\Property(
  *         property="is_minor",
@@ -108,21 +108,21 @@ use Illuminate\Database\Eloquent\Model;
  *         property="edition",
  *         ref="#/components/schemas/Edition",
  *         title="Edition",
- *         description="Related edition object (loaded when requested)",
+ *         description="Related edition object",
  *         nullable=true
  *     ),
  *     @OA\Property(
  *         property="player",
  *         ref="#/components/schemas/Player",
  *         title="Player",
- *         description="Related player object (loaded when requested)",
+ *         description="Related player object",
  *         nullable=true
  *     ),
  *     @OA\Property(
  *         property="division",
  *         ref="#/components/schemas/Division",
  *         title="Division",
- *         description="Related division object (loaded when requested)",
+ *         description="Related division object",
  *         nullable=true
  *     )
  * )

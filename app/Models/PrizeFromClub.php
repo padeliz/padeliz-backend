@@ -18,30 +18,33 @@ use Illuminate\Database\Eloquent\Model;
  *         format="int64",
  *         readOnly=true,
  *         title="ID",
-         description="Unique Identifier"
+ *         description="Unique Identifier"
  *     ),
  *     @OA\Property(
  *         property="club_id",
  *         type="integer",
  *         format="int64",
  *         minimum=1,
- *         title="Club"
+ *         title="Club",
+ *         description="Club of the prize from club"
  *     ),
  *     @OA\Property(
  *         property="prize_id",
  *         type="integer",
  *         format="int64",
  *         minimum=1,
- *         title="Prize"
+ *         title="Prize",
+ *         description="Prize of the prize from club"
  *     ),
- *     @OA\Property(property="image", type="string", maxLength=100, nullable=true),
- *     @OA\Property(property="box_1_text", type="string", maxLength=200, nullable=true),
+ *     @OA\Property(property="image", type="string", maxLength=100, nullable=true, title="Image", description="URL or path to the prize image"),
+ *     @OA\Property(property="box_1_text", type="string", maxLength=200, nullable=true, title="Box 1 Text", description="Text content for the first box"),
  *     @OA\Property(
  *         property="box_1_bg_color",
  *         type="string",
  *         maxLength=7,
  *         nullable=true,
  *         pattern="^#[0-9A-F]{6}$",
+ *         title="Box 1 Background",
  *         description="Box 1 background hex color",
  *         example="#FF0000"
  *     ),
@@ -51,16 +54,18 @@ use Illuminate\Database\Eloquent\Model;
  *         maxLength=7,
  *         nullable=true,
  *         pattern="^#[0-9A-F]{6}$",
+ *         title="Box 1 Text Color",
  *         description="Box 1 text hex color",
  *         example="#FFFFFF"
  *     ),
- *     @OA\Property(property="box_2_text", type="string", maxLength=200, nullable=true),
+ *     @OA\Property(property="box_2_text", type="string", maxLength=200, nullable=true, title="Box 2 Text", description="Text content for the second box"),
  *     @OA\Property(
  *         property="box_2_bg_color",
  *         type="string",
  *         maxLength=7,
  *         nullable=true,
  *         pattern="^#[0-9A-F]{6}$",
+ *         title="Box 2 Background",
  *         description="Box 2 background hex color",
  *         example="#0000FF"
  *     ),
@@ -70,21 +75,24 @@ use Illuminate\Database\Eloquent\Model;
  *         maxLength=7,
  *         nullable=true,
  *         pattern="^#[0-9A-F]{6}$",
+ *         title="Box 2 Text Color",
  *         description="Box 2 text hex color",
  *         example="#FFFFFF"
  *     ),
- *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
- *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
+ *     @OA\Property(property="inserted_at", type="integer", format="timestamp", title="Created At", description="Timestamp when the prize from club was created"),
+ *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, title="Updated At", description="Timestamp when the prize from club was last updated"),
  *     @OA\Property(
  *         property="club",
  *         ref="#/components/schemas/Club",
- *         description="Related club object (loaded when requested)",
+ *         title="Club",
+ *         description="Related club object",
  *         nullable=true
  *     ),
  *     @OA\Property(
  *         property="prize",
  *         ref="#/components/schemas/Prize",
- *         description="Related prize object (loaded when requested)",
+ *         title="Prize",
+ *         description="Related prize object",
  *         nullable=true
  *     )
  * )

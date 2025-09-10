@@ -18,22 +18,24 @@ use Illuminate\Database\Eloquent\Model;
  *         format="int64",
  *         readOnly=true,
  *         title="ID",
-         description="Unique Identifier"
+ *         description="Unique Identifier"
  *     ),
- *     @OA\Property(property="player_1", type="string", maxLength=50),
- *     @OA\Property(property="player_2", type="string", maxLength=50),
- *     @OA\Property(property="inserted_at", type="integer", format="timestamp"),
- *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true),
+ *     @OA\Property(property="player_1", type="string", maxLength=50, title="Player 1", description="Player 1 of the team"),
+ *     @OA\Property(property="player_2", type="string", maxLength=50, title="Player 2", description="Player 2 of the team"),
+ *     @OA\Property(property="inserted_at", type="integer", format="timestamp", title="Created At", description="Timestamp when the matches team was created"),
+ *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, title="Updated At", description="Timestamp when the matches team was last updated"),
  *     @OA\Property(
  *         property="player1",
  *         ref="#/components/schemas/Player",
- *         description="Related player 1 object (loaded when requested)",
+ *         title="Player 1",
+ *         description="Related player 1 object",
  *         nullable=true
  *     ),
  *     @OA\Property(
  *         property="player2",
  *         ref="#/components/schemas/Player",
- *         description="Related player 2 object (loaded when requested)",
+ *         title="Player 2",
+ *         description="Related player 2 object",
  *         nullable=true
  *     )
  * )

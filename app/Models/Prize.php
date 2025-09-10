@@ -24,7 +24,7 @@ use Illuminate\Database\Eloquent\Model;
  *         property="name",
  *         type="string",
  *         maxLength=60,
- *         title="Prize Name",
+ *         title="Name",
  *         description="Name of the prize"
  *     ),
  *     @OA\Property(
