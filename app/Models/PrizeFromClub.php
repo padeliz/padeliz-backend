@@ -126,11 +126,17 @@ class PrizeFromClub extends Model
      * Fields that can be sorted
      */
     public static array $sortableFields = [
+        'id_club_prize',
         'club_id',
         'prize_id',
         'inserted_at',
         'updated_at',
     ];
+
+    /**
+     * Field that will be used to display the prize from club in the UI
+     */
+    public static ?string $displayField = null;
 
     protected $table = 'prizes_from_clubs';
 

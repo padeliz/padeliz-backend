@@ -49,6 +49,9 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertArrayHasKey('request_body', $metadata);
         $this->assertIsArray($metadata['request_body']);
 
+        $this->assertArrayHasKey('display_field', $metadata);
+        $this->assertEquals('name', $metadata['display_field']);
+
         $this->assertArrayHasKey('searchable_fields', $metadata);
         $this->assertContains('name', $metadata['searchable_fields']);
         $this->assertContains('first_name', $metadata['searchable_fields']);
@@ -86,6 +89,9 @@ class ResourceMetadataServiceTest extends TestCase
 
         $this->assertArrayHasKey('request_body', $metadata);
         $this->assertIsArray($metadata['request_body']);
+
+        $this->assertArrayHasKey('display_field', $metadata);
+        $this->assertEquals('name', $metadata['display_field']);
 
         $this->assertArrayHasKey('searchable_fields', $metadata);
         $this->assertContains('name', $metadata['searchable_fields']);
@@ -204,6 +210,14 @@ class ResourceMetadataServiceTest extends TestCase
 
         $this->assertArrayHasKey('request_body', $metadata);
         $this->assertIsArray($metadata['request_body']);
+
+        $this->assertArrayHasKey('display_field', $metadata);
+        // Display field should be 'name' for models with searchable fields, null for models without
+        if (in_array($expectedSchemaName, ['MatchesTeam', 'EditionLottery', 'EditionLuckyOne', 'EditionParticipation', 'EditionDivision', 'PrizeFromClub'])) {
+            $this->assertNull($metadata['display_field']);
+        } else {
+            $this->assertEquals('name', $metadata['display_field']);
+        }
 
         $this->assertArrayHasKey('searchable_fields', $metadata);
         $this->assertIsArray($metadata['searchable_fields']);
@@ -589,5 +603,50 @@ class ResourceMetadataServiceTest extends TestCase
         // The method should handle irregular plurals correctly
         // For example: "person" -> "people", "child" -> "children"
         // But in our case, we're dealing with model names that are typically regular
+    }
+
+    public function test_display_field_functionality(): void
+    {
+        // Test models with display_field set to first searchable field
+        $modelsWithDisplayField = [
+            'Club' => 'name',
+            'Player' => 'name',
+            'Location' => 'name',
+            'Division' => 'name',
+            'Edition' => 'name',
+            'Prize' => 'name',
+            'PlayerEligibility' => 'name',
+        ];
+
+        foreach ($modelsWithDisplayField as $modelName => $expectedDisplayField) {
+            $metadata = $this->metadataService->getMetadata($modelName, 'v1');
+
+            $this->assertArrayHasKey('display_field', $metadata);
+            $this->assertEquals(
+                $expectedDisplayField,
+                $metadata['display_field'],
+                "Model {$modelName} should have display_field set to '{$expectedDisplayField}'"
+            );
+        }
+
+        // Test models with display_field set to null (no searchable fields)
+        $modelsWithNullDisplayField = [
+            'MatchesTeam',
+            'EditionLottery',
+            'EditionLuckyOne',
+            'EditionParticipation',
+            'EditionDivision',
+            'PrizeFromClub',
+        ];
+
+        foreach ($modelsWithNullDisplayField as $modelName) {
+            $metadata = $this->metadataService->getMetadata($modelName, 'v1');
+
+            $this->assertArrayHasKey('display_field', $metadata);
+            $this->assertNull(
+                $metadata['display_field'],
+                "Model {$modelName} should have display_field set to null"
+            );
+        }
     }
 }

@@ -117,7 +117,7 @@ class EditionDivision extends Model
      * Fields that can be searched
      */
     public static array $searchableFields = [
-        'court',
+        // No searchable fields for this model
     ];
 
     /**
@@ -138,6 +138,7 @@ class EditionDivision extends Model
      * Fields that can be sorted
      */
     public static array $sortableFields = [
+        'id_edition_division',
         'edition_id',
         'division_id',
         'players_limit',
@@ -152,6 +153,11 @@ class EditionDivision extends Model
         'inserted_at',
         'updated_at',
     ];
+
+    /**
+     * Field that will be used to display the edition division in the UI
+     */
+    public static ?string $displayField = null;
 
     protected $table = 'edition_divisions';
 

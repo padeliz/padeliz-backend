@@ -149,10 +149,16 @@ class Prize extends Model
      * Fields that can be sorted
      */
     public static array $sortableFields = [
+        'id_prize',
         'name',
         'inserted_at',
         'updated_at',
     ];
+
+    /**
+     * Field that will be used to display the prize in the UI
+     */
+    public static ?string $displayField = 'name';
 
     protected $table = 'prizes';
 

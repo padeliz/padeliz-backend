@@ -108,6 +108,7 @@ class Division extends Model
      * Fields that can be sorted
      */
     public static array $sortableFields = [
+        'id_division',
         'name',
         'color',
         'is_students_only',
@@ -115,6 +116,11 @@ class Division extends Model
         'inserted_at',
         'updated_at',
     ];
+
+    /**
+     * Field that will be used to display the division in the UI
+     */
+    public static ?string $displayField = 'name';
 
     protected $table = 'divisions';
 

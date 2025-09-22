@@ -121,6 +121,7 @@ class EditionLottery extends Model
      * Fields that can be sorted
      */
     public static array $sortableFields = [
+        'id_lottery',
         'edition_id',
         'division_id',
         'prize_id',
@@ -129,6 +130,11 @@ class EditionLottery extends Model
         'inserted_at',
         'updated_at',
     ];
+
+    /**
+     * Field that will be used to display the edition lottery in the UI
+     */
+    public static ?string $displayField = null;
 
     protected $table = 'edition_lotteries';
 

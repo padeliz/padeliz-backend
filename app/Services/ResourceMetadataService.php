@@ -52,6 +52,7 @@ class ResourceMetadataService
             'schema_name' => $schemaName,
             'swagger_schema' => $swaggerSchema,
             'request_body' => $this->getRequestBodySchemas($schemaName, $version),
+            'display_field' => $this->getDisplayField($modelClass),
             'searchable_fields' => $this->getSearchableFields($modelClass),
             'filterable_fields' => $this->getFilterableFields($modelClass, $tableName),
             'sortable_fields' => $this->getSortableFields($modelClass),
@@ -182,6 +183,18 @@ class ResourceMetadataService
         }
 
         return "/{$resourceName}";
+    }
+
+    /**
+     * Get display field from model
+     */
+    private function getDisplayField(string $modelClass): ?string
+    {
+        if (! property_exists($modelClass, 'displayField')) {
+            return null;
+        }
+
+        return $modelClass::$displayField ?? null;
     }
 
     /**

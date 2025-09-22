@@ -139,6 +139,7 @@ class Edition extends Model
      * Fields that can be sorted
      */
     public static array $sortableFields = [
+        'id_edition',
         'name',
         'date',
         'location_id',
@@ -149,6 +150,11 @@ class Edition extends Model
         'inserted_at',
         'updated_at',
     ];
+
+    /**
+     * Field that will be used to display the edition in the UI
+     */
+    public static ?string $displayField = 'name';
 
     protected $table = 'editions';
 

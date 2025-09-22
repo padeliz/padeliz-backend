@@ -220,6 +220,7 @@ class Player extends Authenticatable
      * Fields that can be sorted
      */
     public static array $sortableFields = [
+        'id_player',
         'name',
         'first_name',
         'last_name',
@@ -229,6 +230,11 @@ class Player extends Authenticatable
         'inserted_at',
         'updated_at',
     ];
+
+    /**
+     * Field that will be used to display the player in the UI
+     */
+    public static ?string $displayField = 'name';
 
     protected $table = 'players';
 

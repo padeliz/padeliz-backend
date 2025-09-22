@@ -64,11 +64,17 @@ class MatchesTeam extends Model
      * Fields that can be sorted
      */
     public static array $sortableFields = [
+        'id_team',
         'player_1',
         'player_2',
         'inserted_at',
         'updated_at',
     ];
+
+    /**
+     * Field that will be used to display the matches team in the UI
+     */
+    public static ?string $displayField = null;
 
     protected $table = 'matches_teams';
 

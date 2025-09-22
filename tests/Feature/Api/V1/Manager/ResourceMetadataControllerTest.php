@@ -42,6 +42,7 @@ class ResourceMetadataControllerTest extends TestCase
                     'schema_name',
                     'swagger_schema',
                     'request_body',
+                    'display_field',
                     'searchable_fields',
                     'filterable_fields',
                     'sortable_fields',
@@ -57,6 +58,7 @@ class ResourceMetadataControllerTest extends TestCase
 
         $this->assertContains('name', $response->json('data.searchable_fields'));
         $this->assertArrayHasKey('skill_division', $response->json('data.filterable_fields'));
+        $this->assertEquals('name', $response->json('data.display_field'));
         $this->assertContains('name', $response->json('data.sortable_fields'));
         $this->assertNotNull($response->json('data.swagger_schema'));
         $this->assertIsArray($response->json('data.request_body'));
@@ -85,6 +87,7 @@ class ResourceMetadataControllerTest extends TestCase
                     'schema_name',
                     'swagger_schema',
                     'request_body',
+                    'display_field',
                     'searchable_fields',
                     'filterable_fields',
                     'sortable_fields',
@@ -140,6 +143,7 @@ class ResourceMetadataControllerTest extends TestCase
                     'schema_name',
                     'swagger_schema',
                     'request_body',
+                    'display_field',
                     'searchable_fields',
                     'filterable_fields',
                     'sortable_fields',
@@ -288,6 +292,7 @@ class ResourceMetadataControllerTest extends TestCase
                     'schema_name',
                     'swagger_schema',
                     'request_body',
+                    'display_field',
                     'searchable_fields',
                     'filterable_fields',
                     'sortable_fields',
@@ -536,5 +541,57 @@ class ResourceMetadataControllerTest extends TestCase
         $this->assertEquals('object', $swaggerSchema['type']);
         $this->assertArrayHasKey('properties', $swaggerSchema);
         $this->assertIsArray($swaggerSchema['properties']);
+    }
+
+    public function test_display_field_functionality(): void
+    {
+        // Create a manager user
+        /** @var Player $manager */
+        $manager = Player::factory()->create();
+        $manager->addUserType('manager');
+
+        // Test models with display_field set to first searchable field
+        $modelsWithDisplayField = [
+            'Club' => 'name',
+            'Player' => 'name',
+            'Location' => 'name',
+            'Division' => 'name',
+            'Edition' => 'name',
+            'Prize' => 'name',
+            'PlayerEligibility' => 'name',
+        ];
+
+        foreach ($modelsWithDisplayField as $modelName => $expectedDisplayField) {
+            $response = $this->actingAs($manager)
+                ->getJson("/api/v1/manager/metadata/{$modelName}");
+
+            $response->assertStatus(200);
+            $this->assertEquals(
+                $expectedDisplayField,
+                $response->json('data.display_field'),
+                "Model {$modelName} should have display_field set to '{$expectedDisplayField}'"
+            );
+        }
+
+        // Test models with display_field set to null (no searchable fields)
+        $modelsWithNullDisplayField = [
+            'MatchesTeam',
+            'EditionLottery',
+            'EditionLuckyOne',
+            'EditionParticipation',
+            'EditionDivision',
+            'PrizeFromClub',
+        ];
+
+        foreach ($modelsWithNullDisplayField as $modelName) {
+            $response = $this->actingAs($manager)
+                ->getJson("/api/v1/manager/metadata/{$modelName}");
+
+            $response->assertStatus(200);
+            $this->assertNull(
+                $response->json('data.display_field'),
+                "Model {$modelName} should have display_field set to null"
+            );
+        }
     }
 }

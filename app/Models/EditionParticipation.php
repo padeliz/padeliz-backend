@@ -157,6 +157,7 @@ class EditionParticipation extends Model
      * Fields that can be sorted
      */
     public static array $sortableFields = [
+        'id_participation',
         'edition_id',
         'player_id',
         'division_id',
@@ -167,6 +168,11 @@ class EditionParticipation extends Model
         'inserted_at',
         'updated_at',
     ];
+
+    /**
+     * Field that will be used to display the edition participation in the UI
+     */
+    public static ?string $displayField = null;
 
     protected $table = 'edition_participations';
 

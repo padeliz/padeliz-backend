@@ -118,6 +118,7 @@ class Location extends Model
      * Fields that can be sorted
      */
     public static array $sortableFields = [
+        'id_location',
         'name',
         'address',
         'club_id',
@@ -126,6 +127,11 @@ class Location extends Model
         'inserted_at',
         'updated_at',
     ];
+
+    /**
+     * Field that will be used to display the location in the UI
+     */
+    public static ?string $displayField = 'name';
 
     protected $table = 'locations';
 

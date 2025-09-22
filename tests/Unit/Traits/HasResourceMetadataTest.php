@@ -71,6 +71,7 @@ class HasResourceMetadataTest extends TestCase
     public function test_get_sortable_fields_returns_defined_fields(): void
     {
         $expectedFields = [
+            'id_player',
             'name',
             'first_name',
             'last_name',
@@ -190,7 +191,7 @@ class HasResourceMetadataTest extends TestCase
         $expectedFilterableFields = ['city'];
         $this->assertEquals($expectedFilterableFields, Club::getFilterableFields());
 
-        $expectedSortableFields = ['name', 'city', 'inserted_at', 'updated_at'];
+        $expectedSortableFields = ['id_club', 'name', 'city', 'inserted_at', 'updated_at'];
         $this->assertEquals($expectedSortableFields, Club::getSortableFields());
 
         // Test field checking
@@ -213,7 +214,7 @@ class HasResourceMetadataTest extends TestCase
         $expectedFilterableFields = ['is_students_only', 'its_first_edition_id'];
         $this->assertEquals($expectedFilterableFields, \App\Models\Division::getFilterableFields());
 
-        $expectedSortableFields = ['name', 'color', 'is_students_only', 'its_first_edition_id', 'inserted_at', 'updated_at'];
+        $expectedSortableFields = ['id_division', 'name', 'color', 'is_students_only', 'its_first_edition_id', 'inserted_at', 'updated_at'];
         $this->assertEquals($expectedSortableFields, \App\Models\Division::getSortableFields());
 
         // Test field checking
@@ -236,7 +237,7 @@ class HasResourceMetadataTest extends TestCase
         $expectedFilterableFields = ['box_1_bg_color', 'box_1_text_color', 'box_2_bg_color', 'box_2_text_color'];
         $this->assertEquals($expectedFilterableFields, \App\Models\Prize::getFilterableFields());
 
-        $expectedSortableFields = ['name', 'inserted_at', 'updated_at'];
+        $expectedSortableFields = ['id_prize', 'name', 'inserted_at', 'updated_at'];
         $this->assertEquals($expectedSortableFields, \App\Models\Prize::getSortableFields());
 
         // Test field checking

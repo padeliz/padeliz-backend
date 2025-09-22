@@ -82,6 +82,13 @@ use App\Traits\HasAdvancedPagination;
  *         description="Request body schemas for different HTTP methods and endpoints"
  *     ),
  *     @OA\Property(
+ *         property="display_field",
+ *         type="string",
+ *         nullable=true,
+ *         description="Field name to use for user-friendly display when referenced by foreign keys",
+ *         example="name"
+ *     ),
+ *     @OA\Property(
  *         property="searchable_fields",
  *         type="array",
  *         @OA\Items(type="string"),

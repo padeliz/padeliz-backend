@@ -73,6 +73,35 @@ class Club extends Model
     use HasFactory;
     use HasResourceMetadata;
 
+    protected $table = 'clubs';
+
+    protected $primaryKey = 'id_club';
+
+    public $timestamps = true;
+
+    protected $dateFormat = 'U';
+
+    public const CREATED_AT = 'inserted_at';
+    public const UPDATED_AT = 'updated_at';
+
+    /**
+     * Fields that can be filled.
+     */
+    protected $fillable = [
+        'name',
+        'city',
+    ];
+
+    /**
+     * The attributes that should be cast.
+     *
+     * @var array
+     */
+    protected $casts = [
+        'inserted_at' => 'integer',
+        'updated_at' => 'integer',
+    ];
+
     /**
      * Fields that can be searched
      */
@@ -92,37 +121,17 @@ class Club extends Model
      * Fields that can be sorted
      */
     public static array $sortableFields = [
+        'id_club',
         'name',
         'city',
         'inserted_at',
         'updated_at',
     ];
 
-    protected $table = 'clubs';
-
-    protected $primaryKey = 'id_club';
-
-    public $timestamps = true;
-
-    protected $dateFormat = 'U';
-
-    public const CREATED_AT = 'inserted_at';
-    public const UPDATED_AT = 'updated_at';
-
-    protected $fillable = [
-        'name',
-        'city',
-    ];
-
     /**
-     * The attributes that should be cast.
-     *
-     * @var array
+     * Field that will be used to display the club in the UI
      */
-    protected $casts = [
-        'inserted_at' => 'integer',
-        'updated_at' => 'integer',
-    ];
+    public static ?string $displayField = 'name';
 
     public function locations()
     {

@@ -21,6 +21,7 @@ class ResourceMetadataResource extends JsonResource
             'schema_name' => $this['schema_name'],
             'swagger_schema' => $this['swagger_schema'],
             'request_body' => $this['request_body'],
+            'display_field' => $this['display_field'],
             'searchable_fields' => $this['searchable_fields'],
             'filterable_fields' => $this['filterable_fields'],
             'sortable_fields' => $this['sortable_fields'],
