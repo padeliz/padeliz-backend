@@ -39,16 +39,13 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
      *     @OA\Parameter(
      *         name="filters",
      *         in="query",
-     *         description="Filter parameters",
+     *         description="No filter keys are supported for this resource (filterable_fields is empty on the model).",
      *         required=false,
+     *         style="deepObject",
+     *         explode=true,
      *         @OA\Schema(
      *             type="object",
-     *             @OA\Property(property="drawn_participation_id", type="integer"),
-     *             @OA\Property(property="drawn_at", type="integer"),
-     *             @OA\Property(property="available_at", type="integer"),
-     *             @OA\Property(property="announced_at", type="integer"),
-     *             @OA\Property(property="accepted_at", type="integer"),
-     *             @OA\Property(property="rejected_at", type="integer")
+     *             additionalProperties=false
      *         )
      *     ),
      *     @OA\Parameter(
@@ -56,16 +53,21 @@ class EditionLuckyOneController extends \App\Http\Controllers\BaseVersions\V1\V1
      *         in="query",
      *         description="Sort parameters",
      *         required=false,
+     *         style="deepObject",
+     *         explode=true,
      *         @OA\Schema(
      *             type="object",
-     *             @OA\Property(property="drawn_participation_id", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="drawn_at", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="available_at", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="announced_at", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="accepted_at", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="rejected_at", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *             additionalProperties=false,
+     *             @OA\Property(property="id_lucky_one", type="string", enum={"asc", "desc"}, description="Sort by lucky one ID"),
+     *             @OA\Property(property="lottery_id", type="string", enum={"asc", "desc"}, description="Sort by lottery ID"),
+     *             @OA\Property(property="drawn_participation_id", type="string", enum={"asc", "desc"}, description="Sort by drawn participation ID"),
+     *             @OA\Property(property="drawn_at", type="string", enum={"asc", "desc"}, description="Sort by drawn at"),
+     *             @OA\Property(property="available_at", type="string", enum={"asc", "desc"}, description="Sort by available at"),
+     *             @OA\Property(property="announced_at", type="string", enum={"asc", "desc"}, description="Sort by announced at"),
+     *             @OA\Property(property="accepted_at", type="string", enum={"asc", "desc"}, description="Sort by accepted at"),
+     *             @OA\Property(property="rejected_at", type="string", enum={"asc", "desc"}, description="Sort by rejected at"),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}, description="Sort by creation date"),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"}, description="Sort by update date")
      *         )
      *     ),
      *     @OA\Response(

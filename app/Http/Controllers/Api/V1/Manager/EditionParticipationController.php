@@ -43,14 +43,18 @@ class EditionParticipationController extends V1BaseController
      *         in="query",
      *         description="Filter parameters",
      *         required=false,
+     *         style="deepObject",
+     *         explode=true,
      *         @OA\Schema(
      *             type="object",
-     *             @OA\Property(property="player_id", type="integer"),
-     *             @OA\Property(property="division_id", type="integer"),
-     *             @OA\Property(property="is_minor", type="integer", enum={0, 1}, description="Is minor player (use 0 or 1, not true/false)"),
-     *             @OA\Property(property="is_student", type="integer", enum={0, 1}, description="Is student (use 0 or 1, not true/false)"),
-     *             @OA\Property(property="discount", type="number"),
-     *             @OA\Property(property="payment", type="number")
+     *             additionalProperties=false,
+     *             @OA\Property(property="edition_id", type="string", description="Filter by edition ID"),
+     *             @OA\Property(property="player_id", type="string", description="Filter by player ID"),
+     *             @OA\Property(property="division_id", type="string", description="Filter by division ID"),
+     *             @OA\Property(property="is_minor", type="string", description="Filter by minor status (use 0 or 1)"),
+     *             @OA\Property(property="is_student", type="string", description="Filter by student status (use 0 or 1)"),
+     *             @OA\Property(property="discount", type="string", description="Filter by discount amount"),
+     *             @OA\Property(property="payment", type="string", description="Filter by payment amount")
      *         )
      *     ),
      *     @OA\Parameter(
@@ -58,16 +62,21 @@ class EditionParticipationController extends V1BaseController
      *         in="query",
      *         description="Sort parameters",
      *         required=false,
+     *         style="deepObject",
+     *         explode=true,
      *         @OA\Schema(
      *             type="object",
-     *             @OA\Property(property="player_id", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="division_id", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="is_minor", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="is_student", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="discount", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="payment", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *             additionalProperties=false,
+     *             @OA\Property(property="id_participation", type="string", enum={"asc", "desc"}, description="Sort by participation ID"),
+     *             @OA\Property(property="edition_id", type="string", enum={"asc", "desc"}, description="Sort by edition ID"),
+     *             @OA\Property(property="player_id", type="string", enum={"asc", "desc"}, description="Sort by player ID"),
+     *             @OA\Property(property="division_id", type="string", enum={"asc", "desc"}, description="Sort by division ID"),
+     *             @OA\Property(property="is_minor", type="string", enum={"asc", "desc"}, description="Sort by minor status"),
+     *             @OA\Property(property="is_student", type="string", enum={"asc", "desc"}, description="Sort by student status"),
+     *             @OA\Property(property="discount", type="string", enum={"asc", "desc"}, description="Sort by discount amount"),
+     *             @OA\Property(property="payment", type="string", enum={"asc", "desc"}, description="Sort by payment amount"),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}, description="Sort by creation date"),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"}, description="Sort by update date")
      *         )
      *     ),
      *     @OA\Response(
@@ -648,7 +657,6 @@ class EditionParticipationController extends V1BaseController
 
                     continue;
                 }
-
 
                 $editionParticipation->delete();
 

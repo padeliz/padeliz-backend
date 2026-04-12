@@ -43,12 +43,15 @@ class PlayerController extends V1BaseController
      *         in="query",
      *         description="Filter parameters",
      *         required=false,
+     *         style="deepObject",
+     *         explode=true,
      *         @OA\Schema(
      *             type="object",
-     *             @OA\Property(property="skill_division", type="number"),
-     *             @OA\Property(property="year_of_birth", type="integer"),
-     *             @OA\Property(property="being_student", type="integer", enum={0, 1}, description="Being student (use 0 or 1, not true/false)"),
-     *             @OA\Property(property="user_types", type="array", @OA\Items(type="string"))
+     *             additionalProperties=false,
+     *             @OA\Property(property="skill_division", type="string", description="Filter by skill division"),
+     *             @OA\Property(property="year_of_birth", type="string", description="Filter by year of birth"),
+     *             @OA\Property(property="being_student", type="string", description="Filter by student status (use 0 or 1)"),
+     *             @OA\Property(property="user_types", type="string", description="Filter by user types")
      *         )
      *     ),
      *     @OA\Parameter(
@@ -56,16 +59,20 @@ class PlayerController extends V1BaseController
      *         in="query",
      *         description="Sort parameters",
      *         required=false,
+     *         style="deepObject",
+     *         explode=true,
      *         @OA\Schema(
      *             type="object",
-     *             @OA\Property(property="name", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="first_name", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="last_name", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="skill_division", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="year_of_birth", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="being_student", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *             additionalProperties=false,
+     *             @OA\Property(property="id_player", type="string", enum={"asc", "desc"}, description="Sort by player ID"),
+     *             @OA\Property(property="name", type="string", enum={"asc", "desc"}, description="Sort by name"),
+     *             @OA\Property(property="first_name", type="string", enum={"asc", "desc"}, description="Sort by first name"),
+     *             @OA\Property(property="last_name", type="string", enum={"asc", "desc"}, description="Sort by last name"),
+     *             @OA\Property(property="skill_division", type="string", enum={"asc", "desc"}, description="Sort by skill division"),
+     *             @OA\Property(property="year_of_birth", type="string", enum={"asc", "desc"}, description="Sort by year of birth"),
+     *             @OA\Property(property="being_student", type="string", enum={"asc", "desc"}, description="Sort by student status"),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}, description="Sort by creation date"),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"}, description="Sort by update date")
      *         )
      *     ),
      *     @OA\Response(

@@ -42,10 +42,13 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *         in="query",
      *         description="Filter parameters",
      *         required=false,
+     *         style="deepObject",
+     *         explode=true,
      *         @OA\Schema(
      *             type="object",
-     *             @OA\Property(property="is_students_only", type="integer", enum={0, 1}, description="Whether division is for students only (use 0 or 1, not true/false)"),
-     *             @OA\Property(property="its_first_edition_id", type="integer")
+     *             additionalProperties=false,
+     *             @OA\Property(property="is_students_only", type="string", description="Filter by students-only flag (use 0 or 1)"),
+     *             @OA\Property(property="its_first_edition_id", type="string", description="Filter by first edition ID")
      *         )
      *     ),
      *     @OA\Parameter(
@@ -53,14 +56,18 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *         in="query",
      *         description="Sort parameters",
      *         required=false,
+     *         style="deepObject",
+     *         explode=true,
      *         @OA\Schema(
      *             type="object",
-     *             @OA\Property(property="name", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="color", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="is_students_only", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="its_first_edition_id", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *             additionalProperties=false,
+     *             @OA\Property(property="id_division", type="string", enum={"asc", "desc"}, description="Sort by division ID"),
+     *             @OA\Property(property="name", type="string", enum={"asc", "desc"}, description="Sort by name"),
+     *             @OA\Property(property="color", type="string", enum={"asc", "desc"}, description="Sort by color"),
+     *             @OA\Property(property="is_students_only", type="string", enum={"asc", "desc"}, description="Sort by students-only flag"),
+     *             @OA\Property(property="its_first_edition_id", type="string", enum={"asc", "desc"}, description="Sort by first edition ID"),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}, description="Sort by creation date"),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"}, description="Sort by update date")
      *         )
      *     ),
      *     @OA\Response(

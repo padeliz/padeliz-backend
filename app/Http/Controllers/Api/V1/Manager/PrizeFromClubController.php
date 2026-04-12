@@ -42,14 +42,17 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *         in="query",
      *         description="Filter parameters",
      *         required=false,
+     *         style="deepObject",
+     *         explode=true,
      *         @OA\Schema(
      *             type="object",
-     *             @OA\Property(property="club_id", type="integer"),
-     *             @OA\Property(property="prize_id", type="integer"),
-     *             @OA\Property(property="box_1_bg_color", type="string"),
-     *             @OA\Property(property="box_1_text_color", type="string"),
-     *             @OA\Property(property="box_2_bg_color", type="string"),
-     *             @OA\Property(property="box_2_text_color", type="string")
+     *             additionalProperties=false,
+     *             @OA\Property(property="club_id", type="string", description="Filter by club ID"),
+     *             @OA\Property(property="prize_id", type="string", description="Filter by prize ID"),
+     *             @OA\Property(property="box_1_bg_color", type="string", description="Filter by box 1 background color"),
+     *             @OA\Property(property="box_1_text_color", type="string", description="Filter by box 1 text color"),
+     *             @OA\Property(property="box_2_bg_color", type="string", description="Filter by box 2 background color"),
+     *             @OA\Property(property="box_2_text_color", type="string", description="Filter by box 2 text color")
      *         )
      *     ),
      *     @OA\Parameter(
@@ -57,12 +60,16 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *         in="query",
      *         description="Sort parameters",
      *         required=false,
+     *         style="deepObject",
+     *         explode=true,
      *         @OA\Schema(
      *             type="object",
-     *             @OA\Property(property="club_id", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="prize_id", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *             additionalProperties=false,
+     *             @OA\Property(property="id_club_prize", type="string", enum={"asc", "desc"}, description="Sort by club prize ID"),
+     *             @OA\Property(property="club_id", type="string", enum={"asc", "desc"}, description="Sort by club ID"),
+     *             @OA\Property(property="prize_id", type="string", enum={"asc", "desc"}, description="Sort by prize ID"),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}, description="Sort by creation date"),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"}, description="Sort by update date")
      *         )
      *     ),
      *     @OA\Response(

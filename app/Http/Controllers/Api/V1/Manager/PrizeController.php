@@ -42,12 +42,15 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *         in="query",
      *         description="Filter parameters",
      *         required=false,
+     *         style="deepObject",
+     *         explode=true,
      *         @OA\Schema(
      *             type="object",
-     *             @OA\Property(property="box_1_bg_color", type="string"),
-     *             @OA\Property(property="box_1_text_color", type="string"),
-     *             @OA\Property(property="box_2_bg_color", type="string"),
-     *             @OA\Property(property="box_2_text_color", type="string")
+     *             additionalProperties=false,
+     *             @OA\Property(property="box_1_bg_color", type="string", description="Filter by box 1 background color"),
+     *             @OA\Property(property="box_1_text_color", type="string", description="Filter by box 1 text color"),
+     *             @OA\Property(property="box_2_bg_color", type="string", description="Filter by box 2 background color"),
+     *             @OA\Property(property="box_2_text_color", type="string", description="Filter by box 2 text color")
      *         )
      *     ),
      *     @OA\Parameter(
@@ -55,11 +58,15 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *         in="query",
      *         description="Sort parameters",
      *         required=false,
+     *         style="deepObject",
+     *         explode=true,
      *         @OA\Schema(
      *             type="object",
-     *             @OA\Property(property="name", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *             additionalProperties=false,
+     *             @OA\Property(property="id_prize", type="string", enum={"asc", "desc"}, description="Sort by prize ID"),
+     *             @OA\Property(property="name", type="string", enum={"asc", "desc"}, description="Sort by name"),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}, description="Sort by creation date"),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"}, description="Sort by update date")
      *         )
      *     ),
      *     @OA\Response(

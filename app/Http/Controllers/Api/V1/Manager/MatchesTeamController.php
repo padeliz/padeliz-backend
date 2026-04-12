@@ -35,10 +35,13 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *         in="query",
      *         description="Filter parameters",
      *         required=false,
+     *         style="deepObject",
+     *         explode=true,
      *         @OA\Schema(
      *             type="object",
-     *             @OA\Property(property="player_1", type="integer"),
-     *             @OA\Property(property="player_2", type="integer")
+     *             additionalProperties=false,
+     *             @OA\Property(property="player_1", type="string", description="Filter by player 1 ID"),
+     *             @OA\Property(property="player_2", type="string", description="Filter by player 2 ID")
      *         )
      *     ),
      *     @OA\Parameter(
@@ -46,12 +49,16 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      *         in="query",
      *         description="Sort parameters",
      *         required=false,
+     *         style="deepObject",
+     *         explode=true,
      *         @OA\Schema(
      *             type="object",
-     *             @OA\Property(property="player_1", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="player_2", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *             additionalProperties=false,
+     *             @OA\Property(property="id_team", type="string", enum={"asc", "desc"}, description="Sort by team ID"),
+     *             @OA\Property(property="player_1", type="string", enum={"asc", "desc"}, description="Sort by player 1 ID"),
+     *             @OA\Property(property="player_2", type="string", enum={"asc", "desc"}, description="Sort by player 2 ID"),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}, description="Sort by creation date"),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"}, description="Sort by update date")
      *         )
      *     ),
      *     @OA\Response(

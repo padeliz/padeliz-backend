@@ -42,11 +42,14 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *         in="query",
      *         description="Filter parameters",
      *         required=false,
+     *         style="deepObject",
+     *         explode=true,
      *         @OA\Schema(
      *             type="object",
-     *             @OA\Property(property="club_id", type="integer"),
-     *             @OA\Property(property="total_indoors_courts", type="integer"),
-     *             @OA\Property(property="total_outdoor_courts", type="integer")
+     *             additionalProperties=false,
+     *             @OA\Property(property="club_id", type="string", description="Filter by club ID"),
+     *             @OA\Property(property="total_indoors_courts", type="string", description="Filter by indoor courts count"),
+     *             @OA\Property(property="total_outdoor_courts", type="string", description="Filter by outdoor courts count")
      *         )
      *     ),
      *     @OA\Parameter(
@@ -54,15 +57,19 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *         in="query",
      *         description="Sort parameters",
      *         required=false,
+     *         style="deepObject",
+     *         explode=true,
      *         @OA\Schema(
      *             type="object",
-     *             @OA\Property(property="name", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="address", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="club_id", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="total_indoors_courts", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="total_outdoor_courts", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *             additionalProperties=false,
+     *             @OA\Property(property="id_location", type="string", enum={"asc", "desc"}, description="Sort by location ID"),
+     *             @OA\Property(property="name", type="string", enum={"asc", "desc"}, description="Sort by name"),
+     *             @OA\Property(property="address", type="string", enum={"asc", "desc"}, description="Sort by address"),
+     *             @OA\Property(property="club_id", type="string", enum={"asc", "desc"}, description="Sort by club ID"),
+     *             @OA\Property(property="total_indoors_courts", type="string", enum={"asc", "desc"}, description="Sort by indoor courts count"),
+     *             @OA\Property(property="total_outdoor_courts", type="string", enum={"asc", "desc"}, description="Sort by outdoor courts count"),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}, description="Sort by creation date"),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"}, description="Sort by update date")
      *         )
      *     ),
      *     @OA\Response(

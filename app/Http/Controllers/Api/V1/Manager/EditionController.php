@@ -42,12 +42,14 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *         in="query",
      *         description="Filter parameters",
      *         required=false,
+     *         style="deepObject",
+     *         explode=true,
      *         @OA\Schema(
      *             type="object",
-     *             @OA\Property(property="location_id", type="integer"),
-     *             @OA\Property(property="date", type="string", format="date"),
-     *             @OA\Property(property="entry_fee", type="number"),
-     *             @OA\Property(property="students_entry_fee", type="number")
+     *             additionalProperties=false,
+     *             @OA\Property(property="location_id", type="string", description="Filter by location ID"),
+     *             @OA\Property(property="entry_fee", type="string", description="Filter by entry fee"),
+     *             @OA\Property(property="students_entry_fee", type="string", description="Filter by students entry fee")
      *         )
      *     ),
      *     @OA\Parameter(
@@ -55,17 +57,21 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *         in="query",
      *         description="Sort parameters",
      *         required=false,
+     *         style="deepObject",
+     *         explode=true,
      *         @OA\Schema(
      *             type="object",
-     *             @OA\Property(property="name", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="date", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="location_id", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="entry_fee", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="students_entry_fee", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="arriving_time", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="closing_time", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *             additionalProperties=false,
+     *             @OA\Property(property="id_edition", type="string", enum={"asc", "desc"}, description="Sort by edition ID"),
+     *             @OA\Property(property="name", type="string", enum={"asc", "desc"}, description="Sort by name"),
+     *             @OA\Property(property="date", type="string", enum={"asc", "desc"}, description="Sort by date"),
+     *             @OA\Property(property="location_id", type="string", enum={"asc", "desc"}, description="Sort by location ID"),
+     *             @OA\Property(property="entry_fee", type="string", enum={"asc", "desc"}, description="Sort by entry fee"),
+     *             @OA\Property(property="students_entry_fee", type="string", enum={"asc", "desc"}, description="Sort by students entry fee"),
+     *             @OA\Property(property="arriving_time", type="string", enum={"asc", "desc"}, description="Sort by arriving time"),
+     *             @OA\Property(property="closing_time", type="string", enum={"asc", "desc"}, description="Sort by closing time"),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}, description="Sort by creation date"),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"}, description="Sort by update date")
      *         )
      *     ),
      *     @OA\Response(

@@ -42,9 +42,12 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      *         in="query",
      *         description="Filter parameters",
      *         required=false,
+     *         style="deepObject",
+     *         explode=true,
      *         @OA\Schema(
      *             type="object",
-     *             @OA\Property(property="city", type="string")
+     *             additionalProperties=false,
+     *             @OA\Property(property="city", type="string", description="Filter by city")
      *         )
      *     ),
      *     @OA\Parameter(
@@ -52,12 +55,16 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      *         in="query",
      *         description="Sort parameters",
      *         required=false,
+     *         style="deepObject",
+     *         explode=true,
      *         @OA\Schema(
      *             type="object",
-     *             @OA\Property(property="name", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="city", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"})
+     *             additionalProperties=false,
+     *             @OA\Property(property="id_club", type="string", enum={"asc", "desc"}, description="Sort by club ID"),
+     *             @OA\Property(property="name", type="string", enum={"asc", "desc"}, description="Sort by name"),
+     *             @OA\Property(property="city", type="string", enum={"asc", "desc"}, description="Sort by city"),
+     *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}, description="Sort by creation date"),
+     *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"}, description="Sort by update date")
      *         )
      *     ),
      *     @OA\Response(
