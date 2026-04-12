@@ -30,6 +30,17 @@ Route::prefix('v1')->group(function () {
     });
 
     // ========================================
+    // PLAYER PUBLIC ROUTES (no authentication)
+    // ========================================
+    Route::prefix('app')->group(function () {
+        Route::prefix('editions')->group(function () {
+            Route::get('upcoming', [\App\Http\Controllers\Api\V1\App\EditionController::class, 'upcoming']);
+            Route::get('ongoing', [\App\Http\Controllers\Api\V1\App\EditionController::class, 'ongoing']);
+            Route::get('past', [\App\Http\Controllers\Api\V1\App\EditionController::class, 'past']);
+        });
+    });
+
+    // ========================================
     // PLAYER ROUTES (Requires player authentication)
     // ========================================
     Route::middleware(['auth:sanctum', 'user.type:player'])->prefix('app')->group(function () {

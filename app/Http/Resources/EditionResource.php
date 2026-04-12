@@ -25,8 +25,8 @@ class EditionResource extends JsonResource
             'location' => $this->whenLoaded('location', function () {
                 return new LocationResource($this->location);
             }),
-            'edition_divisions' => $this->whenLoaded('editionDivisions', function () {
-                return EditionDivisionResource::collection($this->editionDivisions);
+            'edition_divisions' => $this->whenLoaded('divisions', function () {
+                return EditionDivisionResource::collection($this->divisions);
             }),
             'participations' => $this->whenLoaded('participations', function () {
                 return EditionParticipationResource::collection($this->participations);
