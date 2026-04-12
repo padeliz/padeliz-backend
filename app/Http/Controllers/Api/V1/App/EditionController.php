@@ -4,25 +4,39 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1\App;
 
+use App\Http\Requests\App\EditionDateRangeRequest;
 use App\Http\Resources\EditionResource;
 use App\Models\Edition;
-use Illuminate\Support\Carbon;
 
 /**
  * @OA\Tag(
  *     name="🐥 App: Editions",
- *     description="(v1) Player editions"
+ *     description="(v1) Player editions (public)"
  * )
  */
 class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseController
 {
     /**
      * @OA\Get(
-     *     path="/api/v1/app/editions/upcoming",
-     *     summary="List upcoming editions",
+     *     path="/api/v1/app/editions",
+     *     summary="List editions in a date range (public)",
      *     tags={"🐥 App: Editions"},
      *     security={},
      *     @OA\Parameter(ref="#/components/parameters/page"),
+     *     @OA\Parameter(
+     *         name="date_from",
+     *         in="query",
+     *         required=true,
+     *         description="Start of inclusive date range (YYYY-MM-DD)",
+     *         @OA\Schema(type="string", format="date", example="2026-04-01")
+     *     ),
+     *     @OA\Parameter(
+     *         name="date_to",
+     *         in="query",
+     *         required=true,
+     *         description="End of inclusive date range (YYYY-MM-DD)",
+     *         @OA\Schema(type="string", format="date", example="2026-04-30")
+     *     ),
      *     @OA\Response(
      *         response=200,
      *         description="Successful operation",
@@ -38,87 +52,23 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=422,
+     *         description="Validation error (missing or invalid date range)",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
-    public function upcoming()
+    public function index(EditionDateRangeRequest $request)
     {
+        $validated = $request->validated();
+
         $editions = Edition::query()
             ->with(['location', 'divisions.division'])
-            ->whereDate('date', '>', Carbon::today())
+            ->whereDate('date', '>=', $validated['date_from'])
+            ->whereDate('date', '<=', $validated['date_to'])
             ->orderBy('date', 'asc')
-            ->paginate($this->paginationLimit);
-
-        return EditionResource::collection($editions);
-    }
-
-    /**
-     * @OA\Get(
-     *     path="/api/v1/app/editions/ongoing",
-     *     summary="List ongoing editions (date is today)",
-     *     tags={"🐥 App: Editions"},
-     *     security={},
-     *     @OA\Parameter(ref="#/components/parameters/page"),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Successful operation",
-     *         @OA\JsonContent(
-     *             allOf={
-     *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
-     *                 @OA\Schema(
-     *                     @OA\Property(
-     *                         property="data",
-     *                         type="array",
-     *                         @OA\Items(ref="#/components/schemas/Edition")
-     *                     )
-     *                 )
-     *             }
-     *         )
-     *     )
-     * )
-     */
-    public function ongoing()
-    {
-        $editions = Edition::query()
-            ->with(['location', 'divisions.division'])
-            ->whereDate('date', Carbon::today())
-            ->orderBy('arriving_time', 'asc')
-            ->paginate($this->paginationLimit);
-
-        return EditionResource::collection($editions);
-    }
-
-    /**
-     * @OA\Get(
-     *     path="/api/v1/app/editions/past",
-     *     summary="List past editions",
-     *     tags={"🐥 App: Editions"},
-     *     security={},
-     *     @OA\Parameter(ref="#/components/parameters/page"),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Successful operation",
-     *         @OA\JsonContent(
-     *             allOf={
-     *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
-     *                 @OA\Schema(
-     *                     @OA\Property(
-     *                         property="data",
-     *                         type="array",
-     *                         @OA\Items(ref="#/components/schemas/Edition")
-     *                     )
-     *                 )
-     *             }
-     *         )
-     *     )
-     * )
-     */
-    public function past()
-    {
-        $editions = Edition::query()
-            ->with(['location', 'divisions.division'])
-            ->whereDate('date', '<', Carbon::today())
-            ->orderBy('date', 'desc')
             ->paginate($this->paginationLimit);
 
         return EditionResource::collection($editions);

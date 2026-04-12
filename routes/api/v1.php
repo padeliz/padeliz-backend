@@ -33,11 +33,7 @@ Route::prefix('v1')->group(function () {
     // PLAYER PUBLIC ROUTES (no authentication)
     // ========================================
     Route::prefix('app')->group(function () {
-        Route::prefix('editions')->group(function () {
-            Route::get('upcoming', [\App\Http\Controllers\Api\V1\App\EditionController::class, 'upcoming']);
-            Route::get('ongoing', [\App\Http\Controllers\Api\V1\App\EditionController::class, 'ongoing']);
-            Route::get('past', [\App\Http\Controllers\Api\V1\App\EditionController::class, 'past']);
-        });
+        Route::get('editions', [\App\Http\Controllers\Api\V1\App\EditionController::class, 'index']);
     });
 
     // ========================================
@@ -48,6 +44,10 @@ Route::prefix('v1')->group(function () {
         Route::prefix('auth')->group(function () {
             Route::post('logout', [\App\Http\Controllers\Api\V1\App\PlayerAuthController::class, 'logout']);
             Route::get('me', [\App\Http\Controllers\Api\V1\App\PlayerAuthController::class, 'me']);
+        });
+
+        Route::prefix('my')->group(function () {
+            Route::get('editions', [\App\Http\Controllers\Api\V1\App\MyEditionController::class, 'index']);
         });
 
         // Player management
@@ -63,12 +63,6 @@ Route::prefix('v1')->group(function () {
         Route::prefix('editions/{edition}')->group(function () {
             Route::post('participate', [\App\Http\Controllers\Api\V1\App\EditionParticipationController::class, 'store']);
             Route::delete('withdraw', [\App\Http\Controllers\Api\V1\App\EditionParticipationController::class, 'destroy']);
-        });
-
-        // Player matches
-        Route::prefix('matches/teams')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\V1\App\MatchesTeamController::class, 'index']);
-            Route::post('/', [\App\Http\Controllers\Api\V1\App\MatchesTeamController::class, 'store']);
         });
 
         // Player eligibility

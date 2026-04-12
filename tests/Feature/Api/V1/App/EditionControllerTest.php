@@ -6,49 +6,49 @@ namespace Tests\Feature\Api\V1\App;
 
 use App\Models\Edition;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
 class EditionControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected function tearDown(): void
+    public function test_requires_date_from_and_date_to_query_parameters(): void
     {
-        Carbon::setTestNow();
-        parent::tearDown();
+        $this->getJson('/api/v1/app/editions')
+            ->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Validation failed',
+            ])
+            ->assertJsonStructure(['errors' => ['date_from', 'date_to']]);
     }
 
-    public function test_guest_can_list_editions_without_authentication(): void
+    public function test_rejects_when_date_to_is_before_date_from(): void
     {
-        Edition::factory()->create(['date' => now()->addDay()->format('Y-m-d')]);
-
-        $this->getJson('/api/v1/app/editions/upcoming')->assertOk();
-        $this->getJson('/api/v1/app/editions/ongoing')->assertOk();
-        $this->getJson('/api/v1/app/editions/past')->assertOk();
+        $this->getJson('/api/v1/app/editions?' . http_build_query([
+            'date_from' => '2026-04-10',
+            'date_to' => '2026-04-09',
+        ]))
+            ->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+            ])
+            ->assertJsonStructure(['errors' => ['date_to']]);
     }
 
-    public function test_upcoming_ongoing_and_past_partition_by_calendar_date(): void
+    public function test_guest_can_list_editions_in_date_range(): void
     {
-        Carbon::setTestNow(Carbon::parse('2026-04-12 10:00:00', config('app.timezone')));
+        Edition::factory()->create(['date' => '2026-04-05']);
+        Edition::factory()->create(['date' => '2026-04-15']);
+        Edition::factory()->create(['date' => '2026-04-25']);
 
-        $past = Edition::factory()->create(['date' => '2026-04-11']);
-        $ongoing = Edition::factory()->create(['date' => '2026-04-12']);
-        $upcoming = Edition::factory()->create(['date' => '2026-04-13']);
+        $response = $this->getJson('/api/v1/app/editions?' . http_build_query([
+            'date_from' => '2026-04-10',
+            'date_to' => '2026-04-20',
+        ]));
 
-        $this->getJson('/api/v1/app/editions/upcoming')
-            ->assertOk()
+        $response->assertOk()
             ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.id_edition', $upcoming->id_edition);
-
-        $this->getJson('/api/v1/app/editions/ongoing')
-            ->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.id_edition', $ongoing->id_edition);
-
-        $this->getJson('/api/v1/app/editions/past')
-            ->assertOk()
-            ->assertJsonCount(1, 'data')
-            ->assertJsonPath('data.0.id_edition', $past->id_edition);
+            ->assertJsonPath('data.0.date', '2026-04-15');
     }
 }
