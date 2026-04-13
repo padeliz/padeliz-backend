@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
-use App\Models\Edition;
 use App\Models\Player;
 use App\Models\PlayerEligibility;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -15,27 +14,34 @@ class PlayerEligibilityFactory extends Factory
 
     public function definition()
     {
+        $now = time();
+
         return [
-            'edition_id' => Edition::factory(),
             'player_id' => Player::factory(),
-            'name' => $this->faker->name(),
+            'edition_ids' => null,
+            'media_source' => null,
+            'friends_source' => null,
+            'racket_experience' => null,
             'phone' => $this->faker->phoneNumber(),
-            'skill_division' => $this->faker->randomFloat(1, 1, 9.9),
             'first_name' => $this->faker->firstName(),
             'middle_name' => null,
             'last_name' => $this->faker->lastName(),
-            'year_of_birth' => $this->faker->numberBetween(1960, 2005),
-            'being_student' => $this->faker->boolean(),
+            'birth_year' => $this->faker->numberBetween(1960, 2005),
+            'birth_month' => $this->faker->numberBetween(1, 12),
+            'birth_day' => $this->faker->numberBetween(1, 28),
+            'being_student' => $this->faker->optional()->boolean(),
             'playtomic_id' => $this->faker->bothify('??#####'),
             'rankedin_id' => $this->faker->bothify('??######'),
             'instagram_username' => $this->faker->userName(),
             'facebook_username' => $this->faker->userName(),
+            'submitted_at' => $now,
             'reviewed_at' => null,
-            'review_status' => $this->faker->randomElement(['approved', 'pending', 'rejected']),
+            'ready_for_review' => 0,
+            'review_status' => $this->faker->randomElement(['approved', 'pending', 'rejected', 'discarded']),
             'review_message' => null,
             'resubmitted_at' => null,
-            'inserted_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
-            'updated_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
+            'inserted_at' => $now,
+            'updated_at' => null,
         ];
     }
 

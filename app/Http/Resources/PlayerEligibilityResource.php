@@ -18,21 +18,26 @@ class PlayerEligibilityResource extends JsonResource
     {
         return [
             'id_eligibility' => $this->id_eligibility,
-            'edition_id' => $this->edition_id,
             'player_id' => $this->player_id,
-            'name' => $this->name,
+            'edition_ids' => $this->edition_ids,
+            'media_source' => $this->media_source,
+            'friends_source' => $this->friends_source,
+            'racket_experience' => $this->racket_experience,
             'phone' => $this->phone,
-            'skill_division' => $this->skill_division,
             'first_name' => $this->first_name,
             'middle_name' => $this->middle_name,
             'last_name' => $this->last_name,
-            'year_of_birth' => $this->year_of_birth,
+            'birth_year' => $this->birth_year,
+            'birth_month' => $this->birth_month,
+            'birth_day' => $this->birth_day,
             'being_student' => $this->being_student,
             'playtomic_id' => $this->playtomic_id,
             'rankedin_id' => $this->rankedin_id,
             'instagram_username' => $this->instagram_username,
             'facebook_username' => $this->facebook_username,
+            'submitted_at' => $this->submitted_at,
             'reviewed_at' => $this->reviewed_at,
+            'ready_for_review' => $this->ready_for_review,
             'review_status' => $this->review_status,
             'review_message' => $this->review_message,
             'resubmitted_at' => $this->resubmitted_at,
@@ -40,9 +45,6 @@ class PlayerEligibilityResource extends JsonResource
             'updated_at' => $this->updated_at,
             'player' => $this->whenLoaded('player', function () {
                 return new PlayerResource($this->player);
-            }),
-            'edition' => $this->whenLoaded('edition', function () {
-                return new EditionResource($this->edition);
             }),
         ];
     }

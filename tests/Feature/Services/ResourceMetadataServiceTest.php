@@ -213,7 +213,7 @@ class ResourceMetadataServiceTest extends TestCase
 
         $this->assertArrayHasKey('display_field', $metadata);
         // Display field should be 'name' for models with searchable fields, null for models without
-        if (in_array($expectedSchemaName, ['MatchesTeam', 'EditionLottery', 'EditionLuckyOne', 'EditionParticipation', 'EditionDivision', 'PrizeFromClub'])) {
+        if (in_array($expectedSchemaName, ['MatchesTeam', 'EditionLottery', 'EditionLuckyOne', 'EditionParticipation', 'EditionDivision', 'PrizeFromClub', 'PlayerEligibility'])) {
             $this->assertNull($metadata['display_field']);
         } else {
             $this->assertEquals('name', $metadata['display_field']);
@@ -321,8 +321,8 @@ class ResourceMetadataServiceTest extends TestCase
 
         $this->assertEquals('PlayerEligibility', $metadata['schema_name']);
         $this->assertContains('phone', $metadata['searchable_fields']);
-        $this->assertArrayHasKey('skill_division', $metadata['filterable_fields']);
-        $this->assertEquals('float', $metadata['filterable_fields']['skill_division']['type']);
+        $this->assertArrayHasKey('birth_year', $metadata['filterable_fields']);
+        $this->assertEquals('integer', $metadata['filterable_fields']['birth_year']['type']);
     }
 
     public function test_prize_metadata(): void
@@ -615,7 +615,6 @@ class ResourceMetadataServiceTest extends TestCase
             'Division' => 'name',
             'Edition' => 'name',
             'Prize' => 'name',
-            'PlayerEligibility' => 'name',
         ];
 
         foreach ($modelsWithDisplayField as $modelName => $expectedDisplayField) {
@@ -637,6 +636,7 @@ class ResourceMetadataServiceTest extends TestCase
             'EditionParticipation',
             'EditionDivision',
             'PrizeFromClub',
+            'PlayerEligibility',
         ];
 
         foreach ($modelsWithNullDisplayField as $modelName) {

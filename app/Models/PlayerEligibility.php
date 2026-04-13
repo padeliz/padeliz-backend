@@ -11,7 +11,7 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * @OA\Schema(
  *     schema="PlayerEligibility",
- *     required={"edition_id", "player_id", "name", "being_student", "review_status"},
+ *     required={"player_id", "submitted_at", "review_status"},
  *     @OA\Property(
  *         property="id_eligibility",
  *         type="integer",
@@ -20,14 +20,10 @@ use Illuminate\Database\Eloquent\Model;
  *         title="ID",
  *         description="Unique Identifier"
  *     ),
- *     @OA\Property(
- *         property="edition_id",
- *         type="integer",
- *         format="int64",
- *         minimum=1,
- *         title="Edition",
- *         description="Edition of the eligibility"
- *     ),
+ *     @OA\Property(property="edition_ids", type="array", @OA\Items(type="integer"), nullable=true),
+ *     @OA\Property(property="media_source", type="array", @OA\Items(type="integer"), nullable=true),
+ *     @OA\Property(property="friends_source", type="array", @OA\Items(type="integer"), nullable=true),
+ *     @OA\Property(property="racket_experience", type="array", @OA\Items(type="string"), nullable=true),
  *     @OA\Property(
  *         property="player_id",
  *         type="integer",
@@ -36,40 +32,21 @@ use Illuminate\Database\Eloquent\Model;
  *         title="Player",
  *         description="Player of the eligibility"
  *     ),
- *     @OA\Property(property="name", type="string", maxLength=255),
  *     @OA\Property(
  *         property="phone",
  *         type="string",
- *         maxLength=255,
+ *         maxLength=100,
  *         nullable=true,
  *         title="Phone",
  *         description="Phone number",
  *         example="+40712345678"
  *     ),
- *     @OA\Property(
- *         property="skill_division",
- *         type="number",
- *         format="float",
- *         nullable=true,
- *         minimum=0.0,
- *         maximum=9.9,
- *         title="Skill Division",
- *         description="Skill level from 0.0 to 9.9",
- *         example=4.5
- *     ),
  *     @OA\Property(property="first_name", type="string", maxLength=50, nullable=true, title="First Name", description="Player's first name"),
  *     @OA\Property(property="middle_name", type="string", maxLength=50, nullable=true, title="Middle Name", description="Player's middle name"),
  *     @OA\Property(property="last_name", type="string", maxLength=50, nullable=true, title="Last Name", description="Player's last name"),
- *     @OA\Property(
- *         property="year_of_birth",
- *         type="integer",
- *         nullable=true,
- *         minimum=1900,
- *         maximum=9999,
- *         title="Year of Birth",
- *         description="Year of birth",
- *         example=1990
- *     ),
+ *     @OA\Property(property="birth_year", type="integer", nullable=true),
+ *     @OA\Property(property="birth_month", type="integer", nullable=true),
+ *     @OA\Property(property="birth_day", type="integer", nullable=true),
  *     @OA\Property(property="being_student", type="boolean", title="Student", description="Whether the player is a student"),
  *     @OA\Property(property="playtomic_id", type="string", maxLength=10, nullable=true, title="Playtomic ID", description="Playtomic platform identifier"),
  *     @OA\Property(property="rankedin_id", type="string", maxLength=15, nullable=true, title="Rankedin ID", description="Rankedin platform identifier"),
@@ -85,20 +62,12 @@ use Illuminate\Database\Eloquent\Model;
  *         description="Unix timestamp when reviewed",
  *         example=1704067200
  *     ),
- *     @OA\Property(property="review_status", type="string", enum={"pending", "approved", "rejected"}),
+ *     @OA\Property(property="ready_for_review", type="boolean"),
+ *     @OA\Property(property="review_status", type="string", enum={"pending", "approved", "rejected", "discarded"}),
  *     @OA\Property(property="review_message", type="string", nullable=true, title="Review Message", description="Review message"),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp", title="Created At", description="Timestamp when the eligibility was created"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", title="Updated At", description="Timestamp when the eligibility was last updated"),
- *     @OA\Property(
- *         property="resubmitted_at",
- *         type="integer",
- *         format="timestamp",
- *         nullable=true,
- *         minimum=0,
- *         title="Resubmitted At",
- *         description="Unix timestamp when resubmitted",
- *         example=1704153600
- *     ),
+ *     @OA\Property(property="resubmitted_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(
  *         property="player",
  *         ref="#/components/schemas/Player",
@@ -106,13 +75,7 @@ use Illuminate\Database\Eloquent\Model;
  *         description="Related player object",
  *         nullable=true
  *     ),
- *     @OA\Property(
- *         property="edition",
- *         ref="#/components/schemas/Edition",
- *         title="Edition",
- *         description="Related edition object",
- *         nullable=true
- *     )
+ *     @OA\Property(property="submitted_at", type="integer", format="timestamp"),
  * )
  */
 class PlayerEligibility extends Model
@@ -124,7 +87,6 @@ class PlayerEligibility extends Model
      * Fields that can be searched
      */
     public static array $searchableFields = [
-        'name',
         'first_name',
         'middle_name',
         'last_name',
@@ -140,12 +102,11 @@ class PlayerEligibility extends Model
      * Fields that can be filtered
      */
     public static array $filterableFields = [
-        'edition_id',
         'player_id',
-        'skill_division',
-        'year_of_birth',
+        'birth_year',
         'being_student',
         'review_status',
+        'ready_for_review',
     ];
 
     /**
@@ -153,16 +114,14 @@ class PlayerEligibility extends Model
      */
     public static array $sortableFields = [
         'id_eligibility',
-        'edition_id',
         'player_id',
-        'name',
         'first_name',
         'last_name',
-        'skill_division',
-        'year_of_birth',
+        'birth_year',
         'being_student',
         'review_status',
         'reviewed_at',
+        'submitted_at',
         'inserted_at',
         'updated_at',
         'resubmitted_at',
@@ -171,7 +130,7 @@ class PlayerEligibility extends Model
     /**
      * Field that will be used to display the player eligibility in the UI
      */
-    public static ?string $displayField = 'name';
+    public static ?string $displayField = null;
 
     protected $table = 'player_eligibilities';
 
@@ -185,21 +144,26 @@ class PlayerEligibility extends Model
     public const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
-        'edition_id',
         'player_id',
-        'name',
+        'edition_ids',
+        'media_source',
+        'friends_source',
+        'racket_experience',
         'phone',
-        'skill_division',
         'first_name',
         'middle_name',
         'last_name',
-        'year_of_birth',
+        'birth_year',
+        'birth_month',
+        'birth_day',
         'being_student',
         'playtomic_id',
         'rankedin_id',
         'instagram_username',
         'facebook_username',
+        'submitted_at',
         'reviewed_at',
+        'ready_for_review',
         'review_status',
         'review_message',
         'resubmitted_at',
@@ -209,10 +173,17 @@ class PlayerEligibility extends Model
         'inserted_at' => 'integer',
         'updated_at' => 'integer',
         'reviewed_at' => 'integer',
+        'submitted_at' => 'integer',
         'being_student' => 'boolean',
-        'year_of_birth' => 'integer',
-        'skill_division' => 'float',
+        'birth_year' => 'integer',
+        'birth_month' => 'integer',
+        'birth_day' => 'integer',
         'resubmitted_at' => 'integer',
+        'ready_for_review' => 'boolean',
+        'edition_ids' => 'array',
+        'media_source' => 'array',
+        'friends_source' => 'array',
+        'racket_experience' => 'array',
     ];
 
     public function player()
@@ -220,8 +191,15 @@ class PlayerEligibility extends Model
         return $this->belongsTo(Player::class, 'player_id', 'id_player');
     }
 
-    public function edition()
+    public function recomputeReadyForReview(): void
     {
-        return $this->belongsTo(Edition::class, 'edition_id', 'id_edition');
+        $hasSource = $this->media_source !== null || $this->friends_source !== null;
+
+        $this->ready_for_review = $hasSource
+            && $this->first_name !== null
+            && $this->last_name !== null
+            && $this->phone !== null
+            && $this->birth_year !== null
+            && ($this->submitted_at !== null || $this->resubmitted_at !== null);
     }
 }

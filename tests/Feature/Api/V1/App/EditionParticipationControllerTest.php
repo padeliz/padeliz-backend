@@ -43,7 +43,6 @@ class EditionParticipationControllerTest extends TestCase
         // Create approved eligibility for the player
         PlayerEligibility::factory()->create([
             'player_id' => $this->player->id_player,
-            'edition_id' => $this->edition->id_edition,
             'review_status' => 'approved',
         ]);
     }

@@ -14,6 +14,7 @@ use App\Models\EditionParticipation;
 use App\Models\Location;
 use App\Models\MatchesTeam;
 use App\Models\Player;
+use App\Models\PlayerEligibility;
 use App\Models\Prize;
 use App\Models\PrizeFromClub;
 use Carbon\Carbon;
@@ -49,6 +50,7 @@ class DatabaseSeeder extends Seeder
         Prize::truncate();
         EditionParticipation::truncate();
         EditionDivision::truncate();
+        PlayerEligibility::truncate();
         Player::truncate();
         Edition::truncate();
         Location::truncate();
@@ -207,6 +209,9 @@ class DatabaseSeeder extends Seeder
                 'player_1' => fn () => $players->random()->id_player,
                 'player_2' => fn () => $players->random()->id_player,
             ]);
+
+        $this->command->info('Creating player eligibilities...');
+        $this->createPlayerEligibilities($players, $allEditions, $faker);
     }
 
     private function createEditions(int $index_nr, int $count, Carbon $startDate, Carbon $endDate, $locations)
@@ -225,7 +230,7 @@ class DatabaseSeeder extends Seeder
 
             $editions[] = Edition::factory()->forLocation($locations->random())->create([
                 'name' => '#' . ($index_nr + $i + 1),
-                'date' => Carbon::parse($startDate)->addDays(rand(0, (int)Carbon::parse($endDate)->diffInDays($startDate))),
+                'date' => Carbon::parse($startDate)->addDays(rand(0, (int) Carbon::parse($endDate)->diffInDays($startDate))),
                 'entry_fee' => rand(45, 55),
                 'students_entry_fee' => rand(35, 45),
                 'arriving_time' => $arriving_time->format('H:i:s'),
@@ -289,6 +294,82 @@ class DatabaseSeeder extends Seeder
                             'drawn_participation_id' => $participants->random()->id_participation,
                         ]);
                 }
+            }
+        }
+    }
+
+    private function createPlayerEligibilities($players, $editions, $faker): void
+    {
+        $now = time();
+
+        foreach ($players as $player) {
+            // Create one reviewed eligibility for most players
+            if ($faker->boolean(75)) {
+                $reviewStatus = $faker->randomElement(['approved', 'rejected', 'discarded']);
+                $reviewedAt = $reviewStatus === 'approved' || $reviewStatus === 'rejected' ? $now - $faker->numberBetween(60, 3600) : null;
+
+                $eligibility = new PlayerEligibility();
+                $eligibility->player_id = $player->id_player;
+                $eligibility->edition_ids = $faker->boolean(70) ? [$editions->random()->id_edition] : null;
+
+                // Sources (required: media_source OR friends_source)
+                if ($faker->boolean(60)) {
+                    $eligibility->media_source = [$faker->numberBetween(1, 6)];
+                    $eligibility->friends_source = null;
+                } else {
+                    $eligibility->media_source = null;
+                    $eligibility->friends_source = [$faker->firstName(), $faker->firstName()];
+                }
+
+                $eligibility->racket_experience = $faker->boolean(60) ? [$faker->randomElement(['none', 'tennis', 'squash', 'badminton', 'padel'])] : null;
+
+                $eligibility->first_name = $player->first_name ?? $faker->firstName();
+                $eligibility->middle_name = $player->middle_name ?? null;
+                $eligibility->last_name = $player->last_name ?? $faker->lastName();
+                $eligibility->phone = $player->phone ?? $faker->phoneNumber();
+                $eligibility->birth_year = $faker->numberBetween(1960, 2006);
+                $eligibility->birth_month = $faker->numberBetween(1, 12);
+                $eligibility->birth_day = $faker->numberBetween(1, 28);
+                $eligibility->being_student = $faker->optional()->boolean();
+
+                $eligibility->playtomic_id = $player->playtomic_id ?? $faker->optional()->bothify('??#####');
+                $eligibility->rankedin_id = $player->rankedin_id ?? $faker->optional()->bothify('??######');
+                $eligibility->instagram_username = $player->instagram_username ?? $faker->optional()->userName();
+                $eligibility->facebook_username = $player->facebook_username ?? $faker->optional()->userName();
+
+                $eligibility->submitted_at = $now - $faker->numberBetween(3600, 86400 * 14);
+                $eligibility->resubmitted_at = $faker->boolean(20) ? $now - $faker->numberBetween(60, 3600) : null;
+                $eligibility->review_status = $reviewStatus;
+                $eligibility->reviewed_at = $reviewedAt;
+                $eligibility->review_message = $reviewStatus === 'rejected' ? $faker->sentence() : null;
+                $eligibility->inserted_at = $eligibility->submitted_at;
+                $eligibility->updated_at = $eligibility->resubmitted_at;
+
+                $eligibility->recomputeReadyForReview();
+                $eligibility->save();
+            }
+
+            // Create at most one pending eligibility per player (DB constraint also enforces this)
+            if ($faker->boolean(25)) {
+                $pending = new PlayerEligibility();
+                $pending->player_id = $player->id_player;
+                $pending->edition_ids = $faker->boolean(40) ? [$editions->random()->id_edition] : null;
+                $pending->submitted_at = $now - $faker->numberBetween(60, 3600);
+                $pending->review_status = 'pending';
+                $pending->inserted_at = $pending->submitted_at;
+                $pending->updated_at = null;
+
+                // Sometimes incomplete (not ready), sometimes ready
+                if ($faker->boolean(40)) {
+                    $pending->media_source = [$faker->numberBetween(1, 6)];
+                    $pending->first_name = $player->first_name ?? $faker->firstName();
+                    $pending->last_name = $player->last_name ?? $faker->lastName();
+                    $pending->phone = $player->phone ?? $faker->phoneNumber();
+                    $pending->birth_year = $faker->numberBetween(1960, 2006);
+                }
+
+                $pending->recomputeReadyForReview();
+                $pending->save();
             }
         }
     }

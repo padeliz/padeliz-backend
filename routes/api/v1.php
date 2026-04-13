@@ -65,13 +65,12 @@ Route::prefix('v1')->group(function () {
             Route::delete('withdraw', [\App\Http\Controllers\Api\V1\App\EditionParticipationController::class, 'destroy']);
         });
 
-        // Player eligibility
-        Route::prefix('eligibility')->group(function () {
-            Route::get('approved', [\App\Http\Controllers\Api\V1\App\EligibilityController::class, 'approved']);
-            Route::get('pending', [\App\Http\Controllers\Api\V1\App\EligibilityController::class, 'pending']);
-            Route::get('rejected', [\App\Http\Controllers\Api\V1\App\EligibilityController::class, 'rejected']);
-            Route::patch('/', [\App\Http\Controllers\Api\V1\App\EligibilityController::class, 'update']);
-            Route::post('/', [\App\Http\Controllers\Api\V1\App\EligibilityController::class, 'store']);
+        Route::prefix('my/eligibility')->group(function () {
+            Route::get('status', [\App\Http\Controllers\Api\V1\App\MyEligibilityController::class, 'status']);
+            Route::get('approved', [\App\Http\Controllers\Api\V1\App\MyEligibilityController::class, 'approved']);
+            Route::get('latest', [\App\Http\Controllers\Api\V1\App\MyEligibilityController::class, 'latest']);
+            Route::patch('pending', [\App\Http\Controllers\Api\V1\App\MyEligibilityController::class, 'pending']);
+            Route::post('discard', [\App\Http\Controllers\Api\V1\App\MyEligibilityController::class, 'discard']);
         });
     });
 

@@ -251,33 +251,31 @@ class PlayerEligibilityController extends V1BaseController
     {
         $validated = $request->validate([
             'player_id' => 'required|integer|exists:players,id_player',
-            'edition_id' => 'required|integer|exists:editions,id_edition',
-            'review_status' => 'required|in:approved,rejected,pending',
-            'notes' => 'nullable|string',
+            'review_status' => 'required|in:approved,rejected,pending,discarded',
+            'review_message' => 'nullable|string',
         ]);
 
-        // Check if player already has an eligibility record for this edition
-        $existingEligibility = PlayerEligibility::where('player_id', $validated['player_id'])
-            ->where('edition_id', $validated['edition_id'])
-            ->first();
+        $now = time();
 
-        if ($existingEligibility) {
-            return $this->errorResponse(
-                'Player already has an eligibility record for this edition',
-                422
-            );
+        if ($validated['review_status'] === 'pending') {
+            $hasPending = PlayerEligibility::where('player_id', $validated['player_id'])
+                ->where('review_status', 'pending')
+                ->exists();
+            if ($hasPending) {
+                return $this->errorResponse('Player already has a pending eligibility', 422);
+            }
         }
 
-        // Map the fields to the correct database columns
-        $playerEligibilityData = [
+        $playerEligibility = PlayerEligibility::create([
             'player_id' => $validated['player_id'],
-            'edition_id' => $validated['edition_id'],
             'review_status' => $validated['review_status'],
-            'review_message' => $validated['notes'] ?? null,
-            'name' => 'Player Eligibility', // Default name
-        ];
-
-        $playerEligibility = PlayerEligibility::create($playerEligibilityData);
+            'review_message' => $validated['review_message'] ?? null,
+            'submitted_at' => $now,
+            'inserted_at' => $now,
+            'updated_at' => null,
+            'reviewed_at' => in_array($validated['review_status'], ['approved', 'rejected'], true) ? $now : null,
+            'ready_for_review' => 0,
+        ]);
         $playerEligibility->load('player');
 
         return $this->resourceResponse(
@@ -349,13 +347,27 @@ class PlayerEligibilityController extends V1BaseController
     public function update(Request $request, PlayerEligibility $playerEligibility)
     {
         $request->validate([
-            'review_status' => 'required|in:approved,rejected,pending',
+            'review_status' => 'required|in:approved,rejected,pending,discarded',
             'review_message' => 'nullable|string',
         ]);
+
+        $now = time();
+
+        if ($request->review_status === 'pending') {
+            $hasOtherPending = PlayerEligibility::where('player_id', $playerEligibility->player_id)
+                ->where('review_status', 'pending')
+                ->where('id_eligibility', '!=', $playerEligibility->id_eligibility)
+                ->exists();
+            if ($hasOtherPending) {
+                return $this->errorResponse('Player already has a pending eligibility', 422);
+            }
+        }
 
         $playerEligibility->update([
             'review_status' => $request->review_status,
             'review_message' => $request->review_message,
+            'reviewed_at' => in_array($request->review_status, ['approved', 'rejected'], true) ? $now : $playerEligibility->reviewed_at,
+            'updated_at' => $now,
         ]);
 
         return $this->resourceResponse(
@@ -425,11 +437,34 @@ class PlayerEligibilityController extends V1BaseController
     public function patch(Request $request, PlayerEligibility $playerEligibility)
     {
         $request->validate([
-            'review_status' => 'sometimes|in:approved,rejected,pending',
+            'review_status' => 'sometimes|in:approved,rejected,pending,discarded',
             'review_message' => 'nullable|string',
         ]);
 
-        $playerEligibility->update($request->all());
+        $now = time();
+
+        if ($request->has('review_status') && $request->review_status === 'pending') {
+            $hasOtherPending = PlayerEligibility::where('player_id', $playerEligibility->player_id)
+                ->where('review_status', 'pending')
+                ->where('id_eligibility', '!=', $playerEligibility->id_eligibility)
+                ->exists();
+            if ($hasOtherPending) {
+                return $this->errorResponse('Player already has a pending eligibility', 422);
+            }
+        }
+        $updates = [];
+        if ($request->has('review_status')) {
+            $updates['review_status'] = $request->review_status;
+            if (in_array($request->review_status, ['approved', 'rejected'], true)) {
+                $updates['reviewed_at'] = $now;
+            }
+        }
+        if ($request->has('review_message')) {
+            $updates['review_message'] = $request->review_message;
+        }
+        $updates['updated_at'] = $now;
+
+        $playerEligibility->update($updates);
 
         return $this->resourceResponse(
             new PlayerEligibilityResource($playerEligibility),

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Manager;
 
-use App\Models\Edition;
 use App\Models\Player;
 use App\Models\PlayerEligibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,8 +17,6 @@ class PlayerEligibilityControllerTest extends TestCase
     private $manager;
 
     private $player;
-
-    private $edition;
 
     public function setUp(): void
     {
@@ -37,10 +34,6 @@ class PlayerEligibilityControllerTest extends TestCase
 
         $this->player = Player::factory()->create([
             'name' => 'Test Player',
-        ]);
-
-        $this->edition = Edition::factory()->create([
-            'name' => 'Test Edition',
         ]);
     }
 
@@ -88,7 +81,6 @@ class PlayerEligibilityControllerTest extends TestCase
 
         $playerEligibility = PlayerEligibility::factory()->create([
             'player_id' => $this->player->id_player,
-            'edition_id' => $this->edition->id_edition,
             'review_status' => 'approved',
             'review_message' => 'Player is eligible',
         ]);
@@ -114,9 +106,8 @@ class PlayerEligibilityControllerTest extends TestCase
 
         $playerEligibilityData = [
             'player_id' => $this->player->id_player,
-            'edition_id' => $this->edition->id_edition,
             'review_status' => 'pending',
-            'notes' => 'Under review',
+            'review_message' => 'Under review',
         ];
 
         $response = $this->postJson('/api/v1/manager/player-eligibilities', $playerEligibilityData);
@@ -134,7 +125,6 @@ class PlayerEligibilityControllerTest extends TestCase
 
         $this->assertDatabaseHas('player_eligibilities', [
             'player_id' => $this->player->id_player,
-            'edition_id' => $this->edition->id_edition,
             'review_status' => 'pending',
             'review_message' => 'Under review',
         ]);
@@ -146,7 +136,6 @@ class PlayerEligibilityControllerTest extends TestCase
 
         $playerEligibility = PlayerEligibility::factory()->create([
             'player_id' => $this->player->id_player,
-            'edition_id' => $this->edition->id_edition,
             'review_status' => 'pending',
             'review_message' => 'Under review',
         ]);
@@ -182,7 +171,6 @@ class PlayerEligibilityControllerTest extends TestCase
 
         $playerEligibility = PlayerEligibility::factory()->create([
             'player_id' => $this->player->id_player,
-            'edition_id' => $this->edition->id_edition,
             'review_status' => 'pending',
             'review_message' => 'Under review',
         ]);
@@ -218,13 +206,50 @@ class PlayerEligibilityControllerTest extends TestCase
             ]);
     }
 
+    public function test_manager_cannot_update_to_pending_if_another_pending_exists(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        PlayerEligibility::factory()->create([
+            'player_id' => $this->player->id_player,
+            'review_status' => 'pending',
+        ]);
+
+        $otherEligibility = PlayerEligibility::factory()->create([
+            'player_id' => $this->player->id_player,
+            'review_status' => 'approved',
+        ]);
+
+        $this->putJson("/api/v1/manager/player-eligibilities/{$otherEligibility->id_eligibility}", [
+            'review_status' => 'pending',
+        ])->assertStatus(422);
+    }
+
+    public function test_manager_cannot_patch_to_pending_if_another_pending_exists(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        PlayerEligibility::factory()->create([
+            'player_id' => $this->player->id_player,
+            'review_status' => 'pending',
+        ]);
+
+        $otherEligibility = PlayerEligibility::factory()->create([
+            'player_id' => $this->player->id_player,
+            'review_status' => 'approved',
+        ]);
+
+        $this->patchJson("/api/v1/manager/player-eligibilities/{$otherEligibility->id_eligibility}", [
+            'review_status' => 'pending',
+        ])->assertStatus(422);
+    }
+
     public function test_manager_cannot_update_eligibility_without_required_fields()
     {
         Sanctum::actingAs($this->manager);
 
         $playerEligibility = PlayerEligibility::factory()->create([
             'player_id' => $this->player->id_player,
-            'edition_id' => $this->edition->id_edition,
         ]);
 
         // Test PUT without required fields
@@ -373,27 +398,16 @@ class PlayerEligibilityControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        // Create first eligibility
-        PlayerEligibility::factory()->create([
+        // New invariant: at most one pending eligibility per player.
+        $this->postJson('/api/v1/manager/player-eligibilities', [
             'player_id' => $this->player->id_player,
-            'edition_id' => $this->edition->id_edition,
-            'review_status' => 'approved',
-        ]);
-
-        // Try to create duplicate
-        $duplicateData = [
-            'player_id' => $this->player->id_player,
-            'edition_id' => $this->edition->id_edition,
             'review_status' => 'pending',
-        ];
+        ])->assertStatus(201);
 
-        $response = $this->postJson('/api/v1/manager/player-eligibilities', $duplicateData);
-
-        $response->assertStatus(422)
-            ->assertJson([
-                'success' => false,
-            'message' => 'Player already has an eligibility record for this edition',
-            ]);
+        $this->postJson('/api/v1/manager/player-eligibilities', [
+            'player_id' => $this->player->id_player,
+            'review_status' => 'pending',
+        ])->assertStatus(422);
     }
 
     public function test_eligibility_creation_validation()
@@ -517,9 +531,8 @@ class PlayerEligibilityControllerTest extends TestCase
 
         $playerEligibilityData = [
             'player_id' => $this->player->id_player,
-            'edition_id' => $this->edition->id_edition,
             'review_status' => 'pending',
-            // Not providing notes (optional)
+            // Not providing review_message (optional)
         ];
 
         $response = $this->postJson('/api/v1/manager/player-eligibilities', $playerEligibilityData);
@@ -532,7 +545,6 @@ class PlayerEligibilityControllerTest extends TestCase
 
         $this->assertDatabaseHas('player_eligibilities', [
             'player_id' => $this->player->id_player,
-            'edition_id' => $this->edition->id_edition,
             'review_status' => 'pending',
             'review_message' => null,
         ]);
@@ -544,18 +556,18 @@ class PlayerEligibilityControllerTest extends TestCase
 
         $player2 = Player::factory()->create();
         $player3 = Player::factory()->create();
+        $player4 = Player::factory()->create();
 
         // Test different statuses
-        $statuses = ['pending', 'approved', 'rejected'];
+        $statuses = ['pending', 'approved', 'rejected', 'discarded'];
 
         foreach ($statuses as $index => $status) {
-            $player = [$this->player, $player2, $player3][$index];
+            $player = [$this->player, $player2, $player3, $player4][$index];
 
             $playerEligibilityData = [
                 'player_id' => $player->id_player,
-                'edition_id' => $this->edition->id_edition,
                 'review_status' => $status,
-                'notes' => "Status: {$status}",
+                'review_message' => "Status: {$status}",
             ];
 
             $response = $this->postJson('/api/v1/manager/player-eligibilities', $playerEligibilityData);
@@ -571,7 +583,6 @@ class PlayerEligibilityControllerTest extends TestCase
 
             $this->assertDatabaseHas('player_eligibilities', [
                 'player_id' => $player->id_player,
-                'edition_id' => $this->edition->id_edition,
                 'review_status' => $status,
             ]);
         }

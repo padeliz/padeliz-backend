@@ -112,14 +112,15 @@ class EditionParticipationController extends \App\Http\Controllers\BaseVersions\
         }
 
         // Create participation
+        $isStudent = (bool) ($eligibility->being_student ?? false);
         $participation = $edition->participations()->create([
             'edition_id' => $edition->id_edition,
             'player_id' => $request->user()->id_player,
             'division_id' => $editionDivision->division_id,
             'is_minor' => 0,
-            'is_student' => $eligibility->being_student,
+            'is_student' => $isStudent,
             'discount' => 0,
-            'payment' => $eligibility->being_student ? $edition->students_entry_fee : $edition->entry_fee,
+            'payment' => $isStudent ? $edition->students_entry_fee : $edition->entry_fee,
         ]);
 
         return $this->resourceResponse(

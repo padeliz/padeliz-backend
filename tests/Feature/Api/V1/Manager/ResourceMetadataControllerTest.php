@@ -558,7 +558,6 @@ class ResourceMetadataControllerTest extends TestCase
             'Division' => 'name',
             'Edition' => 'name',
             'Prize' => 'name',
-            'PlayerEligibility' => 'name',
         ];
 
         foreach ($modelsWithDisplayField as $modelName => $expectedDisplayField) {
@@ -581,6 +580,7 @@ class ResourceMetadataControllerTest extends TestCase
             'EditionParticipation',
             'EditionDivision',
             'PrizeFromClub',
+            'PlayerEligibility',
         ];
 
         foreach ($modelsWithNullDisplayField as $modelName) {
