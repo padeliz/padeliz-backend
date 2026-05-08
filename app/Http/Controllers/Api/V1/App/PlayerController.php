@@ -4,11 +4,15 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1\App;
 
+use App\Http\Requests\App\PlayerProfileImageUploadRequest;
 use App\Http\Requests\PlayerFormRequest;
 use App\Http\Resources\PlayerResource;
 use App\Models\Player;
+use App\Models\PlayerProfileImage;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * @OA\Tag(
@@ -194,7 +198,15 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
      *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
      *                 @OA\Schema(
      *                     @OA\Property(property="data", type="object",
-     *                         @OA\Property(property="urls", type="array", @OA\Items(type="string"))
+     *                         @OA\Property(
+     *                             property="uploaded_profile_images",
+     *                             type="array",
+     *                             @OA\Items(
+     *                                 type="object",
+     *                                 @OA\Property(property="id", type="integer"),
+     *                                 @OA\Property(property="url", type="string")
+     *                             )
+     *                         )
      *                     )
      *                 )
      *             }
@@ -207,38 +219,48 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
      *     )
      * )
      */
-    public function uploadImage(Request $request)
+    public function uploadImage(PlayerProfileImageUploadRequest $request)
     {
-        $request->validate([
-            'image' => [
-                'required',
-                'file',
-                'image',
-                'mimes:jpeg,jpg,png,gif,webp',
-                'max:5120', // 5MB max
-            ],
-        ], [
-            'image.required' => 'Please select an image to upload.',
-            'image.file' => 'The uploaded file is not valid.',
-            'image.image' => 'The file must be an image.',
-            'image.mimes' => 'The image must be a JPEG, PNG, GIF, or WebP file.',
-            'image.max' => 'The image size must not exceed 5MB.',
-        ]);
-
         /** @var Player $player */
         $player = $request->user();
-        $currentImages = $player->getUploadedFiles('images');
 
-        if (count($currentImages) >= 3) {
+        if ($player->profileImages()->count() >= PlayerProfileImage::MAX_PER_PLAYER) {
             return $this->errorResponse(
                 'Maximum number of profile images (3) reached. Delete an existing image first.',
                 422
             );
         }
 
+        $disk = config('filesystems.user_uploads_disk', 'public');
+        $storedPath = null;
+
         try {
-            $player->saveUploadedFile($request->file('image'), 'images');
-        } catch (\Exception $e) {
+            DB::beginTransaction();
+
+            $storedPath = Storage::disk($disk)->putFile(
+                'players/' . $player->getKey() . '/profile',
+                $request->file('image'),
+                ['visibility' => 'public']
+            );
+
+            if ($storedPath === false || $storedPath === null) {
+                throw new \RuntimeException('Could not store the uploaded file.');
+            }
+
+            PlayerProfileImage::create([
+                'player_id' => $player->id_player,
+                'path' => $storedPath,
+                'sort_order' => $player->profileImages()->count(),
+            ]);
+
+            DB::commit();
+        } catch (\Throwable $e) {
+            DB::rollBack();
+
+            if ($storedPath !== null && $storedPath !== false) {
+                Storage::disk($disk)->delete($storedPath);
+            }
+
             Log::error('PlayerController::uploadImage - Error uploading file', [
                 'player_id' => $player->id_player,
                 'error' => $e->getMessage(),
@@ -253,22 +275,31 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
             );
         }
 
+        $player->load('profileImages');
+
         return $this->successResponse([
-            'urls' => $player->getUploadedUrls('images'),
+            'uploaded_profile_images' => $player->profileImages
+                ->map(static fn (PlayerProfileImage $img) => [
+                    'id' => $img->id,
+                    'url' => $img->url,
+                ])
+                ->values()
+                ->all(),
         ], 'Image uploaded successfully', 201);
     }
 
     /**
      * @OA\Delete(
-     *     path="/api/v1/app/players/image/{filename}",
+     *     path="/api/v1/app/players/image/{playerProfileImage}",
      *     summary="Delete a profile image",
      *     tags={"🐥 App: Players"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(
-     *         name="filename",
+     *         name="playerProfileImage",
      *         in="path",
      *         required=true,
-     *         @OA\Schema(type="string")
+     *         description="player_profile_images.id",
+     *         @OA\Schema(type="integer")
      *     ),
      *     @OA\Response(
      *         response=200,
@@ -278,11 +309,24 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
      *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
      *                 @OA\Schema(
      *                     @OA\Property(property="data", type="object",
-     *                         @OA\Property(property="urls", type="array", @OA\Items(type="string"))
+     *                         @OA\Property(
+     *                             property="uploaded_profile_images",
+     *                             type="array",
+     *                             @OA\Items(
+     *                                 type="object",
+     *                                 @OA\Property(property="id", type="integer"),
+     *                                 @OA\Property(property="url", type="string")
+     *                             )
+     *                         )
      *                     )
      *                 )
      *             }
      *         )
+     *     ),
+     *     @OA\Response(
+     *         response=403,
+     *         description="Not allowed to delete another player's image",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     ),
      *     @OA\Response(
      *         response=404,
@@ -291,17 +335,27 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
      *     )
      * )
      */
-    public function deleteImage(Request $request, string $filename)
+    public function deleteImage(Request $request, PlayerProfileImage $playerProfileImage)
     {
         /** @var Player $player */
         $player = $request->user();
 
-        if (! $player->deleteUploadedFile($filename, 'images')) {
-            return $this->notFoundResponse('Image not found');
+        if ($player->id_player !== $playerProfileImage->player_id) {
+            return $this->forbiddenResponse('You can only delete your own profile images.');
         }
 
+        $playerProfileImage->delete();
+
+        $player->load('profileImages');
+
         return $this->successResponse([
-            'urls' => $player->getUploadedUrls('images'),
+            'uploaded_profile_images' => $player->profileImages
+                ->map(static fn (PlayerProfileImage $img) => [
+                    'id' => $img->id,
+                    'url' => $img->url,
+                ])
+                ->values()
+                ->all(),
         ], 'Image deleted successfully');
     }
 }

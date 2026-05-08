@@ -56,7 +56,8 @@ Route::prefix('v1')->group(function () {
             Route::get('{player}', [\App\Http\Controllers\Api\V1\App\PlayerController::class, 'show']);
             Route::put('{player}', [\App\Http\Controllers\Api\V1\App\PlayerController::class, 'update']);
             Route::post('image', [\App\Http\Controllers\Api\V1\App\PlayerController::class, 'uploadImage']);
-            Route::delete('image/{filename}', [\App\Http\Controllers\Api\V1\App\PlayerController::class, 'deleteImage']);
+            Route::delete('image/{playerProfileImage}', [\App\Http\Controllers\Api\V1\App\PlayerController::class, 'deleteImage'])
+                ->whereNumber('playerProfileImage');
         });
 
         // Player participation
@@ -69,6 +70,12 @@ Route::prefix('v1')->group(function () {
             Route::get('status', [\App\Http\Controllers\Api\V1\App\MyEligibilityController::class, 'status']);
             Route::get('approved', [\App\Http\Controllers\Api\V1\App\MyEligibilityController::class, 'approved']);
             Route::get('latest', [\App\Http\Controllers\Api\V1\App\MyEligibilityController::class, 'latest']);
+            Route::post('pending/student-proof', [\App\Http\Controllers\Api\V1\App\MyEligibilityUploadController::class, 'storeStudentProof']);
+            Route::delete('pending/student-proof/{eligibilityStudentProof}', [\App\Http\Controllers\Api\V1\App\MyEligibilityUploadController::class, 'destroyStudentProof'])
+                ->whereNumber('eligibilityStudentProof');
+            Route::post('pending/portrait-photo', [\App\Http\Controllers\Api\V1\App\MyEligibilityUploadController::class, 'storePortraitPhoto']);
+            Route::delete('pending/portrait-photo/{eligibilityPortraitPhoto}', [\App\Http\Controllers\Api\V1\App\MyEligibilityUploadController::class, 'destroyPortraitPhoto'])
+                ->whereNumber('eligibilityPortraitPhoto');
             Route::patch('pending', [\App\Http\Controllers\Api\V1\App\MyEligibilityController::class, 'pending']);
             Route::post('discard', [\App\Http\Controllers\Api\V1\App\MyEligibilityController::class, 'discard']);
         });
@@ -205,15 +212,15 @@ Route::prefix('v1')->group(function () {
             Route::delete('{editionParticipation}', [\App\Http\Controllers\Api\V1\Manager\EditionParticipationController::class, 'destroy']);
         });
 
-        // Player eligibility management
-        Route::prefix('player-eligibilities')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\PlayerEligibilityController::class, 'index']);
-            Route::get('{playerEligibility}', [\App\Http\Controllers\Api\V1\Manager\PlayerEligibilityController::class, 'show']);
-            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\PlayerEligibilityController::class, 'store']);
-            Route::put('{playerEligibility}', [\App\Http\Controllers\Api\V1\Manager\PlayerEligibilityController::class, 'update']);
-            Route::patch('{playerEligibility}', [\App\Http\Controllers\Api\V1\Manager\PlayerEligibilityController::class, 'patch']);
-            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\PlayerEligibilityController::class, 'bulkDestroy']);
-            Route::delete('{playerEligibility}', [\App\Http\Controllers\Api\V1\Manager\PlayerEligibilityController::class, 'destroy']);
+        // Eligibility management
+        Route::prefix('eligibilities')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'index']);
+            Route::get('{playerEligibility}', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'store']);
+            Route::put('{playerEligibility}', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'update']);
+            Route::patch('{playerEligibility}', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'patch']);
+            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'bulkDestroy']);
+            Route::delete('{playerEligibility}', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'destroy']);
         });
 
         // Matches teams management

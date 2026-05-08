@@ -7,10 +7,11 @@ namespace App\Models;
 use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @OA\Schema(
- *     schema="PlayerEligibility",
+ *     schema="Eligibility",
  *     required={"player_id", "submitted_at", "review_status"},
  *     @OA\Property(
  *         property="id_eligibility",
@@ -76,9 +77,29 @@ use Illuminate\Database\Eloquent\Model;
  *         nullable=true
  *     ),
  *     @OA\Property(property="submitted_at", type="integer", format="timestamp"),
+ *     @OA\Property(
+ *         property="student_proofs",
+ *         type="array",
+ *         @OA\Items(
+ *             type="object",
+ *             @OA\Property(property="id", type="integer"),
+ *             @OA\Property(property="url", type="string")
+ *         ),
+ *         description="Student proof files (id and public URL)"
+ *     ),
+ *     @OA\Property(
+ *         property="portrait_photos",
+ *         type="array",
+ *         @OA\Items(
+ *             type="object",
+ *             @OA\Property(property="id", type="integer"),
+ *             @OA\Property(property="url", type="string")
+ *         ),
+ *         description="Portrait photos for eligibility (id and public URL)"
+ *     ),
  * )
  */
-class PlayerEligibility extends Model
+class Eligibility extends Model
 {
     use HasFactory;
     use HasResourceMetadata;
@@ -132,7 +153,7 @@ class PlayerEligibility extends Model
      */
     public static ?string $displayField = null;
 
-    protected $table = 'player_eligibilities';
+    protected $table = 'eligibilities';
 
     protected $primaryKey = 'id_eligibility';
 
@@ -189,6 +210,20 @@ class PlayerEligibility extends Model
     public function player()
     {
         return $this->belongsTo(Player::class, 'player_id', 'id_player');
+    }
+
+    public function studentProofs(): HasMany
+    {
+        return $this->hasMany(EligibilityStudentProof::class, 'eligibility_id', 'id_eligibility')
+            ->orderBy('sort_order')
+            ->orderBy('id');
+    }
+
+    public function portraitPhotos(): HasMany
+    {
+        return $this->hasMany(EligibilityPortraitPhoto::class, 'eligibility_id', 'id_eligibility')
+            ->orderBy('sort_order')
+            ->orderBy('id');
     }
 
     public function recomputeReadyForReview(): void

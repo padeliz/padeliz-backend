@@ -82,6 +82,16 @@ return new class () extends Migration {
             $table->integer('updated_at')->nullable();
         });
 
+        Schema::create('player_profile_images', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('player_id')->constrained('players', 'id_player')->cascadeOnDelete();
+            $table->string('path', 512);
+            $table->unsignedTinyInteger('sort_order');
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
+            $table->index('player_id', 'player_profile_images_player_id_idx');
+        });
+
         Schema::create('edition_divisions', function (Blueprint $table) {
             $table->id('id_edition_division');
             $table->foreignId('edition_id')->constrained('editions', 'id_edition');
@@ -181,8 +191,8 @@ return new class () extends Migration {
             $table->mediumText('message_en');
         });
 
-        // Player eligibilities (final redesigned schema)
-        Schema::create('player_eligibilities', function (Blueprint $table) {
+        // Eligibilities (player eligibility submissions and review state)
+        Schema::create('eligibilities', function (Blueprint $table) {
             $table->id('id_eligibility');
             $table->foreignId('player_id')->constrained('players', 'id_player')->index();
 
@@ -219,26 +229,49 @@ return new class () extends Migration {
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
 
-            $table->index(['player_id', 'review_status'], 'player_eligibilities_player_status_idx');
+            $table->index(['player_id', 'review_status'], 'eligibilities_player_status_idx');
         });
 
         // Enforce: at most one pending eligibility per player (DB-level).
         // Uses a generated column so only rows with review_status='pending' participate in uniqueness.
         $prefix = DB::getTablePrefix();
         DB::statement(
-            "ALTER TABLE `{$prefix}player_eligibilities` " .
-            "ADD COLUMN `pending_player_id` BIGINT UNSIGNED " .
+            "ALTER TABLE `{$prefix}eligibilities` " .
+            'ADD COLUMN `pending_player_id` BIGINT UNSIGNED ' .
             "GENERATED ALWAYS AS (CASE WHEN `review_status` = 'pending' THEN `player_id` ELSE NULL END) STORED"
         );
         DB::statement(
-            "CREATE UNIQUE INDEX `player_eligibilities_one_pending_per_player` " .
-            "ON `{$prefix}player_eligibilities` (`pending_player_id`)"
+            'CREATE UNIQUE INDEX `eligibilities_one_pending_per_player` ' .
+            "ON `{$prefix}eligibilities` (`pending_player_id`)"
         );
+
+        Schema::create('eligibility_student_proofs', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('eligibility_id')->constrained('eligibilities', 'id_eligibility')->cascadeOnDelete();
+            $table->string('path', 512);
+            $table->unsignedTinyInteger('sort_order');
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
+            $table->index('eligibility_id', 'eligibility_student_proofs_eligibility_id_idx');
+        });
+
+        Schema::create('eligibility_portrait_photos', function (Blueprint $table) {
+            $table->id();
+            $table->foreignId('eligibility_id')->constrained('eligibilities', 'id_eligibility')->cascadeOnDelete();
+            $table->string('path', 512);
+            $table->unsignedTinyInteger('sort_order');
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
+            $table->index('eligibility_id', 'eligibility_portrait_photos_eligibility_id_idx');
+        });
     }
 
     public function down(): void
     {
-        Schema::dropIfExists('player_eligibilities');
+        Schema::dropIfExists('eligibility_portrait_photos');
+        Schema::dropIfExists('eligibility_student_proofs');
+        Schema::dropIfExists('player_profile_images');
+        Schema::dropIfExists('eligibilities');
         Schema::dropIfExists('validations_site');
         Schema::dropIfExists('matches_teams');
         Schema::dropIfExists('edition_lucky_ones');
@@ -254,4 +287,3 @@ return new class () extends Migration {
         Schema::dropIfExists('clubs');
     }
 };
-

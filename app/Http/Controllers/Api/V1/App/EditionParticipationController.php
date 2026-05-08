@@ -7,7 +7,7 @@ namespace App\Http\Controllers\Api\V1\App;
 use App\Http\Resources\EditionParticipationResource;
 use App\Models\Edition;
 use App\Models\EditionDivision;
-use App\Models\PlayerEligibility;
+use App\Models\Eligibility;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -70,7 +70,7 @@ class EditionParticipationController extends \App\Http\Controllers\BaseVersions\
         }
 
         // Check if player has approved eligibility
-        $eligibility = PlayerEligibility::where('player_id', $request->user()->id_player)
+        $eligibility = Eligibility::where('player_id', $request->user()->id_player)
             ->where('review_status', 'approved')
             ->first();
 

@@ -66,6 +66,16 @@ ___
     - *generating application key*
     - *running database migrations*
     - *setting up the development environment*
+
+6. **Expose uploaded files (user uploads)**
+
+   User-uploaded files (profile photos, documents, etc.) use the disk named by `USER_UPLOADS_DISK` (default `public`, i.e. `storage/app/public`). Create the web symlink once per environment:
+
+   ```bash
+   php artisan storage:link
+   ```
+
+   For S3 later, set `USER_UPLOADS_DISK=s3` in `.env` and configure the `s3` disk; database rows keep paths relative to that disk (profile photos, eligibility documents, etc.).
 ___
 
 

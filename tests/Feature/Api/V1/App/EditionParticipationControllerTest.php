@@ -7,8 +7,8 @@ namespace Tests\Feature\Api\V1\App;
 use App\Models\Division;
 use App\Models\Edition;
 use App\Models\EditionDivision;
+use App\Models\Eligibility;
 use App\Models\Player;
-use App\Models\PlayerEligibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -41,7 +41,7 @@ class EditionParticipationControllerTest extends TestCase
         ]);
 
         // Create approved eligibility for the player
-        PlayerEligibility::factory()->create([
+        Eligibility::factory()->create([
             'player_id' => $this->player->id_player,
             'review_status' => 'approved',
         ]);

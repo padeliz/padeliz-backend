@@ -57,47 +57,4 @@ trait FileUploadTestHelper
             true
         );
     }
-
-    /**
-     * Setup file storage for testing
-     */
-    protected function setupFileStorage(): void
-    {
-        // Create uploads directory structure
-        $uploadsPath = config('uploads.base_path');
-        if (! file_exists($uploadsPath)) {
-            mkdir($uploadsPath, 0755, true);
-        }
-    }
-
-    /**
-     * Clean up uploaded files after test
-     */
-    protected function cleanupUploadedFiles(): void
-    {
-        $uploadsPath = config('uploads.base_path');
-        if (file_exists($uploadsPath)) {
-            $this->recursiveDelete($uploadsPath);
-        }
-    }
-
-    /**
-     * Recursively delete directory
-     */
-    private function recursiveDelete(string $dir): void
-    {
-        if (is_dir($dir)) {
-            $objects = scandir($dir);
-            foreach ($objects as $object) {
-                if ($object != '.' && $object != '..') {
-                    if (is_dir($dir . '/' . $object)) {
-                        $this->recursiveDelete($dir . '/' . $object);
-                    } else {
-                        unlink($dir . '/' . $object);
-                    }
-                }
-            }
-            rmdir($dir);
-        }
-    }
 }

@@ -5,12 +5,12 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Models\Player;
-use App\Models\PlayerEligibility;
+use App\Models\Eligibility;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-class PlayerEligibilityFactory extends Factory
+class EligibilityFactory extends Factory
 {
-    protected $model = PlayerEligibility::class;
+    protected $model = Eligibility::class;
 
     public function definition()
     {
@@ -70,5 +70,17 @@ class PlayerEligibilityFactory extends Factory
                 'review_message' => $this->faker->sentence(),
             ];
         });
+    }
+
+    /**
+     * Pending review (player may upload documents).
+     */
+    public function pending(): self
+    {
+        return $this->state(fn () => [
+            'review_status' => 'pending',
+            'reviewed_at' => null,
+            'review_message' => null,
+        ]);
     }
 }

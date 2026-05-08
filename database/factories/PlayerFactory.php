@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Models\Player;
+use App\Models\PlayerProfileImage;
 use Illuminate\Database\Eloquent\Factories\Factory;
-use Illuminate\Support\Facades\File;
+use Illuminate\Support\Facades\Storage;
+use Illuminate\Support\Str;
 
 class PlayerFactory extends Factory
 {
@@ -48,23 +50,18 @@ class PlayerFactory extends Factory
                 return;
             }
 
-            // Create between 0 and 3 profile images
-            $numImages = rand(0, 3);
-
-            if ($numImages > 0) {
-                // Create profile directory
-                $profilePath = $player->getUploadPath('images');
-                File::makeDirectory($profilePath, 0755, true, true);
-            }
+            $disk = config('filesystems.user_uploads_disk', 'public');
+            $numImages = \random_int(0, PlayerProfileImage::MAX_PER_PLAYER);
 
             for ($i = 0; $i < $numImages; $i++) {
-                $profileUrl = 'https://i.pravatar.cc/300?u=' . $player->id_player . '-' . $i;
-                $newProfilePath = $profilePath . '/image-' . strtolower(str_replace(' ', '-', $player->name)) . '-' . $i . '.jpg';
+                $relativePath = 'players/' . $player->getKey() . '/profile/' . Str::uuid()->toString() . '.jpg';
+                Storage::disk($disk)->put($relativePath, ' ', ['visibility' => 'public']);
 
-                $imageContent = file_get_contents($profileUrl);
-                if ($imageContent !== false) {
-                    File::put($newProfilePath, $imageContent);
-                }
+                PlayerProfileImage::create([
+                    'player_id' => $player->id_player,
+                    'path' => $relativePath,
+                    'sort_order' => $i,
+                ]);
             }
         });
     }

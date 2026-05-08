@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\PlayerProfileImage;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -37,7 +38,13 @@ class PlayerResource extends JsonResource
             'facebook_username' => $this->facebook_username,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
-            'uploaded_profile_urls' => $this->uploaded_profile_urls,
+            'uploaded_profile_images' => $this->profileImages
+                ->map(static fn (PlayerProfileImage $img) => [
+                    'id' => $img->id,
+                    'url' => $img->url,
+                ])
+                ->values()
+                ->all(),
             'participations' => $this->whenLoaded('participations', function () {
                 return EditionParticipationResource::collection($this->participations);
             }),

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\HasResourceMetadata;
-use App\Traits\HasUploadedFiles;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
 
@@ -170,11 +170,15 @@ use Laravel\Sanctum\HasApiTokens;
  *         description="Timestamp when the player was last updated"
  *     ),
  *     @OA\Property(
- *         property="uploaded_profile_urls",
+ *         property="uploaded_profile_images",
  *         type="array",
- *         @OA\Items(type="string"),
+ *         @OA\Items(
+ *             type="object",
+ *             @OA\Property(property="id", type="integer"),
+ *             @OA\Property(property="url", type="string")
+ *         ),
  *         title="Profile Images",
- *         description="Array of uploaded profile image URLs"
+ *         description="Uploaded profile images (id and public URL)"
  *     ),
  *     @OA\Property(
  *         property="participations",
@@ -189,8 +193,16 @@ class Player extends Authenticatable
 {
     use HasFactory;
     use HasApiTokens;
-    use HasUploadedFiles;
     use HasResourceMetadata;
+
+    /**
+     * Eager-load profile images wherever players are serialized (bounded, max 3 per player).
+     *
+     * @var list<string>
+     */
+    protected $with = [
+        'profileImages',
+    ];
 
     /**
      * Fields that can be searched
@@ -270,8 +282,6 @@ class Player extends Authenticatable
         'remember_token',
     ];
 
-    protected $appends = ['uploaded_profile_urls'];
-
     /**
      * The attributes that should be cast.
      *
@@ -291,9 +301,11 @@ class Player extends Authenticatable
         return $this->hasMany(EditionParticipation::class, 'player_id');
     }
 
-    public function getUploadedProfileUrlsAttribute(): array
+    public function profileImages(): HasMany
     {
-        return $this->getUploadedUrls('images');
+        return $this->hasMany(PlayerProfileImage::class, 'player_id', 'id_player')
+            ->orderBy('sort_order')
+            ->orderBy('id');
     }
 
     /**

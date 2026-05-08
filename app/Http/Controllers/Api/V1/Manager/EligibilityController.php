@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
-use App\Http\Resources\PlayerEligibilityResource;
-use App\Models\PlayerEligibility;
+use App\Http\Resources\EligibilityResource;
+use App\Models\Eligibility;
 use Illuminate\Http\Request;
 
 /**
@@ -15,11 +15,11 @@ use Illuminate\Http\Request;
  *     description="(v1) Player eligibility management and operations"
  * )
  */
-class PlayerEligibilityController extends V1BaseController
+class EligibilityController extends V1BaseController
 {
     /**
      * @OA\Get(
-     *     path="/api/v1/manager/player-eligibilities",
+     *     path="/api/v1/manager/eligibilities",
      *     summary="Get all eligibility records",
      *     tags={"🐧 Manager: Player Eligibilities"},
      *     security={{"sanctum":{}}},
@@ -92,7 +92,7 @@ class PlayerEligibilityController extends V1BaseController
      *                     @OA\Property(
      *                         property="data",
      *                         type="array",
-     *                         @OA\Items(ref="#/components/schemas/PlayerEligibility")
+     *                         @OA\Items(ref="#/components/schemas/Eligibility")
      *                     )
      *                 )
      *             }
@@ -117,15 +117,15 @@ class PlayerEligibilityController extends V1BaseController
      */
     public function index(Request $request)
     {
-        $query = PlayerEligibility::with(['player']);
+        $query = Eligibility::with(['player', 'studentProofs', 'portraitPhotos']);
 
         // Apply advanced pagination
         $this->applyAdvancedPagination(
             $query,
             $request,
-            PlayerEligibility::$searchableFields,
-            PlayerEligibility::$filterableFields,
-            PlayerEligibility::$sortableFields
+            Eligibility::$searchableFields,
+            Eligibility::$filterableFields,
+            Eligibility::$sortableFields
         );
 
         // Get pagination parameters
@@ -138,12 +138,12 @@ class PlayerEligibilityController extends V1BaseController
 
         $eligibilities = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
-        return PlayerEligibilityResource::collection($eligibilities);
+        return EligibilityResource::collection($eligibilities);
     }
 
     /**
      * @OA\Get(
-     *     path="/api/v1/manager/player-eligibilities/{playerEligibility}",
+     *     path="/api/v1/manager/eligibilities/{playerEligibility}",
      *     summary="Get eligibility details",
      *     tags={"🐧 Manager: Player Eligibilities"},
      *     security={{"sanctum":{}}},
@@ -160,7 +160,7 @@ class PlayerEligibilityController extends V1BaseController
      *             allOf={
      *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
      *                 @OA\Schema(
-     *                     @OA\Property(property="data", ref="#/components/schemas/PlayerEligibility")
+     *                     @OA\Property(property="data", ref="#/components/schemas/Eligibility")
      *                 )
      *             }
      *         )
@@ -187,19 +187,19 @@ class PlayerEligibilityController extends V1BaseController
      *     )
      * )
      */
-    public function show(PlayerEligibility $playerEligibility)
+    public function show(Eligibility $playerEligibility)
     {
-        $playerEligibility->load('player');
+        $playerEligibility->load(['player', 'studentProofs', 'portraitPhotos']);
 
         return $this->resourceResponse(
-            new PlayerEligibilityResource($playerEligibility),
+            new EligibilityResource($playerEligibility),
             'Eligibility details retrieved successfully'
         );
     }
 
     /**
      * @OA\Post(
-     *     path="/api/v1/manager/player-eligibilities",
+     *     path="/api/v1/manager/eligibilities",
      *     summary="Create a new eligibility record",
      *     tags={"🐧 Manager: Player Eligibilities"},
      *     security={{"sanctum":{}}},
@@ -220,7 +220,7 @@ class PlayerEligibilityController extends V1BaseController
      *             allOf={
      *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
      *                 @OA\Schema(
-     *                     @OA\Property(property="data", ref="#/components/schemas/PlayerEligibility")
+     *                     @OA\Property(property="data", ref="#/components/schemas/Eligibility")
      *                 )
      *             }
      *         )
@@ -258,7 +258,7 @@ class PlayerEligibilityController extends V1BaseController
         $now = time();
 
         if ($validated['review_status'] === 'pending') {
-            $hasPending = PlayerEligibility::where('player_id', $validated['player_id'])
+            $hasPending = Eligibility::where('player_id', $validated['player_id'])
                 ->where('review_status', 'pending')
                 ->exists();
             if ($hasPending) {
@@ -266,7 +266,7 @@ class PlayerEligibilityController extends V1BaseController
             }
         }
 
-        $playerEligibility = PlayerEligibility::create([
+        $eligibility = Eligibility::create([
             'player_id' => $validated['player_id'],
             'review_status' => $validated['review_status'],
             'review_message' => $validated['review_message'] ?? null,
@@ -276,10 +276,10 @@ class PlayerEligibilityController extends V1BaseController
             'reviewed_at' => in_array($validated['review_status'], ['approved', 'rejected'], true) ? $now : null,
             'ready_for_review' => 0,
         ]);
-        $playerEligibility->load('player');
+        $eligibility->load(['player', 'studentProofs', 'portraitPhotos']);
 
         return $this->resourceResponse(
-            new PlayerEligibilityResource($playerEligibility),
+            new EligibilityResource($eligibility),
             'Eligibility created successfully',
             201
         );
@@ -287,7 +287,7 @@ class PlayerEligibilityController extends V1BaseController
 
     /**
      * @OA\Put(
-     *     path="/api/v1/manager/player-eligibilities/{playerEligibility}",
+     *     path="/api/v1/manager/eligibilities/{playerEligibility}",
      *     summary="Update eligibility status (complete replacement)",
      *     tags={"🐧 Manager: Player Eligibilities"},
      *     security={{"sanctum":{}}},
@@ -312,7 +312,7 @@ class PlayerEligibilityController extends V1BaseController
      *             allOf={
      *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
      *                 @OA\Schema(
-     *                     @OA\Property(property="data", ref="#/components/schemas/PlayerEligibility")
+     *                     @OA\Property(property="data", ref="#/components/schemas/Eligibility")
      *                 )
      *             }
      *         )
@@ -344,7 +344,7 @@ class PlayerEligibilityController extends V1BaseController
      *     )
      * )
      */
-    public function update(Request $request, PlayerEligibility $playerEligibility)
+    public function update(Request $request, Eligibility $playerEligibility)
     {
         $request->validate([
             'review_status' => 'required|in:approved,rejected,pending,discarded',
@@ -354,7 +354,7 @@ class PlayerEligibilityController extends V1BaseController
         $now = time();
 
         if ($request->review_status === 'pending') {
-            $hasOtherPending = PlayerEligibility::where('player_id', $playerEligibility->player_id)
+            $hasOtherPending = Eligibility::where('player_id', $playerEligibility->player_id)
                 ->where('review_status', 'pending')
                 ->where('id_eligibility', '!=', $playerEligibility->id_eligibility)
                 ->exists();
@@ -370,15 +370,17 @@ class PlayerEligibilityController extends V1BaseController
             'updated_at' => $now,
         ]);
 
+        $playerEligibility->load(['player', 'studentProofs', 'portraitPhotos']);
+
         return $this->resourceResponse(
-            new PlayerEligibilityResource($playerEligibility),
+            new EligibilityResource($playerEligibility),
             'Eligibility updated successfully'
         );
     }
 
     /**
      * @OA\Patch(
-     *     path="/api/v1/manager/player-eligibilities/{playerEligibility}",
+     *     path="/api/v1/manager/eligibilities/{playerEligibility}",
      *     summary="Partially update eligibility status",
      *     tags={"🐧 Manager: Player Eligibilities"},
      *     security={{"sanctum":{}}},
@@ -402,7 +404,7 @@ class PlayerEligibilityController extends V1BaseController
      *             allOf={
      *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
      *                 @OA\Schema(
-     *                     @OA\Property(property="data", ref="#/components/schemas/PlayerEligibility")
+     *                     @OA\Property(property="data", ref="#/components/schemas/Eligibility")
      *                 )
      *             }
      *         )
@@ -434,7 +436,7 @@ class PlayerEligibilityController extends V1BaseController
      *     )
      * )
      */
-    public function patch(Request $request, PlayerEligibility $playerEligibility)
+    public function patch(Request $request, Eligibility $playerEligibility)
     {
         $request->validate([
             'review_status' => 'sometimes|in:approved,rejected,pending,discarded',
@@ -444,7 +446,7 @@ class PlayerEligibilityController extends V1BaseController
         $now = time();
 
         if ($request->has('review_status') && $request->review_status === 'pending') {
-            $hasOtherPending = PlayerEligibility::where('player_id', $playerEligibility->player_id)
+            $hasOtherPending = Eligibility::where('player_id', $playerEligibility->player_id)
                 ->where('review_status', 'pending')
                 ->where('id_eligibility', '!=', $playerEligibility->id_eligibility)
                 ->exists();
@@ -466,15 +468,17 @@ class PlayerEligibilityController extends V1BaseController
 
         $playerEligibility->update($updates);
 
+        $playerEligibility->load(['player', 'studentProofs', 'portraitPhotos']);
+
         return $this->resourceResponse(
-            new PlayerEligibilityResource($playerEligibility),
+            new EligibilityResource($playerEligibility),
             'Eligibility partially updated successfully'
         );
     }
 
     /**
      * @OA\Delete(
-     *     path="/api/v1/manager/player-eligibilities/{playerEligibility}",
+     *     path="/api/v1/manager/eligibilities/{playerEligibility}",
      *     summary="Delete an eligibility record",
      *     tags={"🐧 Manager: Player Eligibilities"},
      *     security={{"sanctum":{}}},
@@ -516,9 +520,9 @@ class PlayerEligibilityController extends V1BaseController
      *     )
      * )
      */
-    public function destroy(PlayerEligibility $playerEligibility)
+    public function destroy(Eligibility $playerEligibility)
     {
-        // PlayerEligibility has no relationships that would prevent deletion
+        // Eligibility has no relationships that would prevent deletion
         $linkedDataRelations = [];
 
         return $this->deleteResourceWithResponse(
@@ -531,7 +535,7 @@ class PlayerEligibilityController extends V1BaseController
 
     /**
      * @OA\Delete(
-     *     path="/api/v1/manager/eligibility/bulk",
+     *     path="/api/v1/manager/eligibilities/bulk",
      *     summary="Bulk delete eligibility records",
      *     tags={"🐧 Manager: Player Eligibilities"},
      *     security={{"sanctum":{}}},
@@ -602,12 +606,12 @@ class PlayerEligibilityController extends V1BaseController
             'eligibility_ids.*' => 'integer',
         ]);
 
-        // PlayerEligibility has no relationships that would prevent deletion
+        // Eligibility has no relationships that would prevent deletion
         $linkedDataRelations = [];
 
         return $this->deleteBulkResourcesWithResponse(
             $request->eligibility_ids,
-            PlayerEligibility::class,
+            Eligibility::class,
             $linkedDataRelations,
             'eligibility',
             'Eligibilities deleted successfully'

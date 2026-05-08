@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\App;
 
 use App\Models\Player;
+use App\Models\PlayerProfileImage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\Helpers\FileUploadTestHelper;
 use Tests\TestCase;
@@ -16,12 +18,12 @@ class PlayerControllerTest extends TestCase
     use RefreshDatabase;
     use FileUploadTestHelper;
 
-    private $player;
+    private Player $player;
 
     public function setUp(): void
     {
         parent::setUp();
-        $this->setupFileStorage();
+        Storage::fake(config('filesystems.user_uploads_disk', 'public'));
 
         $this->player = Player::factory()->playerOnly()->create([
             'name' => 'Test Player',
@@ -32,12 +34,6 @@ class PlayerControllerTest extends TestCase
             'google_avatar' => 'https://example.com/avatar.jpg',
             'user_types' => ['player'],
         ]);
-    }
-
-    public function tearDown(): void
-    {
-        $this->cleanupUploadedFiles();
-        parent::tearDown();
     }
 
     public function test_player_can_store_profile()
@@ -54,14 +50,14 @@ class PlayerControllerTest extends TestCase
 
         $response->assertStatus(201)
             ->assertJsonStructure([
-            'success',
-            'message',
-            'data' => [
-                'id_player',
-                'name',
-                'phone',
-                'skill_division',
-                'being_student',
+                'success',
+                'message',
+                'data' => [
+                    'id_player',
+                    'name',
+                    'phone',
+                    'skill_division',
+                    'being_student',
                 ],
             ])
             ->assertJson([
@@ -89,17 +85,17 @@ class PlayerControllerTest extends TestCase
                 'message',
                 'data' => [
                     'id_player',
-                'name',
-                'uploaded_profile_urls',
+                    'name',
+                    'uploaded_profile_images',
                 ],
             ])
             ->assertJson([
-            'success' => true,
-            'message' => 'Player details retrieved successfully',
-            'data' => [
-                'id_player' => $this->player->id_player,
-                'name' => 'Test Player',
-            ],
+                'success' => true,
+                'message' => 'Player details retrieved successfully',
+                'data' => [
+                    'id_player' => $this->player->id_player,
+                    'name' => 'Test Player',
+                ],
             ]);
     }
 
@@ -123,13 +119,13 @@ class PlayerControllerTest extends TestCase
                 ],
             ])
             ->assertJson([
-            'success' => true,
-            'message' => 'Player profile updated successfully',
-            'data' => [
-                'id_player' => $this->player->id_player,
-                'name' => 'Updated Player Name',
-                'skill_division' => 3.5,
-            ],
+                'success' => true,
+                'message' => 'Player profile updated successfully',
+                'data' => [
+                    'id_player' => $this->player->id_player,
+                    'name' => 'Updated Player Name',
+                    'skill_division' => 3.5,
+                ],
             ]);
     }
 
@@ -154,12 +150,12 @@ class PlayerControllerTest extends TestCase
                 ],
             ])
             ->assertJson([
-            'success' => true,
-            'message' => 'Player details retrieved successfully',
-            'data' => [
-                'id_player' => $otherPlayer->id_player,
-                'name' => 'Other Player',
-            ],
+                'success' => true,
+                'message' => 'Player details retrieved successfully',
+                'data' => [
+                    'id_player' => $otherPlayer->id_player,
+                    'name' => 'Other Player',
+                ],
             ]);
     }
 
@@ -169,16 +165,16 @@ class PlayerControllerTest extends TestCase
 
         $file = $this->createFakeImage('profile.png');
 
-        $response = $this->postJson('/api/v1/app/players/image', [
+        $response = $this->post('/api/v1/app/players/image', [
             'image' => $file,
         ]);
 
         $response->assertStatus(201)
             ->assertJsonStructure([
-            'success',
+                'success',
                 'message',
                 'data' => [
-                    'urls',
+                    'uploaded_profile_images',
                 ],
             ])
             ->assertJson([
@@ -186,73 +182,48 @@ class PlayerControllerTest extends TestCase
                 'message' => 'Image uploaded successfully',
             ]);
 
-        // Check that the file was actually saved
-        $this->assertNotEmpty($response->json('data.urls'));
+        $data = $response->json('data.uploaded_profile_images');
+        $this->assertNotEmpty($data);
+        $this->assertArrayHasKey('id', $data[0]);
+        $this->assertArrayHasKey('url', $data[0]);
 
-        // Verify the file exists in the expected location
-        $uploadPath = $this->player->getUploadPath('images');
-        $this->assertTrue(file_exists($uploadPath));
-
-        $files = $this->player->getUploadedFiles('images');
-        $this->assertCount(1, $files);
+        $this->assertDatabaseHas('player_profile_images', [
+            'player_id' => $this->player->id_player,
+        ]);
     }
 
     public function test_player_can_upload_multiple_profile_images()
     {
         Sanctum::actingAs($this->player);
 
-        // Upload first image
         $file1 = $this->createFakeImage('profile1.png');
-        $response1 = $this->postJson('/api/v1/app/players/image', [
-            'image' => $file1,
-        ]);
+        $response1 = $this->post('/api/v1/app/players/image', ['image' => $file1]);
         $response1->assertStatus(201);
 
-        // Upload second image
         $file2 = $this->createFakeImage('profile2.png');
-        $response2 = $this->postJson('/api/v1/app/players/image', [
-            'image' => $file2,
-        ]);
+        $response2 = $this->post('/api/v1/app/players/image', ['image' => $file2]);
         $response2->assertStatus(201);
 
-        // Upload third image
         $file3 = $this->createFakeImage('profile3.png');
-        $response3 = $this->postJson('/api/v1/app/players/image', [
-            'image' => $file3,
-        ]);
+        $response3 = $this->post('/api/v1/app/players/image', ['image' => $file3]);
         $response3->assertStatus(201);
 
-        // Check that we have 3 images
-        $files = $this->player->getUploadedFiles('images');
-        $this->assertCount(3, $files);
+        $this->assertSame(3, PlayerProfileImage::where('player_id', $this->player->id_player)->count());
     }
 
     public function test_player_cannot_upload_more_than_three_images()
     {
         Sanctum::actingAs($this->player);
 
-        // Upload 3 images first - ensure each upload completes successfully
         for ($i = 1; $i <= 3; $i++) {
             $file = $this->createFakeImage("profile{$i}.png");
-            $response = $this->postJson('/api/v1/app/players/image', [
-                'image' => $file,
-            ]);
+            $response = $this->post('/api/v1/app/players/image', ['image' => $file]);
             $response->assertStatus(201);
-
-            // Verify the image was actually uploaded
-            $files = $this->player->getUploadedFiles('images');
-            $this->assertCount($i, $files, "Should have {$i} images after upload {$i}");
+            $this->assertSame($i, PlayerProfileImage::where('player_id', $this->player->id_player)->count());
         }
 
-        // Verify we have exactly 3 images before trying the 4th
-        $files = $this->player->getUploadedFiles('images');
-        $this->assertCount(3, $files, 'Should have exactly 3 images before trying to upload the 4th');
-
-        // Try to upload a fourth image
         $file4 = $this->createFakeImage('profile4.png');
-        $response = $this->postJson('/api/v1/app/players/image', [
-            'image' => $file4,
-        ]);
+        $response = $this->post('/api/v1/app/players/image', ['image' => $file4]);
 
         $response->assertStatus(422)
             ->assertJson([
@@ -260,36 +231,28 @@ class PlayerControllerTest extends TestCase
                 'message' => 'Maximum number of profile images (3) reached. Delete an existing image first.',
             ]);
 
-        // Verify we still only have 3 images
-        $files = $this->player->getUploadedFiles('images');
-        $this->assertCount(3, $files, 'Should still have exactly 3 images after failed upload');
+        $this->assertSame(3, PlayerProfileImage::where('player_id', $this->player->id_player)->count());
     }
 
     public function test_player_can_delete_profile_image()
     {
         Sanctum::actingAs($this->player);
 
-        // First upload an image
         $file = $this->createFakeImage('profile.png');
-        $uploadResponse = $this->postJson('/api/v1/app/players/image', [
-            'image' => $file,
-        ]);
+        $uploadResponse = $this->post('/api/v1/app/players/image', ['image' => $file]);
         $uploadResponse->assertStatus(201);
 
-        // Get the filename from the uploaded files
-        $files = $this->player->getUploadedFiles('images');
-        $this->assertCount(1, $files);
-        $filename = $files[0];
+        $id = $uploadResponse->json('data.uploaded_profile_images.0.id');
+        $this->assertNotNull($id);
 
-        // Then delete it
-        $response = $this->deleteJson("/api/v1/app/players/image/{$filename}");
+        $response = $this->deleteJson("/api/v1/app/players/image/{$id}");
 
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'success',
                 'message',
                 'data' => [
-                    'urls',
+                    'uploaded_profile_images',
                 ],
             ])
             ->assertJson([
@@ -297,46 +260,57 @@ class PlayerControllerTest extends TestCase
                 'message' => 'Image deleted successfully',
             ]);
 
-        // Verify the file was deleted
-        $filesAfterDelete = $this->player->getUploadedFiles('images');
-        $this->assertCount(0, $filesAfterDelete);
+        $this->assertSame(0, PlayerProfileImage::where('player_id', $this->player->id_player)->count());
     }
 
     public function test_player_cannot_delete_nonexistent_image()
     {
         Sanctum::actingAs($this->player);
 
-        $response = $this->deleteJson('/api/v1/app/players/image/nonexistent-file.png');
+        $response = $this->deleteJson('/api/v1/app/players/image/999999');
 
-        $response->assertStatus(404)
+        $response->assertStatus(404);
+    }
+
+    public function test_player_cannot_delete_another_players_profile_image()
+    {
+        Sanctum::actingAs($this->player);
+
+        $other = Player::factory()->create();
+        $image = PlayerProfileImage::factory()->create([
+            'player_id' => $other->id_player,
+            'path' => 'players/' . $other->id_player . '/profile/x.png',
+            'sort_order' => 0,
+        ]);
+
+        Storage::disk(config('filesystems.user_uploads_disk', 'public'))->put($image->path, 'x');
+
+        $response = $this->deleteJson("/api/v1/app/players/image/{$image->id}");
+
+        $response->assertStatus(403)
             ->assertJson([
                 'success' => false,
-                'message' => 'Image not found',
+                'message' => 'You can only delete your own profile images.',
             ]);
+
+        $this->assertDatabaseHas('player_profile_images', ['id' => $image->id]);
     }
 
     public function test_image_upload_validation()
     {
         Sanctum::actingAs($this->player);
 
-        // Test with no file
         $response = $this->postJson('/api/v1/app/players/image', []);
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['image']);
 
-        // Test with text file instead of image
         $textFile = $this->createFakeTextFile('test.txt');
-        $response = $this->postJson('/api/v1/app/players/image', [
-            'image' => $textFile,
-        ]);
+        $response = $this->postJson('/api/v1/app/players/image', ['image' => $textFile]);
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['image']);
 
-        // Test with file too large (create a large file)
-        $largeFile = UploadedFile::fake()->create('large.jpg', 6000); // 6MB
-        $response = $this->postJson('/api/v1/app/players/image', [
-            'image' => $largeFile,
-        ]);
+        $largeFile = UploadedFile::fake()->create('large.jpg', 6000);
+        $response = $this->postJson('/api/v1/app/players/image', ['image' => $largeFile]);
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['image']);
     }
@@ -374,9 +348,7 @@ class PlayerControllerTest extends TestCase
     {
         Sanctum::actingAs($this->player);
 
-        $response = $this->postJson('/api/v1/app/players', [
-            // Missing required fields
-        ]);
+        $response = $this->postJson('/api/v1/app/players', []);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['name', 'google_email', 'phone']);
@@ -386,16 +358,14 @@ class PlayerControllerTest extends TestCase
     {
         $file = $this->createFakeImage('profile.png');
 
-        $response = $this->postJson('/api/v1/app/players/image', [
-            'image' => $file,
-        ]);
+        $response = $this->postJson('/api/v1/app/players/image', ['image' => $file]);
 
         $response->assertStatus(401);
     }
 
     public function test_image_delete_requires_authentication()
     {
-        $response = $this->deleteJson('/api/v1/app/players/image/test.png');
+        $response = $this->deleteJson('/api/v1/app/players/image/1');
 
         $response->assertStatus(401);
     }

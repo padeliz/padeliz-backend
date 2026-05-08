@@ -8,9 +8,9 @@ use App\Models\Club;
 use App\Models\Division;
 use App\Models\Edition;
 use App\Models\EditionParticipation;
+use App\Models\Eligibility;
 use App\Models\Location;
 use App\Models\Player;
-use App\Models\PlayerEligibility;
 use App\Models\Prize;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -329,7 +329,7 @@ class ResourceMetadataControllerTest extends TestCase
             'Location' => ['Location', 'Location'],
             'MatchesTeam' => ['MatchesTeam', 'MatchesTeam'],
             'Player' => ['Player', 'Player'],
-            'PlayerEligibility' => ['PlayerEligibility', 'PlayerEligibility'],
+            'Eligibility' => ['Eligibility', 'Eligibility'],
             'Prize' => ['Prize', 'Prize'],
             'PrizeFromClub' => ['PrizeFromClub', 'PrizeFromClub'],
         ];
@@ -435,7 +435,7 @@ class ResourceMetadataControllerTest extends TestCase
         $this->assertIsArray($response->json('data.request_body'));
     }
 
-    public function test_player_eligibility_metadata_endpoint(): void
+    public function test_eligibility_metadata_endpoint(): void
     {
         // Create a manager user
         /** @var Player $manager */
@@ -444,20 +444,20 @@ class ResourceMetadataControllerTest extends TestCase
 
         // Create test data
         $player = Player::factory()->create();
-        PlayerEligibility::factory()->create([
+        Eligibility::factory()->create([
             'player_id' => $player->id_player,
             'phone' => '+40712345678',
         ]);
 
         $response = $this->actingAs($manager)
-            ->getJson('/api/v1/manager/metadata/PlayerEligibility');
+            ->getJson('/api/v1/manager/metadata/Eligibility');
 
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
                 'data' => [
                     'version' => 'v1',
-                    'schema_name' => 'PlayerEligibility',
+                    'schema_name' => 'Eligibility',
                 ],
             ]);
 
@@ -580,7 +580,7 @@ class ResourceMetadataControllerTest extends TestCase
             'EditionParticipation',
             'EditionDivision',
             'PrizeFromClub',
-            'PlayerEligibility',
+            'Eligibility',
         ];
 
         foreach ($modelsWithNullDisplayField as $modelName) {

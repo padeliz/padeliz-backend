@@ -4,10 +4,12 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\EligibilityPortraitPhoto;
+use App\Models\EligibilityStudentProof;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class PlayerEligibilityResource extends JsonResource
+class EligibilityResource extends JsonResource
 {
     /**
      * Transform the resource into an array.
@@ -43,6 +45,20 @@ class PlayerEligibilityResource extends JsonResource
             'resubmitted_at' => $this->resubmitted_at,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
+            'student_proofs' => $this->studentProofs
+                ->map(static fn (EligibilityStudentProof $row) => [
+                    'id' => $row->id,
+                    'url' => $row->url,
+                ])
+                ->values()
+                ->all(),
+            'portrait_photos' => $this->portraitPhotos
+                ->map(static fn (EligibilityPortraitPhoto $row) => [
+                    'id' => $row->id,
+                    'url' => $row->url,
+                ])
+                ->values()
+                ->all(),
             'player' => $this->whenLoaded('player', function () {
                 return new PlayerResource($this->player);
             }),

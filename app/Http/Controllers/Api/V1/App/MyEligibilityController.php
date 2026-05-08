@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1\App;
 
 use App\Http\Requests\App\PendingEligibilityRequest;
-use App\Http\Resources\PlayerEligibilityResource;
-use App\Models\PlayerEligibility;
+use App\Http\Resources\EligibilityResource;
+use App\Models\Eligibility;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -50,12 +50,12 @@ class MyEligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
     {
         $playerId = $request->user()->id_player;
 
-        $latest = PlayerEligibility::where('player_id', $playerId)
+        $latest = Eligibility::where('player_id', $playerId)
             ->orderByDesc('inserted_at')
             ->orderByDesc('id_eligibility')
             ->value('review_status');
 
-        $counts = PlayerEligibility::where('player_id', $playerId)
+        $counts = Eligibility::where('player_id', $playerId)
             ->select('review_status', DB::raw('COUNT(*) as cnt'))
             ->groupBy('review_status')
             ->pluck('cnt', 'review_status')
@@ -87,7 +87,7 @@ class MyEligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *             allOf={
      *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
      *                 @OA\Schema(
-     *                     @OA\Property(property="data", ref="#/components/schemas/PlayerEligibility")
+     *                     @OA\Property(property="data", ref="#/components/schemas/Eligibility")
      *                 )
      *             }
      *         )
@@ -101,7 +101,7 @@ class MyEligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      */
     public function approved(Request $request)
     {
-        $eligibility = PlayerEligibility::where('player_id', $request->user()->id_player)
+        $eligibility = Eligibility::where('player_id', $request->user()->id_player)
             ->where('review_status', 'approved')
             ->orderByDesc('reviewed_at')
             ->orderByDesc('id_eligibility')
@@ -111,8 +111,10 @@ class MyEligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
             return $this->notFoundResponse('No approved eligibility found');
         }
 
+        $eligibility->load(['studentProofs', 'portraitPhotos']);
+
         return $this->resourceResponse(
-            new PlayerEligibilityResource($eligibility),
+            new EligibilityResource($eligibility),
             'Approved eligibility retrieved successfully'
         );
     }
@@ -130,7 +132,7 @@ class MyEligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *             allOf={
      *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
      *                 @OA\Schema(
-     *                     @OA\Property(property="data", ref="#/components/schemas/PlayerEligibility")
+     *                     @OA\Property(property="data", ref="#/components/schemas/Eligibility")
      *                 )
      *             }
      *         )
@@ -144,7 +146,7 @@ class MyEligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      */
     public function latest(Request $request)
     {
-        $eligibility = PlayerEligibility::where('player_id', $request->user()->id_player)
+        $eligibility = Eligibility::where('player_id', $request->user()->id_player)
             ->orderByDesc('inserted_at')
             ->orderByDesc('id_eligibility')
             ->first();
@@ -153,8 +155,10 @@ class MyEligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
             return $this->notFoundResponse('No eligibility found');
         }
 
+        $eligibility->load(['studentProofs', 'portraitPhotos']);
+
         return $this->resourceResponse(
-            new PlayerEligibilityResource($eligibility),
+            new EligibilityResource($eligibility),
             'Latest eligibility retrieved successfully'
         );
     }
@@ -201,7 +205,7 @@ class MyEligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *             allOf={
      *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
      *                 @OA\Schema(
-     *                     @OA\Property(property="data", ref="#/components/schemas/PlayerEligibility")
+     *                     @OA\Property(property="data", ref="#/components/schemas/Eligibility")
      *                 )
      *             }
      *         )
@@ -221,7 +225,7 @@ class MyEligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
         unset($validated['duplicate_id']);
         $now = time();
 
-        $pending = PlayerEligibility::where('player_id', $playerId)
+        $pending = Eligibility::where('player_id', $playerId)
             ->where('review_status', 'pending')
             ->first();
 
@@ -238,16 +242,17 @@ class MyEligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
 
             $pending->recomputeReadyForReview();
             $pending->save();
+            $pending->load(['studentProofs', 'portraitPhotos']);
 
             return $this->resourceResponse(
-                new PlayerEligibilityResource($pending),
+                new EligibilityResource($pending),
                 'Pending eligibility updated successfully'
             );
         }
 
         $copy = [];
         if ($duplicateId !== null) {
-            $source = PlayerEligibility::where('id_eligibility', $duplicateId)
+            $source = Eligibility::where('id_eligibility', $duplicateId)
                 ->where('player_id', $playerId)
                 ->first();
 
@@ -273,7 +278,7 @@ class MyEligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
             }
         }
 
-        $eligibility = new PlayerEligibility();
+        $eligibility = new Eligibility();
         $eligibility->fill(array_merge($copy, $validated));
         $eligibility->player_id = $playerId;
         $eligibility->submitted_at = $now;
@@ -286,9 +291,10 @@ class MyEligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
 
         $eligibility->recomputeReadyForReview();
         $eligibility->save();
+        $eligibility->load(['studentProofs', 'portraitPhotos']);
 
         return $this->resourceResponse(
-            new PlayerEligibilityResource($eligibility),
+            new EligibilityResource($eligibility),
             'Pending eligibility created successfully',
             201
         );
@@ -312,13 +318,17 @@ class MyEligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
         $playerId = $request->user()->id_player;
         $now = time();
 
-        $pending = PlayerEligibility::where('player_id', $playerId)
+        $pending = Eligibility::where('player_id', $playerId)
             ->where('review_status', 'pending')
             ->first();
 
         if (! $pending) {
             return $this->successResponse(null, 'No pending eligibility to discard');
         }
+
+        $pending->load(['studentProofs', 'portraitPhotos']);
+        $pending->studentProofs->each->delete();
+        $pending->portraitPhotos->each->delete();
 
         $pending->review_status = 'discarded';
         $pending->resubmitted_at = $now;

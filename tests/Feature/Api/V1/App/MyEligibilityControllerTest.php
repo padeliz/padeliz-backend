@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\App;
 
+use App\Models\Eligibility;
 use App\Models\Player;
-use App\Models\PlayerEligibility;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -21,6 +21,10 @@ class MyEligibilityControllerTest extends TestCase
         $this->getJson('/api/v1/app/my/eligibility/latest')->assertUnauthorized();
         $this->patchJson('/api/v1/app/my/eligibility/pending')->assertUnauthorized();
         $this->postJson('/api/v1/app/my/eligibility/discard')->assertUnauthorized();
+        $this->postJson('/api/v1/app/my/eligibility/pending/student-proof', [])->assertUnauthorized();
+        $this->deleteJson('/api/v1/app/my/eligibility/pending/student-proof/1')->assertUnauthorized();
+        $this->postJson('/api/v1/app/my/eligibility/pending/portrait-photo', [])->assertUnauthorized();
+        $this->deleteJson('/api/v1/app/my/eligibility/pending/portrait-photo/1')->assertUnauthorized();
     }
 
     public function test_status_returns_latest_and_overall_counts(): void
@@ -28,9 +32,9 @@ class MyEligibilityControllerTest extends TestCase
         $player = Player::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
 
-        PlayerEligibility::factory()->create(['player_id' => $player->id_player, 'review_status' => 'approved', 'inserted_at' => 10]);
-        PlayerEligibility::factory()->create(['player_id' => $player->id_player, 'review_status' => 'rejected', 'inserted_at' => 20]);
-        PlayerEligibility::factory()->create(['player_id' => $player->id_player, 'review_status' => 'discarded', 'inserted_at' => 30]);
+        Eligibility::factory()->create(['player_id' => $player->id_player, 'review_status' => 'approved', 'inserted_at' => 10]);
+        Eligibility::factory()->create(['player_id' => $player->id_player, 'review_status' => 'rejected', 'inserted_at' => 20]);
+        Eligibility::factory()->create(['player_id' => $player->id_player, 'review_status' => 'discarded', 'inserted_at' => 30]);
 
         $response = $this->getJson('/api/v1/app/my/eligibility/status');
 
@@ -62,8 +66,8 @@ class MyEligibilityControllerTest extends TestCase
         $player = Player::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
 
-        PlayerEligibility::factory()->create(['player_id' => $player->id_player, 'review_status' => 'approved', 'inserted_at' => 10]);
-        $latest = PlayerEligibility::factory()->create(['player_id' => $player->id_player, 'review_status' => 'pending', 'inserted_at' => 20]);
+        Eligibility::factory()->create(['player_id' => $player->id_player, 'review_status' => 'approved', 'inserted_at' => 10]);
+        $latest = Eligibility::factory()->create(['player_id' => $player->id_player, 'review_status' => 'pending', 'inserted_at' => 20]);
 
         $this->getJson('/api/v1/app/my/eligibility/latest')
             ->assertOk()
@@ -75,9 +79,9 @@ class MyEligibilityControllerTest extends TestCase
         $player = Player::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
 
-        PlayerEligibility::factory()->create(['player_id' => $player->id_player, 'review_status' => 'approved', 'reviewed_at' => 10]);
-        $latestApproved = PlayerEligibility::factory()->create(['player_id' => $player->id_player, 'review_status' => 'approved', 'reviewed_at' => 20]);
-        PlayerEligibility::factory()->create(['player_id' => $player->id_player, 'review_status' => 'rejected', 'reviewed_at' => 30]);
+        Eligibility::factory()->create(['player_id' => $player->id_player, 'review_status' => 'approved', 'reviewed_at' => 10]);
+        $latestApproved = Eligibility::factory()->create(['player_id' => $player->id_player, 'review_status' => 'approved', 'reviewed_at' => 20]);
+        Eligibility::factory()->create(['player_id' => $player->id_player, 'review_status' => 'rejected', 'reviewed_at' => 30]);
 
         $this->getJson('/api/v1/app/my/eligibility/approved')
             ->assertOk()
@@ -95,7 +99,7 @@ class MyEligibilityControllerTest extends TestCase
             ->assertJsonPath('data.player_id', $player->id_player)
             ->assertJsonPath('data.review_status', 'pending');
 
-        $this->assertDatabaseHas('player_eligibilities', [
+        $this->assertDatabaseHas('eligibilities', [
             'player_id' => $player->id_player,
             'review_status' => 'pending',
         ]);
@@ -117,7 +121,7 @@ class MyEligibilityControllerTest extends TestCase
         $this->assertSame($first, $second);
         $this->assertSame(
             1,
-            PlayerEligibility::where('player_id', $player->id_player)->where('review_status', 'pending')->count()
+            Eligibility::where('player_id', $player->id_player)->where('review_status', 'pending')->count()
         );
     }
 
@@ -126,7 +130,7 @@ class MyEligibilityControllerTest extends TestCase
         $player = Player::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
 
-        $pending = PlayerEligibility::factory()->create([
+        $pending = Eligibility::factory()->create([
             'player_id' => $player->id_player,
             'review_status' => 'pending',
             'first_name' => null,
@@ -151,7 +155,7 @@ class MyEligibilityControllerTest extends TestCase
 
         $this->patchJson('/api/v1/app/my/eligibility/pending', [])->assertStatus(201);
 
-        $source = PlayerEligibility::factory()->create([
+        $source = Eligibility::factory()->create([
             'player_id' => $player->id_player,
             'review_status' => 'approved',
         ]);
@@ -166,7 +170,7 @@ class MyEligibilityControllerTest extends TestCase
         $player = Player::factory()->playerOnly()->create();
         $other = Player::factory()->playerOnly()->create();
 
-        $sourceOther = PlayerEligibility::factory()->create([
+        $sourceOther = Eligibility::factory()->create([
             'player_id' => $other->id_player,
             'review_status' => 'approved',
             'first_name' => 'Other',
@@ -214,7 +218,7 @@ class MyEligibilityControllerTest extends TestCase
         $player = Player::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
 
-        $pending = PlayerEligibility::factory()->create([
+        $pending = Eligibility::factory()->create([
             'player_id' => $player->id_player,
             'review_status' => 'pending',
         ]);

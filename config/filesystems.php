@@ -72,4 +72,17 @@ return [
         public_path('storage') => storage_path('app/public'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | User uploads disk
+    |--------------------------------------------------------------------------
+    |
+    | Default disk for any user-uploaded files (profile photos, eligibility
+    | documents, participation attachments, etc.). Store only paths relative to
+    | this disk in the database. Point USER_UPLOADS_DISK at s3 when ready.
+    |
+    */
+
+    'user_uploads_disk' => env('USER_UPLOADS_DISK', 'public'),
+
 ];

@@ -8,9 +8,9 @@ use App\Models\Club;
 use App\Models\Division;
 use App\Models\Edition;
 use App\Models\EditionParticipation;
+use App\Models\Eligibility;
 use App\Models\Location;
 use App\Models\Player;
-use App\Models\PlayerEligibility;
 use App\Models\Prize;
 use App\Services\ResourceMetadataService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -213,7 +213,7 @@ class ResourceMetadataServiceTest extends TestCase
 
         $this->assertArrayHasKey('display_field', $metadata);
         // Display field should be 'name' for models with searchable fields, null for models without
-        if (in_array($expectedSchemaName, ['MatchesTeam', 'EditionLottery', 'EditionLuckyOne', 'EditionParticipation', 'EditionDivision', 'PrizeFromClub', 'PlayerEligibility'])) {
+        if (in_array($expectedSchemaName, ['MatchesTeam', 'EditionLottery', 'EditionLuckyOne', 'EditionParticipation', 'EditionDivision', 'PrizeFromClub', 'Eligibility'])) {
             $this->assertNull($metadata['display_field']);
         } else {
             $this->assertEquals('name', $metadata['display_field']);
@@ -242,7 +242,7 @@ class ResourceMetadataServiceTest extends TestCase
             'Location' => ['Location', 'Location'],
             'MatchesTeam' => ['MatchesTeam', 'MatchesTeam'],
             'Player' => ['Player', 'Player'],
-            'PlayerEligibility' => ['PlayerEligibility', 'PlayerEligibility'],
+            'Eligibility' => ['Eligibility', 'Eligibility'],
             'Prize' => ['Prize', 'Prize'],
             'PrizeFromClub' => ['PrizeFromClub', 'PrizeFromClub'],
         ];
@@ -308,18 +308,18 @@ class ResourceMetadataServiceTest extends TestCase
         }
     }
 
-    public function test_player_eligibility_metadata(): void
+    public function test_eligibility_metadata(): void
     {
         // Create test data
         $player = Player::factory()->create();
-        PlayerEligibility::factory()->create([
+        Eligibility::factory()->create([
             'player_id' => $player->id_player,
             'phone' => '+40712345678',
         ]);
 
-        $metadata = $this->metadataService->getMetadata('PlayerEligibility', 'v1');
+        $metadata = $this->metadataService->getMetadata('Eligibility', 'v1');
 
-        $this->assertEquals('PlayerEligibility', $metadata['schema_name']);
+        $this->assertEquals('Eligibility', $metadata['schema_name']);
         $this->assertContains('phone', $metadata['searchable_fields']);
         $this->assertArrayHasKey('birth_year', $metadata['filterable_fields']);
         $this->assertEquals('integer', $metadata['filterable_fields']['birth_year']['type']);
@@ -440,8 +440,8 @@ class ResourceMetadataServiceTest extends TestCase
         $editionParticipationMetadata = $this->metadataService->getMetadata('EditionParticipation', 'v1');
         $this->assertArrayHasKey('request_body', $editionParticipationMetadata);
 
-        $playerEligibilityMetadata = $this->metadataService->getMetadata('PlayerEligibility', 'v1');
-        $this->assertArrayHasKey('request_body', $playerEligibilityMetadata);
+        $eligibilityMetadata = $this->metadataService->getMetadata('Eligibility', 'v1');
+        $this->assertArrayHasKey('request_body', $eligibilityMetadata);
 
         $prizeFromClubMetadata = $this->metadataService->getMetadata('PrizeFromClub', 'v1');
         $this->assertArrayHasKey('request_body', $prizeFromClubMetadata);
@@ -556,7 +556,7 @@ class ResourceMetadataServiceTest extends TestCase
             'EditionParticipation' => ['EditionParticipation', 'edition-participations'],
             'EditionDivision' => ['EditionDivision', 'edition-divisions'],
             'EditionLuckyOne' => ['EditionLuckyOne', 'edition-lucky-ones'],
-            'PlayerEligibility' => ['PlayerEligibility', 'player-eligibilities'],
+            'Eligibility' => ['Eligibility', 'eligibilities'],
             'PrizeFromClub' => ['PrizeFromClub', 'prize-from-clubs'],
             'MatchesTeam' => ['MatchesTeam', 'matches-teams'],
 
@@ -636,7 +636,7 @@ class ResourceMetadataServiceTest extends TestCase
             'EditionParticipation',
             'EditionDivision',
             'PrizeFromClub',
-            'PlayerEligibility',
+            'Eligibility',
         ];
 
         foreach ($modelsWithNullDisplayField as $modelName) {
