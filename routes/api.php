@@ -23,5 +23,10 @@ Route::get('/user', function (Request $request) {
 // API Documentation Index
 Route::get('/documentation', [\App\Http\Controllers\ApiDocumentationController::class, 'index']);
 
+// External integrations (isolated from core Padeliz domain)
+Route::prefix('external/bpt-rankedin')->group(function () {
+    Route::get('top-players', \App\Http\Controllers\External\RankedinBpt\BptTopPlayersController::class);
+});
+
 // Include versioned route files
 require __DIR__ . '/api/v1.php';

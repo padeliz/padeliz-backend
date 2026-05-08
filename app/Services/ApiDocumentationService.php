@@ -129,6 +129,7 @@ class ApiDocumentationService
     {
         $paths = [
             base_path('app/Http/Controllers/BaseVersions/' . strtoupper($version)),
+            base_path('app/Http/Controllers/External'),
             // base_path("app/Http/GlobalAnnotationVersions/" . strtoupper($version)),
             base_path('app/Models'),
         ];
