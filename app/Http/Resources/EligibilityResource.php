@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Resources;
 
+use App\Models\Edition;
 use App\Models\EligibilityPortraitPhoto;
 use App\Models\EligibilityStudentProof;
 use Illuminate\Http\Request;
@@ -22,6 +23,15 @@ class EligibilityResource extends JsonResource
             'id_eligibility' => $this->id_eligibility,
             'player_id' => $this->player_id,
             'edition_ids' => $this->edition_ids,
+            // Full editions for edition_ids, so clients can render them without a
+            // separate by-id lookup (there is no editions show endpoint).
+            'editions' => EditionResource::collection(
+                Edition::query()
+                    ->with(['location', 'divisions.division'])
+                    ->whereIn('id_edition', $this->edition_ids ?? [])
+                    ->orderBy('date', 'asc')
+                    ->get()
+            ),
             'media_source' => $this->media_source,
             'friends_source' => $this->friends_source,
             'racket_experience' => $this->racket_experience,

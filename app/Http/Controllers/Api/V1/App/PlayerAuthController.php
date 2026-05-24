@@ -83,16 +83,22 @@ class PlayerAuthController extends V1BaseController
                 'avatar' => $payload['picture'] ?? null,
             ];
 
-            // Find existing player
+            // Find or create the player from the verified Google identity.
             $player = Player::where('google_email', $googleUser->email)->first();
 
             if (! $player) {
-                return $this->errorResponse('User not found. Please register first.', 404);
+                $player = Player::create([
+                    'name' => $googleUser->name ?? 'Player',
+                    'google_email' => $googleUser->email,
+                    'google_id' => $googleUser->id,
+                    'google_name' => $googleUser->name ?? 'Player',
+                    'google_avatar' => $googleUser->avatar,
+                ]);
             }
 
             // Ensure player has player user type
             if (! $player->hasUserType('player')) {
-                return $this->errorResponse('User does not have player privileges.', 403);
+                $player->addUserType('player');
             }
 
             // Create Sanctum token
