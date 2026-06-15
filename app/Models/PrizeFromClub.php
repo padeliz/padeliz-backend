@@ -79,8 +79,8 @@ use Illuminate\Database\Eloquent\Model;
  *         description="Box 2 text hex color",
  *         example="#FFFFFF"
  *     ),
- *     @OA\Property(property="inserted_at", type="integer", format="timestamp", title="Created At", description="Timestamp when the prize from club was created"),
- *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, title="Updated At", description="Timestamp when the prize from club was last updated"),
+ *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true, title="Created At", description="Timestamp when the prize from club was created"),
+ *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true, title="Updated At", description="Timestamp when the prize from club was last updated"),
  *     @OA\Property(
  *         property="club",
  *         ref="#/components/schemas/Club",

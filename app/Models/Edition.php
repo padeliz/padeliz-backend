@@ -79,8 +79,8 @@ use Illuminate\Database\Eloquent\Model;
  *         description="Closing time in HH:MM:SS format",
  *         example="18:00:00"
  *     ),
- *     @OA\Property(property="inserted_at", type="integer", format="timestamp", title="Created At", description="Timestamp when the edition was created"),
- *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, title="Updated At", description="Timestamp when the edition was last updated"),
+ *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true, title="Created At", description="Timestamp when the edition was created"),
+ *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true, title="Updated At", description="Timestamp when the edition was last updated"),
  *     @OA\Property(
  *         property="location",
  *         ref="#/components/schemas/Location",

@@ -90,8 +90,8 @@ use Illuminate\Database\Eloquent\Model;
  *     @OA\Property(property="include_scores", type="boolean", title="Include Scores", description="Whether to include scores"),
  *     @OA\Property(property="has_demonstrative_match", type="boolean", title="Has Demonstrative Match", description="Whether to include a demonstrative match"),
  *     @OA\Property(property="fixed_teams", type="boolean", title="Fixed Teams", description="Whether to include fixed teams"),
- *     @OA\Property(property="inserted_at", type="integer", format="timestamp", title="Created At", description="Timestamp when the edition division was created"),
- *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, title="Updated At", description="Timestamp when the edition division was last updated"),
+ *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true, title="Created At", description="Timestamp when the edition division was created"),
+ *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true, title="Updated At", description="Timestamp when the edition division was last updated"),
  *     @OA\Property(
  *         property="edition",
  *         ref="#/components/schemas/Edition",

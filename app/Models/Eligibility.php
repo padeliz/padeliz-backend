@@ -66,8 +66,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *     @OA\Property(property="ready_for_review", type="boolean"),
  *     @OA\Property(property="review_status", type="string", enum={"pending", "approved", "rejected", "discarded"}),
  *     @OA\Property(property="review_message", type="string", nullable=true, title="Review Message", description="Review message"),
- *     @OA\Property(property="inserted_at", type="integer", format="timestamp", title="Created At", description="Timestamp when the eligibility was created"),
- *     @OA\Property(property="updated_at", type="integer", format="timestamp", title="Updated At", description="Timestamp when the eligibility was last updated"),
+ *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true, title="Created At", description="Timestamp when the eligibility was created"),
+ *     @OA\Property(property="updated_at", type="integer", format="timestamp", readOnly=true, title="Updated At", description="Timestamp when the eligibility was last updated"),
  *     @OA\Property(property="resubmitted_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(
  *         property="player",

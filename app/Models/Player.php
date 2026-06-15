@@ -158,6 +158,7 @@ use Laravel\Sanctum\HasApiTokens;
  *         property="inserted_at",
  *         type="integer",
  *         format="timestamp",
+ *         readOnly=true,
  *         title="Created At",
  *         description="Timestamp when the player was created"
  *     ),
@@ -166,6 +167,7 @@ use Laravel\Sanctum\HasApiTokens;
  *         type="integer",
  *         format="timestamp",
  *         nullable=true,
+ *         readOnly=true,
  *         title="Updated At",
  *         description="Timestamp when the player was last updated"
  *     ),

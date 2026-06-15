@@ -22,8 +22,8 @@ use Illuminate\Database\Eloquent\Model;
  *     ),
  *     @OA\Property(property="player_1", type="string", maxLength=50, title="Player 1", description="Player 1 of the team"),
  *     @OA\Property(property="player_2", type="string", maxLength=50, title="Player 2", description="Player 2 of the team"),
- *     @OA\Property(property="inserted_at", type="integer", format="timestamp", title="Created At", description="Timestamp when the matches team was created"),
- *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, title="Updated At", description="Timestamp when the matches team was last updated"),
+ *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true, title="Created At", description="Timestamp when the matches team was created"),
+ *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true, title="Updated At", description="Timestamp when the matches team was last updated"),
  *     @OA\Property(
  *         property="player1",
  *         ref="#/components/schemas/Player",

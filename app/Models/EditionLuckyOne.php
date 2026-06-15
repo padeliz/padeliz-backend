@@ -84,8 +84,8 @@ use Illuminate\Database\Eloquent\Model;
  *         description="Unix timestamp when rejected",
  *         example=1704412800
  *     ),
- *     @OA\Property(property="inserted_at", type="integer", format="timestamp", title="Created At", description="Timestamp when the edition lucky one was created"),
- *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, title="Updated At", description="Timestamp when the edition lucky one was last updated"),
+ *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true, title="Created At", description="Timestamp when the edition lucky one was created"),
+ *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true, title="Updated At", description="Timestamp when the edition lucky one was last updated"),
  *     @OA\Property(
  *         property="lottery",
  *         ref="#/components/schemas/EditionLottery",

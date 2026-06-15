@@ -93,6 +93,7 @@ use Illuminate\Database\Eloquent\Model;
  *         property="inserted_at",
  *         type="integer",
  *         format="timestamp",
+ *         readOnly=true,
  *         title="Created At",
  *         description="Timestamp when the participation was created"
  *     ),
@@ -101,6 +102,7 @@ use Illuminate\Database\Eloquent\Model;
  *         type="integer",
  *         format="timestamp",
  *         nullable=true,
+ *         readOnly=true,
  *         title="Updated At",
  *         description="Timestamp when the participation was last updated"
  *     ),
