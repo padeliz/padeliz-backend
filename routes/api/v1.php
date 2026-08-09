@@ -12,6 +12,7 @@ Route::prefix('v1')->group(function () {
     // ========================================
     Route::prefix('app/auth')->group(function () {
         Route::post('google', [\App\Http\Controllers\Api\V1\App\PlayerAuthController::class, 'googleCallback']);
+        Route::post('invite/redeem', [\App\Http\Controllers\Api\V1\App\PlayerAuthController::class, 'redeemInvite']);
 
         if (App::environment() != 'production') {
             Route::post('dev-login', [\App\Http\Controllers\Api\V1\App\PlayerAuthController::class, 'devLogin']);
@@ -168,15 +169,15 @@ Route::prefix('v1')->group(function () {
             Route::delete('{lottery}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'destroy']);
         });
 
-        // Lucky ones management
-        Route::prefix('edition-lucky-ones')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'index']);
-            Route::get('{luckyOne}', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'show']);
-            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'store']);
-            Route::put('{luckyOne}', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'update']);
-            Route::patch('{luckyOne}', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'patch']);
-            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'bulkDestroy']);
-            Route::delete('{luckyOne}', [\App\Http\Controllers\Api\V1\Manager\EditionLuckyOneController::class, 'destroy']);
+        // Lottery luckies management
+        Route::prefix('edition-lottery-luckies')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryLuckyController::class, 'index']);
+            Route::get('{lucky}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryLuckyController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryLuckyController::class, 'store']);
+            Route::put('{lucky}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryLuckyController::class, 'update']);
+            Route::patch('{lucky}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryLuckyController::class, 'patch']);
+            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryLuckyController::class, 'bulkDestroy']);
+            Route::delete('{lucky}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryLuckyController::class, 'destroy']);
         });
 
         // Edition divisions management
@@ -199,6 +200,13 @@ Route::prefix('v1')->group(function () {
             Route::patch('{player}', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'patch']);
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'bulkDestroy']);
             Route::delete('{player}', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'destroy']);
+        });
+
+        // Player invites
+        Route::prefix('player-invites')->group(function () {
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\PlayerInviteController::class, 'store']);
+            Route::post('{playerInvite}/revoke', [\App\Http\Controllers\Api\V1\Manager\PlayerInviteController::class, 'revoke']);
+            Route::delete('{playerInvite}', [\App\Http\Controllers\Api\V1\Manager\PlayerInviteController::class, 'revoke']);
         });
 
         // Edition participation management

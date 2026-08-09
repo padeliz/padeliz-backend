@@ -15,7 +15,6 @@ class DivisionResource extends JsonResource
             'id_division' => $this->id_division,
             'name' => $this->name,
             'color' => $this->color,
-            'is_students_only' => $this->is_students_only,
             'its_first_edition_id' => $this->its_first_edition_id,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,

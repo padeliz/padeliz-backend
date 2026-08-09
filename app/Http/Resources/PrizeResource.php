@@ -15,6 +15,8 @@ class PrizeResource extends JsonResource
             'id_prize' => $this->id_prize,
             'name' => $this->name,
             'image' => $this->image,
+            'url' => $this->url,
+            'template' => $this->template,
             'box_1_text' => $this->box_1_text,
             'box_1_bg_color' => $this->box_1_bg_color,
             'box_1_text_color' => $this->box_1_text_color,

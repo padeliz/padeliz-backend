@@ -26,12 +26,9 @@ class PlayerControllerTest extends TestCase
         Storage::fake(config('filesystems.user_uploads_disk', 'public'));
 
         $this->player = Player::factory()->playerOnly()->create([
-            'name' => 'Test Player',
-            'phone' => '1234567890',
-            'google_id' => 'google123',
-            'google_name' => 'Test Player',
-            'google_email' => 'player@example.com',
-            'google_avatar' => 'https://example.com/avatar.jpg',
+            'first_name' => 'Test',
+            'middle_name' => null,
+            'last_name' => 'Player',
             'user_types' => ['player'],
         ]);
     }
@@ -41,9 +38,8 @@ class PlayerControllerTest extends TestCase
         Sanctum::actingAs($this->player);
 
         $response = $this->postJson('/api/v1/app/players', [
-            'name' => 'Updated Player',
-            'google_email' => 'updated@example.com',
-            'phone' => '0987654321',
+            'first_name' => 'Updated',
+            'last_name' => 'Player',
             'skill_division' => 4.5,
             'being_student' => true,
         ]);
@@ -55,7 +51,6 @@ class PlayerControllerTest extends TestCase
                 'data' => [
                     'id_player',
                     'name',
-                    'phone',
                     'skill_division',
                     'being_student',
                 ],
@@ -63,13 +58,15 @@ class PlayerControllerTest extends TestCase
             ->assertJson([
                 'success' => true,
                 'message' => 'Player profile updated successfully',
+                'data' => [
+                    'name' => 'Updated Player',
+                ],
             ]);
 
         $this->assertDatabaseHas('players', [
             'id_player' => $this->player->id_player,
-            'name' => 'Updated Player',
-            'google_email' => 'updated@example.com',
-            'phone' => '0987654321',
+            'first_name' => 'Updated',
+            'last_name' => 'Player',
         ]);
     }
 
@@ -104,7 +101,9 @@ class PlayerControllerTest extends TestCase
         Sanctum::actingAs($this->player);
 
         $response = $this->putJson("/api/v1/app/players/{$this->player->id_player}", [
-            'name' => 'Updated Player Name',
+            'first_name' => 'Updated',
+            'middle_name' => 'Player',
+            'last_name' => 'Name',
             'skill_division' => 3.5,
         ]);
 
@@ -134,8 +133,9 @@ class PlayerControllerTest extends TestCase
         Sanctum::actingAs($this->player);
 
         $otherPlayer = Player::factory()->create([
-            'name' => 'Other Player',
-            'google_email' => 'other@example.com',
+            'first_name' => 'Other',
+            'middle_name' => null,
+            'last_name' => 'Player',
         ]);
 
         $response = $this->getJson("/api/v1/app/players/{$otherPlayer->id_player}");
@@ -320,12 +320,12 @@ class PlayerControllerTest extends TestCase
         Sanctum::actingAs($this->player);
 
         $otherPlayer = Player::factory()->create([
-            'name' => 'Other Player',
-            'google_email' => 'other@example.com',
+            'first_name' => 'Other', 'middle_name' => null, 'last_name' => 'Player',
         ]);
 
         $response = $this->putJson("/api/v1/app/players/{$otherPlayer->id_player}", [
-            'name' => 'Hacked Name',
+            'first_name' => 'Hacked',
+            'last_name' => 'Name',
         ]);
 
         $response->assertStatus(403)
@@ -338,7 +338,7 @@ class PlayerControllerTest extends TestCase
     public function test_profile_requires_authentication()
     {
         $response = $this->postJson('/api/v1/app/players', [
-            'name' => 'Test',
+            'first_name' => 'Test',
         ]);
 
         $response->assertStatus(401);
@@ -351,7 +351,7 @@ class PlayerControllerTest extends TestCase
         $response = $this->postJson('/api/v1/app/players', []);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['name', 'google_email', 'phone']);
+            ->assertJsonValidationErrors(['first_name']);
     }
 
     public function test_image_upload_requires_authentication()

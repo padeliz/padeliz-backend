@@ -8,8 +8,12 @@ use App\Exceptions\InvalidGoogleTokenException;
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
 use App\Http\Resources\PlayerResource;
 use App\Models\Player;
+use App\Models\PlayerEmail;
+use App\Models\PlayerIdentity;
 use App\Services\AuthLogger;
+use Google\Client as GoogleClient;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @OA\Tag(
@@ -19,7 +23,7 @@ use Illuminate\Http\Request;
  */
 class ManagerAuthController extends V1BaseController
 {
-    protected $authLogger;
+    protected AuthLogger $authLogger;
 
     public function __construct(AuthLogger $authLogger)
     {
@@ -61,41 +65,36 @@ class ManagerAuthController extends V1BaseController
      *     )
      * )
      */
-    public function googleCallback(Request $request, \Google\Client $googleClient)
+    public function googleCallback(Request $request, GoogleClient $googleClient)
     {
-        // Validate request first
         $request->validate([
             'id_token' => 'required|string',
         ]);
 
         try {
-            // Verify token with Google
             $payload = $googleClient->verifyIdToken($request->id_token);
 
             if (! $payload) {
                 throw new InvalidGoogleTokenException();
             }
 
-            $googleUser = (object) [
-                'id' => $payload['sub'],
-                'name' => $payload['name'] ?? null,
-                'email' => $payload['email'],
-                'avatar' => $payload['picture'] ?? null,
-            ];
+            $identity = PlayerIdentity::query()
+                ->where('provider', PlayerIdentity::PROVIDER_GOOGLE)
+                ->where('provider_subject', (string) $payload['sub'])
+                ->first();
 
-            // Find existing player
-            $player = Player::where('google_email', $googleUser->email)->first();
-
-            if (! $player) {
+            if (! $identity) {
                 return $this->errorResponse('User not found. Please register first.', 404);
             }
 
-            // Ensure player has manager user type
+            $player = $identity->player;
+
             if (! $player->hasUserType('manager')) {
                 return $this->errorResponse('User does not have manager privileges.', 403);
             }
 
-            // Create Sanctum token
+            $identity->touchLastLogin();
+
             $token = $player->createToken('manager-google-token')->plainTextToken;
 
             return $this->successResponse([
@@ -104,7 +103,6 @@ class ManagerAuthController extends V1BaseController
                 'user_type' => 'manager',
             ], 'Manager authenticated successfully');
         } catch (\Exception $e) {
-            // Log the error with context
             $this->authLogger->logError($e, [
                 'token_length' => strlen($request->id_token ?? ''),
                 'ip' => $request->ip(),
@@ -209,19 +207,42 @@ class ManagerAuthController extends V1BaseController
             'email' => 'required|email',
         ]);
 
-        $player = Player::where('google_email', $request->email)->first();
+        $email = strtolower(trim($request->string('email')->toString()));
+
+        $player = Player::query()
+            ->whereHas('emails', fn ($q) => $q->where('email', $email))
+            ->first();
 
         if (! $player) {
-            $player = Player::create([
-                'name' => 'Dev Manager',
-                'google_email' => $request->email,
-                'google_id' => 'dev_' . time(),
-                'google_name' => 'Dev Manager',
-                'google_avatar' => 'https://example.com/dev-manager-avatar.jpg',
-            ]);
+            $player = DB::transaction(function () use ($email) {
+                $created = Player::create([
+                    'first_name' => 'Dev',
+                    'last_name' => 'Manager',
+                    'user_types' => ['player', 'manager'],
+                ]);
+
+                $emailRow = PlayerEmail::create([
+                    'player_id' => $created->id_player,
+                    'email' => $email,
+                    'purposes' => ['contact', 'login'],
+                    'is_primary' => true,
+                    'verified_at' => time(),
+                ]);
+
+                PlayerIdentity::create([
+                    'player_id' => $created->id_player,
+                    'provider' => PlayerIdentity::PROVIDER_DEV,
+                    'provider_subject' => 'dev:' . $email,
+                    'email_id' => $emailRow->id_player_email,
+                    'display_name' => 'Dev Manager',
+                    'linked_at' => time(),
+                    'last_login_at' => time(),
+                ]);
+
+                return $created;
+            });
         }
 
-        // Ensure player has manager user type
         if (! $player->hasUserType('manager')) {
             $player->addUserType('manager');
         }
@@ -230,7 +251,7 @@ class ManagerAuthController extends V1BaseController
 
         return $this->successResponse([
             'token' => $token,
-            'player' => new PlayerResource($player),
+            'player' => new PlayerResource($player->fresh()),
             'user_type' => 'manager',
         ], 'Manager logged in successfully');
     }

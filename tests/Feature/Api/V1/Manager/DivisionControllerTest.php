@@ -24,12 +24,7 @@ class DivisionControllerTest extends TestCase
         parent::setUp();
 
         $this->manager = Player::factory()->manager()->create([
-            'name' => 'Test Manager',
-            'phone' => '1234567890',
-            'google_id' => 'google_manager_123',
-            'google_name' => 'Test Manager',
-            'google_email' => 'manager@example.com',
-            'google_avatar' => 'https://example.com/manager-avatar.jpg',
+            'first_name' => 'Test', 'middle_name' => null, 'last_name' => 'Manager',
             'user_types' => ['player', 'manager'],
         ]);
     }
@@ -49,7 +44,6 @@ class DivisionControllerTest extends TestCase
                         'id_division',
                         'name',
                         'color',
-                        'is_students_only',
                     ],
                 ],
             'links' => [
@@ -105,7 +99,6 @@ class DivisionControllerTest extends TestCase
         $divisionData = [
             'name' => 'New Division',
             'color' => '#00FF00',
-            'is_students_only' => true,
             'its_first_edition_id' => $edition->id_edition,
         ];
 
@@ -118,14 +111,12 @@ class DivisionControllerTest extends TestCase
                 'data' => [
                     'name' => 'New Division',
                     'color' => '#00FF00',
-                    'is_students_only' => true,
                 ],
             ]);
 
         $this->assertDatabaseHas('divisions', [
             'name' => 'New Division',
             'color' => '#00FF00',
-            'is_students_only' => true,
         ]);
     }
 
@@ -136,13 +127,11 @@ class DivisionControllerTest extends TestCase
         $division = Division::factory()->create([
             'name' => 'Old Name',
             'color' => '#FF0000',
-            'is_students_only' => false,
         ]);
 
         $updateData = [
             'name' => 'Updated Name',
             'color' => '#0000FF',
-            'is_students_only' => true,
         ];
 
         $response = $this->putJson("/api/v1/manager/divisions/{$division->id_division}", $updateData);
@@ -155,7 +144,6 @@ class DivisionControllerTest extends TestCase
                     'id_division' => $division->id_division,
                     'name' => 'Updated Name',
                     'color' => '#0000FF',
-                    'is_students_only' => true,
                 ],
             ]);
 
@@ -163,7 +151,6 @@ class DivisionControllerTest extends TestCase
             'id_division' => $division->id_division,
             'name' => 'Updated Name',
             'color' => '#0000FF',
-            'is_students_only' => true,
         ]);
     }
 
@@ -174,7 +161,6 @@ class DivisionControllerTest extends TestCase
         $division = Division::factory()->create([
             'name' => 'Original Name',
             'color' => '#FF0000',
-            'is_students_only' => false,
         ]);
 
         // Test partial update with only name
@@ -188,8 +174,7 @@ class DivisionControllerTest extends TestCase
                 'message' => 'Division partially updated successfully',
                 'data' => [
                     'name' => 'Partially Updated Name',
-                    'color' => '#FF0000', // Should remain unchanged
-                    'is_students_only' => false, // Should remain unchanged
+                    'color' => '#FF0000', // Should remain unchanged // Should remain unchanged
                 ],
             ]);
 
@@ -221,17 +206,16 @@ class DivisionControllerTest extends TestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['color', 'is_students_only']);
+            ->assertJsonValidationErrors(['color']);
 
         // Test PUT with empty required fields
         $response = $this->putJson("/api/v1/manager/divisions/{$division->id_division}", [
             'name' => '',
             'color' => '',
-            'is_students_only' => '',
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['name', 'color', 'is_students_only']);
+            ->assertJsonValidationErrors(['name', 'color']);
     }
 
     public function test_manager_can_delete_division()
@@ -284,10 +268,14 @@ class DivisionControllerTest extends TestCase
         $division = Division::factory()->create();
         $player = Player::factory()->create();
         $edition = Edition::factory()->create();
+        $editionDivision = EditionDivision::factory()->create([
+            'edition_id' => $edition->id_edition,
+            'division_id' => $division->id_division,
+        ]);
         EditionParticipation::factory()->create([
             'edition_id' => $edition->id_edition,
             'player_id' => $player->id_player,
-            'division_id' => $division->id_division,
+            'edition_division_id' => $editionDivision->id_edition_division,
         ]);
 
         $response = $this->deleteJson("/api/v1/manager/divisions/{$division->id_division}");
@@ -543,7 +531,6 @@ class DivisionControllerTest extends TestCase
                         'id_division',
                         'name',
                         'color',
-                        'is_students_only',
                     ],
                 ],
             'links' => [

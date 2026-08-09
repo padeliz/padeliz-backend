@@ -20,8 +20,8 @@ class EditionDivisionResource extends JsonResource
             'id_edition_division' => $this->id_edition_division,
             'edition_id' => $this->edition_id,
             'division_id' => $this->division_id,
+            'division_title' => $this->division_title,
             'players_limit' => $this->players_limit,
-            'court' => $this->court,
             'playing_start_time' => $this->formatted_playing_start_time,
             'playing_end_time' => $this->formatted_playing_end_time,
             'player_opponents_nr' => $this->player_opponents_nr,
@@ -29,6 +29,10 @@ class EditionDivisionResource extends JsonResource
             'include_scores' => $this->include_scores,
             'has_demonstrative_match' => $this->has_demonstrative_match,
             'fixed_teams' => $this->fixed_teams,
+            'points_per_match' => $this->points_per_match,
+            'final_points_target' => $this->final_points_target,
+            'include_final' => $this->include_final,
+            'finalized_at' => $this->finalized_at,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
             'edition' => $this->whenLoaded('edition', function () {
@@ -36,6 +40,9 @@ class EditionDivisionResource extends JsonResource
             }),
             'division' => $this->whenLoaded('division', function () {
                 return new DivisionResource($this->division);
+            }),
+            'courts' => $this->whenLoaded('courts', function () {
+                return CourtResource::collection($this->courts);
             }),
         ];
     }

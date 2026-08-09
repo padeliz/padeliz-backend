@@ -4,21 +4,21 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
-use App\Models\EditionLottery;
-use App\Models\EditionLuckyOne;
+use App\Models\EditionLotteryLucky;
+use App\Models\EditionLotteryRule;
 use App\Models\EditionParticipation;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-class EditionLuckyOneFactory extends Factory
+class EditionLotteryLuckyFactory extends Factory
 {
-    protected $model = EditionLuckyOne::class;
+    protected $model = EditionLotteryLucky::class;
 
     public function definition()
     {
         $drawnAt = $this->faker->dateTimeBetween('-1 hour', 'now');
 
         return [
-            'lottery_id' => EditionLottery::factory(),
+            'lottery_rule_id' => EditionLotteryRule::factory(),
             'drawn_participation_id' => EditionParticipation::factory(),
             'drawn_at' => $drawnAt->getTimestamp(),
             'available_at' => $this->faker->dateTimeBetween($drawnAt, '+1 hour')->getTimestamp(),

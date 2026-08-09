@@ -15,14 +15,10 @@ class MatchesTeamResource extends JsonResource
             'id_team' => $this->id_team,
             'player_1' => $this->player_1,
             'player_2' => $this->player_2,
+            'player_1_is_collecting_points' => $this->player_1_is_collecting_points,
+            'player_2_is_collecting_points' => $this->player_2_is_collecting_points,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
-            'player1' => $this->whenLoaded('player1', function () {
-                return new PlayerResource($this->player1);
-            }),
-            'player2' => $this->whenLoaded('player2', function () {
-                return new PlayerResource($this->player2);
-            }),
         ];
     }
 }

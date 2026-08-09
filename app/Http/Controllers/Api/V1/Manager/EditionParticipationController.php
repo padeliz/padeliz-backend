@@ -50,7 +50,7 @@ class EditionParticipationController extends V1BaseController
      *             additionalProperties=false,
      *             @OA\Property(property="edition_id", type="string", description="Filter by edition ID"),
      *             @OA\Property(property="player_id", type="string", description="Filter by player ID"),
-     *             @OA\Property(property="division_id", type="string", description="Filter by division ID"),
+     *             @OA\Property(property="edition_division_id", type="string", description="Filter by edition division ID"),
      *             @OA\Property(property="is_minor", type="string", description="Filter by minor status (use 0 or 1)"),
      *             @OA\Property(property="is_student", type="string", description="Filter by student status (use 0 or 1)"),
      *             @OA\Property(property="discount", type="string", description="Filter by discount amount"),
@@ -70,7 +70,7 @@ class EditionParticipationController extends V1BaseController
      *             @OA\Property(property="id_participation", type="string", enum={"asc", "desc"}, description="Sort by participation ID"),
      *             @OA\Property(property="edition_id", type="string", enum={"asc", "desc"}, description="Sort by edition ID"),
      *             @OA\Property(property="player_id", type="string", enum={"asc", "desc"}, description="Sort by player ID"),
-     *             @OA\Property(property="division_id", type="string", enum={"asc", "desc"}, description="Sort by division ID"),
+     *             @OA\Property(property="edition_division_id", type="string", enum={"asc", "desc"}, description="Sort by edition division ID"),
      *             @OA\Property(property="is_minor", type="string", enum={"asc", "desc"}, description="Sort by minor status"),
      *             @OA\Property(property="is_student", type="string", enum={"asc", "desc"}, description="Sort by student status"),
      *             @OA\Property(property="discount", type="string", enum={"asc", "desc"}, description="Sort by discount amount"),
@@ -114,7 +114,7 @@ class EditionParticipationController extends V1BaseController
      */
     public function index(Request $request)
     {
-        $query = EditionParticipation::with(['player', 'division', 'edition']);
+        $query = EditionParticipation::with(['player', 'editionDivision', 'edition']);
 
         // Apply advanced pagination
         $this->applyAdvancedPagination(
@@ -186,7 +186,7 @@ class EditionParticipationController extends V1BaseController
      */
     public function show(EditionParticipation $editionParticipation)
     {
-        $editionParticipation->load(['player', 'division', 'edition']);
+        $editionParticipation->load(['player', 'editionDivision', 'edition']);
 
         return $this->resourceResponse(
             new EditionParticipationResource($editionParticipation),
@@ -203,10 +203,10 @@ class EditionParticipationController extends V1BaseController
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"edition_id", "player_id", "division_id"},
+     *             required={"edition_id", "player_id", "edition_division_id"},
      *             @OA\Property(property="edition_id", type="integer"),
      *             @OA\Property(property="player_id", type="integer"),
-     *             @OA\Property(property="division_id", type="integer"),
+     *             @OA\Property(property="edition_division_id", type="integer"),
      *             @OA\Property(property="is_minor", type="boolean", description="Is minor player"),
      *             @OA\Property(property="is_student", type="boolean", description="Is student"),
      *             @OA\Property(property="discount", type="integer", description="Discount amount"),
@@ -254,7 +254,7 @@ class EditionParticipationController extends V1BaseController
         $validated = $request->validate([
             'edition_id' => 'required|exists:editions,id_edition',
             'player_id' => 'required|exists:players,id_player',
-            'division_id' => 'required|exists:divisions,id_division',
+            'edition_division_id' => 'required|exists:edition_divisions,id_edition_division',
             'is_minor' => 'boolean',
             'is_student' => 'boolean',
             'discount' => 'nullable|integer|min:0',
@@ -281,7 +281,7 @@ class EditionParticipationController extends V1BaseController
 
         $editionParticipation = EditionParticipation::create($validated);
 
-        $editionParticipation->load(['player', 'division', 'edition']);
+        $editionParticipation->load(['player', 'editionDivision', 'edition']);
 
         return $this->resourceResponse(
             new EditionParticipationResource($editionParticipation),
@@ -306,7 +306,7 @@ class EditionParticipationController extends V1BaseController
      *         required=true,
      *         @OA\JsonContent(
      *             @OA\Property(property="player_id", type="integer", description="Player ID"),
-     *             @OA\Property(property="division_id", type="integer", description="Division ID"),
+     *             @OA\Property(property="edition_division_id", type="integer", description="Edition division ID"),
      *             @OA\Property(property="is_minor", type="boolean", description="Is minor player"),
      *             @OA\Property(property="is_student", type="boolean", description="Is student"),
      *             @OA\Property(property="discount", type="integer", description="Discount amount"),
@@ -360,7 +360,7 @@ class EditionParticipationController extends V1BaseController
         $validated = $request->validate([
             'edition_id' => 'required|exists:editions,id_edition',
             'player_id' => 'required|exists:players,id_player',
-            'division_id' => 'required|exists:divisions,id_division',
+            'edition_division_id' => 'required|exists:edition_divisions,id_edition_division',
             'is_minor' => 'required|boolean',
             'is_student' => 'required|boolean',
             'discount' => 'nullable|integer|min:0',
@@ -382,7 +382,7 @@ class EditionParticipationController extends V1BaseController
         }
 
         $editionParticipation->update($validated);
-        $editionParticipation->load(['player', 'division', 'edition']);
+        $editionParticipation->load(['player', 'editionDivision', 'edition']);
 
         return $this->resourceResponse(
             new EditionParticipationResource($editionParticipation),
@@ -406,7 +406,7 @@ class EditionParticipationController extends V1BaseController
      *         required=true,
      *         @OA\JsonContent(
      *             @OA\Property(property="player_id", type="integer", description="Player ID"),
-     *             @OA\Property(property="division_id", type="integer", description="Division ID"),
+     *             @OA\Property(property="edition_division_id", type="integer", description="Edition division ID"),
      *             @OA\Property(property="is_minor", type="boolean", description="Is minor player"),
      *             @OA\Property(property="is_student", type="boolean", description="Is student"),
      *             @OA\Property(property="discount", type="integer", description="Discount amount"),
@@ -459,7 +459,7 @@ class EditionParticipationController extends V1BaseController
         $validated = $request->validate([
             'edition_id' => 'sometimes|exists:editions,id_edition',
             'player_id' => 'sometimes|exists:players,id_player',
-            'division_id' => 'sometimes|exists:divisions,id_division',
+            'edition_division_id' => 'sometimes|exists:edition_divisions,id_edition_division',
             'is_minor' => 'boolean',
             'is_student' => 'boolean',
             'discount' => 'nullable|integer|min:0',
@@ -471,7 +471,7 @@ class EditionParticipationController extends V1BaseController
         // Check if player is already participating (excluding current record)
         if (isset($validated['player_id']) && $validated['player_id'] !== $editionParticipation->player_id) {
             $existingParticipation = EditionParticipation::where([
-                'edition_id' => $validated['edition_id'],
+                'edition_id' => $validated['edition_id'] ?? $editionParticipation->edition_id,
                 'player_id' => $validated['player_id'],
             ])->first();
 
@@ -481,7 +481,7 @@ class EditionParticipationController extends V1BaseController
         }
 
         $editionParticipation->update($validated);
-        $editionParticipation->load(['player', 'division', 'edition']);
+        $editionParticipation->load(['player', 'editionDivision', 'edition']);
 
         return $this->resourceResponse(
             new EditionParticipationResource($editionParticipation),

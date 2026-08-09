@@ -34,7 +34,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *     @OA\Parameter(
      *         name="q",
      *         in="query",
-     *         description="Search term for court field",
+     *         description="Search term for division_title field",
      *         required=false,
      *         @OA\Schema(type="string")
      *     ),
@@ -72,7 +72,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *             @OA\Property(property="edition_id", type="string", enum={"asc", "desc"}, description="Sort by edition ID"),
      *             @OA\Property(property="division_id", type="string", enum={"asc", "desc"}, description="Sort by division ID"),
      *             @OA\Property(property="players_limit", type="string", enum={"asc", "desc"}, description="Sort by players limit"),
-     *             @OA\Property(property="court", type="string", enum={"asc", "desc"}, description="Sort by court"),
+     *             @OA\Property(property="division_title", type="string", enum={"asc", "desc"}, description="Sort by division title"),
      *             @OA\Property(property="playing_start_time", type="string", enum={"asc", "desc"}, description="Sort by playing start time"),
      *             @OA\Property(property="playing_end_time", type="string", enum={"asc", "desc"}, description="Sort by playing end time"),
      *             @OA\Property(property="player_opponents_nr", type="string", enum={"asc", "desc"}, description="Sort by opponents count"),
@@ -119,7 +119,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      */
     public function index(Request $request)
     {
-        $query = EditionDivision::with(['edition', 'division']);
+        $query = EditionDivision::with(['edition', 'division', 'courts']);
 
         // Apply advanced pagination
         $this->applyAdvancedPagination(
@@ -191,7 +191,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      */
     public function show(EditionDivision $editionDivision)
     {
-        $editionDivision->load(['edition', 'division']);
+        $editionDivision->load(['edition', 'division', 'courts']);
 
         return $this->resourceResponse(
             new EditionDivisionResource($editionDivision),
@@ -208,11 +208,11 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"edition_id", "division_id", "players_limit", "court", "playing_start_time", "playing_end_time"},
+     *             required={"edition_id", "division_id", "division_title", "players_limit", "playing_start_time", "playing_end_time"},
      *             @OA\Property(property="edition_id", type="integer", description="Edition ID"),
      *             @OA\Property(property="division_id", type="integer", description="Division ID"),
      *             @OA\Property(property="players_limit", type="integer", description="Players limit"),
-     *             @OA\Property(property="court", type="string", maxLength=30, description="Court name"),
+     *             @OA\Property(property="division_title", type="string", maxLength=64, description="Division title"),
      *             @OA\Property(property="playing_start_time", type="string", format="time", description="Playing start time"),
      *             @OA\Property(property="playing_end_time", type="string", format="time", description="Playing end time"),
      *             @OA\Property(property="player_opponents_nr", type="integer", description="Number of player opponents"),
@@ -261,8 +261,8 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
         $validated = $request->validate([
             'edition_id' => 'required|integer|exists:editions,id_edition',
             'division_id' => 'required|integer|exists:divisions,id_division',
+            'division_title' => 'required|string|max:64',
             'players_limit' => 'required|integer|min:1',
-            'court' => 'required|string|max:30',
             'playing_start_time' => 'required|date_format:H:i:s',
             'playing_end_time' => 'required|date_format:H:i:s|after:playing_start_time',
             'player_opponents_nr' => 'nullable|integer|min:1',
@@ -270,6 +270,10 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
             'include_scores' => 'boolean',
             'has_demonstrative_match' => 'boolean',
             'fixed_teams' => 'boolean',
+            'points_per_match' => 'nullable|integer|min:0',
+            'final_points_target' => 'nullable|integer|min:0',
+            'include_final' => 'boolean',
+            'finalized_at' => 'nullable|integer',
         ]);
 
         // Check if this edition-division combination already exists
@@ -285,7 +289,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
         }
 
         $editionDivision = EditionDivision::create($validated);
-        $editionDivision->load(['edition', 'division']);
+        $editionDivision->load(['edition', 'division', 'courts']);
 
         return $this->resourceResponse(
             new EditionDivisionResource($editionDivision),
@@ -312,7 +316,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *             @OA\Property(property="edition_id", type="integer", description="Edition ID"),
      *             @OA\Property(property="division_id", type="integer", description="Division ID"),
      *             @OA\Property(property="players_limit", type="integer", description="Players limit"),
-     *             @OA\Property(property="court", type="string", maxLength=30, description="Court name"),
+     *             @OA\Property(property="division_title", type="string", maxLength=64, description="Division title"),
      *             @OA\Property(property="playing_start_time", type="string", format="time", description="Playing start time"),
      *             @OA\Property(property="playing_end_time", type="string", format="time", description="Playing end time"),
      *             @OA\Property(property="player_opponents_nr", type="integer", description="Number of player opponents"),
@@ -366,8 +370,8 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
         $validated = $request->validate([
             'edition_id' => 'required|integer|exists:editions,id_edition',
             'division_id' => 'required|integer|exists:divisions,id_division',
+            'division_title' => 'required|string|max:64',
             'players_limit' => 'required|integer|min:1',
-            'court' => 'required|string|max:30',
             'playing_start_time' => 'required|date_format:H:i:s',
             'playing_end_time' => 'required|date_format:H:i:s',
             'player_opponents_nr' => 'nullable|integer|min:1',
@@ -375,6 +379,10 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
             'include_scores' => 'required|boolean',
             'has_demonstrative_match' => 'required|boolean',
             'fixed_teams' => 'required|boolean',
+            'points_per_match' => 'nullable|integer|min:0',
+            'final_points_target' => 'nullable|integer|min:0',
+            'include_final' => 'required|boolean',
+            'finalized_at' => 'nullable|integer',
         ]);
 
         // Validate playing_end_time is after playing_start_time if both are provided
@@ -406,7 +414,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
         }
 
         $editionDivision->update($validated);
-        $editionDivision->load(['edition', 'division']);
+        $editionDivision->load(['edition', 'division', 'courts']);
 
         return $this->resourceResponse(
             new EditionDivisionResource($editionDivision),
@@ -432,7 +440,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *             @OA\Property(property="edition_id", type="integer", description="Edition ID"),
      *             @OA\Property(property="division_id", type="integer", description="Division ID"),
      *             @OA\Property(property="players_limit", type="integer", description="Players limit"),
-     *             @OA\Property(property="court", type="string", maxLength=30, description="Court name"),
+     *             @OA\Property(property="division_title", type="string", maxLength=64, description="Division title"),
      *             @OA\Property(property="playing_start_time", type="string", format="time", description="Playing start time"),
      *             @OA\Property(property="playing_end_time", type="string", format="time", description="Playing end time"),
      *             @OA\Property(property="player_opponents_nr", type="integer", description="Number of player opponents"),
@@ -486,8 +494,8 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
         $validated = $request->validate([
             'edition_id' => 'sometimes|integer|exists:editions,id_edition',
             'division_id' => 'sometimes|integer|exists:divisions,id_division',
+            'division_title' => 'sometimes|string|max:64',
             'players_limit' => 'sometimes|integer|min:1',
-            'court' => 'sometimes|string|max:30',
             'playing_start_time' => 'sometimes|date_format:H:i:s',
             'playing_end_time' => 'sometimes|date_format:H:i:s',
             'player_opponents_nr' => 'nullable|integer|min:1',
@@ -495,6 +503,10 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
             'include_scores' => 'boolean',
             'has_demonstrative_match' => 'boolean',
             'fixed_teams' => 'boolean',
+            'points_per_match' => 'nullable|integer|min:0',
+            'final_points_target' => 'nullable|integer|min:0',
+            'include_final' => 'boolean',
+            'finalized_at' => 'nullable|integer',
         ]);
 
         // Validate playing_end_time is after playing_start_time if both are provided
@@ -526,7 +538,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
         }
 
         $editionDivision->update($validated);
-        $editionDivision->load(['edition', 'division']);
+        $editionDivision->load(['edition', 'division', 'courts']);
 
         return $this->resourceResponse(
             new EditionDivisionResource($editionDivision),
@@ -593,10 +605,10 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
     public function destroy(EditionDivision $editionDivision)
     {
         // Check if edition division has related participations
-        $participationsCount = EditionParticipation::where([
-            'edition_id' => $editionDivision->edition_id,
-            'division_id' => $editionDivision->division_id,
-        ])->count();
+        $participationsCount = EditionParticipation::where(
+            'edition_division_id',
+            $editionDivision->id_edition_division
+        )->count();
 
         if ($participationsCount > 0) {
             return $this->errorResponse(
@@ -746,10 +758,10 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
                 }
 
                 // Check if edition division has related participations
-                $participationsCount = EditionParticipation::where([
-                    'edition_id' => $editionDivision->edition_id,
-                    'division_id' => $editionDivision->division_id,
-                ])->count();
+                $participationsCount = EditionParticipation::where(
+                    'edition_division_id',
+                    $editionDivision->id_edition_division
+                )->count();
 
                 if ($participationsCount > 0) {
                     $results['failed'][] = [

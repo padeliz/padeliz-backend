@@ -23,12 +23,8 @@ class HasResourceMetadataTest extends TestCase
     public function test_get_searchable_fields_returns_defined_fields(): void
     {
         $expectedFields = [
-            'name',
             'first_name',
-            'middle_name',
             'last_name',
-            'phone',
-            'google_email',
             'playtomic_id',
             'rankedin_id',
         ];
@@ -72,9 +68,6 @@ class HasResourceMetadataTest extends TestCase
     {
         $expectedFields = [
             'id_player',
-            'name',
-            'first_name',
-            'last_name',
             'skill_division',
             'year_of_birth',
             'being_student',
@@ -97,15 +90,17 @@ class HasResourceMetadataTest extends TestCase
 
     public function test_is_searchable_field_returns_true_for_valid_field(): void
     {
-        $this->assertTrue(Player::isSearchableField('name'));
         $this->assertTrue(Player::isSearchableField('first_name'));
-        $this->assertTrue(Player::isSearchableField('phone'));
+        $this->assertTrue(Player::isSearchableField('last_name'));
+        $this->assertTrue(Player::isSearchableField('playtomic_id'));
     }
 
     public function test_is_searchable_field_returns_false_for_invalid_field(): void
     {
         $this->assertFalse(Player::isSearchableField('invalid_field'));
         $this->assertFalse(Player::isSearchableField('skill_division'));
+        $this->assertFalse(Player::isSearchableField('name'));
+        $this->assertFalse(Player::isSearchableField('middle_name'));
         $this->assertFalse(Player::isSearchableField(''));
     }
 
@@ -125,7 +120,7 @@ class HasResourceMetadataTest extends TestCase
 
     public function test_is_sortable_field_returns_true_for_valid_field(): void
     {
-        $this->assertTrue(Player::isSortableField('name'));
+        $this->assertTrue(Player::isSortableField('id_player'));
         $this->assertTrue(Player::isSortableField('skill_division'));
         $this->assertTrue(Player::isSortableField('inserted_at'));
     }
@@ -133,7 +128,10 @@ class HasResourceMetadataTest extends TestCase
     public function test_is_sortable_field_returns_false_for_invalid_field(): void
     {
         $this->assertFalse(Player::isSortableField('invalid_field'));
-        $this->assertFalse(Player::isSortableField('google_email'));
+        $this->assertFalse(Player::isSortableField('nonexistent_field'));
+        $this->assertFalse(Player::isSortableField('name'));
+        $this->assertFalse(Player::isSortableField('first_name'));
+        $this->assertFalse(Player::isSortableField('last_name'));
         $this->assertFalse(Player::isSortableField(''));
     }
 
@@ -211,15 +209,15 @@ class HasResourceMetadataTest extends TestCase
         $expectedSearchableFields = ['name'];
         $this->assertEquals($expectedSearchableFields, \App\Models\Division::getSearchableFields());
 
-        $expectedFilterableFields = ['is_students_only', 'its_first_edition_id'];
+        $expectedFilterableFields = ['its_first_edition_id'];
         $this->assertEquals($expectedFilterableFields, \App\Models\Division::getFilterableFields());
 
-        $expectedSortableFields = ['id_division', 'name', 'color', 'is_students_only', 'its_first_edition_id', 'inserted_at', 'updated_at'];
+        $expectedSortableFields = ['id_division', 'name', 'color', 'its_first_edition_id', 'inserted_at', 'updated_at'];
         $this->assertEquals($expectedSortableFields, \App\Models\Division::getSortableFields());
 
         // Test field checking
         $this->assertTrue(\App\Models\Division::isSearchableField('name'));
-        $this->assertTrue(\App\Models\Division::isFilterableField('is_students_only'));
+        $this->assertTrue(\App\Models\Division::isFilterableField('its_first_edition_id'));
         $this->assertTrue(\App\Models\Division::isSortableField('name'));
 
         $this->assertFalse(\App\Models\Division::isSearchableField('invalid_field'));
@@ -234,10 +232,10 @@ class HasResourceMetadataTest extends TestCase
         $expectedSearchableFields = ['name', 'box_1_text', 'box_2_text'];
         $this->assertEquals($expectedSearchableFields, \App\Models\Prize::getSearchableFields());
 
-        $expectedFilterableFields = ['box_1_bg_color', 'box_1_text_color', 'box_2_bg_color', 'box_2_text_color'];
+        $expectedFilterableFields = ['template', 'box_1_bg_color', 'box_1_text_color', 'box_2_bg_color', 'box_2_text_color'];
         $this->assertEquals($expectedFilterableFields, \App\Models\Prize::getFilterableFields());
 
-        $expectedSortableFields = ['id_prize', 'name', 'inserted_at', 'updated_at'];
+        $expectedSortableFields = ['id_prize', 'name', 'template', 'inserted_at', 'updated_at'];
         $this->assertEquals($expectedSortableFields, \App\Models\Prize::getSortableFields());
 
         // Test field checking
@@ -255,9 +253,11 @@ class HasResourceMetadataTest extends TestCase
     public function test_case_sensitivity_in_field_checking(): void
     {
         // Test that field checking is case-sensitive
-        $this->assertTrue(Player::isSearchableField('name'));
-        $this->assertFalse(Player::isSearchableField('Name'));
-        $this->assertFalse(Player::isSearchableField('NAME'));
+        $this->assertTrue(Player::isSearchableField('first_name'));
+        $this->assertFalse(Player::isSearchableField('First_Name'));
+        $this->assertFalse(Player::isSearchableField('FIRST_NAME'));
+        $this->assertFalse(Player::isSearchableField('name'));
+        $this->assertFalse(Player::isSortableField('name'));
 
         $this->assertTrue(Player::isFilterableField('skill_division'));
         $this->assertFalse(Player::isFilterableField('Skill_Division'));

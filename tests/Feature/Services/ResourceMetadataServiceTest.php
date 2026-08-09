@@ -31,9 +31,9 @@ class ResourceMetadataServiceTest extends TestCase
     public function test_get_player_metadata(): void
     {
         // Create some test data
-        Player::factory()->create(['name' => 'John Doe', 'skill_division' => 2.5]);
-        Player::factory()->create(['name' => 'Jane Smith', 'skill_division' => 3.0]);
-        Player::factory()->create(['name' => 'Bob Johnson', 'skill_division' => 4.5]);
+        Player::factory()->create(['first_name' => 'John', 'middle_name' => null, 'last_name' => 'Doe', 'skill_division' => 2.5]);
+        Player::factory()->create(['first_name' => 'Jane', 'middle_name' => null, 'last_name' => 'Smith', 'skill_division' => 3.0]);
+        Player::factory()->create(['first_name' => 'Bob', 'middle_name' => null, 'last_name' => 'Johnson', 'skill_division' => 4.5]);
 
         $metadata = $this->metadataService->getMetadata('Player', 'v1');
 
@@ -53,9 +53,9 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertEquals('name', $metadata['display_field']);
 
         $this->assertArrayHasKey('searchable_fields', $metadata);
-        $this->assertContains('name', $metadata['searchable_fields']);
         $this->assertContains('first_name', $metadata['searchable_fields']);
         $this->assertContains('last_name', $metadata['searchable_fields']);
+        $this->assertNotContains('name', $metadata['searchable_fields']);
 
         $this->assertArrayHasKey('filterable_fields', $metadata);
         $this->assertArrayHasKey('skill_division', $metadata['filterable_fields']);
@@ -65,7 +65,7 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertContains(4.5, $metadata['filterable_fields']['skill_division']['values']);
 
         $this->assertArrayHasKey('sortable_fields', $metadata);
-        $this->assertContains('name', $metadata['sortable_fields']);
+        $this->assertNotContains('name', $metadata['sortable_fields']);
         $this->assertContains('skill_division', $metadata['sortable_fields']);
     }
 
@@ -213,8 +213,10 @@ class ResourceMetadataServiceTest extends TestCase
 
         $this->assertArrayHasKey('display_field', $metadata);
         // Display field should be 'name' for models with searchable fields, null for models without
-        if (in_array($expectedSchemaName, ['MatchesTeam', 'EditionLottery', 'EditionLuckyOne', 'EditionParticipation', 'EditionDivision', 'PrizeFromClub', 'Eligibility'])) {
+        if (in_array($expectedSchemaName, ['MatchesTeam', 'EditionLottery', 'EditionLotteryLucky', 'EditionParticipation', 'PrizeFromClub', 'Eligibility'])) {
             $this->assertNull($metadata['display_field']);
+        } elseif ($expectedSchemaName === 'EditionDivision') {
+            $this->assertEquals('division_title', $metadata['display_field']);
         } else {
             $this->assertEquals('name', $metadata['display_field']);
         }
@@ -237,7 +239,7 @@ class ResourceMetadataServiceTest extends TestCase
             'Edition' => ['Edition', 'Edition'],
             'EditionDivision' => ['EditionDivision', 'EditionDivision'],
             'EditionLottery' => ['EditionLottery', 'EditionLottery'],
-            'EditionLuckyOne' => ['EditionLuckyOne', 'EditionLuckyOne'],
+            'EditionLotteryLucky' => ['EditionLotteryLucky', 'EditionLotteryLucky'],
             'EditionParticipation' => ['EditionParticipation', 'EditionParticipation'],
             'Location' => ['Location', 'Location'],
             'MatchesTeam' => ['MatchesTeam', 'MatchesTeam'],
@@ -251,16 +253,15 @@ class ResourceMetadataServiceTest extends TestCase
     public function test_division_metadata(): void
     {
         // Create test data
-        Division::factory()->create(['name' => 'Beginner', 'color' => '#FF0000', 'is_students_only' => false]);
-        Division::factory()->create(['name' => 'Intermediate', 'color' => '#00FF00', 'is_students_only' => true]);
+        Division::factory()->create(['name' => 'Beginner', 'color' => '#FF0000']);
+        Division::factory()->create(['name' => 'Intermediate', 'color' => '#00FF00']);
 
         $metadata = $this->metadataService->getMetadata('Division', 'v1');
 
         $this->assertEquals('Division', $metadata['schema_name']);
         $this->assertContains('name', $metadata['searchable_fields']);
-        $this->assertArrayHasKey('is_students_only', $metadata['filterable_fields']);
+        $this->assertArrayNotHasKey('is_students_only', $metadata['filterable_fields']);
         $this->assertArrayHasKey('its_first_edition_id', $metadata['filterable_fields']);
-        $this->assertEquals('boolean', $metadata['filterable_fields']['is_students_only']['type']);
         $this->assertEquals('integer', $metadata['filterable_fields']['its_first_edition_id']['type']);
     }
 
@@ -285,10 +286,16 @@ class ResourceMetadataServiceTest extends TestCase
         $edition = Edition::factory()->create();
         $division = Division::factory()->create();
 
+        $editionDivision = \App\Models\EditionDivision::factory()->create([
+            'edition_id' => $edition->id_edition,
+            'division_id' => $division->id_division,
+            'division_title' => $division->name,
+        ]);
+
         EditionParticipation::factory()->create([
             'player_id' => $player->id_player,
             'edition_id' => $edition->id_edition,
-            'division_id' => $division->id_division,
+            'edition_division_id' => $editionDivision->id_edition_division,
         ]);
 
         $metadata = $this->metadataService->getMetadata('EditionParticipation', 'v1');
@@ -298,12 +305,12 @@ class ResourceMetadataServiceTest extends TestCase
         $filterableFields = $metadata['filterable_fields'];
         $this->assertArrayHasKey('player_id', $filterableFields);
         $this->assertArrayHasKey('edition_id', $filterableFields);
-        $this->assertArrayHasKey('division_id', $filterableFields);
+        $this->assertArrayHasKey('edition_division_id', $filterableFields);
 
         // Test foreign key relationships
         if (isset($filterableFields['player_id']['type']) && $filterableFields['player_id']['type'] === 'foreign_key') {
             $this->assertEquals('Player', $filterableFields['player_id']['related_schema_name']);
-            $this->assertEquals('name', $filterableFields['player_id']['related_schema_field']);
+            $this->assertEquals('first_name', $filterableFields['player_id']['related_schema_field']);
             $this->assertIsObject($filterableFields['player_id']['values']);
         }
     }
@@ -314,7 +321,6 @@ class ResourceMetadataServiceTest extends TestCase
         $player = Player::factory()->create();
         Eligibility::factory()->create([
             'player_id' => $player->id_player,
-            'phone' => '+40712345678',
         ]);
 
         $metadata = $this->metadataService->getMetadata('Eligibility', 'v1');
@@ -555,7 +561,7 @@ class ResourceMetadataServiceTest extends TestCase
             'EditionLottery' => ['EditionLottery', 'edition-lotteries'],
             'EditionParticipation' => ['EditionParticipation', 'edition-participations'],
             'EditionDivision' => ['EditionDivision', 'edition-divisions'],
-            'EditionLuckyOne' => ['EditionLuckyOne', 'edition-lucky-ones'],
+            'EditionLotteryLucky' => ['EditionLotteryLucky', 'edition-lottery-luckies'],
             'Eligibility' => ['Eligibility', 'eligibilities'],
             'PrizeFromClub' => ['PrizeFromClub', 'prize-from-clubs'],
             'MatchesTeam' => ['MatchesTeam', 'matches-teams'],
@@ -628,13 +634,12 @@ class ResourceMetadataServiceTest extends TestCase
             );
         }
 
-        // Test models with display_field set to null (no searchable fields)
+        // Test models with display_field set to null (no searchable fields / explicit null)
         $modelsWithNullDisplayField = [
             'MatchesTeam',
             'EditionLottery',
-            'EditionLuckyOne',
+            'EditionLotteryLucky',
             'EditionParticipation',
-            'EditionDivision',
             'PrizeFromClub',
             'Eligibility',
         ];
@@ -648,5 +653,8 @@ class ResourceMetadataServiceTest extends TestCase
                 "Model {$modelName} should have display_field set to null"
             );
         }
+
+        $editionDivisionMetadata = $this->metadataService->getMetadata('EditionDivision', 'v1');
+        $this->assertEquals('division_title', $editionDivisionMetadata['display_field']);
     }
 }

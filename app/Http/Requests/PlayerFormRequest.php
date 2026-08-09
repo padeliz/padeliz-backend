@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Requests;
 
 use Illuminate\Foundation\Http\FormRequest;
+use Illuminate\Validation\Rule;
 
 class PlayerFormRequest extends FormRequest
 {
@@ -27,7 +28,6 @@ class PlayerFormRequest extends FormRequest
 
         $rules = [
             'skill_division' => 'nullable|numeric|min:0|max:9.9',
-            'first_name' => 'nullable|string|max:50',
             'middle_name' => 'nullable|string|max:50',
             'last_name' => 'nullable|string|max:50',
             'year_of_birth' => 'nullable|integer|min:1900|max:9999',
@@ -36,18 +36,32 @@ class PlayerFormRequest extends FormRequest
             'rankedin_id' => 'nullable|string|max:15',
             'instagram_username' => 'nullable|string|max:50',
             'facebook_username' => 'nullable|string|max:50',
+            'email' => [
+                'nullable',
+                'email',
+                'max:255',
+                Rule::unique('player_emails', 'email')->where(function ($query) use ($playerId) {
+                    if ($playerId) {
+                        $query->where('player_id', '!=', $playerId);
+                    }
+                }),
+            ],
+            'phone' => [
+                'nullable',
+                'string',
+                'max:30',
+                Rule::unique('player_phones', 'phone')->where(function ($query) use ($playerId) {
+                    if ($playerId) {
+                        $query->where('player_id', '!=', $playerId);
+                    }
+                }),
+            ],
         ];
 
-        // For store method, require name, email, and phone
         if ($this->isMethod('POST')) {
-            $rules['name'] = 'required|string|max:255';
-            $rules['google_email'] = 'required|email|unique:players,google_email,' . $playerId . ',id_player';
-            $rules['phone'] = 'required|string|unique:players,phone,' . $playerId . ',id_player';
+            $rules['first_name'] = 'required|string|max:50';
         } else {
-            // For update method, make them optional
-            $rules['name'] = 'sometimes|string|max:255';
-            $rules['google_email'] = 'sometimes|email|unique:players,google_email,' . $playerId . ',id_player';
-            $rules['phone'] = 'sometimes|string|unique:players,phone,' . $playerId . ',id_player';
+            $rules['first_name'] = 'sometimes|required|string|max:50';
         }
 
         return $rules;
@@ -61,11 +75,9 @@ class PlayerFormRequest extends FormRequest
     public function messages(): array
     {
         return [
-            'name.required' => 'The player name is required.',
-            'google_email.required' => 'The email address is required.',
-            'google_email.email' => 'Please provide a valid email address.',
-            'google_email.unique' => 'This email address is already registered.',
-            'phone.required' => 'The phone number is required.',
+            'first_name.required' => 'The player first name is required.',
+            'email.email' => 'Please provide a valid email address.',
+            'email.unique' => 'This email address is already registered.',
             'phone.unique' => 'This phone number is already registered.',
             'skill_division.numeric' => 'Skill division must be a number.',
             'skill_division.min' => 'Skill division must be at least 0.',

@@ -7,11 +7,13 @@ namespace App\Models;
 use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 /**
  * @OA\Schema(
  *     schema="Division",
- *     required={"name", "color", "is_students_only", "its_first_edition_id"},
+ *     required={"name", "color", "its_first_edition_id"},
  *     @OA\Property(
  *         property="id_division",
  *         type="integer",
@@ -36,12 +38,6 @@ use Illuminate\Database\Eloquent\Model;
  *         title="Color",
  *         description="Hex color code for the division",
  *         example="#FF0000"
- *     ),
- *     @OA\Property(
- *         property="is_students_only",
- *         type="boolean",
- *         title="Students Only",
- *         description="Whether this division is restricted to students only"
  *     ),
  *     @OA\Property(
  *         property="its_first_edition_id",
@@ -102,7 +98,6 @@ class Division extends Model
      * Fields that can be filtered
      */
     public static array $filterableFields = [
-        'is_students_only',
         'its_first_edition_id',
     ];
 
@@ -113,7 +108,6 @@ class Division extends Model
         'id_division',
         'name',
         'color',
-        'is_students_only',
         'its_first_edition_id',
         'inserted_at',
         'updated_at',
@@ -138,7 +132,6 @@ class Division extends Model
     protected $fillable = [
         'name',
         'color',
-        'is_students_only',
         'its_first_edition_id',
     ];
 
@@ -150,16 +143,22 @@ class Division extends Model
     protected $casts = [
         'inserted_at' => 'integer',
         'updated_at' => 'integer',
-        'is_students_only' => 'boolean',
     ];
 
-    public function editionDivisions()
+    public function editionDivisions(): HasMany
     {
         return $this->hasMany(EditionDivision::class, 'division_id');
     }
 
-    public function participations()
+    public function participations(): HasManyThrough
     {
-        return $this->hasMany(EditionParticipation::class, 'division_id');
+        return $this->hasManyThrough(
+            EditionParticipation::class,
+            EditionDivision::class,
+            'division_id',
+            'edition_division_id',
+            'id_division',
+            'id_edition_division'
+        );
     }
 }

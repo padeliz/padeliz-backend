@@ -16,11 +16,13 @@ class EditionDivisionFactory extends Factory
 
     public function definition()
     {
+        $division = Division::factory()->create();
+
         return [
             'edition_id' => Edition::factory(),
-            'division_id' => Division::factory(),
+            'division_id' => $division->id_division,
+            'division_title' => $division->name,
             'players_limit' => $this->faker->numberBetween(8, 16),
-            'court' => 'Court ' . $this->faker->numberBetween(1, 3),
             'playing_start_time' => Carbon::createFromTime($this->faker->numberBetween(12, 19), 30),
             'playing_end_time' => Carbon::createFromTime($this->faker->numberBetween(16, 21), 30),
             'player_opponents_nr' => $this->faker->numberBetween(5, 9),
@@ -28,6 +30,10 @@ class EditionDivisionFactory extends Factory
             'include_scores' => $this->faker->boolean(80),
             'has_demonstrative_match' => $this->faker->boolean(20),
             'fixed_teams' => $this->faker->boolean(20),
+            'points_per_match' => $this->faker->optional()->numberBetween(1, 3),
+            'final_points_target' => $this->faker->optional()->numberBetween(10, 24),
+            'include_final' => $this->faker->boolean(30),
+            'finalized_at' => null,
             'inserted_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
         ];
     }

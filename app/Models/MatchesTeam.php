@@ -22,22 +22,22 @@ use Illuminate\Database\Eloquent\Model;
  *     ),
  *     @OA\Property(property="player_1", type="string", maxLength=50, title="Player 1", description="Player 1 of the team"),
  *     @OA\Property(property="player_2", type="string", maxLength=50, title="Player 2", description="Player 2 of the team"),
- *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true, title="Created At", description="Timestamp when the matches team was created"),
- *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true, title="Updated At", description="Timestamp when the matches team was last updated"),
  *     @OA\Property(
- *         property="player1",
- *         ref="#/components/schemas/Player",
- *         title="Player 1",
- *         description="Related player 1 object",
- *         nullable=true
+ *         property="player_1_is_collecting_points",
+ *         type="boolean",
+ *         default=true,
+ *         title="Player 1 Collecting Points",
+ *         description="Whether player 1 is collecting points"
  *     ),
  *     @OA\Property(
- *         property="player2",
- *         ref="#/components/schemas/Player",
- *         title="Player 2",
- *         description="Related player 2 object",
- *         nullable=true
- *     )
+ *         property="player_2_is_collecting_points",
+ *         type="boolean",
+ *         default=true,
+ *         title="Player 2 Collecting Points",
+ *         description="Whether player 2 is collecting points"
+ *     ),
+ *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true, title="Created At", description="Timestamp when the matches team was created"),
+ *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true, title="Updated At", description="Timestamp when the matches team was last updated")
  * )
  */
 class MatchesTeam extends Model
@@ -49,7 +49,8 @@ class MatchesTeam extends Model
      * Fields that can be searched
      */
     public static array $searchableFields = [
-        // No searchable fields for this model
+        'player_1',
+        'player_2',
     ];
 
     /**
@@ -58,6 +59,8 @@ class MatchesTeam extends Model
     public static array $filterableFields = [
         'player_1',
         'player_2',
+        'player_1_is_collecting_points',
+        'player_2_is_collecting_points',
     ];
 
     /**
@@ -67,6 +70,8 @@ class MatchesTeam extends Model
         'id_team',
         'player_1',
         'player_2',
+        'player_1_is_collecting_points',
+        'player_2_is_collecting_points',
         'inserted_at',
         'updated_at',
     ];
@@ -90,6 +95,8 @@ class MatchesTeam extends Model
     protected $fillable = [
         'player_1',
         'player_2',
+        'player_1_is_collecting_points',
+        'player_2_is_collecting_points',
     ];
 
     /**
@@ -100,15 +107,7 @@ class MatchesTeam extends Model
     protected $casts = [
         'inserted_at' => 'integer',
         'updated_at' => 'integer',
+        'player_1_is_collecting_points' => 'boolean',
+        'player_2_is_collecting_points' => 'boolean',
     ];
-
-    public function player1()
-    {
-        return $this->belongsTo(Player::class, 'player_1', 'id_player');
-    }
-
-    public function player2()
-    {
-        return $this->belongsTo(Player::class, 'player_2', 'id_player');
-    }
 }

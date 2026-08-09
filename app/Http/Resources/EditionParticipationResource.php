@@ -20,7 +20,7 @@ class EditionParticipationResource extends JsonResource
             'id_participation' => $this->id_participation,
             'edition_id' => $this->edition_id,
             'player_id' => $this->player_id,
-            'division_id' => $this->division_id,
+            'edition_division_id' => $this->edition_division_id,
             'is_minor' => $this->is_minor,
             'is_student' => $this->is_student,
             'discount' => $this->discount,
@@ -35,8 +35,8 @@ class EditionParticipationResource extends JsonResource
             'player' => $this->whenLoaded('player', function () {
                 return new PlayerResource($this->player);
             }),
-            'division' => $this->whenLoaded('division', function () {
-                return new DivisionResource($this->division);
+            'edition_division' => $this->whenLoaded('editionDivision', function () {
+                return new EditionDivisionResource($this->editionDivision);
             }),
         ];
     }

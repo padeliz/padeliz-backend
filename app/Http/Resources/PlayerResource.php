@@ -20,11 +20,6 @@ class PlayerResource extends JsonResource
         return [
             'id_player' => $this->id_player,
             'name' => $this->name,
-            'phone' => $this->phone,
-            'google_id' => $this->google_id,
-            'google_name' => $this->google_name,
-            'google_email' => $this->google_email,
-            'google_avatar' => $this->google_avatar,
             'skill_division' => $this->skill_division,
             'first_name' => $this->first_name,
             'middle_name' => $this->middle_name,
@@ -38,6 +33,24 @@ class PlayerResource extends JsonResource
             'facebook_username' => $this->facebook_username,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
+            'emails' => $this->whenLoaded('emails', function () {
+                return $this->emails->map(static fn ($email) => [
+                    'id_player_email' => $email->id_player_email,
+                    'email' => $email->email,
+                    'purposes' => $email->purposes,
+                    'is_primary' => $email->is_primary,
+                    'verified_at' => $email->verified_at,
+                ])->values()->all();
+            }),
+            'phones' => $this->whenLoaded('phones', function () {
+                return $this->phones->map(static fn ($phone) => [
+                    'id_player_phone' => $phone->id_player_phone,
+                    'phone' => $phone->phone,
+                    'purposes' => $phone->purposes,
+                    'is_primary' => $phone->is_primary,
+                    'verified_at' => $phone->verified_at,
+                ])->values()->all();
+            }),
             'uploaded_profile_images' => $this->profileImages
                 ->map(static fn (PlayerProfileImage $img) => [
                     'id' => $img->id,

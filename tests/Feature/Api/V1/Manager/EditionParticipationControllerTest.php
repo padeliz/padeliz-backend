@@ -6,6 +6,7 @@ namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Division;
 use App\Models\Edition;
+use App\Models\EditionDivision;
 use App\Models\EditionParticipation;
 use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,6 +23,8 @@ class EditionParticipationControllerTest extends TestCase
 
     private $division;
 
+    private $editionDivision;
+
     private $player;
 
     public function setUp(): void
@@ -29,12 +32,7 @@ class EditionParticipationControllerTest extends TestCase
         parent::setUp();
 
         $this->manager = Player::factory()->manager()->create([
-            'name' => 'Test Manager',
-            'phone' => '1234567890',
-            'google_id' => 'google_manager_123',
-            'google_name' => 'Test Manager',
-            'google_email' => 'manager@example.com',
-            'google_avatar' => 'https://example.com/manager-avatar.jpg',
+            'first_name' => 'Test', 'middle_name' => null, 'last_name' => 'Manager',
             'user_types' => ['player', 'manager'],
         ]);
 
@@ -46,8 +44,14 @@ class EditionParticipationControllerTest extends TestCase
             'name' => 'Test Division',
         ]);
 
+        $this->editionDivision = EditionDivision::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'division_id' => $this->division->id_division,
+            'division_title' => $this->division->name,
+        ]);
+
         $this->player = Player::factory()->create([
-            'name' => 'Test Player',
+            'first_name' => 'Test', 'middle_name' => null, 'last_name' => 'Player',
         ]);
     }
 
@@ -68,7 +72,7 @@ class EditionParticipationControllerTest extends TestCase
                         'id_participation',
                         'edition_id',
                         'player_id',
-                        'division_id',
+                        'edition_division_id',
                         'is_minor',
                         'is_student',
                         'discount',
@@ -104,7 +108,7 @@ class EditionParticipationControllerTest extends TestCase
         $editionParticipation = EditionParticipation::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
-            'division_id' => $this->division->id_division,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
             'is_minor' => true,
             'is_student' => false,
         ]);
@@ -119,7 +123,7 @@ class EditionParticipationControllerTest extends TestCase
                     'id_participation' => $editionParticipation->id_participation,
                     'edition_id' => $this->edition->id_edition,
                     'player_id' => $this->player->id_player,
-                    'division_id' => $this->division->id_division,
+                    'edition_division_id' => $this->editionDivision->id_edition_division,
                     'is_minor' => true,
                     'is_student' => false,
                 ],
@@ -134,7 +138,7 @@ class EditionParticipationControllerTest extends TestCase
         $editionParticipationData = [
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
-            'division_id' => $this->division->id_division,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
             'is_minor' => true,
             'is_student' => false,
             'discount' => 10.00,
@@ -152,7 +156,7 @@ class EditionParticipationControllerTest extends TestCase
                 'data' => [
                     'edition_id' => $this->edition->id_edition,
                     'player_id' => $this->player->id_player,
-                    'division_id' => $this->division->id_division,
+                    'edition_division_id' => $this->editionDivision->id_edition_division,
                     'is_minor' => true,
                     'is_student' => false,
                     'discount' => 10.00,
@@ -163,7 +167,7 @@ class EditionParticipationControllerTest extends TestCase
         $this->assertDatabaseHas('edition_participations', [
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
-            'division_id' => $this->division->id_division,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
         ]);
     }
 
@@ -174,7 +178,7 @@ class EditionParticipationControllerTest extends TestCase
         $editionParticipation = EditionParticipation::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
-            'division_id' => $this->division->id_division,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
             'is_minor' => false,
             'is_student' => false,
         ]);
@@ -182,7 +186,7 @@ class EditionParticipationControllerTest extends TestCase
         $updateData = [
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
-            'division_id' => $this->division->id_division,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
             'is_minor' => true,
             'is_student' => true,
             'discount' => 15.00,
@@ -218,7 +222,7 @@ class EditionParticipationControllerTest extends TestCase
         $editionParticipation = EditionParticipation::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
-            'division_id' => $this->division->id_division,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
             'is_minor' => false,
             'is_student' => false,
         ]);
@@ -261,7 +265,7 @@ class EditionParticipationControllerTest extends TestCase
         $editionParticipation = EditionParticipation::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
-            'division_id' => $this->division->id_division,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
         ]);
 
         // Test PUT without required fields
@@ -270,19 +274,19 @@ class EditionParticipationControllerTest extends TestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['edition_id', 'player_id', 'division_id', 'is_student']);
+            ->assertJsonValidationErrors(['edition_id', 'player_id', 'edition_division_id', 'is_student']);
 
         // Test PUT with empty required fields
         $response = $this->putJson("/api/v1/manager/edition-participations/{$editionParticipation->id_participation}", [
             'edition_id' => '',
             'player_id' => '',
-            'division_id' => '',
+            'edition_division_id' => '',
             'is_minor' => '',
             'is_student' => '',
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['edition_id', 'player_id', 'division_id', 'is_minor', 'is_student']);
+            ->assertJsonValidationErrors(['edition_id', 'player_id', 'edition_division_id', 'is_minor', 'is_student']);
     }
 
     public function test_manager_can_delete_participation()
@@ -292,7 +296,7 @@ class EditionParticipationControllerTest extends TestCase
         $editionParticipation = EditionParticipation::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
-            'division_id' => $this->division->id_division,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
         ]);
 
         $response = $this->deleteJson("/api/v1/manager/edition-participations/{$editionParticipation->id_participation}");
@@ -424,14 +428,14 @@ class EditionParticipationControllerTest extends TestCase
         EditionParticipation::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
-            'division_id' => $this->division->id_division,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
         ]);
 
         // Try to create duplicate
         $duplicateData = [
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
-            'division_id' => $this->division->id_division,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
             'is_minor' => false,
             'is_student' => false,
         ];
@@ -455,20 +459,20 @@ class EditionParticipationControllerTest extends TestCase
         $editionParticipation1 = EditionParticipation::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
-            'division_id' => $this->division->id_division,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
         ]);
 
         $editionParticipation2 = EditionParticipation::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'player_id' => $player2->id_player,
-            'division_id' => $this->division->id_division,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
         ]);
 
         // Try to update second to match first
         $response = $this->putJson("/api/v1/manager/edition-participations/{$editionParticipation2->id_participation}", [
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
-            'division_id' => $this->division->id_division,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
             'is_minor' => false,
             'is_student' => false,
         ]);
@@ -487,7 +491,7 @@ class EditionParticipationControllerTest extends TestCase
         $response = $this->postJson("/api/v1/manager/edition-participations", []);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['edition_id', 'player_id', 'division_id']);
+            ->assertJsonValidationErrors(['edition_id', 'player_id', 'edition_division_id']);
     }
 
     public function test_participation_creation_validation_invalid_player()
@@ -497,7 +501,7 @@ class EditionParticipationControllerTest extends TestCase
         $response = $this->postJson("/api/v1/manager/edition-participations", [
             'edition_id' => $this->edition->id_edition,
             'player_id' => 99999, // Non-existent player
-            'division_id' => $this->division->id_division,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
         ]);
 
         $response->assertStatus(422)
@@ -511,11 +515,11 @@ class EditionParticipationControllerTest extends TestCase
         $response = $this->postJson("/api/v1/manager/edition-participations", [
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
-            'division_id' => 99999, // Non-existent division
+            'edition_division_id' => 99999, // Non-existent division
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['division_id']);
+            ->assertJsonValidationErrors(['edition_division_id']);
     }
 
     public function test_participation_update_validation()
@@ -578,7 +582,7 @@ class EditionParticipationControllerTest extends TestCase
                         'id_participation',
                         'edition_id',
                         'player_id',
-                        'division_id',
+                        'edition_division_id',
                     ],
                 ],
                 'links' => [
@@ -610,7 +614,7 @@ class EditionParticipationControllerTest extends TestCase
         $editionParticipationData = [
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
-            'division_id' => $this->division->id_division,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
             // Not providing optional fields
         ];
 
@@ -625,7 +629,7 @@ class EditionParticipationControllerTest extends TestCase
         $this->assertDatabaseHas('edition_participations', [
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
-            'division_id' => $this->division->id_division,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
             'is_minor' => 0,
             'is_student' => 0,
             'discount' => 0,

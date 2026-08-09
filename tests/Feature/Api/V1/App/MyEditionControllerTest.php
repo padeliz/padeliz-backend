@@ -47,27 +47,27 @@ class MyEditionControllerTest extends TestCase
         $division = Division::factory()->create();
 
         $inRangeWithParticipation = Edition::factory()->create(['date' => '2026-04-15']);
-        EditionDivision::factory()->create([
+        $edInRange = EditionDivision::factory()->create([
             'edition_id' => $inRangeWithParticipation->id_edition,
             'division_id' => $division->id_division,
         ]);
         EditionParticipation::factory()->create([
             'edition_id' => $inRangeWithParticipation->id_edition,
             'player_id' => $player->id_player,
-            'division_id' => $division->id_division,
+            'edition_division_id' => $edInRange->id_edition_division,
         ]);
 
         $inRangeWithoutParticipation = Edition::factory()->create(['date' => '2026-04-16']);
 
         $outOfRangeWithParticipation = Edition::factory()->create(['date' => '2026-05-01']);
-        EditionDivision::factory()->create([
+        $edOut = EditionDivision::factory()->create([
             'edition_id' => $outOfRangeWithParticipation->id_edition,
             'division_id' => $division->id_division,
         ]);
         EditionParticipation::factory()->create([
             'edition_id' => $outOfRangeWithParticipation->id_edition,
             'player_id' => $player->id_player,
-            'division_id' => $division->id_division,
+            'edition_division_id' => $edOut->id_edition_division,
         ]);
 
         $response = $this->getJson('/api/v1/app/my/editions?' . http_build_query([

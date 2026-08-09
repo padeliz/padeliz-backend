@@ -23,12 +23,7 @@ class ClubControllerTest extends TestCase
         parent::setUp();
 
         $this->manager = Player::factory()->manager()->create([
-            'name' => 'Test Manager',
-            'phone' => '1234567890',
-            'google_id' => 'google_manager_123',
-            'google_name' => 'Test Manager',
-            'google_email' => 'manager@example.com',
-            'google_avatar' => 'https://example.com/manager-avatar.jpg',
+            'first_name' => 'Test', 'middle_name' => null, 'last_name' => 'Manager',
             'user_types' => ['player', 'manager'],
         ]);
     }

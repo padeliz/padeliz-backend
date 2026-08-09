@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Models;
 
 use App\Traits\HasResourceMetadata;
+use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -13,7 +14,7 @@ use Laravel\Sanctum\HasApiTokens;
 /**
  * @OA\Schema(
  *     schema="Player",
- *     required={"name"},
+ *     required={"first_name"},
  *     @OA\Property(
  *         property="id_player",
  *         type="integer",
@@ -25,42 +26,9 @@ use Laravel\Sanctum\HasApiTokens;
  *     @OA\Property(
  *         property="name",
  *         type="string",
- *         maxLength=250,
+ *         readOnly=true,
  *         title="Name",
- *         description="Player's full name"
- *     ),
- *     @OA\Property(
- *         property="google_id",
- *         type="string",
- *         title="Google ID",
- *         description="Google account identifier"
- *     ),
- *     @OA\Property(
- *         property="google_name",
- *         type="string",
- *         title="Google Name",
- *         description="Name from Google account"
- *     ),
- *     @OA\Property(
- *         property="google_email",
- *         type="string",
- *         title="Google Email",
- *         description="Email from Google account"
- *     ),
- *     @OA\Property(
- *         property="google_avatar",
- *         type="string",
- *         title="Google Avatar",
- *         description="Avatar URL from Google account"
- *     ),
- *     @OA\Property(
- *         property="phone",
- *         type="string",
- *         maxLength=255,
- *         nullable=true,
- *         title="Phone",
- *         description="Phone number",
- *         example="+40712345678"
+ *         description="Computed full name from first, middle, and last name"
  *     ),
  *     @OA\Property(
  *         property="skill_division",
@@ -77,7 +45,6 @@ use Laravel\Sanctum\HasApiTokens;
  *         property="first_name",
  *         type="string",
  *         maxLength=50,
- *         nullable=true,
  *         title="First Name",
  *         description="Player's first name"
  *     ),
@@ -172,6 +139,20 @@ use Laravel\Sanctum\HasApiTokens;
  *         description="Timestamp when the player was last updated"
  *     ),
  *     @OA\Property(
+ *         property="emails",
+ *         type="array",
+ *         @OA\Items(ref="#/components/schemas/PlayerEmail"),
+ *         title="Emails",
+ *         description="Player email addresses"
+ *     ),
+ *     @OA\Property(
+ *         property="phones",
+ *         type="array",
+ *         @OA\Items(ref="#/components/schemas/PlayerPhone"),
+ *         title="Phones",
+ *         description="Player phone numbers"
+ *     ),
+ *     @OA\Property(
  *         property="uploaded_profile_images",
  *         type="array",
  *         @OA\Items(
@@ -204,18 +185,16 @@ class Player extends Authenticatable
      */
     protected $with = [
         'profileImages',
+        'emails',
+        'phones',
     ];
 
     /**
      * Fields that can be searched
      */
     public static array $searchableFields = [
-        'name',
         'first_name',
-        'middle_name',
         'last_name',
-        'phone',
-        'google_email',
         'playtomic_id',
         'rankedin_id',
     ];
@@ -235,9 +214,6 @@ class Player extends Authenticatable
      */
     public static array $sortableFields = [
         'id_player',
-        'name',
-        'first_name',
-        'last_name',
         'skill_division',
         'year_of_birth',
         'being_student',
@@ -262,12 +238,6 @@ class Player extends Authenticatable
     public const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
-        'name',
-        'phone',
-        'google_id',
-        'google_name',
-        'google_email',
-        'google_avatar',
         'skill_division',
         'first_name',
         'middle_name',
@@ -276,12 +246,18 @@ class Player extends Authenticatable
         'being_student',
         'playtomic_id',
         'rankedin_id',
+        'instagram_username',
+        'facebook_username',
         'user_types',
+        'remember_token',
     ];
 
     protected $hidden = [
-        'google_id',
         'remember_token',
+    ];
+
+    protected $appends = [
+        'name',
     ];
 
     /**
@@ -298,7 +274,41 @@ class Player extends Authenticatable
         'user_types' => 'array',
     ];
 
-    public function participations()
+    /**
+     * Computed full name from first / middle / last parts.
+     */
+    protected function name(): Attribute
+    {
+        return Attribute::make(
+            get: function (): string {
+                return collect([$this->first_name, $this->middle_name, $this->last_name])
+                    ->filter(static fn ($part) => $part !== null && $part !== '')
+                    ->implode(' ');
+            }
+        );
+    }
+
+    public function emails(): HasMany
+    {
+        return $this->hasMany(PlayerEmail::class, 'player_id', 'id_player');
+    }
+
+    public function phones(): HasMany
+    {
+        return $this->hasMany(PlayerPhone::class, 'player_id', 'id_player');
+    }
+
+    public function identities(): HasMany
+    {
+        return $this->hasMany(PlayerIdentity::class, 'player_id', 'id_player');
+    }
+
+    public function invites(): HasMany
+    {
+        return $this->hasMany(PlayerInvite::class, 'player_id', 'id_player');
+    }
+
+    public function participations(): HasMany
     {
         return $this->hasMany(EditionParticipation::class, 'player_id');
     }

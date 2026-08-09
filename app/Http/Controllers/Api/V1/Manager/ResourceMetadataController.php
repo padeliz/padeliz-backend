@@ -34,7 +34,7 @@ class ResourceMetadataController extends V1BaseController
      *         name="schema",
      *         in="path",
      *         required=true,
-     *         description="(e.g., Club, Division, Edition, EditionDivision, EditionLottery, EditionLuckyOne, EditionParticipation, Eligibility, Location, MatchesTeam, Player, Prize, PrizeFromClub)",
+     *         description="(e.g., Club, Division, Edition, EditionDivision, EditionLottery, EditionLotteryLucky, EditionParticipation, Eligibility, Location, MatchesTeam, Player, Prize, PrizeFromClub)",
      *         @OA\Schema(type="string", example="EditionParticipation")
      *     ),
      *     @OA\Response(

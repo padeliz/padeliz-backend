@@ -27,8 +27,8 @@ class ResourceMetadataControllerTest extends TestCase
         $manager->addUserType('manager');
 
         // Create some test data
-        Player::factory()->create(['name' => 'John Doe', 'skill_division' => 2.5]);
-        Player::factory()->create(['name' => 'Jane Smith', 'skill_division' => 3.0]);
+        Player::factory()->create(['first_name' => 'John', 'middle_name' => null, 'last_name' => 'Doe', 'skill_division' => 2.5]);
+        Player::factory()->create(['first_name' => 'Jane', 'middle_name' => null, 'last_name' => 'Smith', 'skill_division' => 3.0]);
 
         $response = $this->actingAs($manager)
             ->getJson('/api/v1/manager/metadata/Player');
@@ -56,10 +56,11 @@ class ResourceMetadataControllerTest extends TestCase
                 ],
             ]);
 
-        $this->assertContains('name', $response->json('data.searchable_fields'));
+        $this->assertContains('first_name', $response->json('data.searchable_fields'));
+        $this->assertNotContains('name', $response->json('data.searchable_fields'));
         $this->assertArrayHasKey('skill_division', $response->json('data.filterable_fields'));
         $this->assertEquals('name', $response->json('data.display_field'));
-        $this->assertContains('name', $response->json('data.sortable_fields'));
+        $this->assertNotContains('name', $response->json('data.sortable_fields'));
         $this->assertNotNull($response->json('data.swagger_schema'));
         $this->assertIsArray($response->json('data.request_body'));
     }
@@ -324,7 +325,7 @@ class ResourceMetadataControllerTest extends TestCase
             'Edition' => ['Edition', 'Edition'],
             'EditionDivision' => ['EditionDivision', 'EditionDivision'],
             'EditionLottery' => ['EditionLottery', 'EditionLottery'],
-            'EditionLuckyOne' => ['EditionLuckyOne', 'EditionLuckyOne'],
+            'EditionLotteryLucky' => ['EditionLotteryLucky', 'EditionLotteryLucky'],
             'EditionParticipation' => ['EditionParticipation', 'EditionParticipation'],
             'Location' => ['Location', 'Location'],
             'MatchesTeam' => ['MatchesTeam', 'MatchesTeam'],
@@ -343,8 +344,8 @@ class ResourceMetadataControllerTest extends TestCase
         $manager->addUserType('manager');
 
         // Create test data
-        Division::factory()->create(['name' => 'Beginner', 'color' => '#FF0000', 'is_students_only' => false]);
-        Division::factory()->create(['name' => 'Intermediate', 'color' => '#00FF00', 'is_students_only' => true]);
+        Division::factory()->create(['name' => 'Beginner', 'color' => '#FF0000']);
+        Division::factory()->create(['name' => 'Intermediate', 'color' => '#00FF00']);
 
         $response = $this->actingAs($manager)
             ->getJson('/api/v1/manager/metadata/Division');
@@ -359,7 +360,7 @@ class ResourceMetadataControllerTest extends TestCase
             ]);
 
         $this->assertContains('name', $response->json('data.searchable_fields'));
-        $this->assertArrayHasKey('is_students_only', $response->json('data.filterable_fields'));
+        $this->assertArrayNotHasKey('is_students_only', $response->json('data.filterable_fields'));
         $this->assertArrayHasKey('its_first_edition_id', $response->json('data.filterable_fields'));
         $this->assertIsArray($response->json('data.request_body'));
     }
@@ -403,10 +404,16 @@ class ResourceMetadataControllerTest extends TestCase
         $edition = Edition::factory()->create();
         $division = Division::factory()->create();
 
+        $editionDivision = \App\Models\EditionDivision::factory()->create([
+            'edition_id' => $edition->id_edition,
+            'division_id' => $division->id_division,
+            'division_title' => $division->name,
+        ]);
+
         EditionParticipation::factory()->create([
             'player_id' => $player->id_player,
             'edition_id' => $edition->id_edition,
-            'division_id' => $division->id_division,
+            'edition_division_id' => $editionDivision->id_edition_division,
         ]);
 
         $response = $this->actingAs($manager)
@@ -424,12 +431,12 @@ class ResourceMetadataControllerTest extends TestCase
         $filterableFields = $response->json('data.filterable_fields');
         $this->assertArrayHasKey('player_id', $filterableFields);
         $this->assertArrayHasKey('edition_id', $filterableFields);
-        $this->assertArrayHasKey('division_id', $filterableFields);
+        $this->assertArrayHasKey('edition_division_id', $filterableFields);
 
         // Test foreign key relationships
         if (isset($filterableFields['player_id']['type']) && $filterableFields['player_id']['type'] === 'foreign_key') {
             $this->assertEquals('Player', $filterableFields['player_id']['related_schema_name']);
-            $this->assertEquals('name', $filterableFields['player_id']['related_schema_field']);
+            $this->assertEquals('first_name', $filterableFields['player_id']['related_schema_field']);
         }
 
         $this->assertIsArray($response->json('data.request_body'));
@@ -446,7 +453,6 @@ class ResourceMetadataControllerTest extends TestCase
         $player = Player::factory()->create();
         Eligibility::factory()->create([
             'player_id' => $player->id_player,
-            'phone' => '+40712345678',
         ]);
 
         $response = $this->actingAs($manager)
@@ -557,6 +563,7 @@ class ResourceMetadataControllerTest extends TestCase
             'Location' => 'name',
             'Division' => 'name',
             'Edition' => 'name',
+            'EditionDivision' => 'division_title',
             'Prize' => 'name',
         ];
 
@@ -576,9 +583,8 @@ class ResourceMetadataControllerTest extends TestCase
         $modelsWithNullDisplayField = [
             'MatchesTeam',
             'EditionLottery',
-            'EditionLuckyOne',
+            'EditionLotteryLucky',
             'EditionParticipation',
-            'EditionDivision',
             'PrizeFromClub',
             'Eligibility',
         ];

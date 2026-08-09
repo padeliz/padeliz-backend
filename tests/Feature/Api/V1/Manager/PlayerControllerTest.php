@@ -29,22 +29,16 @@ class PlayerControllerTest extends TestCase
         parent::setUp();
 
         $this->manager = Player::factory()->manager()->create([
-            'name' => 'Test Manager',
-            'phone' => '1234567890',
-            'google_id' => 'google_manager_123',
-            'google_name' => 'Test Manager',
-            'google_email' => 'manager@example.com',
-            'google_avatar' => 'https://example.com/manager-avatar.jpg',
+            'first_name' => 'Test',
+            'middle_name' => null,
+            'last_name' => 'Manager',
             'user_types' => ['player', 'manager'],
         ]);
 
         $this->player = Player::factory()->create([
-            'name' => 'Test Player',
-            'phone' => '0987654321',
-            'google_id' => 'google_player_123',
-            'google_name' => 'Test Player',
-            'google_email' => 'player@example.com',
-            'google_avatar' => 'https://example.com/player-avatar.jpg',
+            'first_name' => 'Test',
+            'middle_name' => null,
+            'last_name' => 'Player',
             'user_types' => ['player'],
             'skill_division' => 4.5,
             'year_of_birth' => 1990,
@@ -70,8 +64,8 @@ class PlayerControllerTest extends TestCase
                     '*' => [
                         'id_player',
                         'name',
-                        'phone',
-                        'google_email',
+                        'emails',
+                        'phones',
                         'skill_division',
                         'year_of_birth',
                         'being_student',
@@ -108,7 +102,6 @@ class PlayerControllerTest extends TestCase
         EditionParticipation::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
-            'division_id' => $this->division->id_division,
         ]);
 
         $response = $this->getJson("/api/v1/manager/players/{$this->player->id_player}");
@@ -120,8 +113,6 @@ class PlayerControllerTest extends TestCase
                 'data' => [
                     'id_player' => $this->player->id_player,
                     'name' => 'Test Player',
-                    'phone' => '0987654321',
-                    'google_email' => 'player@example.com',
                     'skill_division' => 4.5,
                     'year_of_birth' => 1990,
                     'being_student' => false,
@@ -134,16 +125,10 @@ class PlayerControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $playerData = [
-            'name' => 'New Player',
-            'phone' => '5555555555',
             'first_name' => 'New',
             'last_name' => 'Player',
             'skill_division' => 3.0,
             'user_types' => ['player'],
-            'google_id' => 'google_new_player_123',
-            'google_name' => 'New Player',
-            'google_email' => 'newplayer@example.com',
-            'google_avatar' => 'https://example.com/new-player-avatar.jpg',
         ];
 
         $response = $this->postJson('/api/v1/manager/players', $playerData);
@@ -154,7 +139,6 @@ class PlayerControllerTest extends TestCase
                 'message' => 'Player created successfully',
                 'data' => [
                     'name' => 'New Player',
-                    'phone' => '5555555555',
                     'first_name' => 'New',
                     'last_name' => 'Player',
                     'skill_division' => 3.0,
@@ -162,15 +146,9 @@ class PlayerControllerTest extends TestCase
             ]);
 
         $this->assertDatabaseHas('players', [
-            'name' => 'New Player',
-            'phone' => '5555555555',
             'first_name' => 'New',
             'last_name' => 'Player',
             'skill_division' => 3.0,
-            'google_id' => 'google_new_player_123',
-            'google_name' => 'New Player',
-            'google_email' => 'newplayer@example.com',
-            'google_avatar' => 'https://example.com/new-player-avatar.jpg',
         ]);
     }
 
@@ -179,8 +157,9 @@ class PlayerControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $updateData = [
-            'name' => 'Updated Player',
-            'phone' => '1234567890',
+            'first_name' => 'Updated',
+            'middle_name' => null,
+            'last_name' => 'Player',
             'skill_division' => 5.0,
             'being_student' => true,
         ];
@@ -201,7 +180,8 @@ class PlayerControllerTest extends TestCase
 
         $this->assertDatabaseHas('players', [
             'id_player' => $this->player->id_player,
-            'name' => 'Updated Player',
+            'first_name' => 'Updated',
+            'last_name' => 'Player',
             'skill_division' => 5.0,
             'being_student' => true,
         ]);
@@ -211,9 +191,11 @@ class PlayerControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        // Test partial update with only name
+        // Test partial update with only first/last name
         $response = $this->patchJson("/api/v1/manager/players/{$this->player->id_player}", [
-            'name' => 'Partially Updated Player',
+            'first_name' => 'Partially',
+            'middle_name' => 'Updated',
+            'last_name' => 'Player',
         ]);
 
         $response->assertStatus(200)
@@ -252,16 +234,15 @@ class PlayerControllerTest extends TestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['name', 'phone']);
+            ->assertJsonValidationErrors(['first_name']);
 
         // Test PUT with empty required fields
         $response = $this->putJson("/api/v1/manager/players/{$this->player->id_player}", [
-            'name' => '',
-            'phone' => '',
+            'first_name' => '',
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['name', 'phone']);
+            ->assertJsonValidationErrors(['first_name']);
     }
 
     public function test_manager_can_delete_player()
@@ -334,7 +315,7 @@ class PlayerControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->getJson('/api/v1/manager/players?sort_by[name]=asc');
+        $response = $this->getJson('/api/v1/manager/players?sort_by[skill_division]=asc');
 
         $response->assertStatus(200);
 

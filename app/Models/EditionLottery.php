@@ -7,11 +7,14 @@ namespace App\Models;
 use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 /**
  * @OA\Schema(
  *     schema="EditionLottery",
- *     required={"edition_id", "orderliness", "total_draws_nr"},
+ *     required={"edition_id", "prize_quantity"},
  *     @OA\Property(
  *         property="id_lottery",
  *         type="integer",
@@ -29,23 +32,6 @@ use Illuminate\Database\Eloquent\Model;
  *         description="Edition of the lottery"
  *     ),
  *     @OA\Property(
- *         property="orderliness",
- *         type="integer",
- *         minimum=0,
- *         title="Orderliness",
- *         description="Orderliness score",
- *         example=5
- *     ),
- *     @OA\Property(
- *         property="division_id",
- *         type="integer",
- *         format="int64",
- *         nullable=true,
- *         minimum=1,
- *         title="Division",
- *         description="Division of the lottery"
- *     ),
- *     @OA\Property(
  *         property="prize_id",
  *         type="integer",
  *         format="int64",
@@ -55,12 +41,12 @@ use Illuminate\Database\Eloquent\Model;
  *         description="Prize of the lottery"
  *     ),
  *     @OA\Property(
- *         property="total_draws_nr",
+ *         property="prize_quantity",
  *         type="integer",
  *         minimum=1,
- *         title="Total Draws NR",
- *         description="Total number of draws",
- *         example=10
+ *         title="Prize Quantity",
+ *         description="Number of prizes available",
+ *         example=3
  *     ),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true, title="Created At", description="Timestamp when the edition lottery was created"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true, title="Updated At", description="Timestamp when the edition lottery was last updated"),
@@ -72,13 +58,6 @@ use Illuminate\Database\Eloquent\Model;
  *         nullable=true
  *     ),
  *     @OA\Property(
- *         property="division",
- *         ref="#/components/schemas/Division",
- *         title="Division",
- *         description="Related division object",
- *         nullable=true
- *     ),
- *     @OA\Property(
  *         property="prize",
  *         ref="#/components/schemas/Prize",
  *         title="Prize",
@@ -86,11 +65,19 @@ use Illuminate\Database\Eloquent\Model;
  *         nullable=true
  *     ),
  *     @OA\Property(
- *         property="luckyOnes",
+ *         property="rules",
  *         type="array",
- *         @OA\Items(ref="#/components/schemas/EditionLuckyOne"),
- *         title="Lucky Ones",
- *         description="Array of related edition lucky ones",
+ *         @OA\Items(ref="#/components/schemas/EditionLotteryRule"),
+ *         title="Rules",
+ *         description="Array of related lottery rules",
+ *         nullable=true
+ *     ),
+ *     @OA\Property(
+ *         property="luckies",
+ *         type="array",
+ *         @OA\Items(ref="#/components/schemas/EditionLotteryLucky"),
+ *         title="Luckies",
+ *         description="Array of related lottery luckies",
  *         nullable=true
  *     )
  * )
@@ -112,9 +99,8 @@ class EditionLottery extends Model
      */
     public static array $filterableFields = [
         'edition_id',
-        'division_id',
         'prize_id',
-        'total_draws_nr',
+        'prize_quantity',
     ];
 
     /**
@@ -123,10 +109,8 @@ class EditionLottery extends Model
     public static array $sortableFields = [
         'id_lottery',
         'edition_id',
-        'division_id',
         'prize_id',
-        'orderliness',
-        'total_draws_nr',
+        'prize_quantity',
         'inserted_at',
         'updated_at',
     ];
@@ -149,10 +133,8 @@ class EditionLottery extends Model
 
     protected $fillable = [
         'edition_id',
-        'division_id',
         'prize_id',
-        'orderliness',
-        'total_draws_nr',
+        'prize_quantity',
     ];
 
     /**
@@ -163,25 +145,33 @@ class EditionLottery extends Model
     protected $casts = [
         'inserted_at' => 'integer',
         'updated_at' => 'integer',
+        'prize_quantity' => 'integer',
     ];
 
-    public function edition()
+    public function edition(): BelongsTo
     {
         return $this->belongsTo(Edition::class, 'edition_id');
     }
 
-    public function division()
-    {
-        return $this->belongsTo(Division::class, 'division_id');
-    }
-
-    public function prize()
+    public function prize(): BelongsTo
     {
         return $this->belongsTo(Prize::class, 'prize_id');
     }
 
-    public function luckyOnes()
+    public function rules(): HasMany
     {
-        return $this->hasMany(EditionLuckyOne::class, 'lottery_id');
+        return $this->hasMany(EditionLotteryRule::class, 'lottery_id', 'id_lottery');
+    }
+
+    public function luckies(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            EditionLotteryLucky::class,
+            EditionLotteryRule::class,
+            'lottery_id',
+            'lottery_rule_id',
+            'id_lottery',
+            'id_lottery_rule'
+        );
     }
 }

@@ -37,6 +37,7 @@ class EditionParticipationControllerTest extends TestCase
         $this->editionDivision = EditionDivision::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'division_id' => $this->division->id_division,
+            'division_title' => $this->division->name,
             'players_limit' => 10,
         ]);
 
@@ -52,7 +53,7 @@ class EditionParticipationControllerTest extends TestCase
         Sanctum::actingAs($this->player);
 
         $participationData = [
-            'division_id' => $this->division->id_division,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
         ];
 
         $response = $this->postJson("/api/v1/app/editions/{$this->edition->id_edition}/participate", $participationData);
@@ -65,7 +66,7 @@ class EditionParticipationControllerTest extends TestCase
                     'id_participation',
                     'edition_id',
                     'player_id',
-                    'division_id',
+                    'edition_division_id',
                 ],
             ])
             ->assertJson([
@@ -85,7 +86,7 @@ class EditionParticipationControllerTest extends TestCase
         // First create a participation
         $participation = $this->edition->participations()->create([
             'player_id' => $this->player->id_player,
-            'division_id' => $this->division->id_division,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
             'is_minor' => false,
             'is_student' => false,
             'discount' => 0,
@@ -104,7 +105,7 @@ class EditionParticipationControllerTest extends TestCase
     public function test_requires_player_authentication()
     {
         $response = $this->postJson("/api/v1/app/editions/{$this->edition->id_edition}/participate", [
-            'division_id' => $this->division->id_division,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
         ]);
 
         $response->assertStatus(401);
@@ -117,7 +118,7 @@ class EditionParticipationControllerTest extends TestCase
         // Create first participation
         $this->edition->participations()->create([
             'player_id' => $this->player->id_player,
-            'division_id' => $this->division->id_division,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
             'is_minor' => false,
             'is_student' => false,
             'discount' => 0,
@@ -126,7 +127,7 @@ class EditionParticipationControllerTest extends TestCase
 
         // Try to create second participation
         $response = $this->postJson("/api/v1/app/editions/{$this->edition->id_edition}/participate", [
-            'division_id' => $this->division->id_division,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
         ]);
 
         $response->assertStatus(422);

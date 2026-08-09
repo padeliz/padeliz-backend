@@ -8,6 +8,8 @@ use App\Http\Requests\App\PlayerProfileImageUploadRequest;
 use App\Http\Requests\PlayerFormRequest;
 use App\Http\Resources\PlayerResource;
 use App\Models\Player;
+use App\Models\PlayerEmail;
+use App\Models\PlayerPhone;
 use App\Models\PlayerProfileImage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -31,8 +33,10 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"name", "email", "phone"},
-     *             @OA\Property(property="name", type="string"),
+     *             required={"first_name", "email", "phone"},
+     *             @OA\Property(property="first_name", type="string", maxLength=50),
+     *             @OA\Property(property="middle_name", type="string", maxLength=50, nullable=true),
+     *             @OA\Property(property="last_name", type="string", maxLength=50, nullable=true),
      *             @OA\Property(property="email", type="string", format="email"),
      *             @OA\Property(property="phone", type="string")
      *         )
@@ -59,9 +63,14 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
     public function store(PlayerFormRequest $request)
     {
         $validated = $request->validated();
+        $email = $validated['email'] ?? null;
+        $phone = $validated['phone'] ?? null;
+        unset($validated['email'], $validated['phone']);
 
         $player = $request->user();
         $player->update($validated);
+        $this->syncPlayerContacts($player, $email, $phone);
+        $player->load(['emails', 'phones']);
 
         return $this->resourceResponse(
             new PlayerResource($player),
@@ -98,7 +107,7 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
      */
     public function show(Player $player)
     {
-        $player->load(['participations.edition', 'participations.division']);
+        $player->load(['participations.edition', 'participations.editionDivision']);
 
         return $this->resourceResponse(
             new PlayerResource($player),
@@ -121,7 +130,6 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             @OA\Property(property="name", type="string", maxLength=255),
      *             @OA\Property(property="phone", type="string", maxLength=255),
      *             @OA\Property(property="skill_division", type="number", format="float", maximum=9.9),
      *             @OA\Property(property="first_name", type="string", maxLength=50),
@@ -162,12 +170,53 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
         }
 
         $validatedData = $request->validated();
+        $email = $validatedData['email'] ?? null;
+        $phone = $validatedData['phone'] ?? null;
+        unset($validatedData['email'], $validatedData['phone']);
+
         $player->update($validatedData);
+        $this->syncPlayerContacts($player, $email, $phone);
+        $player->load(['emails', 'phones']);
 
         return $this->resourceResponse(
             new PlayerResource($player),
             'Player profile updated successfully'
         );
+    }
+
+    private function syncPlayerContacts(Player $player, ?string $email, ?string $phone): void
+    {
+        if ($email !== null && $email !== '') {
+            $playerEmail = $player->emails()->where('is_primary', true)->first()
+                ?? $player->emails()->first();
+
+            if ($playerEmail) {
+                $playerEmail->update(['email' => $email, 'is_primary' => true]);
+            } else {
+                PlayerEmail::create([
+                    'player_id' => $player->id_player,
+                    'email' => $email,
+                    'purposes' => ['login', 'contact'],
+                    'is_primary' => true,
+                ]);
+            }
+        }
+
+        if ($phone !== null && $phone !== '') {
+            $playerPhone = $player->phones()->where('is_primary', true)->first()
+                ?? $player->phones()->first();
+
+            if ($playerPhone) {
+                $playerPhone->update(['phone' => $phone, 'is_primary' => true]);
+            } else {
+                PlayerPhone::create([
+                    'player_id' => $player->id_player,
+                    'phone' => $phone,
+                    'purposes' => ['contact'],
+                    'is_primary' => true,
+                ]);
+            }
+        }
     }
 
     /**

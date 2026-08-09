@@ -5,11 +5,13 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Models\Club;
+use App\Models\Court;
 use App\Models\Division;
 use App\Models\Edition;
 use App\Models\EditionDivision;
 use App\Models\EditionLottery;
-use App\Models\EditionLuckyOne;
+use App\Models\EditionLotteryLucky;
+use App\Models\EditionLotteryRule;
 use App\Models\EditionParticipation;
 use App\Models\Eligibility;
 use App\Models\EligibilityPortraitPhoto;
@@ -17,6 +19,9 @@ use App\Models\EligibilityStudentProof;
 use App\Models\Location;
 use App\Models\MatchesTeam;
 use App\Models\Player;
+use App\Models\PlayerEmail;
+use App\Models\PlayerIdentity;
+use App\Models\PlayerPhone;
 use App\Models\PlayerProfileImage;
 use App\Models\Prize;
 use App\Models\PrizeFromClub;
@@ -67,7 +72,8 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Clearing existing data...');
         DB::statement('SET FOREIGN_KEY_CHECKS=0');
 
-        EditionLuckyOne::truncate();
+        EditionLotteryLucky::truncate();
+        EditionLotteryRule::truncate();
         EditionLottery::truncate();
         PrizeFromClub::truncate();
         Prize::truncate();
@@ -77,8 +83,12 @@ class DatabaseSeeder extends Seeder
         EligibilityStudentProof::truncate();
         Eligibility::truncate();
         PlayerProfileImage::truncate();
+        PlayerIdentity::query()->delete();
+        PlayerPhone::query()->delete();
+        PlayerEmail::query()->delete();
         Player::truncate();
         Edition::truncate();
+        Court::truncate();
         Location::truncate();
         Division::truncate();
         Club::truncate();
@@ -94,44 +104,30 @@ class DatabaseSeeder extends Seeder
 
         $this->cleanEligibilityUploadsOnDisk();
 
-        // Create specific managers first
+        // Create specific managers with contacts/identities for local smoke login
         $this->command->info('Creating specific managers...');
         $specificManagers = collect([
-            Player::factory()->manager()->create([
-                'name' => 'Arsh Padel Minitour',
-                'google_email' => 'arsh.padel.minitour@gmail.com',
-                'google_name' => 'ARSH Padel Minitour',
-            ]),
-            Player::factory()->manager()->create([
-                'name' => 'Arshavin Padeliz',
-                'google_email' => 'arshavin@padeliz.ro',
-                'google_name' => 'Arshavin (Padeliz)',
-            ]),
+            $this->createNamedPlayer(
+                'Arsh Padel Minitour',
+                'arsh.padel.minitour@gmail.com',
+                'ARSH Padel Minitour',
+                ['player', 'manager']
+            ),
+            $this->createNamedPlayer(
+                'Arshavin Padeliz',
+                'arshavin@padeliz.ro',
+                'Arshavin (Padeliz)',
+                ['player', 'manager']
+            ),
         ]);
 
         // Create specific players
         $this->command->info('Creating specific players...');
         $specificPlayers = collect([
-            Player::factory()->playerOnly()->create([
-                'name' => 'Arsavin Wallentyn',
-                'google_email' => 'arsavinwallentyn@gmail.com',
-                'google_name' => 'Arsavin Wallentyn',
-            ]),
-            Player::factory()->playerOnly()->create([
-                'name' => 'Raluca Mihale 2003',
-                'google_email' => 'ralucamihale2003@gmail.com',
-                'google_name' => 'Raluca Mihale 2003',
-            ]),
-            Player::factory()->playerOnly()->create([
-                'name' => 'Raluca Mihale',
-                'google_email' => 'ralucamihale@gmail.com',
-                'google_name' => 'Raluca Mihale',
-            ]),
-            Player::factory()->playerOnly()->create([
-                'name' => 'Valentin Arsavin',
-                'google_email' => 'valentin.arsavin@bosromania.ro',
-                'google_name' => 'Valentin Arsavin (BOS)',
-            ]),
+            $this->createNamedPlayer('Arsavin Wallentyn', 'arsavinwallentyn@gmail.com', 'Arsavin Wallentyn', ['player']),
+            $this->createNamedPlayer('Raluca Mihale 2003', 'ralucamihale2003@gmail.com', 'Raluca Mihale 2003', ['player']),
+            $this->createNamedPlayer('Raluca Mihale', 'ralucamihale@gmail.com', 'Raluca Mihale', ['player']),
+            $this->createNamedPlayer('Valentin Arsavin', 'valentin.arsavin@bosromania.ro', 'Valentin Arsavin (BOS)', ['player']),
         ]);
 
         $this->command->info('Creating clubs...');
@@ -142,7 +138,7 @@ class DatabaseSeeder extends Seeder
             Club::factory()->create(['name' => 'Padel World', 'city' => 'Bucharest']),
         ]);
 
-        $this->command->info('Creating locations...');
+        $this->command->info('Creating locations and courts...');
         $locations = collect();
         foreach ($clubs as $club) {
             $clubLocations = Location::factory()
@@ -152,41 +148,41 @@ class DatabaseSeeder extends Seeder
                     'name' => substr($club->name . ' ' . $faker->unique()->streetName(), 0, 30),
                 ]);
             $locations = $locations->merge($clubLocations);
+
+            foreach ($clubLocations as $location) {
+                Court::factory()
+                    ->count(\rand(2, 4))
+                    ->create(['location_id' => $location->id_location]);
+            }
         }
 
         $this->command->info('Creating divisions...');
         $divisions = collect([
-            Division::factory()->create(['name' => 'Students Rookies', 'color' => '#ffff00', 'is_students_only' => 1]),
-            Division::factory()->create(['name' => 'Students Beginners', 'color' => '#ffa500', 'is_students_only' => 1]),
-            Division::factory()->create(['name' => 'Students Novice', 'color' => '#cb2b2b', 'is_students_only' => 1]),
-            Division::factory()->create(['name' => 'Kids', 'color' => '#7ab857', 'is_students_only' => 0]),
-            Division::factory()->create(['name' => 'MiniTour Couples', 'color' => '#ff0000', 'is_students_only' => 0]),
-            Division::factory()->create(['name' => 'Adults Explorers', 'color' => '#7ab857', 'is_students_only' => 0]),
-            Division::factory()->create(['name' => 'Adults Learners', 'color' => '#89bdce', 'is_students_only' => 0]),
+            Division::factory()->create(['name' => 'Students Rookies', 'color' => '#ffff00']),
+            Division::factory()->create(['name' => 'Students Beginners', 'color' => '#ffa500']),
+            Division::factory()->create(['name' => 'Students Novice', 'color' => '#cb2b2b']),
+            Division::factory()->create(['name' => 'Kids', 'color' => '#7ab857']),
+            Division::factory()->create(['name' => 'MiniTour Couples', 'color' => '#ff0000']),
+            Division::factory()->create(['name' => 'Adults Explorers', 'color' => '#7ab857']),
+            Division::factory()->create(['name' => 'Adults Learners', 'color' => '#89bdce']),
         ]);
 
         $this->command->info('Creating additional players...');
         $players = collect();
 
         // Start with our specific players and managers
-        $players = $players->merge($specificPlayers);
+        $players = $players->merge($specificPlayers)->merge($specificManagers);
 
-        // Create regular players (70% of total)
-        $regularPlayersCount = (int) (\rand(15, 20) * 0.7);
+        // Create regular players (80% of total)
+        $regularPlayersCount = (int) (\rand(15, 20) * 0.8);
         $players = $players->merge(
             Player::factory()->count($regularPlayersCount)->playerOnly()->create()
         );
 
-        // Create managers (20% of total)
-        $managersCount = (int) (\rand(15, 20) * 0.2);
+        // Create managers (20% of total) — no admin role in seed data
+        $managersCount = max(1, (int) (\rand(15, 20) * 0.2));
         $players = $players->merge(
             Player::factory()->count($managersCount)->manager()->create()
-        );
-
-        // Create admins (10% of total)
-        $adminsCount = max(1, (int) (\rand(15, 20) * 0.1));
-        $players = $players->merge(
-            Player::factory()->count($adminsCount)->admin()->create()
         );
 
         $this->command->info('Creating past editions...');
@@ -223,8 +219,8 @@ class DatabaseSeeder extends Seeder
             $this->createEditionDivisionsAndParticipations($edition, $players);
         }
 
-        $this->command->info('Creating lotteries and lucky ones...');
-        $this->createLotteriesAndLuckyOnes($pastEditions, $divisions, $prizes, $faker);
+        $this->command->info('Creating lotteries, rules and luckies...');
+        $this->createLotteriesAndLuckies($pastEditions, $prizes, $faker);
 
         $this->command->info('Creating matches teams...');
         // Create some matches teams with random players
@@ -239,6 +235,53 @@ class DatabaseSeeder extends Seeder
         $this->createEligibilities($players, $allEditions, $faker);
 
         $this->seedEligibilityAttachments($faker);
+    }
+
+    /**
+     * Create a named player and replace factory-generated contacts/identity with live-like values.
+     *
+     * @param  list<string>  $userTypes
+     */
+    private function createNamedPlayer(string $name, string $email, string $displayName, array $userTypes): Player
+    {
+        $parts = \App\Support\PlayerNameSplitter::split($name);
+
+        $player = Player::factory()->create([
+            'first_name' => $parts['first_name'],
+            'middle_name' => $parts['middle_name'],
+            'last_name' => $parts['last_name'],
+            'user_types' => $userTypes,
+        ]);
+
+        $player->emails()->delete();
+        $player->phones()->delete();
+        $player->identities()->delete();
+
+        $playerEmail = PlayerEmail::create([
+            'player_id' => $player->id_player,
+            'email' => $email,
+            'purposes' => ['login', 'contact'],
+            'is_primary' => true,
+            'verified_at' => time(),
+        ]);
+
+        PlayerPhone::create([
+            'player_id' => $player->id_player,
+            'phone' => '+407' . str_pad((string) $player->id_player, 8, '0', STR_PAD_LEFT),
+            'purposes' => ['contact'],
+            'is_primary' => true,
+        ]);
+
+        PlayerIdentity::create([
+            'player_id' => $player->id_player,
+            'provider' => PlayerIdentity::PROVIDER_GOOGLE,
+            'provider_subject' => 'seed_google_' . $player->id_player,
+            'email_id' => $playerEmail->id_player_email,
+            'display_name' => $displayName,
+            'linked_at' => time(),
+        ]);
+
+        return $player->fresh(['emails', 'phones', 'identities']);
     }
 
     /**
@@ -376,50 +419,83 @@ class DatabaseSeeder extends Seeder
         $selectedDivisions = Division::inRandomOrder()->take(\rand(2, 3))->get();
 
         foreach ($selectedDivisions as $division) {
-            // Create division for this edition
-            EditionDivision::factory()->create([
+            // Create division for this edition (courts live on courts + pivot, not on edition_divisions)
+            $editionDivision = EditionDivision::factory()->create([
                 'edition_id' => $edition->id_edition,
                 'division_id' => $division->id_division,
+                'division_title' => $division->name,
                 'players_limit' => \rand(8, 16),
-                'court' => 'Court ' . \rand(1, 3),
                 'playing_start_time' => Carbon::createFromTime(\rand(12, 19), 30)->format('H:i:s'),
                 'playing_end_time' => Carbon::createFromTime(\rand(16, 21), 30)->format('H:i:s'),
                 'include_scores' => $division->name !== 'Kids',
                 'has_demonstrative_match' => $division->name == 'Students Novice',
                 'fixed_teams' => $division->name == 'MiniTour Couples',
+                'points_per_match' => $division->name === 'Kids' ? null : 1,
+                'include_final' => $division->name !== 'Kids',
             ]);
 
-            // Create 6-12 participations for this division
+            // Create 6-12 participations for this edition division
             $participationCount = \rand(6, 12);
             for ($i = 0; $i < $participationCount; $i++) {
                 EditionParticipation::factory()->create([
                     'edition_id' => $edition->id_edition,
-                    'division_id' => $division->id_division,
+                    'edition_division_id' => $editionDivision->id_edition_division,
                     'player_id' => $players->random()->id_player,
                 ]);
             }
         }
     }
 
-    private function createLotteriesAndLuckyOnes($editions, $divisions, $prizes, $faker)
+    private function createLotteriesAndLuckies($editions, $prizes, $faker)
     {
         foreach ($editions as $edition) {
             $lotteries = EditionLottery::factory()
                 ->count(\rand(1, 2))
                 ->create([
                     'edition_id' => $edition->id_edition,
-                    'division_id' => $faker->optional()->randomElement([$divisions->random()->id_division, null]),
                     'prize_id' => $prizes->random()->id_prize,
+                    'prize_quantity' => \rand(1, 5),
                 ]);
 
-            // Create lucky ones for each lottery
+            $editionDivisions = EditionDivision::where('edition_id', $edition->id_edition)->get();
+
             foreach ($lotteries as $lottery) {
+                $rules = collect();
+                $remaining = (int) $lottery->prize_quantity;
+
+                // Live-like: one open rule + optional scoped rules (student / division)
+                $openQty = max(1, (int) ceil($remaining / 2));
+                $rules->push(EditionLotteryRule::factory()->create([
+                    'lottery_id' => $lottery->id_lottery,
+                    'rule_prize_quantity' => $openQty,
+                    'orderliness' => 0,
+                    'edition_division_id' => null,
+                    'has_social_status' => null,
+                ]));
+                $remaining -= $openQty;
+
+                if ($remaining > 0) {
+                    $rules->push(EditionLotteryRule::factory()->create([
+                        'lottery_id' => $lottery->id_lottery,
+                        'rule_prize_quantity' => $remaining,
+                        'orderliness' => 1,
+                        'edition_division_id' => $editionDivisions->isNotEmpty()
+                            ? $faker->optional()->randomElement($editionDivisions->pluck('id_edition_division')->all())
+                            : null,
+                        'has_social_status' => $faker->optional()->randomElement(['STUDENT', 'ADULT']),
+                    ]));
+                }
+
                 $participants = EditionParticipation::where('edition_id', $edition->id_edition)->get();
-                if ($participants->count() > 0) {
-                    EditionLuckyOne::factory()
-                        ->count(\rand(1, 3))
+                if ($participants->isEmpty()) {
+                    continue;
+                }
+
+                foreach ($rules as $rule) {
+                    EditionLotteryLucky::factory()
+                        ->count(\rand(1, min(3, (int) $rule->rule_prize_quantity)))
                         ->create([
-                            'lottery_id' => $lottery->id_lottery,
+                            'lottery_rule_id' => $rule->id_lottery_rule,
                             'drawn_participation_id' => $participants->random()->id_participation,
                         ]);
                 }
@@ -432,6 +508,9 @@ class DatabaseSeeder extends Seeder
         $now = time();
 
         foreach ($players as $player) {
+            $primaryPhone = $player->phones()->where('is_primary', true)->value('phone')
+                ?? $player->phones()->value('phone');
+
             // Create one reviewed eligibility for most players
             if ($faker->boolean(75)) {
                 $reviewStatus = $faker->randomElement(['approved', 'rejected', 'discarded']);
@@ -455,7 +534,7 @@ class DatabaseSeeder extends Seeder
                 $eligibility->first_name = $player->first_name ?? $faker->firstName();
                 $eligibility->middle_name = $player->middle_name ?? null;
                 $eligibility->last_name = $player->last_name ?? $faker->lastName();
-                $eligibility->phone = $player->phone ?? $faker->phoneNumber();
+                $eligibility->phone = $primaryPhone ?? $faker->phoneNumber();
                 $eligibility->birth_year = $faker->numberBetween(1960, 2006);
                 $eligibility->birth_month = $faker->numberBetween(1, 12);
                 $eligibility->birth_day = $faker->numberBetween(1, 28);
@@ -493,7 +572,7 @@ class DatabaseSeeder extends Seeder
                     $pending->media_source = [$faker->numberBetween(1, 6)];
                     $pending->first_name = $player->first_name ?? $faker->firstName();
                     $pending->last_name = $player->last_name ?? $faker->lastName();
-                    $pending->phone = $player->phone ?? $faker->phoneNumber();
+                    $pending->phone = $primaryPhone ?? $faker->phoneNumber();
                     $pending->birth_year = $faker->numberBetween(1960, 2006);
                 }
 

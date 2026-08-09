@@ -96,7 +96,7 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      */
     public function index(Request $request)
     {
-        $query = MatchesTeam::with(['player1', 'player2']);
+        $query = MatchesTeam::query();
 
         // Apply advanced pagination
         $this->applyAdvancedPagination(
@@ -168,7 +168,6 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
      */
     public function show(MatchesTeam $team)
     {
-        $team->load(['player1', 'player2']);
 
         return $this->resourceResponse(
             new MatchesTeamResource($team),
@@ -251,7 +250,6 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
         $validated['updated_at'] = time();
 
         $team = MatchesTeam::create($validated);
-        $team->load(['player1', 'player2']);
 
         return $this->resourceResponse(
             new MatchesTeamResource($team),
@@ -357,7 +355,6 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
 
         $validated['updated_at'] = time();
         $team->update($validated);
-        $team->load(['player1', 'player2']);
 
         return $this->resourceResponse(
             new MatchesTeamResource($team),
@@ -462,7 +459,6 @@ class MatchesTeamController extends \App\Http\Controllers\BaseVersions\V1\V1Base
 
         $validated['updated_at'] = time();
         $team->update($validated);
-        $team->load(['player1', 'player2']);
 
         return $this->resourceResponse(
             new MatchesTeamResource($team),

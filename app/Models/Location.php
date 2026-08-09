@@ -7,6 +7,8 @@ namespace App\Models;
 use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @OA\Schema(
@@ -164,13 +166,19 @@ class Location extends Model
         'updated_at' => 'integer',
     ];
 
-    public function club()
+    public function club(): BelongsTo
     {
         return $this->belongsTo(Club::class, 'club_id');
     }
 
-    public function editions()
+    public function editions(): HasMany
     {
         return $this->hasMany(Edition::class, 'location_id');
+    }
+
+    public function courts(): HasMany
+    {
+        return $this->hasMany(Court::class, 'location_id', 'id_location')
+            ->orderBy('display_order');
     }
 }

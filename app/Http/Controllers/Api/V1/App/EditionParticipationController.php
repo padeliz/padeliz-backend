@@ -34,8 +34,8 @@ class EditionParticipationController extends \App\Http\Controllers\BaseVersions\
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"division_id"},
-     *             @OA\Property(property="division_id", type="integer")
+     *             required={"edition_division_id"},
+     *             @OA\Property(property="edition_division_id", type="integer")
      *         )
      *     ),
      *     @OA\Response(
@@ -79,16 +79,15 @@ class EditionParticipationController extends \App\Http\Controllers\BaseVersions\
         }
 
         $validatedData = $request->validate([
-            'division_id' => [
+            'edition_division_id' => [
                 'required',
-                Rule::exists('edition_divisions', 'division_id')
+                Rule::exists('edition_divisions', 'id_edition_division')
                     ->where('edition_id', $edition->id_edition),
             ],
         ]);
 
-        // Get division details for this edition
         $editionDivision = EditionDivision::where('edition_id', $edition->id_edition)
-            ->where('division_id', $validatedData['division_id'])
+            ->where('id_edition_division', $validatedData['edition_division_id'])
             ->firstOrFail();
 
         // Check if player is already participating in this edition
@@ -100,15 +99,13 @@ class EditionParticipationController extends \App\Http\Controllers\BaseVersions\
             return $this->validationErrorResponse(['player' => ['You are already registered for this edition']]);
         }
 
-        // Check if division is full
+        // Check if edition division is full
         $currentPlayers = $edition->participations()
-            ->where('division_id', $editionDivision->division_id)
+            ->where('edition_division_id', $editionDivision->id_edition_division)
             ->count();
 
-        if (
-            $currentPlayers >= $editionDivision->players_limit
-        ) {
-            return $this->validationErrorResponse(['division_id' => ['This division is already full']]);
+        if ($currentPlayers >= $editionDivision->players_limit) {
+            return $this->validationErrorResponse(['edition_division_id' => ['This division is already full']]);
         }
 
         // Create participation
@@ -116,7 +113,7 @@ class EditionParticipationController extends \App\Http\Controllers\BaseVersions\
         $participation = $edition->participations()->create([
             'edition_id' => $edition->id_edition,
             'player_id' => $request->user()->id_player,
-            'division_id' => $editionDivision->division_id,
+            'edition_division_id' => $editionDivision->id_edition_division,
             'is_minor' => 0,
             'is_student' => $isStudent,
             'discount' => 0,

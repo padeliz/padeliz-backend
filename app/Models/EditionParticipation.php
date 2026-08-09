@@ -7,11 +7,12 @@ namespace App\Models;
 use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @OA\Schema(
  *     schema="EditionParticipation",
- *     required={"edition_id", "player_id", "division_id", "is_minor", "is_student", "payment"},
+ *     required={"edition_id", "player_id", "edition_division_id", "is_minor", "is_student", "payment"},
  *     @OA\Property(
  *         property="id_participation",
  *         type="integer",
@@ -37,12 +38,12 @@ use Illuminate\Database\Eloquent\Model;
  *         description="Player of the participation"
  *     ),
  *     @OA\Property(
- *         property="division_id",
+ *         property="edition_division_id",
  *         type="integer",
  *         format="int64",
  *         minimum=1,
- *         title="Division",
- *         description="Division of the participation"
+ *         title="Edition Division",
+ *         description="Edition division of the participation"
  *     ),
  *     @OA\Property(
  *         property="is_minor",
@@ -121,10 +122,10 @@ use Illuminate\Database\Eloquent\Model;
  *         nullable=true
  *     ),
  *     @OA\Property(
- *         property="division",
- *         ref="#/components/schemas/Division",
- *         title="Division",
- *         description="Related division object",
+ *         property="editionDivision",
+ *         ref="#/components/schemas/EditionDivision",
+ *         title="Edition Division",
+ *         description="Related edition division object",
  *         nullable=true
  *     )
  * )
@@ -148,7 +149,7 @@ class EditionParticipation extends Model
     public static array $filterableFields = [
         'edition_id',
         'player_id',
-        'division_id',
+        'edition_division_id',
         'is_minor',
         'is_student',
         'discount',
@@ -162,7 +163,7 @@ class EditionParticipation extends Model
         'id_participation',
         'edition_id',
         'player_id',
-        'division_id',
+        'edition_division_id',
         'is_minor',
         'is_student',
         'discount',
@@ -190,7 +191,7 @@ class EditionParticipation extends Model
     protected $fillable = [
         'edition_id',
         'player_id',
-        'division_id',
+        'edition_division_id',
         'is_minor',
         'is_student',
         'discount',
@@ -206,18 +207,18 @@ class EditionParticipation extends Model
         'is_student' => 'boolean',
     ];
 
-    public function edition()
+    public function edition(): BelongsTo
     {
         return $this->belongsTo(Edition::class, 'edition_id');
     }
 
-    public function player()
+    public function player(): BelongsTo
     {
         return $this->belongsTo(Player::class, 'player_id');
     }
 
-    public function division()
+    public function editionDivision(): BelongsTo
     {
-        return $this->belongsTo(Division::class, 'division_id');
+        return $this->belongsTo(EditionDivision::class, 'edition_division_id', 'id_edition_division');
     }
 }

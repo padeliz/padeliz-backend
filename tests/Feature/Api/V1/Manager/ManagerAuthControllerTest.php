@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Player;
+use App\Models\PlayerIdentity;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Mockery;
@@ -14,27 +15,29 @@ class ManagerAuthControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private $manager;
+    private Player $manager;
 
     public function setUp(): void
     {
         parent::setUp();
 
-        // Create test manager with user_types
         $this->manager = Player::factory()->manager()->create([
-            'name' => 'Test Manager',
-            'phone' => '1234567890',
-            'google_id' => 'google_manager_123',
-            'google_name' => 'Test Manager',
-            'google_email' => 'manager@example.com',
-            'google_avatar' => 'https://example.com/manager-avatar.jpg',
+            'first_name' => 'Test', 'middle_name' => null, 'last_name' => 'Manager',
             'user_types' => ['player', 'manager'],
+        ]);
+
+        PlayerIdentity::create([
+            'player_id' => $this->manager->id_player,
+            'provider' => PlayerIdentity::PROVIDER_GOOGLE,
+            'provider_subject' => 'google_manager_123',
+            'display_name' => 'Test Manager',
+            'avatar_url' => 'https://example.com/manager-avatar.jpg',
+            'linked_at' => time(),
         ]);
     }
 
     public function test_google_callback_returns_404_for_new_user()
     {
-        // Mock Google Client
         $this->mock(\Google\Client::class, function ($mock) {
             $mock->shouldReceive('verifyIdToken')
                 ->withAnyArgs()
@@ -55,15 +58,10 @@ class ManagerAuthControllerTest extends TestCase
                 'success' => false,
                 'message' => 'User not found. Please register first.',
             ]);
-
-        $this->assertDatabaseMissing('players', [
-            'google_email' => 'newmanager@example.com',
-        ]);
     }
 
     public function test_google_callback_returns_existing_manager()
     {
-        // Mock Google Client
         $this->mock(\Google\Client::class, function ($mock) {
             $mock->shouldReceive('verifyIdToken')
                 ->andReturn([
@@ -80,42 +78,43 @@ class ManagerAuthControllerTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-            'success',
-            'message',
-            'data' => [
-                'token',
-                'player' => [
-                    'id_player',
-                    'name',
-                    'google_name',
-                    'google_avatar',
+                'success',
+                'message',
+                'data' => [
+                    'token',
+                    'player' => [
+                        'id_player',
+                        'name',
+                    ],
+                    'user_type',
                 ],
-                'user_type',
+            ])
+            ->assertJson([
+                'success' => true,
+                'message' => 'Manager authenticated successfully',
+                'data' => [
+                    'player' => [
+                        'id_player' => $this->manager->id_player,
+                        'name' => 'Test Manager',
+                    ],
+                    'user_type' => 'manager',
                 ],
             ]);
-
-        // Verify the existing manager was returned
-        $response->assertJson([
-            'success' => true,
-            'message' => 'Manager authenticated successfully',
-            'data' => [
-                'player' => [
-                    'id_player' => $this->manager->id_player,
-                    'name' => 'Test Manager',
-                ],
-                'user_type' => 'manager',
-            ],
-        ]);
     }
 
     public function test_google_callback_returns_403_for_player_without_manager_privileges()
     {
-        // Create a player without manager privileges
         $player = Player::factory()->playerOnly()->create([
-            'google_email' => 'player@example.com',
+            'first_name' => 'Player', 'middle_name' => null, 'last_name' => 'Only',
         ]);
 
-        // Mock Google Client
+        PlayerIdentity::create([
+            'player_id' => $player->id_player,
+            'provider' => PlayerIdentity::PROVIDER_GOOGLE,
+            'provider_subject' => 'google_player_123',
+            'linked_at' => time(),
+        ]);
+
         $this->mock(\Google\Client::class, function ($mock) {
             $mock->shouldReceive('verifyIdToken')
                 ->andReturn([
@@ -145,23 +144,20 @@ class ManagerAuthControllerTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-            'success',
-            'message',
-            'data' => [
-                'id_player',
-                'name',
-                'phone',
-                'google_name',
-                'google_avatar',
-            ],
+                'success',
+                'message',
+                'data' => [
+                    'id_player',
+                    'name',
+                ],
             ])
             ->assertJson([
-            'success' => true,
-            'message' => 'Manager profile retrieved successfully',
-            'data' => [
-                'id_player' => $this->manager->id_player,
-                'name' => 'Test Manager',
-            ],
+                'success' => true,
+                'message' => 'Manager profile retrieved successfully',
+                'data' => [
+                    'id_player' => $this->manager->id_player,
+                    'name' => 'Test Manager',
+                ],
             ]);
     }
 
@@ -184,7 +180,6 @@ class ManagerAuthControllerTest extends TestCase
                 'message' => 'Manager logged out successfully',
             ]);
 
-        // Verify token is revoked
         $this->assertDatabaseMissing('personal_access_tokens', [
             'tokenable_id' => $this->manager->id_player,
             'tokenable_type' => Player::class,
@@ -193,7 +188,6 @@ class ManagerAuthControllerTest extends TestCase
 
     public function test_dev_login_creates_manager_in_non_production()
     {
-        // Only test in non-production environment
         if (app()->environment('production')) {
             $this->markTestSkipped('Dev login not available in production');
         }
@@ -204,21 +198,24 @@ class ManagerAuthControllerTest extends TestCase
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-            'success',
-            'message',
-            'data' => [
-                'token',
-                'player' => [
-                    'id_player',
-                    'name',
-                    'google_email',
-                ],
-                'user_type',
+                'success',
+                'message',
+                'data' => [
+                    'token',
+                    'player' => [
+                        'id_player',
+                        'name',
+                    ],
+                    'user_type',
                 ],
             ]);
 
-        $this->assertDatabaseHas('players', [
-            'google_email' => 'devmanager@example.com',
+        $this->assertDatabaseHas('player_emails', [
+            'email' => 'devmanager@example.com',
+        ]);
+        $this->assertDatabaseHas('player_identities', [
+            'provider' => 'dev',
+            'provider_subject' => 'dev:devmanager@example.com',
         ]);
     }
 
@@ -231,8 +228,6 @@ class ManagerAuthControllerTest extends TestCase
             'email' => 'test@example.com',
         ]);
 
-        // Dev-login endpoints are accessible without authentication in development
-        // They only check if the environment is production
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'success',
@@ -242,7 +237,6 @@ class ManagerAuthControllerTest extends TestCase
                     'player' => [
                         'id_player',
                         'name',
-                        'google_email',
                     ],
                     'user_type',
                 ],
@@ -253,11 +247,9 @@ class ManagerAuthControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        // Should be able to access manager endpoints
         $managerResponse = $this->getJson('/api/v1/manager/auth/me');
         $managerResponse->assertStatus(200);
 
-        // Should also be able to access player endpoints
         $playerResponse = $this->getJson('/api/v1/app/auth/me');
         $playerResponse->assertStatus(200);
     }
@@ -279,8 +271,8 @@ class ManagerAuthControllerTest extends TestCase
 
             $response->assertStatus(200)
                 ->assertJson([
-                'success' => true,
-                'message' => 'Manager profile retrieved successfully',
+                    'success' => true,
+                    'message' => 'Manager profile retrieved successfully',
                 ]);
         }
     }

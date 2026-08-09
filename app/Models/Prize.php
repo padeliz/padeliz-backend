@@ -7,6 +7,8 @@ namespace App\Models;
 use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * @OA\Schema(
@@ -33,7 +35,22 @@ use Illuminate\Database\Eloquent\Model;
  *         maxLength=100,
  *         nullable=true,
  *         title="Image",
- *         description="URL or path to the prize image"
+ *         description="Storage path to the prize image"
+ *     ),
+ *     @OA\Property(
+ *         property="url",
+ *         type="string",
+ *         nullable=true,
+ *         title="Image URL",
+ *         description="Public URL for the prize image"
+ *     ),
+ *     @OA\Property(
+ *         property="template",
+ *         type="string",
+ *         enum={"IMAGE_LEFT", "IMAGE_TOP", "IMAGE_RIGHT", "IMAGE_MIDDLE", "IMAGE_BOTTOM"},
+ *         nullable=true,
+ *         title="Template",
+ *         description="Layout template for the prize card"
  *     ),
  *     @OA\Property(
  *         property="box_1_text",
@@ -122,6 +139,8 @@ use Illuminate\Database\Eloquent\Model;
  *         nullable=true
  *     )
  * )
+ *
+ * @property-read string|null $url
  */
 class Prize extends Model
 {
@@ -141,6 +160,7 @@ class Prize extends Model
      * Fields that can be filtered
      */
     public static array $filterableFields = [
+        'template',
         'box_1_bg_color',
         'box_1_text_color',
         'box_2_bg_color',
@@ -153,6 +173,7 @@ class Prize extends Model
     public static array $sortableFields = [
         'id_prize',
         'name',
+        'template',
         'inserted_at',
         'updated_at',
     ];
@@ -176,6 +197,7 @@ class Prize extends Model
     protected $fillable = [
         'name',
         'image',
+        'template',
         'box_1_text',
         'box_1_bg_color',
         'box_1_text_color',
@@ -194,13 +216,29 @@ class Prize extends Model
         'updated_at' => 'integer',
     ];
 
-    public function clubPrizes()
+    protected $appends = ['url'];
+
+    public function clubPrizes(): HasMany
     {
         return $this->hasMany(PrizeFromClub::class, 'prize_id', 'id_prize');
     }
 
-    public function lotteries()
+    public function lotteries(): HasMany
     {
         return $this->hasMany(EditionLottery::class, 'prize_id');
+    }
+
+    public function storageDisk(): string
+    {
+        return config('filesystems.user_uploads_disk', 'public');
+    }
+
+    public function getUrlAttribute(): ?string
+    {
+        if ($this->image === null || $this->image === '') {
+            return null;
+        }
+
+        return Storage::disk($this->storageDisk())->url($this->image);
     }
 }

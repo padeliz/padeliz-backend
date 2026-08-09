@@ -7,11 +7,13 @@ namespace App\Models;
 use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Support\Facades\Storage;
 
 /**
  * @OA\Schema(
  *     schema="PrizeFromClub",
- *     required={"club_id", "prize_id"},
+ *     required={"prize_id"},
  *     @OA\Property(
  *         property="id_club_prize",
  *         type="integer",
@@ -24,6 +26,7 @@ use Illuminate\Database\Eloquent\Model;
  *         property="club_id",
  *         type="integer",
  *         format="int64",
+ *         nullable=true,
  *         minimum=1,
  *         title="Club",
  *         description="Club of the prize from club"
@@ -36,7 +39,16 @@ use Illuminate\Database\Eloquent\Model;
  *         title="Prize",
  *         description="Prize of the prize from club"
  *     ),
- *     @OA\Property(property="image", type="string", maxLength=100, nullable=true, title="Image", description="URL or path to the prize image"),
+ *     @OA\Property(property="image", type="string", maxLength=100, nullable=true, title="Image", description="Storage path to the prize image"),
+ *     @OA\Property(property="url", type="string", nullable=true, title="Image URL", description="Public URL for the prize image"),
+ *     @OA\Property(
+ *         property="template",
+ *         type="string",
+ *         enum={"IMAGE_LEFT", "IMAGE_TOP", "IMAGE_RIGHT", "IMAGE_MIDDLE", "IMAGE_BOTTOM"},
+ *         nullable=true,
+ *         title="Template",
+ *         description="Layout template for the prize card"
+ *     ),
  *     @OA\Property(property="box_1_text", type="string", maxLength=200, nullable=true, title="Box 1 Text", description="Text content for the first box"),
  *     @OA\Property(
  *         property="box_1_bg_color",
@@ -96,6 +108,8 @@ use Illuminate\Database\Eloquent\Model;
  *         nullable=true
  *     )
  * )
+ *
+ * @property-read string|null $url
  */
 class PrizeFromClub extends Model
 {
@@ -116,6 +130,7 @@ class PrizeFromClub extends Model
     public static array $filterableFields = [
         'club_id',
         'prize_id',
+        'template',
         'box_1_bg_color',
         'box_1_text_color',
         'box_2_bg_color',
@@ -129,6 +144,7 @@ class PrizeFromClub extends Model
         'id_club_prize',
         'club_id',
         'prize_id',
+        'template',
         'inserted_at',
         'updated_at',
     ];
@@ -153,6 +169,7 @@ class PrizeFromClub extends Model
         'club_id',
         'prize_id',
         'image',
+        'template',
         'box_1_text',
         'box_1_bg_color',
         'box_1_text_color',
@@ -171,13 +188,29 @@ class PrizeFromClub extends Model
         'updated_at' => 'integer',
     ];
 
-    public function club()
+    protected $appends = ['url'];
+
+    public function club(): BelongsTo
     {
         return $this->belongsTo(Club::class, 'club_id');
     }
 
-    public function prize()
+    public function prize(): BelongsTo
     {
         return $this->belongsTo(Prize::class, 'prize_id');
+    }
+
+    public function storageDisk(): string
+    {
+        return config('filesystems.user_uploads_disk', 'public');
+    }
+
+    public function getUrlAttribute(): ?string
+    {
+        if ($this->image === null || $this->image === '') {
+            return null;
+        }
+
+        return Storage::disk($this->storageDisk())->url($this->image);
     }
 }

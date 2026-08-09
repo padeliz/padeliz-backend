@@ -27,12 +27,7 @@ class EditionDivisionControllerTest extends TestCase
         parent::setUp();
 
         $this->manager = Player::factory()->manager()->create([
-            'name' => 'Test Manager',
-            'phone' => '1234567890',
-            'google_id' => 'google_manager_123',
-            'google_name' => 'Test Manager',
-            'google_email' => 'manager@example.com',
-            'google_avatar' => 'https://example.com/manager-avatar.jpg',
+            'first_name' => 'Test', 'middle_name' => null, 'last_name' => 'Manager',
             'user_types' => ['player', 'manager'],
         ]);
 
@@ -61,7 +56,7 @@ class EditionDivisionControllerTest extends TestCase
                         'edition_id',
                         'division_id',
                         'players_limit',
-                        'court',
+                        'division_title',
                         'playing_start_time',
                         'playing_end_time',
                         'player_opponents_nr',
@@ -121,7 +116,7 @@ class EditionDivisionControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition,
             'division_id' => $this->division->id_division,
             'players_limit' => 32,
-            'court' => 'Court A',
+            'division_title' => 'Adults Explorers A',
             'playing_start_time' => '09:00:00',
             'playing_end_time' => '17:00:00',
             'player_matches_repeat' => 1,
@@ -142,7 +137,7 @@ class EditionDivisionControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition,
             'division_id' => $this->division->id_division,
             'players_limit' => 32,
-            'court' => 'Court A',
+            'division_title' => 'Adults Explorers A',
         ]);
     }
 
@@ -159,13 +154,14 @@ class EditionDivisionControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition,
             'division_id' => $this->division->id_division,
             'players_limit' => 32,
-            'court' => 'Court B',
+            'division_title' => 'Adults Explorers B',
             'playing_start_time' => '10:00:00',
             'playing_end_time' => '18:00:00',
             'player_matches_repeat' => 1,
             'include_scores' => true,
             'has_demonstrative_match' => false,
             'fixed_teams' => false,
+            'include_final' => false,
         ];
 
         $response = $this->putJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}", $updateData);
@@ -178,7 +174,7 @@ class EditionDivisionControllerTest extends TestCase
 
         $this->assertDatabaseHas('edition_divisions', [
             'id_edition_division' => $editionDivision->id_edition_division,
-            'court' => 'Court B',
+            'division_title' => 'Adults Explorers B',
             'players_limit' => 32,
         ]);
     }
@@ -193,7 +189,7 @@ class EditionDivisionControllerTest extends TestCase
         ]);
 
         $updateData = [
-            'court' => 'Court C',
+            'division_title' => 'Adults Explorers C',
             'players_limit' => 24,
         ];
 
@@ -207,7 +203,7 @@ class EditionDivisionControllerTest extends TestCase
 
         $this->assertDatabaseHas('edition_divisions', [
             'id_edition_division' => $editionDivision->id_edition_division,
-            'court' => 'Court C',
+            'division_title' => 'Adults Explorers C',
             'players_limit' => 24,
         ]);
     }
@@ -224,7 +220,7 @@ class EditionDivisionControllerTest extends TestCase
         $response = $this->putJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}", []);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['edition_id', 'division_id', 'players_limit', 'court', 'playing_start_time', 'playing_end_time', 'player_matches_repeat', 'include_scores', 'has_demonstrative_match', 'fixed_teams']);
+            ->assertJsonValidationErrors(['edition_id', 'division_id', 'players_limit', 'division_title', 'playing_start_time', 'playing_end_time', 'player_matches_repeat', 'include_scores', 'has_demonstrative_match', 'fixed_teams', 'include_final']);
     }
 
     public function test_manager_can_delete_edition_division()
@@ -264,7 +260,7 @@ class EditionDivisionControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition,
             'division_id' => $this->division->id_division,
             'players_limit' => 32,
-            'court' => 'Court B',
+            'division_title' => 'Adults Explorers B',
             'playing_start_time' => '10:00:00',
             'playing_end_time' => '18:00:00',
             'player_matches_repeat' => 1,
@@ -303,13 +299,14 @@ class EditionDivisionControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition,
             'division_id' => $this->division->id_division,
             'players_limit' => 32,
-            'court' => 'Court B',
+            'division_title' => 'Adults Explorers B',
             'playing_start_time' => '10:00:00',
             'playing_end_time' => '18:00:00',
             'player_matches_repeat' => 1,
             'include_scores' => true,
             'has_demonstrative_match' => false,
             'fixed_teams' => false,
+            'include_final' => false,
         ]);
 
         $response->assertStatus(422)
@@ -326,7 +323,7 @@ class EditionDivisionControllerTest extends TestCase
         $response = $this->postJson('/api/v1/manager/edition-divisions', []);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['edition_id', 'division_id', 'players_limit', 'court', 'playing_start_time', 'playing_end_time']);
+            ->assertJsonValidationErrors(['edition_id', 'division_id', 'players_limit', 'division_title', 'playing_start_time', 'playing_end_time']);
     }
 
     public function test_edition_division_creation_validation_invalid_times()
@@ -337,7 +334,7 @@ class EditionDivisionControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition,
             'division_id' => $this->division->id_division,
             'players_limit' => 16,
-            'court' => 'Court A',
+            'division_title' => 'Adults Explorers A',
             'playing_start_time' => '17:00:00',
             'playing_end_time' => '09:00:00', // End time before start time
         ]);
@@ -402,7 +399,7 @@ class EditionDivisionControllerTest extends TestCase
                         'edition_id',
                         'division_id',
                         'players_limit',
-                        'court',
+                        'division_title',
                     ],
                 ],
                 'links' => [

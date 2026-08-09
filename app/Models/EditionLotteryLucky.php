@@ -7,13 +7,14 @@ namespace App\Models;
 use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
 /**
  * @OA\Schema(
- *     schema="EditionLuckyOne",
- *     required={"lottery_id", "drawn_participation_id", "drawn_at", "available_at"},
+ *     schema="EditionLotteryLucky",
+ *     required={"drawn_participation_id", "drawn_at", "available_at"},
  *     @OA\Property(
- *         property="id_lucky_one",
+ *         property="id_lucky",
  *         type="integer",
  *         format="int64",
  *         readOnly=true,
@@ -21,12 +22,13 @@ use Illuminate\Database\Eloquent\Model;
  *         description="Unique Identifier"
  *     ),
  *     @OA\Property(
- *         property="lottery_id",
+ *         property="lottery_rule_id",
  *         type="integer",
  *         format="int64",
+ *         nullable=true,
  *         minimum=1,
- *         title="EditionLottery",
- *         description="Edition lottery of the lucky one"
+ *         title="EditionLotteryRule",
+ *         description="Lottery rule that produced this draw"
  *     ),
  *     @OA\Property(
  *         property="drawn_participation_id",
@@ -84,13 +86,13 @@ use Illuminate\Database\Eloquent\Model;
  *         description="Unix timestamp when rejected",
  *         example=1704412800
  *     ),
- *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true, title="Created At", description="Timestamp when the edition lucky one was created"),
- *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true, title="Updated At", description="Timestamp when the edition lucky one was last updated"),
+ *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true, title="Created At", description="Timestamp when the lottery lucky was created"),
+ *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true, title="Updated At", description="Timestamp when the lottery lucky was last updated"),
  *     @OA\Property(
- *         property="lottery",
- *         ref="#/components/schemas/EditionLottery",
- *         title="Lottery",
- *         description="Related lottery object",
+ *         property="lotteryRule",
+ *         ref="#/components/schemas/EditionLotteryRule",
+ *         title="Lottery Rule",
+ *         description="Related lottery rule object",
  *         nullable=true
  *     ),
  *     @OA\Property(
@@ -102,7 +104,7 @@ use Illuminate\Database\Eloquent\Model;
  *     )
  * )
  */
-class EditionLuckyOne extends Model
+class EditionLotteryLucky extends Model
 {
     use HasFactory;
     use HasResourceMetadata;
@@ -118,19 +120,16 @@ class EditionLuckyOne extends Model
      * Fields that can be filtered
      */
     public static array $filterableFields = [
-        // Error: Related model App\Models\EditionLottery does not have searchable fields defined
-        // 'lottery_id',
-
-        // Error: No relationship found for foreign key field: drawn_participation_id
-        // 'drawn_participation_id',
+        'lottery_rule_id',
+        'drawn_participation_id',
     ];
 
     /**
      * Fields that can be sorted
      */
     public static array $sortableFields = [
-        'id_lucky_one',
-        'lottery_id',
+        'id_lucky',
+        'lottery_rule_id',
         'drawn_participation_id',
         'drawn_at',
         'available_at',
@@ -142,13 +141,13 @@ class EditionLuckyOne extends Model
     ];
 
     /**
-     * Field that will be used to display the edition lucky one in the UI
+     * Field that will be used to display the edition lottery lucky in the UI
      */
     public static ?string $displayField = null;
 
-    protected $table = 'edition_lucky_ones';
+    protected $table = 'edition_lottery_luckies';
 
-    protected $primaryKey = 'id_lucky_one';
+    protected $primaryKey = 'id_lucky';
 
     public $timestamps = true;
 
@@ -158,7 +157,7 @@ class EditionLuckyOne extends Model
     public const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
-        'lottery_id',
+        'lottery_rule_id',
         'drawn_participation_id',
         'drawn_at',
         'available_at',
@@ -175,15 +174,28 @@ class EditionLuckyOne extends Model
     protected $casts = [
         'inserted_at' => 'integer',
         'updated_at' => 'integer',
+        'drawn_at' => 'integer',
+        'available_at' => 'integer',
+        'announced_at' => 'integer',
+        'accepted_at' => 'integer',
+        'rejected_at' => 'integer',
     ];
 
-    public function lottery()
+    public function lotteryRule(): BelongsTo
     {
-        return $this->belongsTo(EditionLottery::class, 'lottery_id');
+        return $this->belongsTo(EditionLotteryRule::class, 'lottery_rule_id', 'id_lottery_rule');
     }
 
-    public function participation()
+    public function drawnParticipation(): BelongsTo
     {
         return $this->belongsTo(EditionParticipation::class, 'drawn_participation_id');
+    }
+
+    /**
+     * @deprecated Use drawnParticipation(); kept for readability in some call sites.
+     */
+    public function participation(): BelongsTo
+    {
+        return $this->drawnParticipation();
     }
 }
