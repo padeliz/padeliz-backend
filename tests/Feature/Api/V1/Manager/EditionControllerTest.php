@@ -65,7 +65,8 @@ class EditionControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        // Clear existing editions and create exactly 5
+        // Clear editions without violating divisions.its_first_edition_id FK
+        Division::query()->delete();
         Edition::query()->delete();
         Edition::factory()->count(5)->create();
 
@@ -269,5 +270,33 @@ class EditionControllerTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['name', 'date']);
+    }
+
+    public function test_manager_can_create_edition_with_overnight_and_end_of_day_closing(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->postJson('/api/v1/manager/editions', [
+            'name' => 'Night Edition',
+            'date' => now()->addDays(10)->format('Y-m-d'),
+            'location_id' => $this->location->id_location,
+            'arriving_time' => '18:00:00',
+            'closing_time' => '24:00:00',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.arriving_time', '18:00:00')
+            ->assertJsonPath('data.closing_time', '24:00:00');
+
+        $overnight = $this->postJson('/api/v1/manager/editions', [
+            'name' => 'Overnight Ed',
+            'date' => now()->addDays(11)->format('Y-m-d'),
+            'location_id' => $this->location->id_location,
+            'arriving_time' => '22:00:00',
+            'closing_time' => '02:00:00',
+        ]);
+
+        $overnight->assertStatus(201)
+            ->assertJsonPath('data.closing_time', '02:00:00');
     }
 }

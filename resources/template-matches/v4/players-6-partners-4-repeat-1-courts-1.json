@@ -1,0 +1,207 @@
+{
+    "players": 6,
+    "partners": 4,
+    "repeat": 1,
+    "courts": 1,
+    "fixedTeams": false,
+    "matches": [
+        [
+            [
+                [
+                    0,
+                    2
+                ],
+                [
+                    1,
+                    4
+                ]
+            ],
+            [
+                [
+                    1,
+                    3
+                ],
+                [
+                    0,
+                    5
+                ]
+            ],
+            [
+                [
+                    2,
+                    5
+                ],
+                [
+                    3,
+                    4
+                ]
+            ],
+            [
+                [
+                    0,
+                    3
+                ],
+                [
+                    1,
+                    2
+                ]
+            ],
+            [
+                [
+                    1,
+                    5
+                ],
+                [
+                    2,
+                    4
+                ]
+            ],
+            [
+                [
+                    0,
+                    4
+                ],
+                [
+                    3,
+                    5
+                ]
+            ]
+        ]
+    ],
+    "metrics": {
+        "pairing": {
+            "quality": {
+                "minPartnersFairness": 0.75,
+                "avgPartnersFairness": 0.9166666666666666,
+                "partnersCount": [
+                    4,
+                    4,
+                    4,
+                    4,
+                    4,
+                    4
+                ],
+                "partnersCountVariation": 0,
+                "pairCount": 12
+            },
+            "stats": {
+                "stopReason": "FACTORIAL_COMPLETE",
+                "time": 158.1014359,
+                "nodesExplored": 2560000,
+                "seedIndex": 1,
+                "seedsTotal": 256
+            }
+        },
+        "matchMaking": {
+            "quality": {
+                "meetingsVariation": 1,
+                "minOpponentsMet": 5,
+                "maxOpponentsMet": 5,
+                "playersMet": {
+                    "0": {
+                        "2": 2,
+                        "1": 3,
+                        "4": 2,
+                        "3": 3,
+                        "5": 2
+                    },
+                    "2": {
+                        "0": 2,
+                        "1": 3,
+                        "4": 3,
+                        "5": 2,
+                        "3": 2
+                    },
+                    "1": {
+                        "0": 3,
+                        "2": 3,
+                        "4": 2,
+                        "3": 2,
+                        "5": 2
+                    },
+                    "4": {
+                        "0": 2,
+                        "2": 3,
+                        "1": 2,
+                        "5": 3,
+                        "3": 2
+                    },
+                    "3": {
+                        "1": 2,
+                        "0": 3,
+                        "5": 3,
+                        "2": 2,
+                        "4": 2
+                    },
+                    "5": {
+                        "1": 2,
+                        "3": 3,
+                        "0": 2,
+                        "2": 2,
+                        "4": 3
+                    }
+                },
+                "matchesCount": 6,
+                "minPlayingFairness": 0.875,
+                "avgPlayingFairness": 0.9333333333333332,
+                "maxPlayingFairnessPenalty": 0.1
+            },
+            "stats": {
+                "permutationsIterated": 256,
+                "permutationIndex": 1,
+                "templatesGenerated": 22528,
+                "templateIndex": 19,
+                "nodesExplored": 22528,
+                "stopReason": "FACTORIAL_COMPLETE",
+                "time": 1.8929016,
+                "meetingsVariationLimit": 1,
+                "candidatesCollected": 22528,
+                "candidatesDeduped": 88,
+                "candidateIndex": 0,
+                "relaxAttempts": [
+                    {
+                        "meetingsVariationLimit": 1,
+                        "permutationsIterated": 256,
+                        "templatesGenerated": 22528,
+                        "nodesExplored": 22528,
+                        "time": 1.8929016,
+                        "candidatesCollected": 22528,
+                        "candidatesDeduped": 88,
+                        "stopReason": "FACTORIAL_COMPLETE"
+                    }
+                ]
+            }
+        },
+        "ordering": {
+            "quality": {
+                "minDistribution": 0.95,
+                "avgDistribution": 0.9555555555555556,
+                "minBreak": 0,
+                "maxBreak": 1,
+                "consecutiveMinBreaks": 2,
+                "consecutiveMaxBreaks": 2,
+                "courtSwitches": 0,
+                "courtBalance": 0,
+                "roundsCount": 6
+            },
+            "stats": {
+                "stopReason": "FACTORIAL_COMPLETE",
+                "permutationsIterated": 65,
+                "permutationIndex": 33,
+                "nodesExplored": 271,
+                "seedIndex": 1,
+                "seedsTotal": 1,
+                "time": 1.174372,
+                "relaxAttempts": [
+                    {
+                        "meetingsVariationLimit": 1,
+                        "candidatesTried": 88,
+                        "eligible": true,
+                        "time": 1.174372,
+                        "stopReason": null
+                    }
+                ]
+            }
+        }
+    }
+}

@@ -56,7 +56,7 @@ class PrizeFromClubControllerTest extends TestCase
                         'id_club_prize',
                         'club_id',
                         'prize_id',
-                        'image',
+                        'media_path',
                         'box_1_text',
                         'box_1_bg_color',
                         'box_1_text_color',
@@ -117,7 +117,7 @@ class PrizeFromClubControllerTest extends TestCase
         $prizeFromClubData = [
             'club_id' => $this->club->id_club,
             'prize_id' => $this->prize->id_prize,
-            'image' => 'club-prize-image.jpg',
+            'media_path' => 'club-prize-image.jpg',
             'box_1_text' => 'Club Box 1 Text',
             'box_1_bg_color' => '#FF0000',
             'box_1_text_color' => '#FFFFFF',
@@ -135,7 +135,7 @@ class PrizeFromClubControllerTest extends TestCase
                 'data' => [
                     'club_id' => $this->club->id_club,
                     'prize_id' => $this->prize->id_prize,
-                    'image' => 'club-prize-image.jpg',
+                    'media_path' => 'club-prize-image.jpg',
                     'box_1_text' => 'Club Box 1 Text',
                     'box_1_bg_color' => '#FF0000',
                     'box_1_text_color' => '#FFFFFF',
@@ -148,7 +148,7 @@ class PrizeFromClubControllerTest extends TestCase
         $this->assertDatabaseHas('prizes_from_clubs', [
             'club_id' => $this->club->id_club,
             'prize_id' => $this->prize->id_prize,
-            'image' => 'club-prize-image.jpg',
+            'media_path' => 'club-prize-image.jpg',
         ]);
     }
 
@@ -167,7 +167,7 @@ class PrizeFromClubControllerTest extends TestCase
             'prize_id' => $this->prize->id_prize,
             'box_1_text' => 'Updated Box 1',
             'box_1_bg_color' => '#0000FF',
-            'image' => 'updated-image.jpg',
+            'media_path' => 'updated-image.jpg',
         ];
 
         $response = $this->putJson("/api/v1/manager/prize-from-clubs/{$prizeFromClub->id_club_prize}", $updateData);
@@ -180,7 +180,7 @@ class PrizeFromClubControllerTest extends TestCase
                     'id_club_prize' => $prizeFromClub->id_club_prize,
                     'box_1_text' => 'Updated Box 1',
                     'box_1_bg_color' => '#0000FF',
-                    'image' => 'updated-image.jpg',
+                    'media_path' => 'updated-image.jpg',
                 ],
             ]);
 
@@ -399,7 +399,7 @@ class PrizeFromClubControllerTest extends TestCase
         $duplicateData = [
             'club_id' => $this->club->id_club,
             'prize_id' => $this->prize->id_prize,
-            'image' => 'duplicate-image.jpg',
+            'media_path' => 'duplicate-image.jpg',
         ];
 
         $response = $this->postJson('/api/v1/manager/prize-from-clubs', $duplicateData);

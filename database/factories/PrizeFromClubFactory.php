@@ -18,7 +18,7 @@ class PrizeFromClubFactory extends Factory
         return [
             'club_id' => Club::factory(),
             'prize_id' => Prize::factory(),
-            'image' => $this->faker->optional()->imageUrl(),
+            'media_path' => $this->faker->optional()->passthrough('prizes-from-clubs/1/media/placeholder.jpg'),
             'box_1_text' => $this->faker->optional()->sentence(),
             'box_1_bg_color' => $this->faker->optional()->hexColor(),
             'box_1_text_color' => $this->faker->optional()->hexColor(),

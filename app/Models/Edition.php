@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Services\Schedule\PlayingWindow;
 use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -11,7 +12,7 @@ use Illuminate\Database\Eloquent\Model;
 /**
  * @OA\Schema(
  *     schema="Edition",
- *     required={"name", "date", "location_id"},
+ *     required={"name", "date", "location_id", "arriving_time", "closing_time"},
  *     @OA\Property(
  *         property="id_edition",
  *         type="integer",
@@ -40,7 +41,7 @@ use Illuminate\Database\Eloquent\Model;
  *         property="date",
  *         type="string",
  *         format="date",
- *         pattern="^\\d{4}-\\d{2}-\\d{2}$",
+ *         pattern="^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
  *         title="Date",
  *         description="Edition date in YYYY-MM-DD format",
  *         example="2024-06-15"
@@ -78,6 +79,14 @@ use Illuminate\Database\Eloquent\Model;
  *         title="Closing Time",
  *         description="Closing time in HH:MM:SS format",
  *         example="18:00:00"
+ *     ),
+ *     @OA\Property(
+ *         property="finalized_at",
+ *         type="integer",
+ *         format="timestamp",
+ *         nullable=true,
+ *         title="Finalized At",
+ *         description="Unix timestamp when the edition was finalized"
  *     ),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true, title="Created At", description="Timestamp when the edition was created"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true, title="Updated At", description="Timestamp when the edition was last updated"),
@@ -147,6 +156,7 @@ class Edition extends Model
         'students_entry_fee',
         'arriving_time',
         'closing_time',
+        'finalized_at',
         'inserted_at',
         'updated_at',
     ];
@@ -175,12 +185,12 @@ class Edition extends Model
         'students_entry_fee',
         'arriving_time',
         'closing_time',
+        'finalized_at',
     ];
 
     protected $casts = [
         'date' => 'date:Y-m-d',
-        'arriving_time' => 'datetime:H:i:s',
-        'closing_time' => 'datetime:H:i:s',
+        'finalized_at' => 'integer',
         'inserted_at' => 'integer',
         'updated_at' => 'integer',
     ];
@@ -228,11 +238,7 @@ class Edition extends Model
      */
     public function getFormattedArrivingTimeAttribute()
     {
-        if ($this->attributes['arriving_time']) {
-            return $this->asDateTime($this->attributes['arriving_time'])->format('H:i:s');
-        }
-
-        return null;
+        return PlayingWindow::toClockString($this->attributes['arriving_time'] ?? null);
     }
 
     /**
@@ -240,10 +246,6 @@ class Edition extends Model
      */
     public function getFormattedClosingTimeAttribute()
     {
-        if ($this->attributes['closing_time']) {
-            return $this->asDateTime($this->attributes['closing_time'])->format('H:i:s');
-        }
-
-        return null;
+        return PlayingWindow::toClockString($this->attributes['closing_time'] ?? null);
     }
 }

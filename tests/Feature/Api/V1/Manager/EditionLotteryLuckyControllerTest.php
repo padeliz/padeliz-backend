@@ -11,6 +11,7 @@ use App\Models\EditionLotteryLucky;
 use App\Models\EditionLotteryRule;
 use App\Models\EditionParticipation;
 use App\Models\Player;
+use App\Models\Prize;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -40,8 +41,10 @@ class EditionLotteryLuckyControllerTest extends TestCase
         ]);
         $player = Player::factory()->create();
 
+        $prize = Prize::factory()->create(['name' => 'Towel']);
         $lottery = EditionLottery::factory()->create([
             'edition_id' => $edition->id_edition,
+            'prize_id' => $prize->id_prize,
             'prize_quantity' => 3,
         ]);
 
@@ -81,11 +84,51 @@ class EditionLotteryLuckyControllerTest extends TestCase
                         'rejected_at',
                         'inserted_at',
                         'updated_at',
+                        'short_name',
+                        'pdf_avatar_url',
                     ],
                 ],
             ]);
 
         $this->assertCount(3, $response->json('data'));
+    }
+
+    public function test_lucky_includes_short_name_and_pdf_avatar_from_cache(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $this->participation->update(['is_collecting_points' => true]);
+        $player = $this->participation->player()->first();
+        $player->update([
+            'first_name' => 'Alice',
+            'middle_name' => null,
+            'last_name' => 'Wonder',
+        ]);
+        $player->refresh();
+
+        \App\Models\CachedPdfPlayerImage::query()->create([
+            'player_id' => $player->id_player,
+            'player_is_collecting_points' => true,
+            'picture_path' => 'cached-pdf-player-images/' . $player->id_player . '/picture/avatar.png',
+        ]);
+
+        $lucky = EditionLotteryLucky::factory()->create([
+            'lottery_rule_id' => $this->lotteryRule->id_lottery_rule,
+            'drawn_participation_id' => $this->participation->id_participation,
+        ]);
+
+        $response = $this->getJson("/api/v1/manager/edition-lottery-luckies/{$lucky->id_lucky}");
+        $response->assertOk();
+        $this->assertNotNull($response->json('data.short_name'));
+        $this->assertStringContainsString('.', (string) $response->json('data.short_name'));
+        $this->assertNotNull($response->json('data.pdf_avatar_url'));
+
+        $urlCollecting = $response->json('data.pdf_avatar_url');
+        $this->participation->update(['is_collecting_points' => false]);
+        $miss = $this->getJson("/api/v1/manager/edition-lottery-luckies/{$lucky->id_lucky}");
+        $miss->assertOk();
+        $this->assertNull($miss->json('data.pdf_avatar_url'));
+        $this->assertNotSame($urlCollecting, $miss->json('data.pdf_avatar_url'));
     }
 
     public function test_manager_can_view_specific_lucky(): void
@@ -239,5 +282,26 @@ class EditionLotteryLuckyControllerTest extends TestCase
     {
         $response = $this->getJson('/api/v1/manager/edition-lottery-luckies');
         $response->assertStatus(401);
+    }
+
+    public function test_lucky_index_and_show_include_nested_lottery_prize_name(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $lucky = EditionLotteryLucky::factory()->create([
+            'lottery_rule_id' => $this->lotteryRule->id_lottery_rule,
+            'drawn_participation_id' => $this->participation->id_participation,
+        ]);
+
+        $index = $this->getJson('/api/v1/manager/edition-lottery-luckies');
+        $index->assertOk();
+        $row = collect($index->json('data'))->firstWhere('id_lucky', $lucky->id_lucky);
+        $this->assertSame('Towel', $row['lottery_rule']['lottery']['prize']['name'] ?? null);
+        $this->assertArrayNotHasKey('rules', $row['lottery_rule']['lottery'] ?? []);
+
+        $show = $this->getJson('/api/v1/manager/edition-lottery-luckies/' . $lucky->id_lucky);
+        $show->assertOk();
+        $this->assertSame('Towel', $show->json('data.lottery_rule.lottery.prize.name'));
+        $this->assertArrayNotHasKey('rules', $show->json('data.lottery_rule.lottery') ?? []);
     }
 }

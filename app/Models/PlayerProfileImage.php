@@ -30,7 +30,7 @@ class PlayerProfileImage extends Model
 
     protected $fillable = [
         'player_id',
-        'path',
+        'profile_path',
         'sort_order',
     ];
 
@@ -46,8 +46,8 @@ class PlayerProfileImage extends Model
     protected static function booted(): void
     {
         static::deleting(function (PlayerProfileImage $image): void {
-            if ($image->path !== '') {
-                Storage::disk($image->storageDisk())->delete($image->path);
+            if ($image->profile_path !== null && $image->profile_path !== '') {
+                Storage::disk($image->storageDisk())->delete($image->profile_path);
             }
         });
     }
@@ -64,6 +64,6 @@ class PlayerProfileImage extends Model
 
     public function getUrlAttribute(): string
     {
-        return Storage::disk($this->storageDisk())->url($this->path);
+        return Storage::disk($this->storageDisk())->url($this->profile_path);
     }
 }

@@ -71,14 +71,6 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
  *         title="Rules",
  *         description="Array of related lottery rules",
  *         nullable=true
- *     ),
- *     @OA\Property(
- *         property="luckies",
- *         type="array",
- *         @OA\Items(ref="#/components/schemas/EditionLotteryLucky"),
- *         title="Luckies",
- *         description="Array of related lottery luckies",
- *         nullable=true
  *     )
  * )
  */

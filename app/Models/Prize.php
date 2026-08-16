@@ -30,19 +30,32 @@ use Illuminate\Support\Facades\Storage;
  *         description="Name of the prize"
  *     ),
  *     @OA\Property(
- *         property="image",
+ *         property="media_path",
  *         type="string",
- *         maxLength=100,
+ *         maxLength=512,
  *         nullable=true,
- *         title="Image",
- *         description="Storage path to the prize image"
+ *         readOnly=true,
+ *         title="Media Path",
+ *         description="Storage path to the prize media"
  *     ),
  *     @OA\Property(
  *         property="url",
  *         type="string",
  *         nullable=true,
- *         title="Image URL",
- *         description="Public URL for the prize image"
+ *         readOnly=true,
+ *         title="Media URL",
+ *         description="Public URL for the prize media",
+ *         x={
+ *             "padeliz-upload": {
+ *                 "mode": "single",
+ *                 "max_files": 1,
+ *                 "max_size_kb": 30720,
+ *                 "form_field": "file",
+ *                 "accept": {"0":"image/jpeg","1":"image/png","2":"image/gif","3":"image/webp","4":"video/mp4","5":"video/webm","6":"video/quicktime"},
+ *                 "upload": {"method":"POST","path":"/api/v1/manager/prizes/{id}/media"},
+ *                 "delete": {"method":"DELETE","path":"/api/v1/manager/prizes/{id}/media"}
+ *             }
+ *         }
  *     ),
  *     @OA\Property(
  *         property="template",
@@ -62,8 +75,9 @@ use Illuminate\Support\Facades\Storage;
  *     @OA\Property(
  *         property="box_1_bg_color",
  *         type="string",
+ *         format="color",
  *         maxLength=7,
- *         pattern="^#[0-9A-F]{6}$",
+ *         pattern="^#[0-9A-Fa-f]{6}$",
  *         title="Box 1 Background",
  *         description="Box 1 background hex color",
  *         example="#FF0000"
@@ -71,8 +85,9 @@ use Illuminate\Support\Facades\Storage;
  *     @OA\Property(
  *         property="box_1_text_color",
  *         type="string",
+ *         format="color",
  *         maxLength=7,
- *         pattern="^#[0-9A-F]{6}$",
+ *         pattern="^#[0-9A-Fa-f]{6}$",
  *         title="Box 1 Text Color",
  *         description="Box 1 text hex color",
  *         example="#FFFFFF"
@@ -88,9 +103,10 @@ use Illuminate\Support\Facades\Storage;
  *     @OA\Property(
  *         property="box_2_bg_color",
  *         type="string",
+ *         format="color",
  *         maxLength=7,
  *         nullable=true,
- *         pattern="^#[0-9A-F]{6}$",
+ *         pattern="^#[0-9A-Fa-f]{6}$",
  *         title="Box 2 Background",
  *         description="Box 2 background hex color",
  *         example="#0000FF"
@@ -98,9 +114,10 @@ use Illuminate\Support\Facades\Storage;
  *     @OA\Property(
  *         property="box_2_text_color",
  *         type="string",
+ *         format="color",
  *         maxLength=7,
  *         nullable=true,
- *         pattern="^#[0-9A-F]{6}$",
+ *         pattern="^#[0-9A-Fa-f]{6}$",
  *         title="Box 2 Text Color",
  *         description="Box 2 text hex color",
  *         example="#FFFFFF"
@@ -140,7 +157,7 @@ use Illuminate\Support\Facades\Storage;
  *     )
  * )
  *
- * @property-read string|null $url
+ * @property-read null|string $url
  */
 class Prize extends Model
 {
@@ -196,7 +213,7 @@ class Prize extends Model
 
     protected $fillable = [
         'name',
-        'image',
+        'media_path',
         'template',
         'box_1_text',
         'box_1_bg_color',
@@ -235,10 +252,10 @@ class Prize extends Model
 
     public function getUrlAttribute(): ?string
     {
-        if ($this->image === null || $this->image === '') {
+        if ($this->media_path === null || $this->media_path === '') {
             return null;
         }
 
-        return Storage::disk($this->storageDisk())->url($this->image);
+        return Storage::disk($this->storageDisk())->url($this->media_path);
     }
 }

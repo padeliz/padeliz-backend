@@ -29,7 +29,7 @@ class EligibilityResource extends JsonResource
             'first_name' => $this->first_name,
             'middle_name' => $this->middle_name,
             'last_name' => $this->last_name,
-            'birth_year' => $this->birth_year,
+            'year_of_birth' => $this->year_of_birth,
             'birth_month' => $this->birth_month,
             'birth_day' => $this->birth_day,
             'being_student' => $this->being_student,

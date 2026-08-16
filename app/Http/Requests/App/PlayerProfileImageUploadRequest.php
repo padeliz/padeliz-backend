@@ -4,10 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Requests\App;
 
+use App\Http\Requests\Concerns\ValidatesPlayerProfileImageUpload;
 use Illuminate\Foundation\Http\FormRequest;
 
 class PlayerProfileImageUploadRequest extends FormRequest
 {
+    use ValidatesPlayerProfileImageUpload;
+
     public function authorize(): bool
     {
         return true;
@@ -18,15 +21,7 @@ class PlayerProfileImageUploadRequest extends FormRequest
      */
     public function rules(): array
     {
-        return [
-            'image' => [
-                'required',
-                'file',
-                'image',
-                'mimes:jpeg,jpg,png,gif,webp',
-                'max:5120',
-            ],
-        ];
+        return $this->playerProfileImageRules();
     }
 
     /**
@@ -34,12 +29,6 @@ class PlayerProfileImageUploadRequest extends FormRequest
      */
     public function messages(): array
     {
-        return [
-            'image.required' => 'Please select an image to upload.',
-            'image.file' => 'The uploaded file is not valid.',
-            'image.image' => 'The file must be an image.',
-            'image.mimes' => 'The image must be a JPEG, PNG, GIF, or WebP file.',
-            'image.max' => 'The image size must not exceed 5MB.',
-        ];
+        return $this->playerProfileImageMessages();
     }
 }

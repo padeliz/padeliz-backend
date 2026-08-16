@@ -15,7 +15,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *     @OA\Property(property="id_standing", type="integer", format="int64", readOnly=true),
  *     @OA\Property(property="edition_division_id", type="integer", format="int64"),
  *     @OA\Property(property="participation_id", type="integer", format="int64"),
- *     @OA\Property(property="is_collecting_points", type="boolean", default=true),
  *     @OA\Property(property="points_total", type="integer", nullable=true),
  *     @OA\Property(property="wins", type="number", format="float", nullable=true),
  *     @OA\Property(property="rank", type="integer", nullable=true),
@@ -36,19 +35,18 @@ class EditionDivisionStanding extends Model
     protected $dateFormat = 'U';
 
     public const CREATED_AT = 'inserted_at';
+
     public const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
         'edition_division_id',
         'participation_id',
-        'is_collecting_points',
         'points_total',
         'wins',
         'rank',
     ];
 
     protected $casts = [
-        'is_collecting_points' => 'boolean',
         'points_total' => 'integer',
         'wins' => 'float',
         'rank' => 'integer',

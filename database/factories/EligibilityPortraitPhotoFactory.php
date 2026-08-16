@@ -19,7 +19,7 @@ class EligibilityPortraitPhotoFactory extends Factory
     {
         return [
             'eligibility_id' => Eligibility::factory(),
-            'path' => 'eligibilities/1/portrait-photo/placeholder.png',
+            'portrait_photo_path' => 'eligibility-portrait-photos/1/portrait-photo/placeholder.png',
             'sort_order' => 0,
             'inserted_at' => time(),
             'updated_at' => time(),

@@ -19,7 +19,7 @@ class PlayerProfileImageFactory extends Factory
     {
         return [
             'player_id' => Player::factory(),
-            'path' => 'players/1/profile/placeholder.png',
+            'profile_path' => 'player-profile-images/1/profile/placeholder.png',
             'sort_order' => 0,
             'inserted_at' => time(),
             'updated_at' => time(),

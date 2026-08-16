@@ -29,11 +29,10 @@ class EditionDivisionFactory extends Factory
             'player_matches_repeat' => $this->faker->numberBetween(1, 2),
             'include_scores' => $this->faker->boolean(80),
             'has_demonstrative_match' => $this->faker->boolean(20),
-            'fixed_teams' => $this->faker->boolean(20),
+            'allow_replacements' => $this->faker->boolean(80),
             'points_per_match' => $this->faker->optional()->numberBetween(1, 3),
-            'final_points_target' => $this->faker->optional()->numberBetween(10, 24),
+            'final_points_target' => 24,
             'include_final' => $this->faker->boolean(30),
-            'finalized_at' => null,
             'inserted_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
         ];
     }

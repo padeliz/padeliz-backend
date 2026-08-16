@@ -1,10 +1,13 @@
 FROM php:8.2-fpm
 
-# Install system dependencies
+# Install system dependencies (include JPEG/WebP/FreeType for GD — PDF prize photos need JPEG)
 RUN apt-get update && apt-get install -y \
     git \
     curl \
     libpng-dev \
+    libjpeg62-turbo-dev \
+    libfreetype6-dev \
+    libwebp-dev \
     libonig-dev \
     libxml2-dev \
     zip \
@@ -13,8 +16,9 @@ RUN apt-get update && apt-get install -y \
     && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PHP extensions
-RUN docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
+# Install PHP extensions (configure GD with JPEG/FreeType/WebP before install)
+RUN docker-php-ext-configure gd --with-jpeg --with-freetype --with-webp \
+    && docker-php-ext-install pdo_mysql mbstring exif pcntl bcmath gd
 
 # Install Xdebug for debugging
 RUN pecl install xdebug \

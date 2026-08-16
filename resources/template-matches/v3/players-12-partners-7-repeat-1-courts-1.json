@@ -1,0 +1,455 @@
+{
+    "players": 12,
+    "partners": 7,
+    "repeat": 1,
+    "courts": 1,
+    "fixedTeams": false,
+    "matches": [
+        [
+            [
+                [
+                    0,
+                    10
+                ],
+                [
+                    1,
+                    11
+                ]
+            ],
+            [
+                [
+                    3,
+                    7
+                ],
+                [
+                    4,
+                    5
+                ]
+            ],
+            [
+                [
+                    1,
+                    6
+                ],
+                [
+                    2,
+                    8
+                ]
+            ],
+            [
+                [
+                    0,
+                    9
+                ],
+                [
+                    2,
+                    6
+                ]
+            ],
+            [
+                [
+                    5,
+                    10
+                ],
+                [
+                    7,
+                    11
+                ]
+            ],
+            [
+                [
+                    3,
+                    8
+                ],
+                [
+                    4,
+                    6
+                ]
+            ],
+            [
+                [
+                    1,
+                    5
+                ],
+                [
+                    0,
+                    7
+                ]
+            ],
+            [
+                [
+                    2,
+                    11
+                ],
+                [
+                    3,
+                    9
+                ]
+            ],
+            [
+                [
+                    4,
+                    8
+                ],
+                [
+                    10,
+                    11
+                ]
+            ],
+            [
+                [
+                    1,
+                    7
+                ],
+                [
+                    6,
+                    8
+                ]
+            ],
+            [
+                [
+                    2,
+                    9
+                ],
+                [
+                    0,
+                    5
+                ]
+            ],
+            [
+                [
+                    3,
+                    11
+                ],
+                [
+                    1,
+                    9
+                ]
+            ],
+            [
+                [
+                    4,
+                    10
+                ],
+                [
+                    3,
+                    6
+                ]
+            ],
+            [
+                [
+                    0,
+                    8
+                ],
+                [
+                    2,
+                    7
+                ]
+            ],
+            [
+                [
+                    4,
+                    11
+                ],
+                [
+                    5,
+                    9
+                ]
+            ],
+            [
+                [
+                    2,
+                    5
+                ],
+                [
+                    1,
+                    10
+                ]
+            ],
+            [
+                [
+                    0,
+                    6
+                ],
+                [
+                    3,
+                    10
+                ]
+            ],
+            [
+                [
+                    4,
+                    9
+                ],
+                [
+                    7,
+                    8
+                ]
+            ],
+            [
+                [
+                    1,
+                    8
+                ],
+                [
+                    0,
+                    11
+                ]
+            ],
+            [
+                [
+                    2,
+                    10
+                ],
+                [
+                    3,
+                    5
+                ]
+            ],
+            [
+                [
+                    6,
+                    9
+                ],
+                [
+                    4,
+                    7
+                ]
+            ]
+        ]
+    ],
+    "metrics": {
+        "pairing": {
+            "quality": {
+                "minPartnersFairness": 0.7857142857142857,
+                "avgPartnersFairness": 0.9351190476190476,
+                "partnersCount": [
+                    7,
+                    7,
+                    7,
+                    7,
+                    7,
+                    7,
+                    7,
+                    7,
+                    7,
+                    7,
+                    7,
+                    7
+                ],
+                "partnersCountVariation": 0,
+                "pairCount": 42
+            },
+            "stats": {
+                "stopReason": "DEADLINE",
+                "time": 421.27421,
+                "nodesExplored": 799108,
+                "seedIndex": 2,
+                "seedsTotal": 256
+            }
+        },
+        "matchMaking": {
+            "quality": {
+                "meetingsVariation": 1.75,
+                "minOpponentsMet": 8,
+                "maxOpponentsMet": 11,
+                "playersMet": {
+                    "0": {
+                        "10": 2,
+                        "1": 3,
+                        "11": 2,
+                        "9": 2,
+                        "2": 3,
+                        "6": 2,
+                        "5": 2,
+                        "7": 2,
+                        "8": 2,
+                        "3": 1
+                    },
+                    "10": {
+                        "0": 2,
+                        "1": 2,
+                        "11": 3,
+                        "5": 3,
+                        "7": 1,
+                        "4": 2,
+                        "8": 1,
+                        "3": 3,
+                        "6": 2,
+                        "2": 2
+                    },
+                    "1": {
+                        "0": 3,
+                        "10": 2,
+                        "11": 3,
+                        "6": 2,
+                        "2": 2,
+                        "8": 3,
+                        "5": 2,
+                        "7": 2,
+                        "3": 1,
+                        "9": 1
+                    },
+                    "11": {
+                        "0": 2,
+                        "10": 3,
+                        "1": 3,
+                        "5": 2,
+                        "7": 1,
+                        "2": 1,
+                        "3": 2,
+                        "9": 3,
+                        "4": 2,
+                        "8": 2
+                    },
+                    "3": {
+                        "7": 1,
+                        "4": 3,
+                        "5": 2,
+                        "8": 1,
+                        "6": 3,
+                        "2": 2,
+                        "11": 2,
+                        "9": 2,
+                        "1": 1,
+                        "10": 3,
+                        "0": 1
+                    },
+                    "7": {
+                        "3": 1,
+                        "4": 3,
+                        "5": 3,
+                        "10": 1,
+                        "11": 1,
+                        "1": 2,
+                        "0": 2,
+                        "6": 2,
+                        "8": 3,
+                        "2": 1,
+                        "9": 2
+                    },
+                    "4": {
+                        "3": 3,
+                        "7": 3,
+                        "5": 2,
+                        "8": 3,
+                        "6": 3,
+                        "10": 2,
+                        "11": 2,
+                        "9": 3
+                    },
+                    "5": {
+                        "3": 2,
+                        "7": 3,
+                        "4": 2,
+                        "10": 3,
+                        "11": 2,
+                        "1": 2,
+                        "0": 2,
+                        "2": 3,
+                        "9": 2
+                    },
+                    "6": {
+                        "1": 2,
+                        "2": 2,
+                        "8": 3,
+                        "0": 2,
+                        "9": 2,
+                        "3": 3,
+                        "4": 3,
+                        "7": 2,
+                        "10": 2
+                    },
+                    "2": {
+                        "1": 2,
+                        "6": 2,
+                        "8": 2,
+                        "0": 3,
+                        "9": 3,
+                        "11": 1,
+                        "3": 2,
+                        "5": 3,
+                        "7": 1,
+                        "10": 2
+                    },
+                    "8": {
+                        "1": 3,
+                        "6": 3,
+                        "2": 2,
+                        "3": 1,
+                        "4": 3,
+                        "10": 1,
+                        "11": 2,
+                        "7": 3,
+                        "0": 2,
+                        "9": 1
+                    },
+                    "9": {
+                        "0": 2,
+                        "2": 3,
+                        "6": 2,
+                        "11": 3,
+                        "3": 2,
+                        "5": 2,
+                        "1": 1,
+                        "4": 3,
+                        "7": 2,
+                        "8": 1
+                    }
+                },
+                "matchesCount": 21,
+                "minPlayingFairness": 0.8116883116883117,
+                "avgPlayingFairness": 0.9264069264069263,
+                "maxPlayingFairnessPenalty": 0.05844155844155845
+            },
+            "stats": {
+                "permutationsIterated": 256,
+                "permutationIndex": 84,
+                "templatesGenerated": 249,
+                "templateIndex": 82,
+                "nodesExplored": null,
+                "stopReason": "FACTORIAL_COMPLETE",
+                "time": 3.6895238,
+                "meetingsVariationLimit": 1,
+                "candidatesCollected": null,
+                "candidatesDeduped": null,
+                "candidateIndex": null,
+                "relaxAttempts": [
+                    {
+                        "meetingsVariationLimit": 1,
+                        "permutationsIterated": 256,
+                        "templatesGenerated": 249,
+                        "nodesExplored": null,
+                        "time": 3.6895238,
+                        "candidatesCollected": null,
+                        "candidatesDeduped": null,
+                        "stopReason": null
+                    }
+                ]
+            }
+        },
+        "ordering": {
+            "quality": {
+                "minDistribution": 0.95,
+                "avgDistribution": 0.9686011904761905,
+                "minBreak": 0,
+                "maxBreak": 3,
+                "consecutiveMinBreaks": 1,
+                "consecutiveMaxBreaks": 3,
+                "courtSwitches": 0,
+                "courtBalance": 0,
+                "roundsCount": 21
+            },
+            "stats": {
+                "stopReason": "FACTORIAL_COMPLETE",
+                "permutationsIterated": 16,
+                "permutationIndex": 8,
+                "nodesExplored": 2560000,
+                "seedIndex": 63,
+                "seedsTotal": 256,
+                "time": 60.965982,
+                "relaxAttempts": null
+            }
+        }
+    }
+}

@@ -6,16 +6,18 @@
     "license": "proprietary",
     "require": {
         "php": "^8.2",
+        "darkaonline/l5-swagger": "^9.0",
+        "google/apiclient": "^2.16",
+        "guzzlehttp/guzzle": "^7.0.1",
         "laravel/framework": "^11.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
-        "google/apiclient": "^2.16",
-        "guzzlehttp/guzzle": "^7.0.1",
-        "darkaonline/l5-swagger": "^9.0"
+        "mpdf/mpdf": "^8.3"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",
         "friendsofphp/php-cs-fixer": "^3.86",
+        "larastan/larastan": "^3.0",
         "laravel/sail": "^1.0.1",
         "mockery/mockery": "^1.4.4",
         "nunomaduro/collision": "^8.0",
@@ -50,6 +52,8 @@
         "format": "vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.php --verbose",
         "format:check": "vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.php --dry-run --diff",
         "format:fix": "vendor/bin/php-cs-fixer fix --config=.php-cs-fixer.php --verbose",
+        "phpstan": "phpstan analyse --memory-limit=1G",
+        "test:lint": "php scripts/test-lint-no-generate.php",
         "setup:hooks": "chmod +x scripts/setup-git-hooks.sh && ./scripts/setup-git-hooks.sh"
     },
     "extra": {
@@ -59,9 +63,9 @@
         "google/apiclient-services": [""]
     },
     "config": {
-        "optimize-autoloader": true,
         "preferred-install": "dist",
-        "sort-packages": true
+        "sort-packages": true,
+        "optimize-autoloader": true
     },
     "minimum-stability": "dev",
     "prefer-stable": true

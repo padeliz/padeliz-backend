@@ -89,7 +89,7 @@ class EditionLotteryLuckyController extends \App\Http\Controllers\BaseVersions\V
      */
     public function index(Request $request)
     {
-        $query = EditionLotteryLucky::with(['drawnParticipation.player', 'lotteryRule']);
+        $query = EditionLotteryLucky::with(['drawnParticipation.player', 'lotteryRule.lottery.prize']);
 
         $this->applyAdvancedPagination(
             $query,
@@ -135,7 +135,7 @@ class EditionLotteryLuckyController extends \App\Http\Controllers\BaseVersions\V
      */
     public function show(EditionLotteryLucky $lucky)
     {
-        $lucky->load(['drawnParticipation.player', 'lotteryRule']);
+        $lucky->load(['drawnParticipation.player', 'lotteryRule.lottery.prize']);
 
         return $this->resourceResponse(
             new EditionLotteryLuckyResource($lucky),
@@ -207,7 +207,7 @@ class EditionLotteryLuckyController extends \App\Http\Controllers\BaseVersions\V
         }
 
         $lucky = EditionLotteryLucky::create($validated);
-        $lucky->load(['drawnParticipation.player', 'lotteryRule']);
+        $lucky->load(['drawnParticipation.player', 'lotteryRule.lottery.prize']);
 
         return $this->resourceResponse(
             new EditionLotteryLuckyResource($lucky),
@@ -279,7 +279,7 @@ class EditionLotteryLuckyController extends \App\Http\Controllers\BaseVersions\V
         }
 
         $lucky->update($validated);
-        $lucky->load(['drawnParticipation.player', 'lotteryRule']);
+        $lucky->load(['drawnParticipation.player', 'lotteryRule.lottery.prize']);
 
         return $this->resourceResponse(
             new EditionLotteryLuckyResource($lucky),
@@ -355,7 +355,7 @@ class EditionLotteryLuckyController extends \App\Http\Controllers\BaseVersions\V
         }
 
         $lucky->update($validated);
-        $lucky->load(['drawnParticipation.player', 'lotteryRule']);
+        $lucky->load(['drawnParticipation.player', 'lotteryRule.lottery.prize']);
 
         return $this->resourceResponse(
             new EditionLotteryLuckyResource($lucky),

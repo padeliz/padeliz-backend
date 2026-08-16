@@ -5,8 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Resources\EditionDivisionResource;
+use App\Models\Edition;
 use App\Models\EditionDivision;
 use App\Models\EditionParticipation;
+use App\Services\Schedule\PlayingWindow;
 use Illuminate\Http\Request;
 
 /**
@@ -55,7 +57,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *             @OA\Property(property="player_matches_repeat", type="string", description="Filter by matches repeat"),
      *             @OA\Property(property="include_scores", type="string", description="Filter by include scores (use 0 or 1)"),
      *             @OA\Property(property="has_demonstrative_match", type="string", description="Filter by demonstrative match (use 0 or 1)"),
-     *             @OA\Property(property="fixed_teams", type="string", description="Filter by fixed teams (use 0 or 1)")
+     *             @OA\Property(property="allow_replacements", type="string", description="Filter by allow replacements (use 0 or 1)")
      *         )
      *     ),
      *     @OA\Parameter(
@@ -79,7 +81,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *             @OA\Property(property="player_matches_repeat", type="string", enum={"asc", "desc"}, description="Sort by matches repeat"),
      *             @OA\Property(property="include_scores", type="string", enum={"asc", "desc"}, description="Sort by include scores"),
      *             @OA\Property(property="has_demonstrative_match", type="string", enum={"asc", "desc"}, description="Sort by demonstrative match"),
-     *             @OA\Property(property="fixed_teams", type="string", enum={"asc", "desc"}, description="Sort by fixed teams"),
+     *             @OA\Property(property="allow_replacements", type="string", enum={"asc", "desc"}, description="Sort by allow replacements"),
      *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}, description="Sort by creation date"),
      *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"}, description="Sort by update date")
      *         )
@@ -219,7 +221,8 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *             @OA\Property(property="player_matches_repeat", type="integer", description="Player matches repeat", default=1),
      *             @OA\Property(property="include_scores", type="boolean", description="Include scores", default=1),
      *             @OA\Property(property="has_demonstrative_match", type="boolean", description="Has demonstrative match", default=0),
-     *             @OA\Property(property="fixed_teams", type="boolean", description="Fixed teams", default=0)
+     *             @OA\Property(property="allow_replacements", type="boolean", description="Allow replacements", default=true),
+     *             @OA\Property(property="final_points_target", type="integer", description="Final points target", default=24)
      *         )
      *     ),
      *     @OA\Response(
@@ -263,18 +266,22 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
             'division_id' => 'required|integer|exists:divisions,id_division',
             'division_title' => 'required|string|max:64',
             'players_limit' => 'required|integer|min:1',
-            'playing_start_time' => 'required|date_format:H:i:s',
-            'playing_end_time' => 'required|date_format:H:i:s|after:playing_start_time',
+            'playing_start_time' => ['required', PlayingWindow::clockRegexRule()],
+            'playing_end_time' => ['required', PlayingWindow::clockRegexRule()],
             'player_opponents_nr' => 'nullable|integer|min:1',
             'player_matches_repeat' => 'integer|min:1',
             'include_scores' => 'boolean',
             'has_demonstrative_match' => 'boolean',
-            'fixed_teams' => 'boolean',
+            'allow_replacements' => 'boolean',
             'points_per_match' => 'nullable|integer|min:0',
             'final_points_target' => 'nullable|integer|min:0',
             'include_final' => 'boolean',
-            'finalized_at' => 'nullable|integer',
         ]);
+
+        $edition = Edition::query()->find($validated['edition_id']);
+        if ($edition?->finalized_at !== null) {
+            return $this->errorResponse('Edition divisions cannot be created after finalize.', 409);
+        }
 
         // Check if this edition-division combination already exists
         $existingDivision = EditionDivision::where('edition_id', $validated['edition_id'])
@@ -287,6 +294,11 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
                 422
             );
         }
+
+        $validated['allow_replacements'] = $validated['allow_replacements'] ?? true;
+        $validated['final_points_target'] = $validated['final_points_target'] ?? 24;
+        $validated['playing_start_time'] = PlayingWindow::normalizeStoredTime((string) $validated['playing_start_time']);
+        $validated['playing_end_time'] = PlayingWindow::normalizeStoredTime((string) $validated['playing_end_time']);
 
         $editionDivision = EditionDivision::create($validated);
         $editionDivision->load(['edition', 'division', 'courts']);
@@ -323,7 +335,8 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *             @OA\Property(property="player_matches_repeat", type="integer", description="Player matches repeat"),
      *             @OA\Property(property="include_scores", type="boolean", description="Include scores"),
      *             @OA\Property(property="has_demonstrative_match", type="boolean", description="Has demonstrative match"),
-     *             @OA\Property(property="fixed_teams", type="boolean", description="Fixed teams")
+     *             @OA\Property(property="allow_replacements", type="boolean", description="Allow replacements"),
+     *             @OA\Property(property="final_points_target", type="integer", description="Final points target")
      *         )
      *     ),
      *     @OA\Response(
@@ -367,33 +380,27 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      */
     public function update(Request $request, EditionDivision $editionDivision)
     {
+        $editionDivision->loadMissing('edition');
+        if ($editionDivision->edition?->finalized_at !== null) {
+            return $this->errorResponse('Edition divisions cannot be updated after finalize.', 409);
+        }
+
         $validated = $request->validate([
             'edition_id' => 'required|integer|exists:editions,id_edition',
             'division_id' => 'required|integer|exists:divisions,id_division',
             'division_title' => 'required|string|max:64',
             'players_limit' => 'required|integer|min:1',
-            'playing_start_time' => 'required|date_format:H:i:s',
-            'playing_end_time' => 'required|date_format:H:i:s',
+            'playing_start_time' => ['required', PlayingWindow::clockRegexRule()],
+            'playing_end_time' => ['required', PlayingWindow::clockRegexRule()],
             'player_opponents_nr' => 'nullable|integer|min:1',
             'player_matches_repeat' => 'required|integer|min:1',
             'include_scores' => 'required|boolean',
             'has_demonstrative_match' => 'required|boolean',
-            'fixed_teams' => 'required|boolean',
+            'allow_replacements' => 'required|boolean',
             'points_per_match' => 'nullable|integer|min:0',
             'final_points_target' => 'nullable|integer|min:0',
             'include_final' => 'required|boolean',
-            'finalized_at' => 'nullable|integer',
         ]);
-
-        // Validate playing_end_time is after playing_start_time if both are provided
-        if (isset($validated['playing_start_time']) && isset($validated['playing_end_time'])) {
-            if ($validated['playing_end_time'] <= $validated['playing_start_time']) {
-                return $this->errorResponse(
-                    'Playing end time must be after playing start time',
-                    422
-                );
-            }
-        }
 
         // Check if this edition-division combination already exists (excluding current record)
         if (isset($validated['edition_id']) || isset($validated['division_id'])) {
@@ -411,6 +418,13 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
                     422
                 );
             }
+        }
+
+        if (isset($validated['playing_start_time'])) {
+            $validated['playing_start_time'] = PlayingWindow::normalizeStoredTime((string) $validated['playing_start_time']);
+        }
+        if (isset($validated['playing_end_time'])) {
+            $validated['playing_end_time'] = PlayingWindow::normalizeStoredTime((string) $validated['playing_end_time']);
         }
 
         $editionDivision->update($validated);
@@ -447,7 +461,8 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      *             @OA\Property(property="player_matches_repeat", type="integer", description="Player matches repeat"),
      *             @OA\Property(property="include_scores", type="boolean", description="Include scores"),
      *             @OA\Property(property="has_demonstrative_match", type="boolean", description="Has demonstrative match"),
-     *             @OA\Property(property="fixed_teams", type="boolean", description="Fixed teams")
+     *             @OA\Property(property="allow_replacements", type="boolean", description="Allow replacements"),
+     *             @OA\Property(property="final_points_target", type="integer", description="Final points target")
      *         )
      *     ),
      *     @OA\Response(
@@ -491,33 +506,27 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      */
     public function patch(Request $request, EditionDivision $editionDivision)
     {
+        $editionDivision->loadMissing('edition');
+        if ($editionDivision->edition?->finalized_at !== null) {
+            return $this->errorResponse('Edition divisions cannot be updated after finalize.', 409);
+        }
+
         $validated = $request->validate([
             'edition_id' => 'sometimes|integer|exists:editions,id_edition',
             'division_id' => 'sometimes|integer|exists:divisions,id_division',
             'division_title' => 'sometimes|string|max:64',
             'players_limit' => 'sometimes|integer|min:1',
-            'playing_start_time' => 'sometimes|date_format:H:i:s',
-            'playing_end_time' => 'sometimes|date_format:H:i:s',
+            'playing_start_time' => ['sometimes', PlayingWindow::clockRegexRule()],
+            'playing_end_time' => ['sometimes', PlayingWindow::clockRegexRule()],
             'player_opponents_nr' => 'nullable|integer|min:1',
             'player_matches_repeat' => 'integer|min:1',
             'include_scores' => 'boolean',
             'has_demonstrative_match' => 'boolean',
-            'fixed_teams' => 'boolean',
+            'allow_replacements' => 'boolean',
             'points_per_match' => 'nullable|integer|min:0',
             'final_points_target' => 'nullable|integer|min:0',
             'include_final' => 'boolean',
-            'finalized_at' => 'nullable|integer',
         ]);
-
-        // Validate playing_end_time is after playing_start_time if both are provided
-        if (isset($validated['playing_start_time']) && isset($validated['playing_end_time'])) {
-            if ($validated['playing_end_time'] <= $validated['playing_start_time']) {
-                return $this->errorResponse(
-                    'Playing end time must be after playing start time',
-                    422
-                );
-            }
-        }
 
         // Check if this edition-division combination already exists (excluding current record)
         if (isset($validated['edition_id']) || isset($validated['division_id'])) {
@@ -535,6 +544,13 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
                     422
                 );
             }
+        }
+
+        if (isset($validated['playing_start_time'])) {
+            $validated['playing_start_time'] = PlayingWindow::normalizeStoredTime((string) $validated['playing_start_time']);
+        }
+        if (isset($validated['playing_end_time'])) {
+            $validated['playing_end_time'] = PlayingWindow::normalizeStoredTime((string) $validated['playing_end_time']);
         }
 
         $editionDivision->update($validated);
@@ -604,6 +620,11 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      */
     public function destroy(EditionDivision $editionDivision)
     {
+        $editionDivision->loadMissing('edition');
+        if ($editionDivision->edition?->finalized_at !== null) {
+            return $this->errorResponse('Edition divisions cannot be deleted after finalize.', 409);
+        }
+
         // Check if edition division has related participations
         $participationsCount = EditionParticipation::where(
             'edition_division_id',
@@ -751,6 +772,17 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
                     $results['failed'][] = [
                         'id' => $editionDivisionId,
                         'reason' => 'Resource not found',
+                    ];
+                    $results['total_failed']++;
+
+                    continue;
+                }
+
+                $editionDivision->loadMissing('edition');
+                if ($editionDivision->edition?->finalized_at !== null) {
+                    $results['failed'][] = [
+                        'id' => $editionDivisionId,
+                        'reason' => 'Edition divisions cannot be deleted after finalize.',
                     ];
                     $results['total_failed']++;
 

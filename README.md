@@ -256,6 +256,56 @@ How It Works:
 ___
 
 
+### 📦 File storage convention
+
+Public user/media files live on the disk named by `USER_UPLOADS_DISK` (default `public` → `storage/app/public`). Relative DB columns use `{subject}_path` and the path shape:
+
+```text
+{table-kebab}/{rowId}/{subject}/{filename}
+```
+
+Run `php artisan storage:link` once per environment so `/storage` URLs work for the `public` disk (user uploads).
+___
+
+
+### 🧩 Schedule templates (`resources/template-matches`)
+
+Committed schedule templates are **not** under `storage/app`. They live in:
+
+```text
+resources/template-matches/v{N}/players-{P}-partners-{O}-repeat-{R}-courts-{C}[-fixedteams].json
+```
+
+- Runtime schedule generation (Mode A and Mode B) always loads **mixed** templates (never `-fixedteams`).
+- `-fixedteams` JSON is kept for metrics / demo inspection and can be (re)generated offline via CLI.
+- Highest compatible `v{N}/` is used unless a request/command passes an explicit version.
+
+**Artisan writer cycle (offline; long runs — generate/regenerate bump PHP memory to 512M):**
+
+```bash
+php artisan templates:versions
+php artisan templates:generate --templates-version=5 --players=4 --partners=1
+php artisan templates:regenerate --templates-version=5
+php artisan templates:recalculate-quality-metrics --templates-version=4
+```
+
+**Artisan metrics (mixed by default):**
+
+```bash
+php artisan templates:metrics --templates-version=4
+php artisan templates:metrics --templates-version=4 --fixed-teams=1
+php artisan templates:metrics --templates-version=4 --include-fixed-teams
+php artisan templates:metrics --templates-version=4 --fixed-teams=1 --combinations="8:2,3"
+```
+
+Verify tests do not call real DFS (`->generate(`) except `RecordingGenerator.php`:
+
+```bash
+composer test:lint
+```
+___
+
+
 ### 📄 License
 
 This project is private. All rights reserved.

@@ -63,7 +63,7 @@ class EditionDivisionControllerTest extends TestCase
                         'player_matches_repeat',
                         'include_scores',
                         'has_demonstrative_match',
-                        'fixed_teams',
+                        'allow_replacements',
                     ],
                 ],
                 'links' => [
@@ -122,7 +122,7 @@ class EditionDivisionControllerTest extends TestCase
             'player_matches_repeat' => 1,
             'include_scores' => true,
             'has_demonstrative_match' => false,
-            'fixed_teams' => false,
+            'allow_replacements' => true,
         ];
 
         $response = $this->postJson('/api/v1/manager/edition-divisions', $editionDivisionData);
@@ -132,6 +132,9 @@ class EditionDivisionControllerTest extends TestCase
                 'success' => true,
                 'message' => 'Edition division created successfully',
             ]);
+
+        $this->assertSame(true, $response->json('data.include_scores'));
+        $this->assertSame(false, $response->json('data.has_demonstrative_match'));
 
         $this->assertDatabaseHas('edition_divisions', [
             'edition_id' => $this->edition->id_edition,
@@ -160,7 +163,7 @@ class EditionDivisionControllerTest extends TestCase
             'player_matches_repeat' => 1,
             'include_scores' => true,
             'has_demonstrative_match' => false,
-            'fixed_teams' => false,
+            'allow_replacements' => true,
             'include_final' => false,
         ];
 
@@ -220,7 +223,7 @@ class EditionDivisionControllerTest extends TestCase
         $response = $this->putJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}", []);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['edition_id', 'division_id', 'players_limit', 'division_title', 'playing_start_time', 'playing_end_time', 'player_matches_repeat', 'include_scores', 'has_demonstrative_match', 'fixed_teams', 'include_final']);
+            ->assertJsonValidationErrors(['edition_id', 'division_id', 'players_limit', 'division_title', 'playing_start_time', 'playing_end_time', 'player_matches_repeat', 'include_scores', 'has_demonstrative_match', 'allow_replacements', 'include_final']);
     }
 
     public function test_manager_can_delete_edition_division()
@@ -266,7 +269,7 @@ class EditionDivisionControllerTest extends TestCase
             'player_matches_repeat' => 1,
             'include_scores' => true,
             'has_demonstrative_match' => false,
-            'fixed_teams' => false,
+            'allow_replacements' => true,
         ]);
 
         $response->assertStatus(422)
@@ -305,7 +308,7 @@ class EditionDivisionControllerTest extends TestCase
             'player_matches_repeat' => 1,
             'include_scores' => true,
             'has_demonstrative_match' => false,
-            'fixed_teams' => false,
+            'allow_replacements' => true,
             'include_final' => false,
         ]);
 
@@ -326,7 +329,48 @@ class EditionDivisionControllerTest extends TestCase
             ->assertJsonValidationErrors(['edition_id', 'division_id', 'players_limit', 'division_title', 'playing_start_time', 'playing_end_time']);
     }
 
-    public function test_edition_division_creation_validation_invalid_times()
+    public function test_edition_division_creation_allows_overnight_and_end_of_day(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $overnight = $this->postJson('/api/v1/manager/edition-divisions', [
+            'edition_id' => $this->edition->id_edition,
+            'division_id' => $this->division->id_division,
+            'players_limit' => 16,
+            'division_title' => 'Overnight Division',
+            'playing_start_time' => '17:00:00',
+            'playing_end_time' => '09:00:00',
+            'player_matches_repeat' => 1,
+            'include_scores' => true,
+            'has_demonstrative_match' => false,
+            'allow_replacements' => true,
+            'include_final' => false,
+        ]);
+
+        $overnight->assertStatus(201)
+            ->assertJsonPath('data.playing_start_time', '17:00:00')
+            ->assertJsonPath('data.playing_end_time', '09:00:00');
+
+        $otherDivision = \App\Models\Division::factory()->create();
+        $endOfDay = $this->postJson('/api/v1/manager/edition-divisions', [
+            'edition_id' => $this->edition->id_edition,
+            'division_id' => $otherDivision->id_division,
+            'players_limit' => 16,
+            'division_title' => 'End of day Division',
+            'playing_start_time' => '18:00:00',
+            'playing_end_time' => '24:00:00',
+            'player_matches_repeat' => 1,
+            'include_scores' => true,
+            'has_demonstrative_match' => false,
+            'allow_replacements' => true,
+            'include_final' => false,
+        ]);
+
+        $endOfDay->assertStatus(201)
+            ->assertJsonPath('data.playing_end_time', '24:00:00');
+    }
+
+    public function test_edition_division_creation_rejects_invalid_time_shape(): void
     {
         Sanctum::actingAs($this->manager);
 
@@ -334,13 +378,18 @@ class EditionDivisionControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition,
             'division_id' => $this->division->id_division,
             'players_limit' => 16,
-            'division_title' => 'Adults Explorers A',
-            'playing_start_time' => '17:00:00',
-            'playing_end_time' => '09:00:00', // End time before start time
+            'division_title' => 'Bad times',
+            'playing_start_time' => '25:00:00',
+            'playing_end_time' => '18:00:00',
+            'player_matches_repeat' => 1,
+            'include_scores' => true,
+            'has_demonstrative_match' => false,
+            'allow_replacements' => true,
+            'include_final' => false,
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['playing_end_time']);
+            ->assertJsonValidationErrors(['playing_start_time']);
     }
 
     public function test_edition_division_update_validation()

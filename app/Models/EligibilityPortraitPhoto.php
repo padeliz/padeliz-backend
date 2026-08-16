@@ -33,7 +33,7 @@ class EligibilityPortraitPhoto extends Model
 
     protected $fillable = [
         'eligibility_id',
-        'path',
+        'portrait_photo_path',
         'sort_order',
     ];
 
@@ -49,8 +49,8 @@ class EligibilityPortraitPhoto extends Model
     protected static function booted(): void
     {
         static::deleting(function (EligibilityPortraitPhoto $row): void {
-            if ($row->path !== '') {
-                Storage::disk($row->storageDisk())->delete($row->path);
+            if ($row->portrait_photo_path !== null && $row->portrait_photo_path !== '') {
+                Storage::disk($row->storageDisk())->delete($row->portrait_photo_path);
             }
         });
     }
@@ -70,6 +70,6 @@ class EligibilityPortraitPhoto extends Model
         /** @var FilesystemAdapter $disk */
         $disk = Storage::disk($this->storageDisk());
 
-        return $disk->url($this->path);
+        return $disk->url($this->portrait_photo_path);
     }
 }

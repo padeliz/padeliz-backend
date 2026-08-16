@@ -44,7 +44,7 @@ class PrizeControllerTest extends TestCase
                     '*' => [
                         'id_prize',
                         'name',
-                        'image',
+                        'media_path',
                         'box_1_text',
                         'box_1_bg_color',
                         'box_1_text_color',
@@ -102,7 +102,7 @@ class PrizeControllerTest extends TestCase
 
         $prizeData = [
             'name' => 'New Prize',
-            'image' => 'prize-image.jpg',
+            'media_path' => 'prize-image.jpg',
             'box_1_text' => 'Box 1 Text',
             'box_1_bg_color' => '#FF0000',
             'box_1_text_color' => '#FFFFFF',
@@ -119,7 +119,7 @@ class PrizeControllerTest extends TestCase
                 'message' => 'Prize created successfully',
                 'data' => [
                     'name' => 'New Prize',
-                    'image' => 'prize-image.jpg',
+                    'media_path' => 'prize-image.jpg',
                     'box_1_text' => 'Box 1 Text',
                     'box_1_bg_color' => '#FF0000',
                     'box_1_text_color' => '#FFFFFF',
@@ -131,7 +131,7 @@ class PrizeControllerTest extends TestCase
 
         $this->assertDatabaseHas('prizes', [
             'name' => 'New Prize',
-            'image' => 'prize-image.jpg',
+            'media_path' => 'prize-image.jpg',
         ]);
     }
 
@@ -355,7 +355,7 @@ class PrizeControllerTest extends TestCase
                     '*' => [
                         'id_prize',
                         'name',
-                        'image',
+                        'media_path',
                     ],
                 ],
                 'links' => [

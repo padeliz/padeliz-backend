@@ -286,8 +286,14 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
         try {
             DB::beginTransaction();
 
+            $image = PlayerProfileImage::create([
+                'player_id' => $player->id_player,
+                'profile_path' => '',
+                'sort_order' => $player->profileImages()->count(),
+            ]);
+
             $storedPath = Storage::disk($disk)->putFile(
-                'players/' . $player->getKey() . '/profile',
+                'player-profile-images/' . $image->getKey() . '/profile',
                 $request->file('image'),
                 ['visibility' => 'public']
             );
@@ -296,11 +302,7 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
                 throw new \RuntimeException('Could not store the uploaded file.');
             }
 
-            PlayerProfileImage::create([
-                'player_id' => $player->id_player,
-                'path' => $storedPath,
-                'sort_order' => $player->profileImages()->count(),
-            ]);
+            $image->update(['profile_path' => $storedPath]);
 
             DB::commit();
         } catch (\Throwable $e) {

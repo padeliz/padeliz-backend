@@ -28,11 +28,11 @@ class EditionDivisionResource extends JsonResource
             'player_matches_repeat' => $this->player_matches_repeat,
             'include_scores' => $this->include_scores,
             'has_demonstrative_match' => $this->has_demonstrative_match,
-            'fixed_teams' => $this->fixed_teams,
+            'allow_replacements' => $this->allow_replacements,
             'points_per_match' => $this->points_per_match,
             'final_points_target' => $this->final_points_target,
             'include_final' => $this->include_final,
-            'finalized_at' => $this->finalized_at,
+            'template_version' => $this->template_version,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
             'edition' => $this->whenLoaded('edition', function () {

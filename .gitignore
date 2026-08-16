@@ -26,3 +26,7 @@ yarn-error.log
 
 # PHP CS Fixer cache
 .php-cs-fixer.cache
+
+# PHPStan
+.phpstan.result.cache
+phpstan.neon

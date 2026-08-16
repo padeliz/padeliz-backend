@@ -279,11 +279,11 @@ class PlayerControllerTest extends TestCase
         $other = Player::factory()->create();
         $image = PlayerProfileImage::factory()->create([
             'player_id' => $other->id_player,
-            'path' => 'players/' . $other->id_player . '/profile/x.png',
+            'profile_path' => 'player-profile-images/999/profile/x.png',
             'sort_order' => 0,
         ]);
 
-        Storage::disk(config('filesystems.user_uploads_disk', 'public'))->put($image->path, 'x');
+        Storage::disk(config('filesystems.user_uploads_disk', 'public'))->put($image->profile_path, 'x');
 
         $response = $this->deleteJson("/api/v1/app/players/image/{$image->id}");
 

@@ -1,0 +1,2707 @@
+parameters:
+	ignoreErrors:
+		-
+			message: '#^Offset ''includePartnersVarColumn'' does not exist on array\{includeCourtsColumn\: bool, teamsColspan\: int\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: app/Console/Commands/TemplatesMetricsCommand.php
+
+		-
+			message: '#^Offset ''includePartnersVarColumn'' does not exist on array\{includeCourtsColumn\: bool, totalColumns\: int\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: app/Console/Commands/TemplatesMetricsCommand.php
+
+		-
+			message: '#^Relation ''divisions'' is not found in App\\Models\\Edition model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Api/V1/App/EditionController.php
+
+		-
+			message: '#^Access to property \$id_player on an unknown class App\\Models\\User\.$#'
+			identifier: class.notFound
+			count: 4
+			path: app/Http/Controllers/Api/V1/App/EditionParticipationController.php
+
+		-
+			message: '#^Access to property \$id_player on an unknown class App\\Models\\User\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/App/MyEditionController.php
+
+		-
+			message: '#^Relation ''divisions'' is not found in App\\Models\\Edition model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Api/V1/App/MyEditionController.php
+
+		-
+			message: '#^Relation ''participations'' is not found in App\\Models\\Edition model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Api/V1/App/MyEditionController.php
+
+		-
+			message: '#^Access to property \$id_player on an unknown class App\\Models\\User\.$#'
+			identifier: class.notFound
+			count: 5
+			path: app/Http/Controllers/Api/V1/App/MyEligibilityController.php
+
+		-
+			message: '#^Property App\\Models\\Eligibility\:\:\$inserted_at \(Carbon\\Carbon\|string\) does not accept int\<1, max\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Http/Controllers/Api/V1/App/MyEligibilityController.php
+
+		-
+			message: '#^Property App\\Models\\Eligibility\:\:\$updated_at \(Carbon\\Carbon\|string\|null\) does not accept int\<1, max\>\.$#'
+			identifier: assign.propertyType
+			count: 2
+			path: app/Http/Controllers/Api/V1/App/MyEligibilityController.php
+
+		-
+			message: '#^Access to property \$id_player on an unknown class App\\Models\\User\.$#'
+			identifier: class.notFound
+			count: 4
+			path: app/Http/Controllers/Api/V1/App/MyEligibilityUploadController.php
+
+		-
+			message: '#^Parameter \#2 \$eligibility of method App\\Http\\Controllers\\Api\\V1\\App\\MyEligibilityUploadController\:\:authorizeUploadMutation\(\) expects App\\Models\\Eligibility, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Http/Controllers/Api/V1/App/MyEligibilityUploadController.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 2
+			path: app/Http/Controllers/Api/V1/App/MyEligibilityUploadController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id_player\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Http/Controllers/Api/V1/App/PlayerAuthController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:addUserType\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/App/PlayerAuthController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:createToken\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: app/Http/Controllers/Api/V1/App/PlayerAuthController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:emails\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/App/PlayerAuthController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:hasUserType\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: app/Http/Controllers/Api/V1/App/PlayerAuthController.php
+
+		-
+			message: '#^Call to method currentAccessToken\(\) on an unknown class App\\Models\\User\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/App/PlayerAuthController.php
+
+		-
+			message: '#^Access to property \$id_player on an unknown class App\\Models\\User\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/App/PlayerController.php
+
+		-
+			message: '#^Call to method load\(\) on an unknown class App\\Models\\User\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/App/PlayerController.php
+
+		-
+			message: '#^Call to method update\(\) on an unknown class App\\Models\\User\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/App/PlayerController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: array\{id\: int, url\: string\}, Closure\(App\\Models\\PlayerProfileImage\)\: array\{id\: int, url\: string\} given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Http/Controllers/Api/V1/App/PlayerController.php
+
+		-
+			message: '#^Parameter \#1 \$player of method App\\Http\\Controllers\\Api\\V1\\App\\PlayerController\:\:syncPlayerContacts\(\) expects App\\Models\\Player, App\\Models\\User\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/V1/App/PlayerController.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Http/Controllers/Api/V1/App/PlayerController.php
+
+		-
+			message: '#^Relation ''locations'' is not found in App\\Models\\Club model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Api/V1/Manager/ClubController.php
+
+		-
+			message: '#^Relation ''divisions'' is not found in App\\Models\\Edition model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Api/V1/Manager/EditionController.php
+
+		-
+			message: '#^Relation ''location'' is not found in App\\Models\\Edition model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Api/V1/Manager/EditionController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$finalized_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/Manager/EditionDivisionReplacementController.php
+
+		-
+			message: '#^Parameter \#1 \$editionDivision of method App\\Http\\Controllers\\Api\\V1\\Manager\\EditionDivisionReplacementController\:\:setGotReplaced\(\) expects App\\Models\\EditionDivision, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/V1/Manager/EditionDivisionReplacementController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/Manager/EditionDivisionScheduleController.php
+
+		-
+			message: '#^Method App\\Http\\Controllers\\Api\\V1\\Manager\\EditionDivisionScheduleController\:\:formValidationRules\(\) should return array\<string, string\> but returns array\<string, list\<string\>\|string\>\.$#'
+			identifier: return.type
+			count: 1
+			path: app/Http/Controllers/Api/V1/Manager/EditionDivisionScheduleController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$finalized_at\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Api/V1/Manager/EditionDivisionStandingController.php
+
+		-
+			message: '#^Parameter \#2 \$edition of method App\\Services\\Lottery\\LotteryDrawService\:\:accept\(\) expects App\\Models\\Edition, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/V1/Manager/EditionLotteryLiveController.php
+
+		-
+			message: '#^Parameter \#2 \$edition of method App\\Services\\Lottery\\LotteryDrawService\:\:reject\(\) expects App\\Models\\Edition, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/V1/Manager/EditionLotteryLiveController.php
+
+		-
+			message: '#^Relation ''player'' is not found in App\\Models\\Eligibility model\.$#'
+			identifier: larastan.relationExistence
+			count: 1
+			path: app/Http/Controllers/Api/V1/Manager/EligibilityController.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 2
+			path: app/Http/Controllers/Api/V1/Manager/EligibilityUploadController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:createToken\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/Manager/ManagerAuthController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:hasUserType\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/Manager/ManagerAuthController.php
+
+		-
+			message: '#^Call to method currentAccessToken\(\) on an unknown class App\\Models\\User\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/Manager/ManagerAuthController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$finalized_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/Manager/MatchScoreController.php
+
+		-
+			message: '#^Access to property \$id_player on an unknown class App\\Models\\User\.$#'
+			identifier: class.notFound
+			count: 4
+			path: app/Http/Controllers/Api/V1/Manager/PlayerInviteController.php
+
+		-
+			message: '#^Parameter \#1 \$callback of method Illuminate\\Database\\Eloquent\\Collection\<int,Illuminate\\Database\\Eloquent\\Model\>\:\:map\(\) expects callable\(Illuminate\\Database\\Eloquent\\Model, int\)\: array\{id\: int, url\: string\}, Closure\(App\\Models\\PlayerProfileImage\)\: array\{id\: int, url\: string\} given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Http/Controllers/Api/V1/Manager/PlayerProfileImageController.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Http/Controllers/Api/V1/Manager/PlayerProfileImageController.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Http/Controllers/Api/V1/Manager/PrizeMediaController.php
+
+		-
+			message: '#^Dead catch \- Illuminate\\Database\\QueryException is never thrown in the try block\.$#'
+			identifier: catch.neverThrown
+			count: 1
+			path: app/Http/Controllers/BaseVersions/V1/V1BaseController.php
+
+		-
+			message: '#^Method App\\Http\\Middleware\\Authenticate\:\:redirectTo\(\) should return string\|null but return statement is missing\.$#'
+			identifier: return.missing
+			count: 1
+			path: app/Http/Middleware/Authenticate.php
+
+		-
+			message: '#^Call to method hasUserType\(\) on an unknown class App\\Models\\User\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Http/Middleware/CheckUserType.php
+
+		-
+			message: '#^Access to property \$id_player on an unknown class App\\Models\\User\.$#'
+			identifier: class.notFound
+			count: 1
+			path: app/Http/Requests/PlayerFormRequest.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id_player" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Requests/PlayerFormRequest.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ClubResource\:\:\$city\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ClubResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ClubResource\:\:\$id_club\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ClubResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ClubResource\:\:\$inserted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ClubResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ClubResource\:\:\$locations\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ClubResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ClubResource\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ClubResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ClubResource\:\:\$prizes\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ClubResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\ClubResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/ClubResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\CourtResource\:\:\$display_order\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/CourtResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\CourtResource\:\:\$id_court\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/CourtResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\CourtResource\:\:\$inserted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/CourtResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\CourtResource\:\:\$is_indoor\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/CourtResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\CourtResource\:\:\$location\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/CourtResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\CourtResource\:\:\$location_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/CourtResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\CourtResource\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/CourtResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\CourtResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/CourtResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\DivisionResource\:\:\$color\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/DivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\DivisionResource\:\:\$editionDivisions\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/DivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\DivisionResource\:\:\$id_division\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/DivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\DivisionResource\:\:\$inserted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/DivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\DivisionResource\:\:\$itsFirstEdition\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/DivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\DivisionResource\:\:\$its_first_edition_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/DivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\DivisionResource\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/DivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\DivisionResource\:\:\$participations\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/DivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\DivisionResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/DivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionCourtResource\:\:\$court\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionCourtResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionCourtResource\:\:\$court_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionCourtResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionCourtResource\:\:\$display_order\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionCourtResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionCourtResource\:\:\$editionDivision\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionCourtResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionCourtResource\:\:\$edition_division_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionCourtResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionCourtResource\:\:\$id_edition_division_court\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionCourtResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionCourtResource\:\:\$inserted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionCourtResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionCourtResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionCourtResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionPosterResource\:\:\$edition_division_court_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionPosterResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionPosterResource\:\:\$edition_division_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionPosterResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionPosterResource\:\:\$generated_path\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionPosterResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionPosterResource\:\:\$generated_url\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionPosterResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionPosterResource\:\:\$id_edition_division_poster\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionPosterResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionPosterResource\:\:\$inserted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionPosterResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionPosterResource\:\:\$poster_kind\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionPosterResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionPosterResource\:\:\$printed_path\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionPosterResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionPosterResource\:\:\$printed_url\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionPosterResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionPosterResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionPosterResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionReplacementResource\:\:\$edition_division_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionReplacementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionReplacementResource\:\:\$id_replacement\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionReplacementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionReplacementResource\:\:\$inserted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionReplacementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionReplacementResource\:\:\$match_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionReplacementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionReplacementResource\:\:\$match_scope_key\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionReplacementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionReplacementResource\:\:\$original_participation_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionReplacementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionReplacementResource\:\:\$substitute_participation_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionReplacementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionReplacementResource\:\:\$substitute_player_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionReplacementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionReplacementResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionReplacementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$allow_replacements\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$courts\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$division\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$division_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$division_title\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$edition\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$edition_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$final_points_target\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$finalized_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$formatted_playing_end_time\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$formatted_playing_start_time\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$has_demonstrative_match\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$id_edition_division\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$include_final\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$include_scores\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$inserted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$player_matches_repeat\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$player_opponents_nr\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$players_limit\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$points_per_match\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionStandingResource\:\:\$edition_division_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionStandingResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionStandingResource\:\:\$id_standing\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionStandingResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionStandingResource\:\:\$inserted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionStandingResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionStandingResource\:\:\$participation_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionStandingResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionStandingResource\:\:\$points_total\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionStandingResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionStandingResource\:\:\$rank\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionStandingResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionStandingResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionStandingResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionStandingResource\:\:\$wins\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionStandingResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryLuckyResource\:\:\$accepted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryLuckyResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryLuckyResource\:\:\$announced_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryLuckyResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryLuckyResource\:\:\$available_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryLuckyResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryLuckyResource\:\:\$drawnParticipation\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryLuckyResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryLuckyResource\:\:\$drawn_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryLuckyResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryLuckyResource\:\:\$drawn_participation_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryLuckyResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryLuckyResource\:\:\$id_lucky\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryLuckyResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryLuckyResource\:\:\$inserted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryLuckyResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryLuckyResource\:\:\$lotteryRule\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryLuckyResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryLuckyResource\:\:\$lottery_rule_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryLuckyResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryLuckyResource\:\:\$participation\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryLuckyResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryLuckyResource\:\:\$rejected_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryLuckyResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryLuckyResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryLuckyResource.php
+
+		-
+			message: '#^Call to an undefined method App\\Http\\Resources\\EditionLotteryLuckyResource\:\:relationLoaded\(\)\.$#'
+			identifier: method.notFound
+			count: 3
+			path: app/Http/Resources/EditionLotteryLuckyResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryResource\:\:\$edition\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryResource\:\:\$edition_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryResource\:\:\$id_lottery\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryResource\:\:\$inserted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryResource\:\:\$luckies\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryResource\:\:\$prize\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryResource\:\:\$prize_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryResource\:\:\$prize_quantity\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryResource\:\:\$rules\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryRuleResource\:\:\$editionDivision\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryRuleResource\:\:\$edition_division_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryRuleResource\:\:\$gender\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryRuleResource\:\:\$has_social_status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryRuleResource\:\:\$has_tshirt_size\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryRuleResource\:\:\$id_lottery_rule\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryRuleResource\:\:\$inserted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryRuleResource\:\:\$is_event_first_timer\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryRuleResource\:\:\$is_guest\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryRuleResource\:\:\$is_older_than\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryRuleResource\:\:\$is_padel_first_timer\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryRuleResource\:\:\$is_younger_than\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryRuleResource\:\:\$legal_age\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryRuleResource\:\:\$lottery_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryRuleResource\:\:\$luckies\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryRuleResource\:\:\$orderliness\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryRuleResource\:\:\$rule_prize_quantity\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryRuleResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionParticipationResource\:\:\$absence_reason\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionParticipationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionParticipationResource\:\:\$ban_reason\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionParticipationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionParticipationResource\:\:\$discount\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionParticipationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionParticipationResource\:\:\$edition\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionParticipationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionParticipationResource\:\:\$editionDivision\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionParticipationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionParticipationResource\:\:\$edition_division_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionParticipationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionParticipationResource\:\:\$edition_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionParticipationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionParticipationResource\:\:\$id_participation\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionParticipationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionParticipationResource\:\:\$inserted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionParticipationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionParticipationResource\:\:\$is_collecting_points\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionParticipationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionParticipationResource\:\:\$is_minor\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionParticipationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionParticipationResource\:\:\$is_student\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionParticipationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionParticipationResource\:\:\$payment\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionParticipationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionParticipationResource\:\:\$player\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionParticipationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionParticipationResource\:\:\$player_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionParticipationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionParticipationResource\:\:\$sort_order\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionParticipationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionParticipationResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionParticipationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionResource\:\:\$divisions\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionResource\:\:\$entry_fee\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionResource\:\:\$formatted_arriving_time\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionResource\:\:\$formatted_closing_time\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionResource\:\:\$formatted_date\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionResource\:\:\$id_edition\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionResource\:\:\$inserted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionResource\:\:\$location\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionResource\:\:\$location_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionResource\:\:\$lotteries\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionResource\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionResource\:\:\$participations\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionResource\:\:\$students_entry_fee\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$being_student\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$birth_day\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$birth_month\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$edition_ids\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$facebook_username\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$first_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$friends_source\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$id_eligibility\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$inserted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$instagram_username\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$last_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$media_source\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$middle_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$phone\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$player\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$player_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$playtomic_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$portraitPhotos\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$racket_experience\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$rankedin_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$ready_for_review\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$resubmitted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$review_message\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$review_status\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$reviewed_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$studentProofs\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$submitted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EligibilityResource\:\:\$year_of_birth\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EligibilityResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GameMatchResource\:\:\$editionDivision\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GameMatchResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GameMatchResource\:\:\$editionDivisionCourt\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GameMatchResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GameMatchResource\:\:\$edition_division_court_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GameMatchResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GameMatchResource\:\:\$edition_division_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GameMatchResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GameMatchResource\:\:\$id_match\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GameMatchResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GameMatchResource\:\:\$inserted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GameMatchResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GameMatchResource\:\:\$match_kind\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GameMatchResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GameMatchResource\:\:\$points_target\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GameMatchResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GameMatchResource\:\:\$scheduled_end\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GameMatchResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GameMatchResource\:\:\$scheduled_start\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GameMatchResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GameMatchResource\:\:\$sequence_no\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GameMatchResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GameMatchResource\:\:\$sides\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GameMatchResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\GameMatchResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/GameMatchResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\LocationResource\:\:\$address\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/LocationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\LocationResource\:\:\$club\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/LocationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\LocationResource\:\:\$club_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/LocationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\LocationResource\:\:\$id_location\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/LocationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\LocationResource\:\:\$inserted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/LocationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\LocationResource\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/LocationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\LocationResource\:\:\$total_indoors_courts\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/LocationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\LocationResource\:\:\$total_outdoor_courts\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/LocationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\LocationResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/LocationResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MatchPlayerResource\:\:\$got_replaced\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MatchPlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MatchPlayerResource\:\:\$id_match_player\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MatchPlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MatchPlayerResource\:\:\$inserted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MatchPlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MatchPlayerResource\:\:\$match_side_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MatchPlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MatchPlayerResource\:\:\$participation\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MatchPlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MatchPlayerResource\:\:\$participation_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MatchPlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MatchPlayerResource\:\:\$player\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MatchPlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MatchPlayerResource\:\:\$player_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MatchPlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MatchPlayerResource\:\:\$slot\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MatchPlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MatchPlayerResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MatchPlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MatchSideResource\:\:\$id_match_side\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MatchSideResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MatchSideResource\:\:\$inserted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MatchSideResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MatchSideResource\:\:\$match_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MatchSideResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MatchSideResource\:\:\$players\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MatchSideResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MatchSideResource\:\:\$score\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MatchSideResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MatchSideResource\:\:\$side\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MatchSideResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\MatchSideResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/MatchSideResource.php
+
+		-
+			message: '#^Call to an undefined method App\\Http\\Resources\\PlayerCollection\:\:currentPage\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Resources/PlayerCollection.php
+
+		-
+			message: '#^Call to an undefined method App\\Http\\Resources\\PlayerCollection\:\:firstItem\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Resources/PlayerCollection.php
+
+		-
+			message: '#^Call to an undefined method App\\Http\\Resources\\PlayerCollection\:\:lastItem\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Resources/PlayerCollection.php
+
+		-
+			message: '#^Call to an undefined method App\\Http\\Resources\\PlayerCollection\:\:lastPage\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Resources/PlayerCollection.php
+
+		-
+			message: '#^Call to an undefined method App\\Http\\Resources\\PlayerCollection\:\:perPage\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Resources/PlayerCollection.php
+
+		-
+			message: '#^Call to an undefined method App\\Http\\Resources\\PlayerCollection\:\:total\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Resources/PlayerCollection.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerEmailResource\:\:\$email\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerEmailResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerEmailResource\:\:\$id_player_email\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerEmailResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerEmailResource\:\:\$is_primary\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerEmailResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerEmailResource\:\:\$purposes\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerEmailResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerEmailResource\:\:\$verified_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerEmailResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerPhoneResource\:\:\$id_player_phone\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerPhoneResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerPhoneResource\:\:\$is_primary\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerPhoneResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerPhoneResource\:\:\$phone\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerPhoneResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerPhoneResource\:\:\$purposes\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerPhoneResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerPhoneResource\:\:\$verified_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerPhoneResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerResource\:\:\$being_student\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerResource\:\:\$emails\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerResource\:\:\$facebook_username\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerResource\:\:\$first_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerResource\:\:\$id_player\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerResource\:\:\$inserted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerResource\:\:\$instagram_username\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerResource\:\:\$last_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerResource\:\:\$middle_name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerResource\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerResource\:\:\$participations\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerResource\:\:\$phones\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerResource\:\:\$playtomic_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerResource\:\:\$profileImages\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerResource\:\:\$rankedin_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerResource\:\:\$skill_division\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerResource\:\:\$user_types\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PlayerResource\:\:\$year_of_birth\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PlayerResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$box_1_bg_color\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeFromClubResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$box_1_text\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeFromClubResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$box_1_text_color\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeFromClubResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$box_2_bg_color\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeFromClubResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$box_2_text\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeFromClubResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$box_2_text_color\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeFromClubResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$club\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeFromClubResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$club_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeFromClubResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$id_club_prize\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeFromClubResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$inserted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeFromClubResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$media_path\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeFromClubResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$prize\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeFromClubResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$prize_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeFromClubResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$template\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeFromClubResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeFromClubResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$url\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeFromClubResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeResource\:\:\$box_1_bg_color\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeResource\:\:\$box_1_text\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeResource\:\:\$box_1_text_color\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeResource\:\:\$box_2_bg_color\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeResource\:\:\$box_2_text\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeResource\:\:\$box_2_text_color\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeResource\:\:\$clubPrizes\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeResource\:\:\$id_prize\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeResource\:\:\$inserted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeResource\:\:\$media_path\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeResource\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeResource\:\:\$template\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeResource\:\:\$url\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeResource.php
+
+		-
+			message: '#^PHPDoc tag @param references unknown parameter\: \$ageGroupTexts$#'
+			identifier: parameter.notFound
+			count: 1
+			path: app/Integrations/RankedinBpt/BptDivisionMapper.php
+
+		-
+			message: '#^PHPDoc tag @param references unknown parameter\: \$rankingTypeTexts$#'
+			identifier: parameter.notFound
+			count: 1
+			path: app/Integrations/RankedinBpt/BptDivisionMapper.php
+
+		-
+			message: '#^Anonymous function has an unused use \$debugPayload\.$#'
+			identifier: closure.unusedUse
+			count: 2
+			path: app/Integrations/RankedinBpt/BptTopPlayersService.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<int\<0, max\>\|string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Integrations/RankedinBpt/BptTopPlayersService.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Integrations/RankedinBpt/BptTopPlayersService.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 4
+			path: app/Integrations/RankedinBpt/BptTopPlayersService.php
+
+		-
+			message: '#^Offset ''earnedPoints'' on array\{eventParticipantId\: int, standing\: int, earnedPoints\: float, player1\: array\<string, mixed\>, player2\: array\<string, mixed\>\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Integrations/RankedinBpt/BptTopPlayersService.php
+
+		-
+			message: '#^Offset ''eventParticipantId'' on array\{eventParticipantId\: int, standing\: int, earnedPoints\: float, player1\: array\<string, mixed\>, player2\: array\<string, mixed\>\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Integrations/RankedinBpt/BptTopPlayersService.php
+
+		-
+			message: '#^Offset ''player1'' on array\{eventParticipantId\: int, standing\: int, earnedPoints\: float, player1\: array\<string, mixed\>, player2\: array\<string, mixed\>\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Integrations/RankedinBpt/BptTopPlayersService.php
+
+		-
+			message: '#^Offset ''player2'' on array\{eventParticipantId\: int, standing\: int, earnedPoints\: float, player1\: array\<string, mixed\>, player2\: array\<string, mixed\>\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Integrations/RankedinBpt/BptTopPlayersService.php
+
+		-
+			message: '#^Offset ''standing'' on array\{eventParticipantId\: int, standing\: int, earnedPoints\: float, player1\: array\<string, mixed\>, player2\: array\<string, mixed\>\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Integrations/RankedinBpt/BptTopPlayersService.php
+
+		-
+			message: '#^Offset decimal\-int\-string on array\<string, string\> on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Integrations/RankedinBpt/BptTopPlayersService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>value" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Integrations/RankedinBpt/BptTopPlayersService.php
+
+		-
+			message: '#^PHPDoc type array of property App\\Models\\Club\:\:\$casts is not covariant with PHPDoc type array\<string, string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$casts\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/Club.php
+
+		-
+			message: '#^Static property App\\Models\\Club\:\:\$filterableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/Club.php
+
+		-
+			message: '#^Static property App\\Models\\Club\:\:\$searchableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/Club.php
+
+		-
+			message: '#^Static property App\\Models\\Club\:\:\$sortableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/Club.php
+
+		-
+			message: '#^Static property App\\Models\\Court\:\:\$filterableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/Court.php
+
+		-
+			message: '#^Static property App\\Models\\Court\:\:\$searchableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/Court.php
+
+		-
+			message: '#^Static property App\\Models\\Court\:\:\$sortableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/Court.php
+
+		-
+			message: '#^PHPDoc type array of property App\\Models\\Division\:\:\$casts is not covariant with PHPDoc type array\<string, string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$casts\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/Division.php
+
+		-
+			message: '#^Static property App\\Models\\Division\:\:\$filterableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/Division.php
+
+		-
+			message: '#^Static property App\\Models\\Division\:\:\$searchableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/Division.php
+
+		-
+			message: '#^Static property App\\Models\\Division\:\:\$sortableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/Division.php
+
+		-
+			message: '#^Static property App\\Models\\Edition\:\:\$filterableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/Edition.php
+
+		-
+			message: '#^Static property App\\Models\\Edition\:\:\$searchableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/Edition.php
+
+		-
+			message: '#^Static property App\\Models\\Edition\:\:\$sortableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/Edition.php
+
+		-
+			message: '#^Static property App\\Models\\EditionDivision\:\:\$filterableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/EditionDivision.php
+
+		-
+			message: '#^Static property App\\Models\\EditionDivision\:\:\$searchableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/EditionDivision.php
+
+		-
+			message: '#^Static property App\\Models\\EditionDivision\:\:\$sortableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/EditionDivision.php
+
+		-
+			message: '#^PHPDoc type array of property App\\Models\\EditionLottery\:\:\$casts is not covariant with PHPDoc type array\<string, string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$casts\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/EditionLottery.php
+
+		-
+			message: '#^Static property App\\Models\\EditionLottery\:\:\$filterableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/EditionLottery.php
+
+		-
+			message: '#^Static property App\\Models\\EditionLottery\:\:\$searchableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/EditionLottery.php
+
+		-
+			message: '#^Static property App\\Models\\EditionLottery\:\:\$sortableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/EditionLottery.php
+
+		-
+			message: '#^PHPDoc type array of property App\\Models\\EditionLotteryLucky\:\:\$casts is not covariant with PHPDoc type array\<string, string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$casts\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/EditionLotteryLucky.php
+
+		-
+			message: '#^Static property App\\Models\\EditionLotteryLucky\:\:\$filterableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/EditionLotteryLucky.php
+
+		-
+			message: '#^Static property App\\Models\\EditionLotteryLucky\:\:\$searchableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/EditionLotteryLucky.php
+
+		-
+			message: '#^Static property App\\Models\\EditionLotteryLucky\:\:\$sortableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/EditionLotteryLucky.php
+
+		-
+			message: '#^Static property App\\Models\\EditionParticipation\:\:\$filterableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/EditionParticipation.php
+
+		-
+			message: '#^Static property App\\Models\\EditionParticipation\:\:\$searchableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/EditionParticipation.php
+
+		-
+			message: '#^Static property App\\Models\\EditionParticipation\:\:\$sortableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/EditionParticipation.php
+
+		-
+			message: '#^Result of \|\| is always true\.$#'
+			identifier: booleanOr.alwaysTrue
+			count: 1
+			path: app/Models/Eligibility.php
+
+		-
+			message: '#^Static property App\\Models\\Eligibility\:\:\$filterableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/Eligibility.php
+
+		-
+			message: '#^Static property App\\Models\\Eligibility\:\:\$searchableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/Eligibility.php
+
+		-
+			message: '#^Static property App\\Models\\Eligibility\:\:\$sortableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/Eligibility.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between int and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Models/Eligibility.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Models/EligibilityPortraitPhoto.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Models/EligibilityStudentProof.php
+
+		-
+			message: '#^PHPDoc type array of property App\\Models\\Location\:\:\$casts is not covariant with PHPDoc type array\<string, string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$casts\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/Location.php
+
+		-
+			message: '#^Static property App\\Models\\Location\:\:\$filterableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/Location.php
+
+		-
+			message: '#^Static property App\\Models\\Location\:\:\$searchableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/Location.php
+
+		-
+			message: '#^Static property App\\Models\\Location\:\:\$sortableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/Location.php
+
+		-
+			message: '#^PHPDoc type array of property App\\Models\\Player\:\:\$casts is not covariant with PHPDoc type array\<string, string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$casts\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/Player.php
+
+		-
+			message: '#^Static property App\\Models\\Player\:\:\$filterableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/Player.php
+
+		-
+			message: '#^Static property App\\Models\\Player\:\:\$searchableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/Player.php
+
+		-
+			message: '#^Static property App\\Models\\Player\:\:\$sortableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/Player.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between string and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Models/PlayerProfileImage.php
+
+		-
+			message: '#^PHPDoc type array of property App\\Models\\Prize\:\:\$casts is not covariant with PHPDoc type array\<string, string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$casts\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/Prize.php
+
+		-
+			message: '#^Static property App\\Models\\Prize\:\:\$filterableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/Prize.php
+
+		-
+			message: '#^Static property App\\Models\\Prize\:\:\$searchableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/Prize.php
+
+		-
+			message: '#^Static property App\\Models\\Prize\:\:\$sortableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/Prize.php
+
+		-
+			message: '#^PHPDoc type array of property App\\Models\\PrizeFromClub\:\:\$casts is not covariant with PHPDoc type array\<string, string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$casts\.$#'
+			identifier: property.phpDocType
+			count: 1
+			path: app/Models/PrizeFromClub.php
+
+		-
+			message: '#^Static property App\\Models\\PrizeFromClub\:\:\$filterableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/PrizeFromClub.php
+
+		-
+			message: '#^Static property App\\Models\\PrizeFromClub\:\:\$searchableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/PrizeFromClub.php
+
+		-
+			message: '#^Static property App\\Models\\PrizeFromClub\:\:\$sortableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/PrizeFromClub.php
+
+		-
+			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
+			identifier: larastan.noEnvCallsOutsideOfConfig
+			count: 3
+			path: app/Services/ApiDocumentationService.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Edition\:\:\$location\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$date\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$drawnParticipation\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$editionDivision\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$edition_division_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id_edition\.$#'
+			identifier: property.notFound
+			count: 6
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id_lucky\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$location\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$lottery\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$lottery_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$player\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$player_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$playing_end_time\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$playing_start_time\.$#'
+			identifier: property.notFound
+			count: 7
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$prize\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Parameter \#1 \$edition of method App\\Services\\Lottery\\LotteryDrawService\:\:createFirstDraw\(\) expects App\\Models\\Edition, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Parameter \#1 \$lucky of method App\\Services\\Lottery\\LotteryDrawService\:\:luckyStatus\(\) expects App\\Models\\EditionLotteryLucky, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Parameter \#2 \$edition of method App\\Services\\Lottery\\LotteryDrawService\:\:serializeLucky\(\) expects App\\Models\\Edition, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 2
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>box_1_bg_color" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>box_1_text" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>box_1_text_color" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>box_2_bg_color" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>box_2_text" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>box_2_text_color" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>template" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Instanceof between Carbon\\Carbon and DateTimeInterface will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: app/Services/Lottery/LotteryHtmlHelper.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between Carbon\\Carbon and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Services/Lottery/LotteryHtmlHelper.php
+
+		-
+			message: '#^Access to an undefined property App\\Models\\Player\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Pdf/PosterPdfService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$color\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Pdf/PosterPdfService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$is_collecting_points\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Pdf/PosterPdfService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Services/Pdf/PosterPdfService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$player\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Pdf/PosterPdfService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$player_id\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Pdf/PosterPdfService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$players\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Pdf/PosterPdfService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$profile_path\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Pdf/PosterPdfService.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:storageDisk\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/Pdf/PosterPdfService.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<int\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 2
+			path: app/Services/Pdf/PosterPdfService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>color" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Services/Pdf/PosterPdfService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>name" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 4
+			path: app/Services/Pdf/PosterPdfService.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<int, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Services/Schedule/OpponentsMetSummary.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<int\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: app/Services/Schedule/ScheduleGenerationService.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<string\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: app/Services/Schedule/ScheduleGenerationService.php
+
+		-
+			message: '#^Offset ''points_per_match'' on array\{matches_by_court\: array\<int, list\<array\{side_a\: array\{int, int\}, side_b\: array\{int, int\}, starts_at\: string, ends_at\: string, round_index\: int, court_index\: int, court_name\: string\}\>\>, points_per_match\: int\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/Schedule/ScheduleMatchPersister.php
+
+		-
+			message: '#^Parameter \#1 \$array \(list\<int\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: app/Services/Schedule/ScheduleMatchPersister.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 2
+			path: app/Services/Schedule/TemplateMatches.php
+
+		-
+			message: '#^Static method App\\Services\\Schedule\\TemplateMatches\:\:opponentsMetBounds\(\) is unused\.$#'
+			identifier: method.unused
+			count: 1
+			path: app/Services/Schedule/TemplateMatches.php
+
+		-
+			message: '#^Dead catch \- App\\Services\\Schedule\\Exception\\TemplateMatchesNotFoundException is never thrown in the try block\.$#'
+			identifier: catch.neverThrown
+			count: 1
+			path: app/Services/Schedule/TemplatesToolsService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$score\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Standings/StandingsRecalculator.php

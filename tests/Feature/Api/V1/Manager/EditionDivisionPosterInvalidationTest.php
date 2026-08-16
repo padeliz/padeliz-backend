@@ -1,0 +1,279 @@
+<?php
+
+declare(strict_types=1);
+
+namespace Tests\Feature\Api\V1\Manager;
+
+use App\Models\Court;
+use App\Models\Division;
+use App\Models\Edition;
+use App\Models\EditionDivision;
+use App\Models\EditionDivisionCourt;
+use App\Models\EditionDivisionPoster;
+use App\Models\EditionDivisionStanding;
+use App\Models\EditionParticipation;
+use App\Models\GameMatch;
+use App\Models\MatchSide;
+use App\Models\Player;
+use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
+use Laravel\Sanctum\Sanctum;
+use Tests\TestCase;
+
+final class EditionDivisionPosterInvalidationTest extends TestCase
+{
+    use RefreshDatabase;
+
+    private Player $manager;
+
+    private EditionDivision $editionDivision;
+
+    private EditionDivisionCourt $edCourt;
+
+    /** @var list<EditionParticipation> */
+    private array $participations = [];
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+
+        Storage::fake(config('filesystems.user_uploads_disk', 'public'));
+
+        $this->manager = Player::factory()->manager()->create([
+            'user_types' => ['player', 'manager'],
+        ]);
+
+        $edition = Edition::factory()->create();
+        $division = Division::factory()->create();
+
+        $this->editionDivision = EditionDivision::factory()->create([
+            'edition_id' => $edition->id_edition,
+            'division_id' => $division->id_division,
+            'players_limit' => 8,
+            'playing_start_time' => '14:00:00',
+            'playing_end_time' => '17:00:00',
+            'player_opponents_nr' => 4,
+            'player_matches_repeat' => 1,
+            'include_final' => false,
+            'has_demonstrative_match' => false,
+            'include_scores' => true,
+            'allow_replacements' => true,
+        ]);
+
+        $court = Court::factory()->create(['name' => 'Court A']);
+        $this->edCourt = EditionDivisionCourt::factory()->create([
+            'edition_division_id' => $this->editionDivision->id_edition_division,
+            'court_id' => $court->id_court,
+            'display_order' => 0,
+        ]);
+
+        for ($i = 0; $i < 8; $i++) {
+            $this->participations[] = EditionParticipation::factory()->create([
+                'edition_id' => $edition->id_edition,
+                'edition_division_id' => $this->editionDivision->id_edition_division,
+                'player_id' => Player::factory()->create()->id_player,
+                'sort_order' => $i,
+                'is_collecting_points' => true,
+                'absence_reason' => null,
+                'ban_reason' => null,
+            ]);
+        }
+    }
+
+    public function test_generate_clears_matches_and_ranking_generated_keeps_printed(): void
+    {
+        Sanctum::actingAs($this->manager);
+        [$matches, $ranking] = $this->seedPosters();
+
+        $this->postJson(
+            "/api/v1/manager/edition-divisions/{$this->editionDivision->id_edition_division}/schedule/generate",
+            []
+        )->assertOk();
+
+        $this->assertGeneratedCleared($matches);
+        $this->assertGeneratedCleared($ranking);
+        $this->assertSame('printed/matches.pdf', $matches->fresh()->printed_path);
+        $this->assertSame('printed/ranking.pdf', $ranking->fresh()->printed_path);
+    }
+
+    public function test_destroy_schedule_clears_matches_only(): void
+    {
+        Sanctum::actingAs($this->manager);
+        $edId = $this->editionDivision->id_edition_division;
+        $this->postJson("/api/v1/manager/edition-divisions/{$edId}/schedule/generate", [])->assertOk();
+
+        [$matches, $ranking] = $this->seedPosters();
+
+        $this->deleteJson("/api/v1/manager/edition-divisions/{$edId}/schedule")->assertOk();
+
+        $this->assertGeneratedCleared($matches);
+        $this->assertNotNull($ranking->fresh()->generated_path);
+        $this->assertSame('printed/ranking.pdf', $ranking->fresh()->printed_path);
+    }
+
+    public function test_form_pdf_relevant_field_clears_matches_and_ranking(): void
+    {
+        Sanctum::actingAs($this->manager);
+        [$matches, $ranking] = $this->seedPosters();
+
+        $this->putJson(
+            "/api/v1/manager/edition-divisions/{$this->editionDivision->id_edition_division}/schedule/form",
+            ['playing_start_time' => '15:00:00']
+        )->assertOk();
+
+        $this->assertGeneratedCleared($matches);
+        $this->assertGeneratedCleared($ranking);
+        $this->assertSame('printed/matches.pdf', $matches->fresh()->printed_path);
+    }
+
+    public function test_form_collecting_map_clears_matches_and_ranking(): void
+    {
+        Sanctum::actingAs($this->manager);
+        [$matches, $ranking] = $this->seedPosters();
+        $p = $this->participations[0];
+
+        $this->putJson(
+            "/api/v1/manager/edition-divisions/{$this->editionDivision->id_edition_division}/schedule/form",
+            [
+                'is_collecting_points' => [
+                    (string) $p->id_participation => false,
+                ],
+            ]
+        )->assertOk();
+
+        $this->assertGeneratedCleared($matches);
+        $this->assertGeneratedCleared($ranking);
+    }
+
+    public function test_form_sort_order_only_does_not_clear_posters(): void
+    {
+        Sanctum::actingAs($this->manager);
+        [$matches, $ranking] = $this->seedPosters();
+
+        $ids = array_map(
+            static fn (EditionParticipation $p): int => (int) $p->id_participation,
+            array_reverse($this->participations)
+        );
+
+        $this->putJson(
+            "/api/v1/manager/edition-divisions/{$this->editionDivision->id_edition_division}/schedule/form",
+            ['participation_ids' => $ids]
+        )->assertOk();
+
+        $this->assertNotNull($matches->fresh()->generated_path);
+        $this->assertNotNull($ranking->fresh()->generated_path);
+    }
+
+    public function test_participation_create_clears_matches_and_ranking(): void
+    {
+        Sanctum::actingAs($this->manager);
+        [$matches, $ranking] = $this->seedPosters();
+
+        $this->postJson('/api/v1/manager/edition-participations', [
+            'edition_id' => $this->editionDivision->edition_id,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
+            'player_id' => Player::factory()->create()->id_player,
+            'sort_order' => 99,
+            'is_collecting_points' => true,
+        ])->assertCreated();
+
+        $this->assertGeneratedCleared($matches);
+        $this->assertGeneratedCleared($ranking);
+    }
+
+    public function test_participation_sort_order_only_does_not_clear(): void
+    {
+        Sanctum::actingAs($this->manager);
+        [$matches, $ranking] = $this->seedPosters();
+        $p = $this->participations[0];
+
+        $this->patchJson("/api/v1/manager/edition-participations/{$p->id_participation}", [
+            'sort_order' => 50,
+        ])->assertOk();
+
+        $this->assertNotNull($matches->fresh()->generated_path);
+        $this->assertNotNull($ranking->fresh()->generated_path);
+    }
+
+    public function test_scores_do_not_clear_posters(): void
+    {
+        Sanctum::actingAs($this->manager);
+        $edId = $this->editionDivision->id_edition_division;
+        $this->postJson("/api/v1/manager/edition-divisions/{$edId}/schedule/generate", [])->assertOk();
+        [$matches, $ranking] = $this->seedPosters();
+
+        $match = GameMatch::query()
+            ->where('edition_division_id', $edId)
+            ->where('match_kind', 'REGULAR')
+            ->firstOrFail();
+
+        MatchSide::query()->where('match_id', $match->id_match)->where('side', 'LEFT')->update(['score' => 12]);
+        MatchSide::query()->where('match_id', $match->id_match)->where('side', 'RIGHT')->update(['score' => 10]);
+
+        $this->assertNotNull($matches->fresh()->generated_path);
+        $this->assertNotNull($ranking->fresh()->generated_path);
+    }
+
+    public function test_standings_do_not_clear_posters(): void
+    {
+        Sanctum::actingAs($this->manager);
+        [$matches, $ranking] = $this->seedPosters();
+
+        EditionDivisionStanding::create([
+            'edition_division_id' => $this->editionDivision->id_edition_division,
+            'participation_id' => $this->participations[0]->id_participation,
+            'points_total' => 0,
+            'wins' => 0,
+            'rank' => 1,
+        ]);
+
+        $this->assertNotNull($matches->fresh()->generated_path);
+        $this->assertNotNull($ranking->fresh()->generated_path);
+    }
+
+    /**
+     * @return array{0: EditionDivisionPoster, 1: EditionDivisionPoster}
+     */
+    private function seedPosters(): array
+    {
+        $disk = config('filesystems.user_uploads_disk', 'public');
+        $matches = $this->makePoster('MATCHES', (int) $this->edCourt->id_edition_division_court, 'matches.pdf');
+        $ranking = $this->makePoster('RANKING', null, 'ranking.pdf');
+
+        Storage::disk($disk)->put((string) $matches->generated_path, '%PDF-matches');
+        Storage::disk($disk)->put((string) $ranking->generated_path, '%PDF-ranking');
+        Storage::disk($disk)->put('printed/matches.pdf', 'printed-matches');
+        Storage::disk($disk)->put('printed/ranking.pdf', 'printed-ranking');
+
+        $matches->printed_path = 'printed/matches.pdf';
+        $matches->save();
+        $ranking->printed_path = 'printed/ranking.pdf';
+        $ranking->save();
+
+        return [$matches, $ranking];
+    }
+
+    private function makePoster(string $kind, ?int $courtId, string $filename): EditionDivisionPoster
+    {
+        $poster = new EditionDivisionPoster();
+        $poster->edition_division_id = $this->editionDivision->id_edition_division;
+        $poster->edition_division_court_id = $courtId;
+        $poster->poster_kind = $kind;
+        $poster->inserted_at = time();
+        $poster->save();
+        $poster->generated_path = 'edition-division-posters/' . $poster->id_edition_division_poster . '/generated/' . $filename;
+        $poster->save();
+
+        return $poster;
+    }
+
+    private function assertGeneratedCleared(EditionDivisionPoster $poster): void
+    {
+        $fresh = $poster->fresh();
+        $this->assertNull($fresh->generated_path);
+        $this->assertFalse(
+            Storage::disk(config('filesystems.user_uploads_disk', 'public'))
+                ->exists('edition-division-posters/' . $poster->id_edition_division_poster . '/generated/' . basename((string) $poster->generated_path))
+        );
+    }
+}

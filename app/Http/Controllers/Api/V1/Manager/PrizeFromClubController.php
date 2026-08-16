@@ -199,7 +199,7 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *             required={"club_id", "prize_id"},
      *             @OA\Property(property="club_id", type="integer", description="Club ID"),
      *             @OA\Property(property="prize_id", type="integer", description="Prize ID"),
-     *             @OA\Property(property="image", type="string", maxLength=100, description="Custom image URL"),
+     *             @OA\Property(property="media_path", type="string", maxLength=512, description="Custom media storage path"),
      *             @OA\Property(property="box_1_text", type="string", maxLength=200, description="Box 1 text"),
      *             @OA\Property(property="box_1_bg_color", type="string", maxLength=7, description="Box 1 background color"),
      *             @OA\Property(property="box_1_text_color", type="string", maxLength=7, description="Box 1 text color"),
@@ -247,7 +247,7 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
         $validated = $request->validate([
             'club_id' => 'required|integer|exists:clubs,id_club',
             'prize_id' => 'required|integer|exists:prizes,id_prize',
-            'image' => 'nullable|string|max:100',
+            'media_path' => 'nullable|string|max:512',
             'box_1_text' => 'nullable|string|max:200',
             'box_1_bg_color' => 'nullable|string|max:7|regex:/^#[0-9A-F]{6}$/i',
             'box_1_text_color' => 'nullable|string|max:7|regex:/^#[0-9A-F]{6}$/i',
@@ -295,7 +295,7 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *         @OA\JsonContent(
      *             @OA\Property(property="club_id", type="integer", description="Club ID"),
      *             @OA\Property(property="prize_id", type="integer", description="Prize ID"),
-     *             @OA\Property(property="image", type="string", maxLength=100, description="Custom image URL"),
+     *             @OA\Property(property="media_path", type="string", maxLength=512, description="Custom media storage path"),
      *             @OA\Property(property="box_1_text", type="string", maxLength=200, description="Box 1 text"),
      *             @OA\Property(property="box_1_bg_color", type="string", maxLength=7, description="Box 1 background color"),
      *             @OA\Property(property="box_1_text_color", type="string", maxLength=7, description="Box 1 text color"),
@@ -348,7 +348,7 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
         $validated = $request->validate([
             'club_id' => 'required|integer|exists:clubs,id_club',
             'prize_id' => 'required|integer|exists:prizes,id_prize',
-            'image' => 'nullable|string|max:100',
+            'media_path' => 'nullable|string|max:512',
             'box_1_text' => 'nullable|string|max:200',
             'box_1_bg_color' => 'nullable|string|max:7|regex:/^#[0-9A-F]{6}$/i',
             'box_1_text_color' => 'nullable|string|max:7|regex:/^#[0-9A-F]{6}$/i',
@@ -401,7 +401,7 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *         @OA\JsonContent(
      *             @OA\Property(property="club_id", type="integer", description="Club ID"),
      *             @OA\Property(property="prize_id", type="integer", description="Prize ID"),
-     *             @OA\Property(property="image", type="string", maxLength=100, description="Custom image URL"),
+     *             @OA\Property(property="media_path", type="string", maxLength=512, description="Custom media storage path"),
      *             @OA\Property(property="box_1_text", type="string", maxLength=200, description="Box 1 text"),
      *             @OA\Property(property="box_1_bg_color", type="string", maxLength=7, description="Box 1 background color"),
      *             @OA\Property(property="box_1_text_color", type="string", maxLength=7, description="Box 1 text color"),
@@ -454,7 +454,7 @@ class PrizeFromClubController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
         $validated = $request->validate([
             'club_id' => 'sometimes|integer|exists:clubs,id_club',
             'prize_id' => 'sometimes|integer|exists:prizes,id_prize',
-            'image' => 'nullable|string|max:100',
+            'media_path' => 'nullable|string|max:512',
             'box_1_text' => 'nullable|string|max:200',
             'box_1_bg_color' => 'nullable|string|max:7|regex:/^#[0-9A-F]{6}$/i',
             'box_1_text_color' => 'nullable|string|max:7|regex:/^#[0-9A-F]{6}$/i',

@@ -34,7 +34,7 @@ class EligibilityStudentProof extends Model
 
     protected $fillable = [
         'eligibility_id',
-        'path',
+        'student_proof_path',
         'sort_order',
     ];
 
@@ -50,8 +50,8 @@ class EligibilityStudentProof extends Model
     protected static function booted(): void
     {
         static::deleting(function (EligibilityStudentProof $row): void {
-            if ($row->path !== '') {
-                Storage::disk($row->storageDisk())->delete($row->path);
+            if ($row->student_proof_path !== null && $row->student_proof_path !== '') {
+                Storage::disk($row->storageDisk())->delete($row->student_proof_path);
             }
         });
     }
@@ -71,6 +71,6 @@ class EligibilityStudentProof extends Model
         /** @var FilesystemAdapter $disk */
         $disk = Storage::disk($this->storageDisk());
 
-        return $disk->url($this->path);
+        return $disk->url($this->student_proof_path);
     }
 }

@@ -18,7 +18,6 @@ class EditionDivisionStandingResource extends JsonResource
             'id_standing' => $this->id_standing,
             'edition_division_id' => $this->edition_division_id,
             'participation_id' => $this->participation_id,
-            'is_collecting_points' => $this->is_collecting_points,
             'points_total' => $this->points_total,
             'wins' => $this->wins,
             'rank' => $this->rank,

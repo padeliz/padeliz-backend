@@ -20,6 +20,7 @@ class EditionResource extends JsonResource
             'students_entry_fee' => $this->students_entry_fee,
             'arriving_time' => $this->formatted_arriving_time,
             'closing_time' => $this->formatted_closing_time,
+            'finalized_at' => $this->finalized_at,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
             'location' => $this->whenLoaded('location', function () {

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -20,12 +21,42 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *     @OA\Property(property="is_indoor", type="boolean"),
  *     @OA\Property(property="display_order", type="integer", default=0),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true),
- *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true)
+ *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true),
+ *     @OA\Property(
+ *         property="location",
+ *         ref="#/components/schemas/Location",
+ *         title="Location",
+ *         description="Related location object",
+ *         nullable=true
+ *     )
  * )
  */
 class Court extends Model
 {
     use HasFactory;
+    use HasResourceMetadata;
+
+    public static array $searchableFields = [
+        'name',
+    ];
+
+    public static array $filterableFields = [
+        'location_id',
+        'is_indoor',
+        'display_order',
+    ];
+
+    public static array $sortableFields = [
+        'id_court',
+        'location_id',
+        'name',
+        'is_indoor',
+        'display_order',
+        'inserted_at',
+        'updated_at',
+    ];
+
+    public static ?string $displayField = 'name';
 
     protected $table = 'courts';
 
@@ -71,6 +102,8 @@ class Court extends Model
             'edition_division_id',
             'id_court',
             'id_edition_division'
-        )->withPivot(['id_edition_division_court', 'display_order', 'inserted_at', 'updated_at']);
+        )->using(EditionDivisionCourt::class)
+            ->withTimestamps('inserted_at', 'updated_at')
+            ->withPivot(['id_edition_division_court', 'display_order']);
     }
 }

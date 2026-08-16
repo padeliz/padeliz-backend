@@ -19,7 +19,7 @@ class EligibilityStudentProofFactory extends Factory
     {
         return [
             'eligibility_id' => Eligibility::factory(),
-            'path' => 'eligibilities/1/student-proof/placeholder.pdf',
+            'student_proof_path' => 'eligibility-student-proofs/1/student-proof/placeholder.pdf',
             'sort_order' => 0,
             'inserted_at' => time(),
             'updated_at' => time(),

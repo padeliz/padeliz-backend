@@ -46,6 +46,20 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *         description="Edition division of the participation"
  *     ),
  *     @OA\Property(
+ *         property="sort_order",
+ *         type="integer",
+ *         default=0,
+ *         title="Sort Order",
+ *         description="Display order within the edition division"
+ *     ),
+ *     @OA\Property(
+ *         property="is_collecting_points",
+ *         type="boolean",
+ *         default=true,
+ *         title="Collecting Points",
+ *         description="Whether the participant is collecting points"
+ *     ),
+ *     @OA\Property(
  *         property="is_minor",
  *         type="boolean",
  *         title="Minor",
@@ -150,6 +164,8 @@ class EditionParticipation extends Model
         'edition_id',
         'player_id',
         'edition_division_id',
+        'sort_order',
+        'is_collecting_points',
         'is_minor',
         'is_student',
         'discount',
@@ -164,6 +180,8 @@ class EditionParticipation extends Model
         'edition_id',
         'player_id',
         'edition_division_id',
+        'sort_order',
+        'is_collecting_points',
         'is_minor',
         'is_student',
         'discount',
@@ -192,6 +210,8 @@ class EditionParticipation extends Model
         'edition_id',
         'player_id',
         'edition_division_id',
+        'sort_order',
+        'is_collecting_points',
         'is_minor',
         'is_student',
         'discount',
@@ -203,6 +223,8 @@ class EditionParticipation extends Model
     protected $casts = [
         'inserted_at' => 'integer',
         'updated_at' => 'integer',
+        'sort_order' => 'integer',
+        'is_collecting_points' => 'boolean',
         'is_minor' => 'boolean',
         'is_student' => 'boolean',
     ];

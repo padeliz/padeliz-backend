@@ -328,7 +328,6 @@ class ResourceMetadataControllerTest extends TestCase
             'EditionLotteryLucky' => ['EditionLotteryLucky', 'EditionLotteryLucky'],
             'EditionParticipation' => ['EditionParticipation', 'EditionParticipation'],
             'Location' => ['Location', 'Location'],
-            'MatchesTeam' => ['MatchesTeam', 'MatchesTeam'],
             'Player' => ['Player', 'Player'],
             'Eligibility' => ['Eligibility', 'Eligibility'],
             'Prize' => ['Prize', 'Prize'],
@@ -581,7 +580,6 @@ class ResourceMetadataControllerTest extends TestCase
 
         // Test models with display_field set to null (no searchable fields)
         $modelsWithNullDisplayField = [
-            'MatchesTeam',
             'EditionLottery',
             'EditionLotteryLucky',
             'EditionParticipation',

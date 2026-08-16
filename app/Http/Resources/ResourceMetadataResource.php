@@ -19,6 +19,7 @@ class ResourceMetadataResource extends JsonResource
         return [
             'version' => $this['version'],
             'schema_name' => $this['schema_name'],
+            'resource_path' => $this['resource_path'],
             'swagger_schema' => $this['swagger_schema'],
             'request_body' => $this['request_body'],
             'display_field' => $this['display_field'],

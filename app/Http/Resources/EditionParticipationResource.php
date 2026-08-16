@@ -21,6 +21,8 @@ class EditionParticipationResource extends JsonResource
             'edition_id' => $this->edition_id,
             'player_id' => $this->player_id,
             'edition_division_id' => $this->edition_division_id,
+            'sort_order' => $this->sort_order,
+            'is_collecting_points' => $this->is_collecting_points,
             'is_minor' => $this->is_minor,
             'is_student' => $this->is_student,
             'discount' => $this->discount,
@@ -38,6 +40,10 @@ class EditionParticipationResource extends JsonResource
             'edition_division' => $this->whenLoaded('editionDivision', function () {
                 return new EditionDivisionResource($this->editionDivision);
             }),
+            'player_history' => $this->when(
+                array_key_exists('player_history', $this->resource->getAttributes()),
+                fn () => $this->player_history
+            ),
         ];
     }
 }

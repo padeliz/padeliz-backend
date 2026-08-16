@@ -36,6 +36,9 @@ class EditionLotteryRuleResource extends JsonResource
             'edition_division' => $this->whenLoaded('editionDivision', function () {
                 return new EditionDivisionResource($this->editionDivision);
             }),
+            'lottery' => $this->whenLoaded('lottery', function () {
+                return new EditionLotteryResource($this->lottery);
+            }),
             'luckies' => $this->whenLoaded('luckies', function () {
                 return EditionLotteryLuckyResource::collection($this->luckies);
             }),

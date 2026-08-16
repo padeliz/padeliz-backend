@@ -67,6 +67,11 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertArrayHasKey('sortable_fields', $metadata);
         $this->assertNotContains('name', $metadata['sortable_fields']);
         $this->assertContains('skill_division', $metadata['sortable_fields']);
+
+        $this->assertEquals(
+            'year',
+            $metadata['swagger_schema']['properties']['year_of_birth']['format'] ?? null
+        );
     }
 
     public function test_get_club_metadata(): void
@@ -132,6 +137,9 @@ class ResourceMetadataServiceTest extends TestCase
 
         $this->assertArrayHasKey('schema_name', $metadata);
         $this->assertEquals('Location', $metadata['schema_name']);
+
+        $this->assertArrayHasKey('resource_path', $metadata);
+        $this->assertEquals('locations', $metadata['resource_path']);
 
         $this->assertArrayHasKey('swagger_schema', $metadata);
         $this->assertNotNull($metadata['swagger_schema']);
@@ -213,7 +221,7 @@ class ResourceMetadataServiceTest extends TestCase
 
         $this->assertArrayHasKey('display_field', $metadata);
         // Display field should be 'name' for models with searchable fields, null for models without
-        if (in_array($expectedSchemaName, ['MatchesTeam', 'EditionLottery', 'EditionLotteryLucky', 'EditionParticipation', 'PrizeFromClub', 'Eligibility'])) {
+        if (in_array($expectedSchemaName, ['EditionLottery', 'EditionLotteryLucky', 'EditionParticipation', 'PrizeFromClub', 'Eligibility'])) {
             $this->assertNull($metadata['display_field']);
         } elseif ($expectedSchemaName === 'EditionDivision') {
             $this->assertEquals('division_title', $metadata['display_field']);
@@ -242,7 +250,6 @@ class ResourceMetadataServiceTest extends TestCase
             'EditionLotteryLucky' => ['EditionLotteryLucky', 'EditionLotteryLucky'],
             'EditionParticipation' => ['EditionParticipation', 'EditionParticipation'],
             'Location' => ['Location', 'Location'],
-            'MatchesTeam' => ['MatchesTeam', 'MatchesTeam'],
             'Player' => ['Player', 'Player'],
             'Eligibility' => ['Eligibility', 'Eligibility'],
             'Prize' => ['Prize', 'Prize'],
@@ -259,10 +266,25 @@ class ResourceMetadataServiceTest extends TestCase
         $metadata = $this->metadataService->getMetadata('Division', 'v1');
 
         $this->assertEquals('Division', $metadata['schema_name']);
+        $this->assertEquals('divisions', $metadata['resource_path']);
         $this->assertContains('name', $metadata['searchable_fields']);
         $this->assertArrayNotHasKey('is_students_only', $metadata['filterable_fields']);
         $this->assertArrayHasKey('its_first_edition_id', $metadata['filterable_fields']);
-        $this->assertEquals('integer', $metadata['filterable_fields']['its_first_edition_id']['type']);
+        $this->assertEquals('foreign_key', $metadata['filterable_fields']['its_first_edition_id']['type']);
+        $this->assertEquals('Edition', $metadata['filterable_fields']['its_first_edition_id']['related_schema_name']);
+        $this->assertEquals('name', $metadata['filterable_fields']['its_first_edition_id']['related_schema_field']);
+
+        $required = $metadata['swagger_schema']['required'] ?? [];
+        $this->assertContains('its_first_edition_id', $required);
+        $this->assertArrayHasKey('its_first_edition', $metadata['swagger_schema']['properties']);
+        $this->assertArrayHasKey(
+            'oneOf',
+            $metadata['swagger_schema']['properties']['its_first_edition'] ?? []
+        );
+
+        $color = $metadata['swagger_schema']['properties']['color'] ?? [];
+        $this->assertEquals('color', $color['format'] ?? null);
+        $this->assertEquals('^#[0-9A-Fa-f]{6}$', $color['pattern'] ?? null);
     }
 
     public function test_edition_metadata(): void
@@ -274,9 +296,17 @@ class ResourceMetadataServiceTest extends TestCase
         $metadata = $this->metadataService->getMetadata('Edition', 'v1');
 
         $this->assertEquals('Edition', $metadata['schema_name']);
+        $this->assertEquals('editions', $metadata['resource_path']);
         $this->assertContains('name', $metadata['searchable_fields']);
         $this->assertArrayHasKey('entry_fee', $metadata['filterable_fields']);
         $this->assertEquals('integer', $metadata['filterable_fields']['entry_fee']['type']);
+        $required = $metadata['swagger_schema']['required'] ?? [];
+        $this->assertContains('arriving_time', $required);
+        $this->assertContains('closing_time', $required);
+        $this->assertEquals(
+            '^[0-9]{4}-[0-9]{2}-[0-9]{2}$',
+            $metadata['swagger_schema']['properties']['date']['pattern'] ?? null
+        );
     }
 
     public function test_edition_participation_metadata(): void
@@ -326,9 +356,25 @@ class ResourceMetadataServiceTest extends TestCase
         $metadata = $this->metadataService->getMetadata('Eligibility', 'v1');
 
         $this->assertEquals('Eligibility', $metadata['schema_name']);
+        $this->assertEquals('eligibilities', $metadata['resource_path']);
         $this->assertContains('phone', $metadata['searchable_fields']);
-        $this->assertArrayHasKey('birth_year', $metadata['filterable_fields']);
-        $this->assertEquals('integer', $metadata['filterable_fields']['birth_year']['type']);
+        $this->assertArrayHasKey('year_of_birth', $metadata['filterable_fields']);
+        $this->assertArrayNotHasKey('birth_year', $metadata['filterable_fields']);
+        $this->assertEquals('integer', $metadata['filterable_fields']['year_of_birth']['type']);
+
+        $props = $metadata['swagger_schema']['properties'];
+        $this->assertArrayHasKey('year_of_birth', $props);
+        $this->assertArrayNotHasKey('birth_year', $props);
+        $this->assertEquals('year', $props['year_of_birth']['format'] ?? null);
+        $this->assertTrue($props['year_of_birth']['nullable'] ?? false);
+        $this->assertEquals('string', $props['friends_source']['items']['type'] ?? null);
+        $this->assertTrue($props['being_student']['nullable'] ?? false);
+        $this->assertContains('discarded', $props['review_status']['enum'] ?? []);
+
+        $postBody = $metadata['request_body']['POST']['/eligibilities'] ?? [];
+        $this->assertArrayHasKey('edition_ids', $postBody);
+        $this->assertArrayNotHasKey('edition_id', $postBody);
+        $this->assertContains('discarded', $postBody['review_status']['enum'] ?? []);
     }
 
     public function test_prize_metadata(): void
@@ -345,6 +391,10 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertEquals('string', $metadata['filterable_fields']['box_1_bg_color']['type']);
         $this->assertContains('#FF0000', $metadata['filterable_fields']['box_1_bg_color']['values']);
         $this->assertContains('#00FF00', $metadata['filterable_fields']['box_1_bg_color']['values']);
+        $this->assertEquals(
+            '^#[0-9A-Fa-f]{6}$',
+            $metadata['swagger_schema']['properties']['box_1_bg_color']['pattern'] ?? null
+        );
     }
 
     public function test_request_body_structure(): void
@@ -472,6 +522,9 @@ class ResourceMetadataServiceTest extends TestCase
         // Verify that request body is generated (which uses the resource name)
         $this->assertArrayHasKey('request_body', $metadata);
         $this->assertIsArray($metadata['request_body']);
+
+        $this->assertArrayHasKey('resource_path', $metadata);
+        $this->assertEquals($expectedResourceName, $metadata['resource_path']);
     }
 
     /**
@@ -564,7 +617,6 @@ class ResourceMetadataServiceTest extends TestCase
             'EditionLotteryLucky' => ['EditionLotteryLucky', 'edition-lottery-luckies'],
             'Eligibility' => ['Eligibility', 'eligibilities'],
             'PrizeFromClub' => ['PrizeFromClub', 'prize-from-clubs'],
-            'MatchesTeam' => ['MatchesTeam', 'matches-teams'],
 
             // Edge cases with multiple hyphens (using existing models)
             'EditionDivision' => ['EditionDivision', 'edition-divisions'],
@@ -636,7 +688,6 @@ class ResourceMetadataServiceTest extends TestCase
 
         // Test models with display_field set to null (no searchable fields / explicit null)
         $modelsWithNullDisplayField = [
-            'MatchesTeam',
             'EditionLottery',
             'EditionLotteryLucky',
             'EditionParticipation',
@@ -656,5 +707,16 @@ class ResourceMetadataServiceTest extends TestCase
 
         $editionDivisionMetadata = $this->metadataService->getMetadata('EditionDivision', 'v1');
         $this->assertEquals('division_title', $editionDivisionMetadata['display_field']);
+        $edProps = $editionDivisionMetadata['swagger_schema']['properties'];
+        $this->assertArrayHasKey('courts', $edProps);
+        $this->assertTrue($edProps['player_matches_repeat']['nullable'] ?? false);
+
+        $courtMetadata = $this->metadataService->getMetadata('Court', 'v1');
+        $this->assertArrayHasKey('location', $courtMetadata['swagger_schema']['properties']);
+
+        $replacementMetadata = $this->metadataService->getMetadata('EditionDivisionReplacement', 'v1');
+        $matchScope = $replacementMetadata['swagger_schema']['properties']['match_scope_key'] ?? null;
+        $this->assertNotNull($matchScope);
+        $this->assertTrue($matchScope['readOnly'] ?? false);
     }
 }

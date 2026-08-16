@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
-use App\Models\Player;
 use App\Models\Eligibility;
+use App\Models\Player;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class EligibilityFactory extends Factory
@@ -26,7 +26,7 @@ class EligibilityFactory extends Factory
             'first_name' => $this->faker->firstName(),
             'middle_name' => null,
             'last_name' => $this->faker->lastName(),
-            'birth_year' => $this->faker->numberBetween(1960, 2005),
+            'year_of_birth' => $this->faker->numberBetween(1960, 2005),
             'birth_month' => $this->faker->numberBetween(1, 12),
             'birth_day' => $this->faker->numberBetween(1, 28),
             'being_student' => $this->faker->optional()->boolean(),

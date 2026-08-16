@@ -146,7 +146,7 @@ class MyEligibilityUploadControllerTest extends TestCase
             'file' => UploadedFile::fake()->create('proof.pdf', 100, 'application/pdf'),
         ])->json('data.student_proofs.0.id');
 
-        $proofPath = EligibilityStudentProof::findOrFail($id)->path;
+        $proofPath = EligibilityStudentProof::findOrFail($id)->student_proof_path;
         Storage::disk($this->uploadsDisk)->assertExists($proofPath);
 
         Sanctum::actingAs($other);
@@ -203,7 +203,7 @@ class MyEligibilityUploadControllerTest extends TestCase
             'file' => $this->createFakeImage('p.png'),
         ])->json('data.portrait_photos.0.id');
 
-        $photoPath = EligibilityPortraitPhoto::findOrFail($id)->path;
+        $photoPath = EligibilityPortraitPhoto::findOrFail($id)->portrait_photo_path;
         Storage::disk($this->uploadsDisk)->assertExists($photoPath);
 
         Sanctum::actingAs($other);
@@ -255,8 +255,8 @@ class MyEligibilityUploadControllerTest extends TestCase
             'file' => $this->createFakeImage('p.png'),
         ])->assertCreated();
 
-        $proofPath = EligibilityStudentProof::first()->path;
-        $photoPath = EligibilityPortraitPhoto::first()->path;
+        $proofPath = EligibilityStudentProof::first()->student_proof_path;
+        $photoPath = EligibilityPortraitPhoto::first()->portrait_photo_path;
 
         $this->postJson('/api/v1/app/my/eligibility/discard')->assertOk();
 
@@ -280,10 +280,10 @@ class MyEligibilityUploadControllerTest extends TestCase
 
         $proof = EligibilityStudentProof::factory()->create([
             'eligibility_id' => $eligibility->id_eligibility,
-            'path' => 'eligibilities/' . $eligibility->id_eligibility . '/student-proof/x.pdf',
+            'student_proof_path' => 'eligibility-student-proofs/999/student-proof/x.pdf',
             'sort_order' => 0,
         ]);
-        Storage::disk($this->uploadsDisk)->put($proof->path, 'x');
+        Storage::disk($this->uploadsDisk)->put($proof->student_proof_path, 'x');
 
         $eligibility->update(['review_status' => 'approved', 'reviewed_at' => time()]);
 

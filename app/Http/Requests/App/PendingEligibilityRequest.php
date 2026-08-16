@@ -38,7 +38,7 @@ class PendingEligibilityRequest extends FormRequest
             'last_name' => ['sometimes', 'nullable', 'string', 'max:50'],
             'phone' => ['sometimes', 'nullable', 'string', 'max:100'],
 
-            'birth_year' => ['sometimes', 'nullable', 'integer', 'min:1900', 'max:9999'],
+            'year_of_birth' => ['sometimes', 'nullable', 'integer', 'min:1900', 'max:9999'],
             'birth_month' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:12'],
             'birth_day' => ['sometimes', 'nullable', 'integer', 'min:1', 'max:31'],
 

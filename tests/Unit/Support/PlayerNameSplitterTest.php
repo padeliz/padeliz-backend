@@ -66,7 +66,7 @@ final class PlayerNameSplitterTest extends TestCase
                 ],
             ],
             'trims and collapses whitespace' => [
-                "  Ana   Maria  Popescu  ",
+                '  Ana   Maria  Popescu  ',
                 [
                     'first_name' => 'Ana',
                     'middle_name' => 'Maria',

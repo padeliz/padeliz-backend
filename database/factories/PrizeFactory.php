@@ -15,7 +15,7 @@ class PrizeFactory extends Factory
     {
         return [
             'name' => $this->faker->unique()->words(3, true),
-            'image' => $this->faker->optional()->imageUrl(),
+            'media_path' => $this->faker->optional()->passthrough('prizes/1/media/placeholder.jpg'),
             'box_1_text' => $this->faker->sentence(),
             'box_1_bg_color' => $this->faker->hexColor(),
             'box_1_text_color' => $this->faker->hexColor(),

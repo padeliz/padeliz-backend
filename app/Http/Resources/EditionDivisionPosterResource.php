@@ -6,7 +6,6 @@ namespace App\Http\Resources;
 
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
-use Illuminate\Support\Facades\Storage;
 
 class EditionDivisionPosterResource extends JsonResource
 {
@@ -15,16 +14,15 @@ class EditionDivisionPosterResource extends JsonResource
      */
     public function toArray(Request $request): array
     {
-        $disk = config('filesystems.user_uploads_disk', 'public');
-
         return [
             'id_edition_division_poster' => $this->id_edition_division_poster,
             'edition_division_id' => $this->edition_division_id,
+            'edition_division_court_id' => $this->edition_division_court_id,
             'poster_kind' => $this->poster_kind,
-            'filename' => $this->filename,
-            'url' => $this->filename
-                ? Storage::disk($disk)->url($this->filename)
-                : null,
+            'generated_path' => $this->generated_path,
+            'printed_path' => $this->printed_path,
+            'generated_url' => $this->generated_url,
+            'printed_url' => $this->printed_url,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
         ];

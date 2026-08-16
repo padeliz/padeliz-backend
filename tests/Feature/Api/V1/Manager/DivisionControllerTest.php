@@ -132,6 +132,7 @@ class DivisionControllerTest extends TestCase
         $updateData = [
             'name' => 'Updated Name',
             'color' => '#0000FF',
+            'its_first_edition_id' => $division->its_first_edition_id,
         ];
 
         $response = $this->putJson("/api/v1/manager/divisions/{$division->id_division}", $updateData);

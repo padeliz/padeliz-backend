@@ -21,6 +21,10 @@ class MatchSideResource extends JsonResource
             'score' => $this->score,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
+            'couple_image_url' => $this->when(
+                filter_var(request()->query('scores'), FILTER_VALIDATE_BOOLEAN),
+                $this->couple_image_url ?? null,
+            ),
             'players' => $this->whenLoaded('players', function () {
                 return MatchPlayerResource::collection($this->players);
             }),

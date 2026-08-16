@@ -67,6 +67,7 @@ use Laravel\Sanctum\HasApiTokens;
  *     @OA\Property(
  *         property="year_of_birth",
  *         type="integer",
+ *         format="year",
  *         nullable=true,
  *         minimum=1900,
  *         maximum=9999,
@@ -155,13 +156,25 @@ use Laravel\Sanctum\HasApiTokens;
  *     @OA\Property(
  *         property="uploaded_profile_images",
  *         type="array",
+ *         readOnly=true,
  *         @OA\Items(
  *             type="object",
  *             @OA\Property(property="id", type="integer"),
  *             @OA\Property(property="url", type="string")
  *         ),
  *         title="Profile Images",
- *         description="Uploaded profile images (id and public URL)"
+ *         description="Uploaded profile images (id and public URL)",
+ *         x={
+ *             "padeliz-upload": {
+ *                 "mode": "multi",
+ *                 "max_files": 3,
+ *                 "max_size_kb": 5120,
+ *                 "form_field": "image",
+ *                 "accept": {"0":"image/jpeg","1":"image/png","2":"image/gif","3":"image/webp"},
+ *                 "upload": {"method":"POST","path":"/api/v1/manager/players/{id}/profile-images"},
+ *                 "delete": {"method":"DELETE","path":"/api/v1/manager/players/{id}/profile-images/{childId}"}
+ *             }
+ *         }
  *     ),
  *     @OA\Property(
  *         property="participations",

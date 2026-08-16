@@ -64,14 +64,15 @@ class PlayerFactory extends Factory
             $numImages = \random_int(0, PlayerProfileImage::MAX_PER_PLAYER);
 
             for ($i = 0; $i < $numImages; $i++) {
-                $relativePath = 'players/' . $player->getKey() . '/profile/' . Str::uuid()->toString() . '.jpg';
-                Storage::disk($disk)->put($relativePath, ' ', ['visibility' => 'public']);
-
-                PlayerProfileImage::create([
+                $image = PlayerProfileImage::create([
                     'player_id' => $player->id_player,
-                    'path' => $relativePath,
+                    'profile_path' => '',
                     'sort_order' => $i,
                 ]);
+
+                $relativePath = 'player-profile-images/' . $image->getKey() . '/profile/' . Str::uuid()->toString() . '.jpg';
+                Storage::disk($disk)->put($relativePath, ' ', ['visibility' => 'public']);
+                $image->update(['profile_path' => $relativePath]);
             }
         });
     }

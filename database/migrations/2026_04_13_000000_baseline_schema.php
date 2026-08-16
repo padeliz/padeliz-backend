@@ -22,7 +22,8 @@ return new class () extends Migration {
             $table->id('id_division');
             $table->string('name', 25)->unique('uq_divisions_name');
             $table->string('color', 7);
-            $table->integer('its_first_edition_id');
+            // FK added after editions table exists (see below)
+            $table->unsignedBigInteger('its_first_edition_id');
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
         });
@@ -58,8 +59,15 @@ return new class () extends Migration {
             $table->integer('students_entry_fee')->default(45)->comment('ron');
             $table->time('arriving_time');
             $table->time('closing_time');
+            $table->integer('finalized_at')->nullable();
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
+        });
+
+        Schema::table('divisions', function (Blueprint $table) {
+            $table->foreign('its_first_edition_id', 'fk_divisions_its_first_edition')
+                ->references('id_edition')
+                ->on('editions');
         });
 
         Schema::create('players', function (Blueprint $table) {
@@ -151,7 +159,7 @@ return new class () extends Migration {
         Schema::create('player_profile_images', function (Blueprint $table) {
             $table->id();
             $table->foreignId('player_id')->constrained('players', 'id_player')->cascadeOnDelete();
-            $table->string('path', 512);
+            $table->string('profile_path', 512);
             $table->unsignedTinyInteger('sort_order');
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
@@ -170,11 +178,11 @@ return new class () extends Migration {
             $table->integer('player_matches_repeat')->nullable()->default(1);
             $table->tinyInteger('include_scores')->default(1);
             $table->tinyInteger('has_demonstrative_match')->default(0);
-            $table->tinyInteger('fixed_teams')->default(0);
-            $table->tinyInteger('points_per_match')->nullable();
-            $table->tinyInteger('final_points_target')->nullable();
+            $table->boolean('allow_replacements')->default(true);
+            $table->unsignedSmallInteger('points_per_match')->nullable();
+            $table->unsignedSmallInteger('final_points_target')->default(24);
             $table->boolean('include_final')->default(false);
-            $table->integer('finalized_at')->nullable();
+            $table->unsignedInteger('template_version')->nullable();
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
         });
@@ -192,11 +200,26 @@ return new class () extends Migration {
         Schema::create('edition_division_posters', function (Blueprint $table) {
             $table->id('id_edition_division_poster');
             $table->foreignId('edition_division_id')->constrained('edition_divisions', 'id_edition_division')->cascadeOnDelete();
+            $table->unsignedBigInteger('edition_division_court_id')->nullable();
             $table->enum('poster_kind', ['MATCHES', 'RANKING', 'COMBINED', 'BATTLES', 'HOUSE', 'SETUP']);
-            $table->string('filename', 255);
+            $table->string('generated_path', 512)->nullable();
+            $table->string('printed_path', 512)->nullable();
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
-            $table->unique(['edition_division_id', 'poster_kind', 'filename'], 'uq_ed_poster');
+        });
+
+        $prefix = DB::getTablePrefix();
+        DB::statement(
+            "ALTER TABLE `{$prefix}edition_division_posters` " .
+            'ADD COLUMN `court_scope_key` BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(`edition_division_court_id`, 0)) STORED'
+        );
+        DB::statement(
+            'CREATE UNIQUE INDEX `uq_ed_poster_scope` ' .
+            "ON `{$prefix}edition_division_posters` (`edition_division_id`, `poster_kind`, `court_scope_key`)"
+        );
+        Schema::table('edition_division_posters', function (Blueprint $table) {
+            $table->foreign('edition_division_court_id', 'fk_poster_ed_court')
+                ->references('id_edition_division_court')->on('edition_division_courts');
         });
 
         Schema::create('edition_participations', function (Blueprint $table) {
@@ -204,6 +227,8 @@ return new class () extends Migration {
             $table->foreignId('edition_id')->constrained('editions', 'id_edition');
             $table->foreignId('player_id')->constrained('players', 'id_player');
             $table->foreignId('edition_division_id')->constrained('edition_divisions', 'id_edition_division');
+            $table->unsignedSmallInteger('sort_order')->default(0);
+            $table->boolean('is_collecting_points')->default(true);
             $table->boolean('is_minor')->default(false);
             $table->boolean('is_student');
             $table->integer('discount')->nullable()->comment('ron');
@@ -212,12 +237,13 @@ return new class () extends Migration {
             $table->enum('ban_reason', ['LEFT SUDDENLY', 'AGGRESSIVE PLAYER', 'LIBIDINOUS', ''])->nullable();
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
+            $table->unique(['edition_division_id', 'player_id'], 'uq_participation_ed_player');
         });
 
         Schema::create('prizes', function (Blueprint $table) {
             $table->id('id_prize');
             $table->string('name', 60);
-            $table->string('image', 100)->nullable();
+            $table->string('media_path', 512)->nullable();
             $table->enum('template', ['IMAGE_LEFT', 'IMAGE_TOP', 'IMAGE_RIGHT', 'IMAGE_MIDDLE', 'IMAGE_BOTTOM'])->nullable();
             $table->string('box_1_text', 200);
             $table->string('box_1_bg_color', 7);
@@ -233,7 +259,7 @@ return new class () extends Migration {
             $table->id('id_club_prize');
             $table->foreignId('club_id')->nullable()->constrained('clubs', 'id_club');
             $table->foreignId('prize_id')->constrained('prizes', 'id_prize');
-            $table->string('image', 100)->nullable();
+            $table->string('media_path', 512)->nullable();
             $table->enum('template', ['IMAGE_LEFT', 'IMAGE_TOP', 'IMAGE_RIGHT', 'IMAGE_MIDDLE', 'IMAGE_BOTTOM'])->nullable();
             $table->string('box_1_text', 200)->nullable();
             $table->string('box_1_bg_color', 7)->nullable();
@@ -294,7 +320,7 @@ return new class () extends Migration {
             $table->smallInteger('sequence_no');
             $table->time('scheduled_start')->nullable();
             $table->time('scheduled_end')->nullable();
-            $table->tinyInteger('points_target')->nullable();
+            $table->unsignedSmallInteger('points_target')->nullable();
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
             $table->unique(
@@ -329,7 +355,6 @@ return new class () extends Migration {
             $table->id('id_standing');
             $table->foreignId('edition_division_id')->constrained('edition_divisions', 'id_edition_division');
             $table->foreignId('participation_id')->constrained('edition_participations', 'id_participation');
-            $table->boolean('is_collecting_points')->default(true);
             $table->integer('points_total')->nullable();
             $table->decimal('wins', 4, 1)->nullable();
             $table->smallInteger('rank')->nullable();
@@ -349,7 +374,7 @@ return new class () extends Migration {
             $table->integer('updated_at')->nullable();
         });
 
-        $prefix = DB::getTablePrefix();
+        // $prefix already set above for posters generated column
         DB::statement(
             "ALTER TABLE `{$prefix}edition_division_replacements` " .
             'ADD COLUMN `match_scope_key` BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(`match_id`, 0)) STORED'
@@ -374,14 +399,37 @@ return new class () extends Migration {
         // Note: $prefix already set above for replacements generated column
         // Reuse for eligibilities below — redefine if needed after other creates.
 
-        Schema::create('matches_teams', function (Blueprint $table) {
-            $table->id('id_team');
-            $table->string('player_1', 50);
-            $table->string('player_2', 50);
+        Schema::create('cached_pdf_pair_images', function (Blueprint $table) {
+            $table->id('id_cached_pdf_pair_image');
+            $table->foreignId('player_1_id')->constrained('players', 'id_player');
+            $table->foreignId('player_2_id')->constrained('players', 'id_player');
             $table->boolean('player_1_is_collecting_points')->default(true);
             $table->boolean('player_2_is_collecting_points')->default(true);
+            $table->string('picture_path', 512)->nullable();
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
+            $table->unique(
+                [
+                    'player_1_id',
+                    'player_2_id',
+                    'player_1_is_collecting_points',
+                    'player_2_is_collecting_points',
+                ],
+                'uq_cached_pdf_pair_images_combo'
+            );
+        });
+
+        Schema::create('cached_pdf_player_images', function (Blueprint $table) {
+            $table->id('id_cached_pdf_player_image');
+            $table->foreignId('player_id')->constrained('players', 'id_player');
+            $table->boolean('player_is_collecting_points')->default(true);
+            $table->string('picture_path', 512)->nullable();
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
+            $table->unique(
+                ['player_id', 'player_is_collecting_points'],
+                'uq_cached_pdf_player_images_combo'
+            );
         });
 
         Schema::create('validations_site', function (Blueprint $table) {
@@ -403,7 +451,7 @@ return new class () extends Migration {
             $table->string('middle_name', 50)->nullable();
             $table->string('last_name', 50)->nullable();
             $table->string('phone', 100)->nullable();
-            $table->integer('birth_year')->nullable();
+            $table->integer('year_of_birth')->nullable();
             $table->integer('birth_month')->nullable();
             $table->integer('birth_day')->nullable();
             $table->boolean('being_student')->nullable();
@@ -433,7 +481,7 @@ return new class () extends Migration {
         Schema::create('eligibility_student_proofs', function (Blueprint $table) {
             $table->id();
             $table->foreignId('eligibility_id')->constrained('eligibilities', 'id_eligibility')->cascadeOnDelete();
-            $table->string('path', 512);
+            $table->string('student_proof_path', 512);
             $table->unsignedTinyInteger('sort_order');
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
@@ -443,7 +491,7 @@ return new class () extends Migration {
         Schema::create('eligibility_portrait_photos', function (Blueprint $table) {
             $table->id();
             $table->foreignId('eligibility_id')->constrained('eligibilities', 'id_eligibility')->cascadeOnDelete();
-            $table->string('path', 512);
+            $table->string('portrait_photo_path', 512);
             $table->unsignedTinyInteger('sort_order');
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
@@ -457,7 +505,8 @@ return new class () extends Migration {
         Schema::dropIfExists('eligibility_student_proofs');
         Schema::dropIfExists('eligibilities');
         Schema::dropIfExists('validations_site');
-        Schema::dropIfExists('matches_teams');
+        Schema::dropIfExists('cached_pdf_player_images');
+        Schema::dropIfExists('cached_pdf_pair_images');
         Schema::dropIfExists('edition_division_replacements');
         Schema::dropIfExists('edition_division_standings');
         Schema::dropIfExists('match_players');
@@ -479,6 +528,9 @@ return new class () extends Migration {
         Schema::dropIfExists('player_phones');
         Schema::dropIfExists('player_emails');
         Schema::dropIfExists('players');
+        Schema::table('divisions', function (Blueprint $table) {
+            $table->dropForeign('fk_divisions_its_first_edition');
+        });
         Schema::dropIfExists('editions');
         Schema::dropIfExists('courts');
         Schema::dropIfExists('locations');

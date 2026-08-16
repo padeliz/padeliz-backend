@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
@@ -33,8 +34,9 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
  *     @OA\Property(
  *         property="color",
  *         type="string",
+ *         format="color",
  *         maxLength=7,
- *         pattern="^#[0-9A-F]{6}$",
+ *         pattern="^#[0-9A-Fa-f]{6}$",
  *         title="Color",
  *         description="Hex color code for the division",
  *         example="#FF0000"
@@ -42,10 +44,18 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
  *     @OA\Property(
  *         property="its_first_edition_id",
  *         type="integer",
+ *         format="int64",
  *         minimum=1,
  *         title="First Edition",
  *         description="First edition for this division",
  *         example=1
+ *     ),
+ *     @OA\Property(
+ *         property="its_first_edition",
+ *         ref="#/components/schemas/Edition",
+ *         title="First Edition",
+ *         description="Related first edition object",
+ *         nullable=true
  *     ),
  *     @OA\Property(
  *         property="inserted_at",
@@ -70,14 +80,6 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
  *         @OA\Items(ref="#/components/schemas/EditionDivision"),
  *         title="Edition Divisions",
  *         description="Array of related edition divisions",
- *         nullable=true
- *     ),
- *     @OA\Property(
- *         property="participations",
- *         type="array",
- *         @OA\Items(ref="#/components/schemas/EditionParticipation"),
- *         title="Participations",
- *         description="Array of related participations",
  *         nullable=true
  *     )
  * )
@@ -144,6 +146,11 @@ class Division extends Model
         'inserted_at' => 'integer',
         'updated_at' => 'integer',
     ];
+
+    public function itsFirstEdition(): BelongsTo
+    {
+        return $this->belongsTo(Edition::class, 'its_first_edition_id', 'id_edition');
+    }
 
     public function editionDivisions(): HasMany
     {

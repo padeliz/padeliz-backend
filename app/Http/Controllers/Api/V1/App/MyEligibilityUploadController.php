@@ -81,8 +81,14 @@ class MyEligibilityUploadController extends \App\Http\Controllers\BaseVersions\V
         try {
             DB::beginTransaction();
 
+            $proof = EligibilityStudentProof::create([
+                'eligibility_id' => $eligibility->id_eligibility,
+                'student_proof_path' => '',
+                'sort_order' => $eligibility->studentProofs()->count(),
+            ]);
+
             $storedPath = Storage::disk($disk)->putFile(
-                'eligibilities/' . $eligibility->getKey() . '/student-proof',
+                'eligibility-student-proofs/' . $proof->getKey() . '/student-proof',
                 $request->file('file'),
                 ['visibility' => 'public']
             );
@@ -91,11 +97,7 @@ class MyEligibilityUploadController extends \App\Http\Controllers\BaseVersions\V
                 throw new \RuntimeException('Could not store the uploaded file.');
             }
 
-            EligibilityStudentProof::create([
-                'eligibility_id' => $eligibility->id_eligibility,
-                'path' => $storedPath,
-                'sort_order' => $eligibility->studentProofs()->count(),
-            ]);
+            $proof->update(['student_proof_path' => $storedPath]);
 
             DB::commit();
         } catch (\Throwable $e) {
@@ -213,8 +215,14 @@ class MyEligibilityUploadController extends \App\Http\Controllers\BaseVersions\V
         try {
             DB::beginTransaction();
 
+            $photo = EligibilityPortraitPhoto::create([
+                'eligibility_id' => $eligibility->id_eligibility,
+                'portrait_photo_path' => '',
+                'sort_order' => $eligibility->portraitPhotos()->count(),
+            ]);
+
             $storedPath = Storage::disk($disk)->putFile(
-                'eligibilities/' . $eligibility->getKey() . '/portrait-photo',
+                'eligibility-portrait-photos/' . $photo->getKey() . '/portrait-photo',
                 $request->file('file'),
                 ['visibility' => 'public']
             );
@@ -223,11 +231,7 @@ class MyEligibilityUploadController extends \App\Http\Controllers\BaseVersions\V
                 throw new \RuntimeException('Could not store the uploaded file.');
             }
 
-            EligibilityPortraitPhoto::create([
-                'eligibility_id' => $eligibility->id_eligibility,
-                'path' => $storedPath,
-                'sort_order' => $eligibility->portraitPhotos()->count(),
-            ]);
+            $photo->update(['portrait_photo_path' => $storedPath]);
 
             DB::commit();
         } catch (\Throwable $e) {

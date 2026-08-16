@@ -206,10 +206,10 @@ class EligibilityController extends V1BaseController
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"player_id", "edition_id", "review_status"},
+     *             required={"player_id", "review_status"},
      *             @OA\Property(property="player_id", type="integer", description="Player ID"),
-     *             @OA\Property(property="edition_id", type="integer", description="Edition ID"),
-     *             @OA\Property(property="review_status", type="string", enum={"approved", "rejected", "pending"}, description="Eligibility review status"),
+     *             @OA\Property(property="edition_ids", type="array", @OA\Items(type="integer"), nullable=true, description="Edition IDs"),
+     *             @OA\Property(property="review_status", type="string", enum={"approved", "rejected", "pending", "discarded"}, description="Eligibility review status"),
      *             @OA\Property(property="review_message", type="string", description="Review message")
      *         )
      *     ),

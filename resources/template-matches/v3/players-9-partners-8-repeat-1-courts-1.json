@@ -1,0 +1,370 @@
+{
+    "players": 9,
+    "partners": 8,
+    "repeat": 1,
+    "courts": 1,
+    "fixedTeams": false,
+    "matches": [
+        [
+            [
+                [
+                    1,
+                    5
+                ],
+                [
+                    2,
+                    3
+                ]
+            ],
+            [
+                [
+                    0,
+                    8
+                ],
+                [
+                    6,
+                    7
+                ]
+            ],
+            [
+                [
+                    1,
+                    4
+                ],
+                [
+                    0,
+                    5
+                ]
+            ],
+            [
+                [
+                    3,
+                    6
+                ],
+                [
+                    5,
+                    8
+                ]
+            ],
+            [
+                [
+                    2,
+                    6
+                ],
+                [
+                    3,
+                    4
+                ]
+            ],
+            [
+                [
+                    5,
+                    7
+                ],
+                [
+                    0,
+                    3
+                ]
+            ],
+            [
+                [
+                    3,
+                    8
+                ],
+                [
+                    0,
+                    1
+                ]
+            ],
+            [
+                [
+                    2,
+                    8
+                ],
+                [
+                    4,
+                    5
+                ]
+            ],
+            [
+                [
+                    0,
+                    2
+                ],
+                [
+                    6,
+                    8
+                ]
+            ],
+            [
+                [
+                    1,
+                    7
+                ],
+                [
+                    4,
+                    6
+                ]
+            ],
+            [
+                [
+                    4,
+                    7
+                ],
+                [
+                    3,
+                    5
+                ]
+            ],
+            [
+                [
+                    0,
+                    6
+                ],
+                [
+                    2,
+                    4
+                ]
+            ],
+            [
+                [
+                    7,
+                    8
+                ],
+                [
+                    1,
+                    2
+                ]
+            ],
+            [
+                [
+                    0,
+                    4
+                ],
+                [
+                    1,
+                    3
+                ]
+            ],
+            [
+                [
+                    5,
+                    6
+                ],
+                [
+                    1,
+                    8
+                ]
+            ],
+            [
+                [
+                    2,
+                    5
+                ],
+                [
+                    0,
+                    7
+                ]
+            ],
+            [
+                [
+                    3,
+                    7
+                ],
+                [
+                    4,
+                    8
+                ]
+            ],
+            [
+                [
+                    1,
+                    6
+                ],
+                [
+                    2,
+                    7
+                ]
+            ]
+        ]
+    ],
+    "metrics": {
+        "pairing": {
+            "quality": {
+                "minPartnersFairness": 1,
+                "avgPartnersFairness": 1,
+                "partnersCount": [
+                    8,
+                    8,
+                    8,
+                    8,
+                    8,
+                    8,
+                    8,
+                    8,
+                    8
+                ],
+                "partnersCountVariation": 0,
+                "pairCount": 36
+            },
+            "stats": {
+                "stopReason": "DEADLINE",
+                "time": 346.1952355,
+                "nodesExplored": 1105589,
+                "seedIndex": 1,
+                "seedsTotal": 256
+            }
+        },
+        "matchMaking": {
+            "quality": {
+                "meetingsVariation": 1.3333333333333333,
+                "minOpponentsMet": 8,
+                "maxOpponentsMet": 8,
+                "playersMet": {
+                    "1": {
+                        "5": 3,
+                        "2": 3,
+                        "3": 3,
+                        "4": 3,
+                        "0": 3,
+                        "8": 3,
+                        "7": 3,
+                        "6": 3
+                    },
+                    "5": {
+                        "1": 3,
+                        "2": 3,
+                        "3": 4,
+                        "4": 3,
+                        "0": 3,
+                        "6": 2,
+                        "8": 3,
+                        "7": 3
+                    },
+                    "2": {
+                        "1": 3,
+                        "5": 3,
+                        "3": 2,
+                        "6": 4,
+                        "4": 3,
+                        "8": 3,
+                        "0": 3,
+                        "7": 3
+                    },
+                    "3": {
+                        "1": 3,
+                        "5": 4,
+                        "2": 2,
+                        "6": 2,
+                        "8": 3,
+                        "4": 4,
+                        "7": 3,
+                        "0": 3
+                    },
+                    "0": {
+                        "8": 3,
+                        "6": 3,
+                        "7": 3,
+                        "1": 3,
+                        "4": 3,
+                        "5": 3,
+                        "3": 3,
+                        "2": 3
+                    },
+                    "8": {
+                        "0": 3,
+                        "6": 4,
+                        "7": 3,
+                        "3": 3,
+                        "5": 3,
+                        "1": 3,
+                        "2": 3,
+                        "4": 2
+                    },
+                    "6": {
+                        "0": 3,
+                        "8": 4,
+                        "7": 3,
+                        "3": 2,
+                        "5": 2,
+                        "2": 4,
+                        "4": 3,
+                        "1": 3
+                    },
+                    "7": {
+                        "0": 3,
+                        "8": 3,
+                        "6": 3,
+                        "5": 3,
+                        "3": 3,
+                        "1": 3,
+                        "4": 3,
+                        "2": 3
+                    },
+                    "4": {
+                        "1": 3,
+                        "0": 3,
+                        "5": 3,
+                        "2": 3,
+                        "6": 3,
+                        "3": 4,
+                        "8": 2,
+                        "7": 3
+                    }
+                },
+                "matchesCount": 18,
+                "minPlayingFairness": 0.6796875,
+                "avgPlayingFairness": 0.8854166666666666,
+                "maxPlayingFairnessPenalty": 0.09375
+            },
+            "stats": {
+                "permutationsIterated": 256,
+                "permutationIndex": 222,
+                "templatesGenerated": 252,
+                "templateIndex": 218,
+                "nodesExplored": null,
+                "stopReason": "FACTORIAL_COMPLETE",
+                "time": 2.8168287,
+                "meetingsVariationLimit": 1,
+                "candidatesCollected": null,
+                "candidatesDeduped": null,
+                "candidateIndex": null,
+                "relaxAttempts": [
+                    {
+                        "meetingsVariationLimit": 1,
+                        "permutationsIterated": 256,
+                        "templatesGenerated": 252,
+                        "nodesExplored": null,
+                        "time": 2.8168287,
+                        "candidatesCollected": null,
+                        "candidatesDeduped": null,
+                        "stopReason": null
+                    }
+                ]
+            }
+        },
+        "ordering": {
+            "quality": {
+                "minDistribution": 0.9125,
+                "avgDistribution": 0.922089947089947,
+                "minBreak": 0,
+                "maxBreak": 3,
+                "consecutiveMinBreaks": 3,
+                "consecutiveMaxBreaks": 2,
+                "courtSwitches": 0,
+                "courtBalance": 0,
+                "roundsCount": 18
+            },
+            "stats": {
+                "stopReason": "FACTORIAL_COMPLETE",
+                "permutationsIterated": 1758,
+                "permutationIndex": 1022,
+                "nodesExplored": 2560000,
+                "seedIndex": 136,
+                "seedsTotal": 256,
+                "time": 42.6036276,
+                "relaxAttempts": null
+            }
+        }
+    }
+}

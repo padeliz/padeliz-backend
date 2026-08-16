@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Factories\HasFactory;
-use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\Pivot;
 
 /**
  * @OA\Schema(
@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true)
  * )
  */
-class EditionDivisionCourt extends Model
+class EditionDivisionCourt extends Pivot
 {
     use HasFactory;
 
@@ -29,11 +29,14 @@ class EditionDivisionCourt extends Model
 
     protected $primaryKey = 'id_edition_division_court';
 
+    public $incrementing = true;
+
     public $timestamps = true;
 
     protected $dateFormat = 'U';
 
     public const CREATED_AT = 'inserted_at';
+
     public const UPDATED_AT = 'updated_at';
 
     protected $fillable = [

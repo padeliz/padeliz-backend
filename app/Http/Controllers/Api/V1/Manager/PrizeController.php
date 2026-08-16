@@ -195,7 +195,7 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *         @OA\JsonContent(
      *             required={"name"},
      *             @OA\Property(property="name", type="string", maxLength=60, description="Prize name"),
-     *             @OA\Property(property="image", type="string", maxLength=100, description="Prize image URL"),
+     *             @OA\Property(property="media_path", type="string", maxLength=512, description="Prize media storage path"),
      *             @OA\Property(property="box_1_text", type="string", maxLength=200, description="Box 1 text"),
      *             @OA\Property(property="box_1_bg_color", type="string", maxLength=7, description="Box 1 background color"),
      *             @OA\Property(property="box_1_text_color", type="string", maxLength=7, description="Box 1 text color"),
@@ -242,7 +242,7 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
     {
         $validated = $request->validate([
             'name' => 'required|string|max:60|unique:prizes,name',
-            'image' => 'nullable|string|max:100',
+            'media_path' => 'nullable|string|max:512',
             'box_1_text' => 'nullable|string|max:200',
             'box_1_bg_color' => 'nullable|string|max:7|regex:/^#[0-9A-F]{6}$/i',
             'box_1_text_color' => 'nullable|string|max:7|regex:/^#[0-9A-F]{6}$/i',
@@ -276,7 +276,7 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *         required=true,
      *         @OA\JsonContent(
      *             @OA\Property(property="name", type="string", maxLength=60, description="Prize name"),
-     *             @OA\Property(property="image", type="string", maxLength=100, description="Prize image URL"),
+     *             @OA\Property(property="media_path", type="string", maxLength=512, description="Prize media storage path"),
      *             @OA\Property(property="box_1_text", type="string", maxLength=200, description="Box 1 text"),
      *             @OA\Property(property="box_1_bg_color", type="string", maxLength=7, description="Box 1 background color"),
      *             @OA\Property(property="box_1_text_color", type="string", maxLength=7, description="Box 1 text color"),
@@ -328,7 +328,7 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
     {
         $validated = $request->validate([
             'name' => 'required|string|max:60|unique:prizes,name,' . $prize->id_prize . ',id_prize',
-            'image' => 'nullable|string|max:100',
+            'media_path' => 'nullable|string|max:512',
             'box_1_text' => 'nullable|string|max:200',
             'box_1_bg_color' => 'nullable|string|max:7|regex:/^#[0-9A-F]{6}$/i',
             'box_1_text_color' => 'nullable|string|max:7|regex:/^#[0-9A-F]{6}$/i',
@@ -361,7 +361,7 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *         required=true,
      *         @OA\JsonContent(
      *             @OA\Property(property="name", type="string", maxLength=60, description="Prize name"),
-     *             @OA\Property(property="image", type="string", maxLength=100, description="Prize image URL"),
+     *             @OA\Property(property="media_path", type="string", maxLength=512, description="Prize media storage path"),
      *             @OA\Property(property="box_1_text", type="string", maxLength=200, description="Box 1 text"),
      *             @OA\Property(property="box_1_bg_color", type="string", maxLength=7, description="Box 1 background color"),
      *             @OA\Property(property="box_1_text_color", type="string", maxLength=7, description="Box 1 text color"),
@@ -413,7 +413,7 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
     {
         $validated = $request->validate([
             'name' => 'sometimes|string|max:60|unique:prizes,name,' . $prize->id_prize . ',id_prize',
-            'image' => 'nullable|string|max:100',
+            'media_path' => 'nullable|string|max:512',
             'box_1_text' => 'nullable|string|max:200',
             'box_1_bg_color' => 'nullable|string|max:7|regex:/^#[0-9A-F]{6}$/i',
             'box_1_text_color' => 'nullable|string|max:7|regex:/^#[0-9A-F]{6}$/i',

@@ -172,8 +172,8 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
     {
         $lottery->load([
             'prize',
+            'edition',
             'rules',
-            'luckies.drawnParticipation.player',
         ]);
 
         return $this->resourceResponse(

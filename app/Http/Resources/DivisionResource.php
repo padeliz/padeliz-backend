@@ -18,11 +18,11 @@ class DivisionResource extends JsonResource
             'its_first_edition_id' => $this->its_first_edition_id,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
+            'its_first_edition' => $this->whenLoaded('itsFirstEdition', function () {
+                return new EditionResource($this->itsFirstEdition);
+            }),
             'edition_divisions' => $this->whenLoaded('editionDivisions', function () {
                 return EditionDivisionResource::collection($this->editionDivisions);
-            }),
-            'participations' => $this->whenLoaded('participations', function () {
-                return EditionParticipationResource::collection($this->participations);
             }),
         ];
     }

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Services\Schedule\PlayingWindow;
 use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -14,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @OA\Schema(
  *     schema="EditionDivision",
- *     required={"edition_id", "division_id", "division_title", "players_limit", "playing_start_time", "playing_end_time", "player_matches_repeat", "include_scores", "has_demonstrative_match", "fixed_teams"},
+ *     required={"edition_id", "division_id", "division_title", "players_limit", "playing_start_time", "playing_end_time", "include_scores", "has_demonstrative_match"},
  *     @OA\Property(
  *         property="id_edition_division",
  *         type="integer",
@@ -84,6 +85,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *     @OA\Property(
  *         property="player_matches_repeat",
  *         type="integer",
+ *         nullable=true,
  *         minimum=1,
  *         title="Player Matches Repeat",
  *         description="Number of times matches repeat",
@@ -91,7 +93,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *     ),
  *     @OA\Property(property="include_scores", type="boolean", title="Include Scores", description="Whether to include scores"),
  *     @OA\Property(property="has_demonstrative_match", type="boolean", title="Has Demonstrative Match", description="Whether to include a demonstrative match"),
- *     @OA\Property(property="fixed_teams", type="boolean", title="Fixed Teams", description="Whether to include fixed teams"),
+ *     @OA\Property(property="allow_replacements", type="boolean", default=true, title="Allow Replacements", description="Whether replacements are allowed"),
  *     @OA\Property(
  *         property="points_per_match",
  *         type="integer",
@@ -102,7 +104,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *     @OA\Property(
  *         property="final_points_target",
  *         type="integer",
- *         nullable=true,
+ *         default=24,
  *         title="Final Points Target",
  *         description="Points target for the final match"
  *     ),
@@ -112,14 +114,6 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *         default=false,
  *         title="Include Final",
  *         description="Whether this edition division includes a final"
- *     ),
- *     @OA\Property(
- *         property="finalized_at",
- *         type="integer",
- *         format="timestamp",
- *         nullable=true,
- *         title="Finalized At",
- *         description="Unix timestamp when standings were finalized"
  *     ),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true, title="Created At", description="Timestamp when the edition division was created"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true, title="Updated At", description="Timestamp when the edition division was last updated"),
@@ -135,6 +129,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *         ref="#/components/schemas/Division",
  *         title="Division",
  *         description="Related division object",
+ *         nullable=true
+ *     ),
+ *     @OA\Property(
+ *         property="courts",
+ *         type="array",
+ *         @OA\Items(ref="#/components/schemas/Court"),
+ *         title="Courts",
+ *         description="Array of related courts",
  *         nullable=true
  *     )
  * )
@@ -162,7 +164,7 @@ class EditionDivision extends Model
         'player_matches_repeat',
         'include_scores',
         'has_demonstrative_match',
-        'fixed_teams',
+        'allow_replacements',
         'include_final',
     ];
 
@@ -181,11 +183,10 @@ class EditionDivision extends Model
         'player_matches_repeat',
         'include_scores',
         'has_demonstrative_match',
-        'fixed_teams',
+        'allow_replacements',
         'points_per_match',
         'final_points_target',
         'include_final',
-        'finalized_at',
         'inserted_at',
         'updated_at',
     ];
@@ -217,22 +218,23 @@ class EditionDivision extends Model
         'player_matches_repeat',
         'include_scores',
         'has_demonstrative_match',
-        'fixed_teams',
+        'allow_replacements',
         'points_per_match',
         'final_points_target',
         'include_final',
-        'finalized_at',
+        'template_version',
     ];
 
     protected $casts = [
         'inserted_at' => 'integer',
         'updated_at' => 'integer',
-        'finalized_at' => 'integer',
-        'playing_start_time' => 'datetime:H:i:s',
-        'playing_end_time' => 'datetime:H:i:s',
+        'include_scores' => 'boolean',
+        'has_demonstrative_match' => 'boolean',
+        'allow_replacements' => 'boolean',
         'include_final' => 'boolean',
         'points_per_match' => 'integer',
         'final_points_target' => 'integer',
+        'template_version' => 'integer',
     ];
 
     protected $appends = [
@@ -265,7 +267,9 @@ class EditionDivision extends Model
             'court_id',
             'id_edition_division',
             'id_court'
-        )->withPivot(['id_edition_division_court', 'display_order', 'inserted_at', 'updated_at'])
+        )->using(EditionDivisionCourt::class)
+            ->withTimestamps('inserted_at', 'updated_at')
+            ->withPivot(['id_edition_division_court', 'display_order'])
             ->orderByPivot('display_order');
     }
 
@@ -299,11 +303,7 @@ class EditionDivision extends Model
      */
     public function getFormattedPlayingStartTimeAttribute()
     {
-        if ($this->attributes['playing_start_time']) {
-            return $this->asDateTime($this->attributes['playing_start_time'])->format('H:i:s');
-        }
-
-        return null;
+        return PlayingWindow::toClockString($this->attributes['playing_start_time'] ?? null);
     }
 
     /**
@@ -311,10 +311,6 @@ class EditionDivision extends Model
      */
     public function getFormattedPlayingEndTimeAttribute()
     {
-        if ($this->attributes['playing_end_time']) {
-            return $this->asDateTime($this->attributes['playing_end_time'])->format('H:i:s');
-        }
-
-        return null;
+        return PlayingWindow::toClockString($this->attributes['playing_end_time'] ?? null);
     }
 }

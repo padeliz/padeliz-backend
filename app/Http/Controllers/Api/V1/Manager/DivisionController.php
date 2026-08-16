@@ -103,7 +103,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      */
     public function index(Request $request)
     {
-        $query = Division::query();
+        $query = Division::with('itsFirstEdition');
 
         // Apply advanced pagination
         $this->applyAdvancedPagination(
@@ -175,6 +175,8 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      */
     public function show(Division $division)
     {
+        $division->load('itsFirstEdition');
+
         return $this->resourceResponse(
             new DivisionResource($division),
             'Division details retrieved successfully'
@@ -190,9 +192,9 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"name", "color"},
+     *             required={"name", "color", "its_first_edition_id"},
      *             @OA\Property(property="name", type="string", maxLength=25, description="Division name"),
-     *             @OA\Property(property="color", type="string", maxLength=7, description="Division color (hex)"),
+     *             @OA\Property(property="color", type="string", format="color", maxLength=7, pattern="^#[0-9A-Fa-f]{6}$", description="Division color (hex)"),
      *             @OA\Property(property="its_first_edition_id", type="integer", description="First edition ID for this division")
      *         )
      *     ),
@@ -234,11 +236,12 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
     {
         $validated = $request->validate([
             'name' => 'required|string|max:25',
-            'color' => 'required|string|max:7|regex:/^#[0-9A-F]{6}$/i',
-            'its_first_edition_id' => 'nullable|integer|exists:editions,id_edition',
+            'color' => 'required|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/',
+            'its_first_edition_id' => 'required|integer|exists:editions,id_edition',
         ]);
 
         $division = Division::create($validated);
+        $division->load('itsFirstEdition');
 
         return $this->resourceResponse(
             new DivisionResource($division),
@@ -310,11 +313,12 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
     {
         $validated = $request->validate([
             'name' => 'required|string|max:25',
-            'color' => 'required|string|max:7|regex:/^#[0-9A-F]{6}$/i',
-            'its_first_edition_id' => 'nullable|integer|exists:editions,id_edition',
+            'color' => 'required|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/',
+            'its_first_edition_id' => 'required|integer|exists:editions,id_edition',
         ]);
 
         $division->update($validated);
+        $division->load('itsFirstEdition');
 
         return $this->resourceResponse(
             new DivisionResource($division),
@@ -386,10 +390,11 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
         $validated = $request->validate([
             'name' => 'sometimes|string|max:25',
             'color' => 'sometimes|string|max:7|regex:/^#[0-9A-F]{6}$/i',
-            'its_first_edition_id' => 'nullable|integer|exists:editions,id_edition',
+            'its_first_edition_id' => 'sometimes|required|integer|exists:editions,id_edition',
         ]);
 
         $division->update($validated);
+        $division->load('itsFirstEdition');
 
         return $this->resourceResponse(
             new DivisionResource($division),

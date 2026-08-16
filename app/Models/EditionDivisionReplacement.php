@@ -18,6 +18,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *     @OA\Property(property="substitute_participation_id", type="integer", format="int64", nullable=true),
  *     @OA\Property(property="substitute_player_id", type="integer", format="int64", nullable=true),
  *     @OA\Property(property="match_id", type="integer", format="int64", nullable=true),
+ *     @OA\Property(property="match_scope_key", type="integer", format="int64", readOnly=true),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true)
  * )

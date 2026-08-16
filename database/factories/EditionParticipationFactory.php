@@ -22,6 +22,8 @@ class EditionParticipationFactory extends Factory
             'edition_id' => $editionDivision->edition_id,
             'player_id' => Player::factory(),
             'edition_division_id' => $editionDivision->id_edition_division,
+            'sort_order' => 0,
+            'is_collecting_points' => true,
             'is_minor' => $this->faker->boolean(20),
             'is_student' => $this->faker->boolean(30),
             'discount' => $this->faker->optional()->numberBetween(5, 20),

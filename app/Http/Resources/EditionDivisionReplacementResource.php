@@ -24,6 +24,55 @@ class EditionDivisionReplacementResource extends JsonResource
             'match_scope_key' => $this->match_scope_key,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
+            'edition_division' => $this->whenLoaded('editionDivision', function () {
+                return [
+                    'id_edition_division' => $this->editionDivision?->id_edition_division,
+                    'division_title' => $this->editionDivision?->division_title,
+                    'edition_id' => $this->editionDivision?->edition_id,
+                    'division_id' => $this->editionDivision?->division_id,
+                ];
+            }),
+            'original_participation' => $this->whenLoaded('originalParticipation', function () {
+                return $this->slimParticipation($this->originalParticipation);
+            }),
+            'substitute_participation' => $this->whenLoaded('substituteParticipation', function () {
+                return $this->slimParticipation($this->substituteParticipation);
+            }),
+            'substitute_player' => $this->whenLoaded('substitutePlayer', function () {
+                return $this->slimPlayer($this->substitutePlayer);
+            }),
+        ];
+    }
+
+    /**
+     * @return null|array<string, mixed>
+     */
+    private function slimParticipation(mixed $participation): ?array
+    {
+        if ($participation === null) {
+            return null;
+        }
+
+        return [
+            'id_participation' => $participation->id_participation,
+            'player' => $this->slimPlayer($participation->relationLoaded('player') ? $participation->player : null),
+        ];
+    }
+
+    /**
+     * @return null|array<string, mixed>
+     */
+    private function slimPlayer(mixed $player): ?array
+    {
+        if ($player === null) {
+            return null;
+        }
+
+        return [
+            'id_player' => $player->id_player,
+            'name' => $player->name,
+            'first_name' => $player->first_name,
+            'last_name' => $player->last_name,
         ];
     }
 }

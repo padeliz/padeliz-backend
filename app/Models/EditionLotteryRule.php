@@ -28,7 +28,22 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *     @OA\Property(property="is_padel_first_timer", type="boolean", nullable=true),
  *     @OA\Property(property="is_event_first_timer", type="boolean", nullable=true),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true),
- *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true)
+ *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true),
+ *     @OA\Property(
+ *         property="edition_division",
+ *         ref="#/components/schemas/EditionDivision",
+ *         title="Edition Division",
+ *         description="Related edition division object",
+ *         nullable=true
+ *     ),
+ *     @OA\Property(
+ *         property="luckies",
+ *         type="array",
+ *         @OA\Items(ref="#/components/schemas/EditionLotteryLucky"),
+ *         title="Luckies",
+ *         description="Array of related lottery luckies",
+ *         nullable=true
+ *     )
  * )
  */
 class EditionLotteryRule extends Model
@@ -112,6 +127,8 @@ class EditionLotteryRule extends Model
 
     public function luckies(): HasMany
     {
-        return $this->hasMany(EditionLotteryLucky::class, 'lottery_rule_id', 'id_lottery_rule');
+        return $this->hasMany(EditionLotteryLucky::class, 'lottery_rule_id', 'id_lottery_rule')
+            ->orderBy('inserted_at')
+            ->orderBy('id_lucky');
     }
 }

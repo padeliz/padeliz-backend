@@ -15,7 +15,7 @@ class PrizeFromClubResource extends JsonResource
             'id_club_prize' => $this->id_club_prize,
             'club_id' => $this->club_id,
             'prize_id' => $this->prize_id,
-            'image' => $this->image,
+            'media_path' => $this->media_path,
             'url' => $this->url,
             'template' => $this->template,
             'box_1_text' => $this->box_1_text,

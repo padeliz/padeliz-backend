@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Resources\EditionResource;
 use App\Models\Edition;
+use App\Services\Schedule\PlayingWindow;
 use Illuminate\Http\Request;
 
 /**
@@ -230,11 +231,15 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
             'location_id' => 'required|exists:locations,id_location',
             'entry_fee' => 'nullable|integer|min:0',
             'students_entry_fee' => 'nullable|integer|min:0',
-            'arriving_time' => 'required|date_format:H:i:s',
-            'closing_time' => 'required|date_format:H:i:s|after:arriving_time',
+            'arriving_time' => ['required', PlayingWindow::clockRegexRule()],
+            'closing_time' => ['required', PlayingWindow::clockRegexRule()],
         ]);
 
-        $edition = Edition::create($request->all());
+        $payload = $request->all();
+        $payload['arriving_time'] = PlayingWindow::normalizeStoredTime((string) $payload['arriving_time']);
+        $payload['closing_time'] = PlayingWindow::normalizeStoredTime((string) $payload['closing_time']);
+
+        $edition = Edition::create($payload);
 
         return $this->resourceResponse(
             new EditionResource($edition),
@@ -314,11 +319,15 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
             'location_id' => 'required|exists:locations,id_location',
             'entry_fee' => 'nullable|integer|min:0',
             'students_entry_fee' => 'nullable|integer|min:0',
-            'arriving_time' => 'required|date_format:H:i:s',
-            'closing_time' => 'required|date_format:H:i:s|after:arriving_time',
+            'arriving_time' => ['required', PlayingWindow::clockRegexRule()],
+            'closing_time' => ['required', PlayingWindow::clockRegexRule()],
         ]);
 
-        $edition->update($request->all());
+        $payload = $request->all();
+        $payload['arriving_time'] = PlayingWindow::normalizeStoredTime((string) $payload['arriving_time']);
+        $payload['closing_time'] = PlayingWindow::normalizeStoredTime((string) $payload['closing_time']);
+
+        $edition->update($payload);
 
         return $this->resourceResponse(
             new EditionResource($edition),
@@ -397,11 +406,19 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
             'location_id' => 'nullable|exists:locations,id',
             'entry_fee' => 'nullable|numeric|min:0',
             'students_entry_fee' => 'nullable|numeric|min:0',
-            'arriving_time' => 'nullable|date_format:H:i:s',
-            'closing_time' => 'nullable|date_format:H:i:s',
+            'arriving_time' => ['nullable', PlayingWindow::clockRegexRule()],
+            'closing_time' => ['nullable', PlayingWindow::clockRegexRule()],
         ]);
 
-        $edition->update($request->all());
+        $payload = $request->all();
+        if (array_key_exists('arriving_time', $payload) && $payload['arriving_time'] !== null && $payload['arriving_time'] !== '') {
+            $payload['arriving_time'] = PlayingWindow::normalizeStoredTime((string) $payload['arriving_time']);
+        }
+        if (array_key_exists('closing_time', $payload) && $payload['closing_time'] !== null && $payload['closing_time'] !== '') {
+            $payload['closing_time'] = PlayingWindow::normalizeStoredTime((string) $payload['closing_time']);
+        }
+
+        $edition->update($payload);
 
         return $this->resourceResponse(
             new EditionResource($edition),

@@ -50,6 +50,7 @@ class ResourceMetadataService
         return [
             'version' => $version,
             'schema_name' => $schemaName,
+            'resource_path' => $this->getResourceNameFromSchema($schemaName),
             'swagger_schema' => $swaggerSchema,
             'request_body' => $this->getRequestBodySchemas($schemaName, $version),
             'display_field' => $this->getDisplayField($modelClass),
@@ -335,23 +336,22 @@ class ResourceMetadataService
         }
 
         $relatedModelClass = get_class($relationship->getRelated());
+        $relatedModel = new $relatedModelClass();
+        $primaryKey = $relatedModel->getKeyName();
 
-        // Check if related model has searchable fields
-        if (! property_exists($relatedModelClass, 'searchableFields') || empty($relatedModelClass::$searchableFields)) {
-            throw new \InvalidArgumentException("Related model {$relatedModelClass} does not have searchable fields defined");
-        }
+        $searchableFields = property_exists($relatedModelClass, 'searchableFields')
+            ? ($relatedModelClass::$searchableFields ?? [])
+            : [];
 
-        $searchableFields = $relatedModelClass::$searchableFields ?? [];
-        if (empty($searchableFields)) {
-            throw new \InvalidArgumentException("Related model {$relatedModelClass} has empty searchable fields");
-        }
-        $searchableField = $searchableFields[0]; // Use first searchable field
+        // Fall back to primary key when related model has no searchable string fields
+        // (e.g. EditionLottery used as lottery_id filter on EditionLotteryRule).
+        $labelField = ! empty($searchableFields) ? $searchableFields[0] : $primaryKey;
 
         return [
             'type' => 'foreign_key',
             'related_schema_name' => class_basename($relatedModelClass),
-            'related_schema_field' => $searchableField,
-            'values' => $this->getRelatedModelValuesAsObject($relatedModelClass, $searchableField),
+            'related_schema_field' => $labelField,
+            'values' => $this->getRelatedModelValuesAsObject($relatedModelClass, $labelField),
         ];
     }
 
@@ -453,9 +453,14 @@ class ResourceMetadataService
 
         $query = $relatedModelClass::select([$primaryKey, $searchableField])
             ->whereNotNull($searchableField)
-            ->where($searchableField, '!=', '')
-            ->limit(self::DEFAULT_FILTER_LIMIT)
-            ->orderBy($searchableField);
+            ->limit(self::DEFAULT_FILTER_LIMIT);
+
+        // String labels: skip empty strings. PK / integer labels: no empty-string filter.
+        if ($searchableField !== $primaryKey) {
+            $query->where($searchableField, '!=', '');
+        }
+
+        $query->orderBy($searchableField);
 
         $results = $query->get();
 

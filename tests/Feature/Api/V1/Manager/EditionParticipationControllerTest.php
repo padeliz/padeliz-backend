@@ -38,6 +38,7 @@ class EditionParticipationControllerTest extends TestCase
 
         $this->edition = Edition::factory()->create([
             'name' => 'Test Edition',
+            'date' => '2026-06-15',
         ]);
 
         $this->division = Division::factory()->create([
@@ -63,7 +64,7 @@ class EditionParticipationControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition,
         ]);
 
-        $response = $this->getJson("/api/v1/manager/edition-participations");
+        $response = $this->getJson('/api/v1/manager/edition-participations');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -130,7 +131,6 @@ class EditionParticipationControllerTest extends TestCase
             ]);
     }
 
-
     public function test_manager_can_create_participation()
     {
         Sanctum::actingAs($this->manager);
@@ -147,7 +147,7 @@ class EditionParticipationControllerTest extends TestCase
             'ban_reason' => null,
         ];
 
-        $response = $this->postJson("/api/v1/manager/edition-participations", $editionParticipationData);
+        $response = $this->postJson('/api/v1/manager/edition-participations', $editionParticipationData);
 
         $response->assertStatus(201)
             ->assertJson([
@@ -187,6 +187,8 @@ class EditionParticipationControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
             'edition_division_id' => $this->editionDivision->id_edition_division,
+            'sort_order' => 1,
+            'is_collecting_points' => true,
             'is_minor' => true,
             'is_student' => true,
             'discount' => 15.00,
@@ -274,19 +276,21 @@ class EditionParticipationControllerTest extends TestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['edition_id', 'player_id', 'edition_division_id', 'is_student']);
+            ->assertJsonValidationErrors(['edition_id', 'player_id', 'edition_division_id', 'sort_order', 'is_collecting_points', 'is_student']);
 
         // Test PUT with empty required fields
         $response = $this->putJson("/api/v1/manager/edition-participations/{$editionParticipation->id_participation}", [
             'edition_id' => '',
             'player_id' => '',
             'edition_division_id' => '',
+            'sort_order' => '',
+            'is_collecting_points' => '',
             'is_minor' => '',
             'is_student' => '',
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['edition_id', 'player_id', 'edition_division_id', 'is_minor', 'is_student']);
+            ->assertJsonValidationErrors(['edition_id', 'player_id', 'edition_division_id', 'sort_order', 'is_collecting_points', 'is_minor', 'is_student']);
     }
 
     public function test_manager_can_delete_participation()
@@ -320,7 +324,7 @@ class EditionParticipationControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition,
         ]);
 
-        $response = $this->deleteJson("/api/v1/manager/edition-participations/bulk", [
+        $response = $this->deleteJson('/api/v1/manager/edition-participations/bulk', [
             'participation_ids' => $editionParticipations->pluck('id_participation')->toArray(),
         ]);
 
@@ -359,7 +363,7 @@ class EditionParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->deleteJson("/api/v1/manager/edition-participations/bulk", [
+        $response = $this->deleteJson('/api/v1/manager/edition-participations/bulk', [
             'participation_ids' => [99999, 99998],
         ]);
 
@@ -393,7 +397,7 @@ class EditionParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->deleteJson("/api/v1/manager/edition-participations/bulk", [
+        $response = $this->deleteJson('/api/v1/manager/edition-participations/bulk', [
             'participation_ids' => [],
         ]);
 
@@ -404,7 +408,7 @@ class EditionParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->deleteJson("/api/v1/manager/edition-participations/bulk", []);
+        $response = $this->deleteJson('/api/v1/manager/edition-participations/bulk', []);
 
         $response->assertStatus(422);
     }
@@ -413,7 +417,7 @@ class EditionParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->deleteJson("/api/v1/manager/edition-participations/bulk", [
+        $response = $this->deleteJson('/api/v1/manager/edition-participations/bulk', [
             'participation_ids' => ['invalid', 'format'],
         ]);
 
@@ -440,12 +444,12 @@ class EditionParticipationControllerTest extends TestCase
             'is_student' => false,
         ];
 
-        $response = $this->postJson("/api/v1/manager/edition-participations", $duplicateData);
+        $response = $this->postJson('/api/v1/manager/edition-participations', $duplicateData);
 
         $response->assertStatus(422)
             ->assertJson([
                 'success' => false,
-                'message' => 'This player is already participating in this edition',
+                'message' => 'This player is already participating in this edition division',
             ]);
     }
 
@@ -473,6 +477,8 @@ class EditionParticipationControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
             'edition_division_id' => $this->editionDivision->id_edition_division,
+            'sort_order' => 0,
+            'is_collecting_points' => true,
             'is_minor' => false,
             'is_student' => false,
         ]);
@@ -480,7 +486,7 @@ class EditionParticipationControllerTest extends TestCase
         $response->assertStatus(422)
             ->assertJson([
                 'success' => false,
-                'message' => 'This player is already participating in this edition',
+                'message' => 'This player is already participating in this edition division',
             ]);
     }
 
@@ -488,7 +494,7 @@ class EditionParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->postJson("/api/v1/manager/edition-participations", []);
+        $response = $this->postJson('/api/v1/manager/edition-participations', []);
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['edition_id', 'player_id', 'edition_division_id']);
@@ -498,7 +504,7 @@ class EditionParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->postJson("/api/v1/manager/edition-participations", [
+        $response = $this->postJson('/api/v1/manager/edition-participations', [
             'edition_id' => $this->edition->id_edition,
             'player_id' => 99999, // Non-existent player
             'edition_division_id' => $this->editionDivision->id_edition_division,
@@ -512,7 +518,7 @@ class EditionParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->postJson("/api/v1/manager/edition-participations", [
+        $response = $this->postJson('/api/v1/manager/edition-participations', [
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
             'edition_division_id' => 99999, // Non-existent division
@@ -541,7 +547,7 @@ class EditionParticipationControllerTest extends TestCase
 
     public function test_participation_requires_manager_authentication()
     {
-        $response = $this->getJson("/api/v1/manager/edition-participations");
+        $response = $this->getJson('/api/v1/manager/edition-participations');
 
         $response->assertStatus(401);
     }
@@ -551,7 +557,7 @@ class EditionParticipationControllerTest extends TestCase
         $player = Player::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
 
-        $response = $this->getJson("/api/v1/manager/edition-participations");
+        $response = $this->getJson('/api/v1/manager/edition-participations');
 
         $response->assertStatus(403);
     }
@@ -560,7 +566,7 @@ class EditionParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->getJson("/api/v1/manager/edition-participations/99999");
+        $response = $this->getJson('/api/v1/manager/edition-participations/99999');
 
         $response->assertStatus(404);
     }
@@ -573,7 +579,7 @@ class EditionParticipationControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition,
         ]);
 
-        $response = $this->getJson("/api/v1/manager/edition-participations?page=1&per_page=10");
+        $response = $this->getJson('/api/v1/manager/edition-participations?page=1&per_page=10');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -618,7 +624,7 @@ class EditionParticipationControllerTest extends TestCase
             // Not providing optional fields
         ];
 
-        $response = $this->postJson("/api/v1/manager/edition-participations", $editionParticipationData);
+        $response = $this->postJson('/api/v1/manager/edition-participations', $editionParticipationData);
 
         $response->assertStatus(201)
             ->assertJson([
@@ -630,10 +636,136 @@ class EditionParticipationControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
             'edition_division_id' => $this->editionDivision->id_edition_division,
+            'sort_order' => 0,
+            'is_collecting_points' => 1,
             'is_minor' => 0,
             'is_student' => 0,
             'discount' => 0,
             'payment' => 0,
         ]);
+    }
+
+    public function test_index_with_edition_id_filter_includes_player_history(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $pastEdition = Edition::factory()->create(['date' => '2026-01-01']);
+        $pastDivision = Division::factory()->create();
+        $pastEd = EditionDivision::factory()->create([
+            'edition_id' => $pastEdition->id_edition,
+            'division_id' => $pastDivision->id_division,
+            'division_title' => 'History ED',
+        ]);
+        EditionParticipation::factory()->create([
+            'edition_id' => $pastEdition->id_edition,
+            'player_id' => $this->player->id_player,
+            'edition_division_id' => $pastEd->id_edition_division,
+            'absence_reason' => null,
+            'ban_reason' => null,
+        ]);
+
+        EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'player_id' => $this->player->id_player,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
+            'absence_reason' => null,
+            'ban_reason' => null,
+        ]);
+
+        $response = $this->getJson(
+            '/api/v1/manager/edition-participations?filters[edition_id]=' . $this->edition->id_edition
+        );
+
+        $response->assertStatus(200);
+        $row = collect($response->json('data'))->firstWhere('player_id', $this->player->id_player);
+        $this->assertNotNull($row);
+        $this->assertArrayHasKey('player_history', $row);
+        $this->assertSame(1, $row['player_history']['participated_count']);
+        $this->assertSame('History ED', $row['player_history']['last_played']['division_title']);
+        $this->assertArrayNotHasKey('winner', $row['player_history']);
+    }
+
+    public function test_index_without_edition_id_filter_omits_player_history(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'player_id' => $this->player->id_player,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
+        ]);
+
+        $response = $this->getJson('/api/v1/manager/edition-participations');
+
+        $response->assertStatus(200);
+        $row = $response->json('data.0');
+        $this->assertArrayNotHasKey('player_history', $row);
+    }
+
+    public function test_show_create_update_omit_player_history(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $participation = EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'player_id' => $this->player->id_player,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
+        ]);
+
+        $show = $this->getJson("/api/v1/manager/edition-participations/{$participation->id_participation}");
+        $show->assertStatus(200);
+        $this->assertArrayNotHasKey('player_history', $show->json('data'));
+
+        $otherPlayer = Player::factory()->create();
+        $create = $this->postJson('/api/v1/manager/edition-participations', [
+            'edition_id' => $this->edition->id_edition,
+            'player_id' => $otherPlayer->id_player,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
+            'is_minor' => false,
+            'is_student' => false,
+            'payment' => 50,
+        ]);
+        $create->assertStatus(201);
+        $this->assertArrayNotHasKey('player_history', $create->json('data'));
+
+        $update = $this->putJson("/api/v1/manager/edition-participations/{$participation->id_participation}", [
+            'edition_id' => $this->edition->id_edition,
+            'player_id' => $this->player->id_player,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
+            'sort_order' => 0,
+            'is_collecting_points' => true,
+            'is_minor' => false,
+            'is_student' => false,
+            'payment' => 55,
+        ]);
+        $update->assertStatus(200);
+        $this->assertArrayNotHasKey('player_history', $update->json('data'));
+
+        $reorder = $this->patchJson('/api/v1/manager/edition-participations/reorder', [
+            'participations' => [
+                [
+                    'id_participation' => $participation->id_participation,
+                    'edition_division_id' => $this->editionDivision->id_edition_division,
+                    'sort_order' => 0,
+                ],
+            ],
+        ]);
+        $reorder->assertOk();
+        $reorderData = $reorder->json('data');
+        if (is_array($reorderData) && isset($reorderData[0])) {
+            $this->assertArrayNotHasKey('player_history', $reorderData[0]);
+        } elseif (is_array($reorderData)) {
+            $this->assertArrayNotHasKey('player_history', $reorderData);
+        }
+
+        $toDelete = EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
+        ]);
+        $bulk = $this->deleteJson('/api/v1/manager/edition-participations/bulk', [
+            'participation_ids' => [$toDelete->id_participation],
+        ]);
+        $bulk->assertOk();
+        $this->assertArrayNotHasKey('player_history', $bulk->json('data') ?? []);
     }
 }

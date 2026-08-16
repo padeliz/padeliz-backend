@@ -17,7 +17,7 @@ class EligibilityReadyForReviewTest extends TestCase
         $e->first_name = 'A';
         $e->last_name = 'B';
         $e->phone = '123';
-        $e->birth_year = 2000;
+        $e->year_of_birth = 2000;
         $e->submitted_at = time();
 
         $e->recomputeReadyForReview();
@@ -33,7 +33,7 @@ class EligibilityReadyForReviewTest extends TestCase
         $e->first_name = 'A';
         $e->last_name = 'B';
         $e->phone = '123';
-        $e->birth_year = 2000;
+        $e->year_of_birth = 2000;
         $e->submitted_at = time();
 
         $e->recomputeReadyForReview();
@@ -49,7 +49,7 @@ class EligibilityReadyForReviewTest extends TestCase
         $e->first_name = 'A';
         $e->last_name = 'B';
         $e->phone = '123';
-        $e->birth_year = 2000;
+        $e->year_of_birth = 2000;
         $e->submitted_at = time();
 
         $e->recomputeReadyForReview();
@@ -65,7 +65,7 @@ class EligibilityReadyForReviewTest extends TestCase
         $e->first_name = 'A';
         $e->last_name = 'B';
         $e->phone = '123';
-        $e->birth_year = 2000;
+        $e->year_of_birth = 2000;
         $e->submitted_at = null;
         $e->resubmitted_at = time();
 
@@ -82,7 +82,7 @@ class EligibilityReadyForReviewTest extends TestCase
         $e->first_name = 'A';
         $e->last_name = 'B';
         $e->phone = null;
-        $e->birth_year = 2000;
+        $e->year_of_birth = 2000;
         $e->submitted_at = time();
 
         $e->recomputeReadyForReview();

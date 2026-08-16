@@ -23,7 +23,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *     ),
  *     @OA\Property(property="edition_ids", type="array", @OA\Items(type="integer"), nullable=true),
  *     @OA\Property(property="media_source", type="array", @OA\Items(type="integer"), nullable=true),
- *     @OA\Property(property="friends_source", type="array", @OA\Items(type="integer"), nullable=true),
+ *     @OA\Property(property="friends_source", type="array", @OA\Items(type="string"), nullable=true),
  *     @OA\Property(property="racket_experience", type="array", @OA\Items(type="string"), nullable=true),
  *     @OA\Property(
  *         property="player_id",
@@ -45,10 +45,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *     @OA\Property(property="first_name", type="string", maxLength=50, nullable=true, title="First Name", description="Player's first name"),
  *     @OA\Property(property="middle_name", type="string", maxLength=50, nullable=true, title="Middle Name", description="Player's middle name"),
  *     @OA\Property(property="last_name", type="string", maxLength=50, nullable=true, title="Last Name", description="Player's last name"),
- *     @OA\Property(property="birth_year", type="integer", nullable=true),
+ *     @OA\Property(property="year_of_birth", type="integer", format="year", nullable=true),
  *     @OA\Property(property="birth_month", type="integer", nullable=true),
  *     @OA\Property(property="birth_day", type="integer", nullable=true),
- *     @OA\Property(property="being_student", type="boolean", title="Student", description="Whether the player is a student"),
+ *     @OA\Property(property="being_student", type="boolean", nullable=true, title="Student", description="Whether the player is a student"),
  *     @OA\Property(property="playtomic_id", type="string", maxLength=10, nullable=true, title="Playtomic ID", description="Playtomic platform identifier"),
  *     @OA\Property(property="rankedin_id", type="string", maxLength=15, nullable=true, title="Rankedin ID", description="Rankedin platform identifier"),
  *     @OA\Property(property="instagram_username", type="string", maxLength=50, nullable=true, title="Instagram Username", description="Instagram username"),
@@ -67,7 +67,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *     @OA\Property(property="review_status", type="string", enum={"pending", "approved", "rejected", "discarded"}),
  *     @OA\Property(property="review_message", type="string", nullable=true, title="Review Message", description="Review message"),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true, title="Created At", description="Timestamp when the eligibility was created"),
- *     @OA\Property(property="updated_at", type="integer", format="timestamp", readOnly=true, title="Updated At", description="Timestamp when the eligibility was last updated"),
+ *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true, title="Updated At", description="Timestamp when the eligibility was last updated"),
  *     @OA\Property(property="resubmitted_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(
  *         property="player",
@@ -80,22 +80,46 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *     @OA\Property(
  *         property="student_proofs",
  *         type="array",
+ *         readOnly=true,
  *         @OA\Items(
  *             type="object",
  *             @OA\Property(property="id", type="integer"),
  *             @OA\Property(property="url", type="string")
  *         ),
- *         description="Student proof files (id and public URL)"
+ *         description="Student proof files (id and public URL)",
+ *         x={
+ *             "padeliz-upload": {
+ *                 "mode": "multi",
+ *                 "max_files": 3,
+ *                 "max_size_kb": 30720,
+ *                 "form_field": "file",
+ *                 "accept": {"0":"image/jpeg","1":"image/png","2":"image/gif","3":"image/webp","4":"application/pdf"},
+ *                 "upload": {"method":"POST","path":"/api/v1/manager/eligibilities/{id}/student-proofs"},
+ *                 "delete": {"method":"DELETE","path":"/api/v1/manager/eligibilities/{id}/student-proofs/{childId}"}
+ *             }
+ *         }
  *     ),
  *     @OA\Property(
  *         property="portrait_photos",
  *         type="array",
+ *         readOnly=true,
  *         @OA\Items(
  *             type="object",
  *             @OA\Property(property="id", type="integer"),
  *             @OA\Property(property="url", type="string")
  *         ),
- *         description="Portrait photos for eligibility (id and public URL)"
+ *         description="Portrait photos for eligibility (id and public URL)",
+ *         x={
+ *             "padeliz-upload": {
+ *                 "mode": "multi",
+ *                 "max_files": 3,
+ *                 "max_size_kb": 5120,
+ *                 "form_field": "file",
+ *                 "accept": {"0":"image/jpeg","1":"image/png","2":"image/gif","3":"image/webp"},
+ *                 "upload": {"method":"POST","path":"/api/v1/manager/eligibilities/{id}/portrait-photos"},
+ *                 "delete": {"method":"DELETE","path":"/api/v1/manager/eligibilities/{id}/portrait-photos/{childId}"}
+ *             }
+ *         }
  *     ),
  * )
  */
@@ -124,7 +148,7 @@ class Eligibility extends Model
      */
     public static array $filterableFields = [
         'player_id',
-        'birth_year',
+        'year_of_birth',
         'being_student',
         'review_status',
         'ready_for_review',
@@ -138,7 +162,7 @@ class Eligibility extends Model
         'player_id',
         'first_name',
         'last_name',
-        'birth_year',
+        'year_of_birth',
         'being_student',
         'review_status',
         'reviewed_at',
@@ -174,7 +198,7 @@ class Eligibility extends Model
         'first_name',
         'middle_name',
         'last_name',
-        'birth_year',
+        'year_of_birth',
         'birth_month',
         'birth_day',
         'being_student',
@@ -196,7 +220,7 @@ class Eligibility extends Model
         'reviewed_at' => 'integer',
         'submitted_at' => 'integer',
         'being_student' => 'boolean',
-        'birth_year' => 'integer',
+        'year_of_birth' => 'integer',
         'birth_month' => 'integer',
         'birth_day' => 'integer',
         'resubmitted_at' => 'integer',
@@ -234,7 +258,7 @@ class Eligibility extends Model
             && $this->first_name !== null
             && $this->last_name !== null
             && $this->phone !== null
-            && $this->birth_year !== null
+            && $this->year_of_birth !== null
             && ($this->submitted_at !== null || $this->resubmitted_at !== null);
     }
 }

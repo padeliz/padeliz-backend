@@ -23,6 +23,7 @@ class EditionFactory extends Factory
             'students_entry_fee' => 45,
             'arriving_time' => Carbon::createFromTime($this->faker->numberBetween(12, 19), $this->faker->randomElement([00, 30]))->format('H:i:s'),
             'closing_time' => Carbon::createFromTime($this->faker->numberBetween(16, 21), $this->faker->randomElement([00, 30]))->format('H:i:s'),
+            'finalized_at' => null,
             'inserted_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
         ];
     }

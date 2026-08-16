@@ -39,8 +39,8 @@ use Illuminate\Support\Facades\Storage;
  *         title="Prize",
  *         description="Prize of the prize from club"
  *     ),
- *     @OA\Property(property="image", type="string", maxLength=100, nullable=true, title="Image", description="Storage path to the prize image"),
- *     @OA\Property(property="url", type="string", nullable=true, title="Image URL", description="Public URL for the prize image"),
+ *     @OA\Property(property="media_path", type="string", maxLength=512, nullable=true, title="Media Path", description="Storage path to the prize media"),
+ *     @OA\Property(property="url", type="string", nullable=true, title="Media URL", description="Public URL for the prize media"),
  *     @OA\Property(
  *         property="template",
  *         type="string",
@@ -53,9 +53,10 @@ use Illuminate\Support\Facades\Storage;
  *     @OA\Property(
  *         property="box_1_bg_color",
  *         type="string",
+ *         format="color",
  *         maxLength=7,
  *         nullable=true,
- *         pattern="^#[0-9A-F]{6}$",
+ *         pattern="^#[0-9A-Fa-f]{6}$",
  *         title="Box 1 Background",
  *         description="Box 1 background hex color",
  *         example="#FF0000"
@@ -63,9 +64,10 @@ use Illuminate\Support\Facades\Storage;
  *     @OA\Property(
  *         property="box_1_text_color",
  *         type="string",
+ *         format="color",
  *         maxLength=7,
  *         nullable=true,
- *         pattern="^#[0-9A-F]{6}$",
+ *         pattern="^#[0-9A-Fa-f]{6}$",
  *         title="Box 1 Text Color",
  *         description="Box 1 text hex color",
  *         example="#FFFFFF"
@@ -74,9 +76,10 @@ use Illuminate\Support\Facades\Storage;
  *     @OA\Property(
  *         property="box_2_bg_color",
  *         type="string",
+ *         format="color",
  *         maxLength=7,
  *         nullable=true,
- *         pattern="^#[0-9A-F]{6}$",
+ *         pattern="^#[0-9A-Fa-f]{6}$",
  *         title="Box 2 Background",
  *         description="Box 2 background hex color",
  *         example="#0000FF"
@@ -84,9 +87,10 @@ use Illuminate\Support\Facades\Storage;
  *     @OA\Property(
  *         property="box_2_text_color",
  *         type="string",
+ *         format="color",
  *         maxLength=7,
  *         nullable=true,
- *         pattern="^#[0-9A-F]{6}$",
+ *         pattern="^#[0-9A-Fa-f]{6}$",
  *         title="Box 2 Text Color",
  *         description="Box 2 text hex color",
  *         example="#FFFFFF"
@@ -109,7 +113,7 @@ use Illuminate\Support\Facades\Storage;
  *     )
  * )
  *
- * @property-read string|null $url
+ * @property-read null|string $url
  */
 class PrizeFromClub extends Model
 {
@@ -168,7 +172,7 @@ class PrizeFromClub extends Model
     protected $fillable = [
         'club_id',
         'prize_id',
-        'image',
+        'media_path',
         'template',
         'box_1_text',
         'box_1_bg_color',
@@ -207,10 +211,10 @@ class PrizeFromClub extends Model
 
     public function getUrlAttribute(): ?string
     {
-        if ($this->image === null || $this->image === '') {
+        if ($this->media_path === null || $this->media_path === '') {
             return null;
         }
 
-        return Storage::disk($this->storageDisk())->url($this->image);
+        return Storage::disk($this->storageDisk())->url($this->media_path);
     }
 }

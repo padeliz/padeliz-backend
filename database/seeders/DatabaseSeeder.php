@@ -17,7 +17,6 @@ use App\Models\Eligibility;
 use App\Models\EligibilityPortraitPhoto;
 use App\Models\EligibilityStudentProof;
 use App\Models\Location;
-use App\Models\MatchesTeam;
 use App\Models\Player;
 use App\Models\PlayerEmail;
 use App\Models\PlayerIdentity;
@@ -157,12 +156,19 @@ class DatabaseSeeder extends Seeder
         }
 
         $this->command->info('Creating divisions...');
+        // MiniTour Couples must stay id 5 (fixed-partner Couples for seed/demo only; schedule APIs ignore it).
         $divisions = collect([
             Division::factory()->create(['name' => 'Students Rookies', 'color' => '#ffff00']),
             Division::factory()->create(['name' => 'Students Beginners', 'color' => '#ffa500']),
             Division::factory()->create(['name' => 'Students Novice', 'color' => '#cb2b2b']),
             Division::factory()->create(['name' => 'Kids', 'color' => '#7ab857']),
-            Division::factory()->create(['name' => 'MiniTour Couples', 'color' => '#ff0000']),
+            tap(Division::factory()->make([
+                'name' => DivisionSeeder::MINITOUR_COUPLES_NAME,
+                'color' => '#ff0000',
+            ]), static function (Division $division): void {
+                $division->id_division = DivisionSeeder::MINITOUR_COUPLES_ID;
+                $division->save();
+            }),
             Division::factory()->create(['name' => 'Adults Explorers', 'color' => '#7ab857']),
             Division::factory()->create(['name' => 'Adults Learners', 'color' => '#89bdce']),
         ]);
@@ -221,15 +227,6 @@ class DatabaseSeeder extends Seeder
 
         $this->command->info('Creating lotteries, rules and luckies...');
         $this->createLotteriesAndLuckies($pastEditions, $prizes, $faker);
-
-        $this->command->info('Creating matches teams...');
-        // Create some matches teams with random players
-        MatchesTeam::factory()
-            ->count(\rand(10, 20))
-            ->create([
-                'player_1' => fn () => $players->random()->id_player,
-                'player_2' => fn () => $players->random()->id_player,
-            ]);
 
         $this->command->info('Creating player eligibilities...');
         $this->createEligibilities($players, $allEditions, $faker);
@@ -350,16 +347,18 @@ class DatabaseSeeder extends Seeder
             for ($i = 0; $i < $proofCount; $i++) {
                 $ext = $faker->boolean() ? '.pdf' : '.png';
                 $body = $ext === '.pdf' ? $pdf : $png;
-                $relativePath = 'eligibilities/' . $id . '/student-proof/' . Str::uuid()->toString() . $ext;
-                $disk->put($relativePath, $body, ['visibility' => 'public']);
 
-                EligibilityStudentProof::create([
+                $proof = EligibilityStudentProof::create([
                     'eligibility_id' => $id,
-                    'path' => $relativePath,
+                    'student_proof_path' => '',
                     'sort_order' => $i,
                     'inserted_at' => $now,
                     'updated_at' => $now,
                 ]);
+
+                $relativePath = 'eligibility-student-proofs/' . $proof->getKey() . '/student-proof/' . Str::uuid()->toString() . $ext;
+                $disk->put($relativePath, $body, ['visibility' => 'public']);
+                $proof->update(['student_proof_path' => $relativePath]);
             }
         }
 
@@ -372,16 +371,17 @@ class DatabaseSeeder extends Seeder
             $id = (int) $eligibility->getKey();
 
             for ($i = 0; $i < $photoCount; $i++) {
-                $relativePath = 'eligibilities/' . $id . '/portrait-photo/' . Str::uuid()->toString() . '.png';
-                $disk->put($relativePath, $png, ['visibility' => 'public']);
-
-                EligibilityPortraitPhoto::create([
+                $photo = EligibilityPortraitPhoto::create([
                     'eligibility_id' => $id,
-                    'path' => $relativePath,
+                    'portrait_photo_path' => '',
                     'sort_order' => $i,
                     'inserted_at' => $now,
                     'updated_at' => $now,
                 ]);
+
+                $relativePath = 'eligibility-portrait-photos/' . $photo->getKey() . '/portrait-photo/' . Str::uuid()->toString() . '.png';
+                $disk->put($relativePath, $png, ['visibility' => 'public']);
+                $photo->update(['portrait_photo_path' => $relativePath]);
             }
         }
     }
@@ -429,18 +429,23 @@ class DatabaseSeeder extends Seeder
                 'playing_end_time' => Carbon::createFromTime(\rand(16, 21), 30)->format('H:i:s'),
                 'include_scores' => $division->name !== 'Kids',
                 'has_demonstrative_match' => $division->name == 'Students Novice',
-                'fixed_teams' => $division->name == 'MiniTour Couples',
+                'allow_replacements' => $division->name !== DivisionSeeder::MINITOUR_COUPLES_NAME
+                    && (int) $division->id_division !== DivisionSeeder::MINITOUR_COUPLES_ID,
                 'points_per_match' => $division->name === 'Kids' ? null : 1,
+                'final_points_target' => 24,
                 'include_final' => $division->name !== 'Kids',
             ]);
 
-            // Create 6-12 participations for this edition division
-            $participationCount = \rand(6, 12);
-            for ($i = 0; $i < $participationCount; $i++) {
+            // Create 6-12 participations for this edition division (unique players)
+            $participationCount = \min(\rand(6, 12), $players->count());
+            $selectedPlayers = $players->random($participationCount);
+            foreach ($selectedPlayers->values() as $i => $player) {
                 EditionParticipation::factory()->create([
                     'edition_id' => $edition->id_edition,
                     'edition_division_id' => $editionDivision->id_edition_division,
-                    'player_id' => $players->random()->id_player,
+                    'player_id' => $player->id_player,
+                    'sort_order' => $i,
+                    'is_collecting_points' => true,
                 ]);
             }
         }
@@ -535,7 +540,7 @@ class DatabaseSeeder extends Seeder
                 $eligibility->middle_name = $player->middle_name ?? null;
                 $eligibility->last_name = $player->last_name ?? $faker->lastName();
                 $eligibility->phone = $primaryPhone ?? $faker->phoneNumber();
-                $eligibility->birth_year = $faker->numberBetween(1960, 2006);
+                $eligibility->year_of_birth = $faker->numberBetween(1960, 2006);
                 $eligibility->birth_month = $faker->numberBetween(1, 12);
                 $eligibility->birth_day = $faker->numberBetween(1, 28);
                 $eligibility->being_student = $faker->optional()->boolean();
@@ -573,7 +578,7 @@ class DatabaseSeeder extends Seeder
                     $pending->first_name = $player->first_name ?? $faker->firstName();
                     $pending->last_name = $player->last_name ?? $faker->lastName();
                     $pending->phone = $primaryPhone ?? $faker->phoneNumber();
-                    $pending->birth_year = $faker->numberBetween(1960, 2006);
+                    $pending->year_of_birth = $faker->numberBetween(1960, 2006);
                 }
 
                 $pending->recomputeReadyForReview();
