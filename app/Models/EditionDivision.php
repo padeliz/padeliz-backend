@@ -293,6 +293,11 @@ class EditionDivision extends Model
         return $this->hasMany(EditionParticipation::class, 'edition_division_id', 'id_edition_division');
     }
 
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(EditionRegistration::class, 'edition_division_id', 'id_edition_division');
+    }
+
     public function matches(): HasMany
     {
         return $this->hasMany(GameMatch::class, 'edition_division_id', 'id_edition_division');

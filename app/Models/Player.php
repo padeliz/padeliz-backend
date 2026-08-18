@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Laravel\Sanctum\HasApiTokens;
@@ -324,6 +325,23 @@ class Player extends Authenticatable
     public function participations(): HasMany
     {
         return $this->hasMany(EditionParticipation::class, 'player_id');
+    }
+
+    public function registrations(): HasMany
+    {
+        return $this->hasMany(EditionRegistration::class, 'player_id');
+    }
+
+    public function sponsors(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Sponsor::class,
+            'sponsor_players',
+            'player_id',
+            'sponsor_id',
+            'id_player',
+            'id_sponsor'
+        )->withPivot(['id_sponsor_player', 'inserted_at', 'updated_at']);
     }
 
     public function profileImages(): HasMany

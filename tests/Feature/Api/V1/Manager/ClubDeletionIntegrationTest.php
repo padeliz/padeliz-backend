@@ -7,7 +7,7 @@ namespace Tests\Feature\Api\V1\Manager;
 use App\Models\Club;
 use App\Models\Location;
 use App\Models\Player;
-use App\Models\Prize;
+use App\Models\Sponsor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -47,11 +47,11 @@ class ClubDeletionIntegrationTest extends TestCase
         $response->assertStatus(409)
             ->assertJson([
                 'success' => false,
-                'message' => 'Club cannot be deleted because it has linked data. Please remove all associated locations_count, prizes_count first.',
+                'message' => 'Club cannot be deleted because it has linked data. Please remove all associated locations_count, sponsors_count first.',
                 'errors' => [
                     'linked_data' => [
                         'locations_count' => 2,
-                        'prizes_count' => 0,
+                        'sponsors_count' => 0,
                     ],
                 ],
             ]);
@@ -96,7 +96,7 @@ class ClubDeletionIntegrationTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        // Create a club with both locations and prizes
+        // Create a club with both locations and sponsors
         $club = Club::factory()->create([
             'name' => 'Test Club with Both',
             'city' => 'Test City',
@@ -104,13 +104,7 @@ class ClubDeletionIntegrationTest extends TestCase
 
         Location::factory()->count(3)->create(['club_id' => $club->id_club]);
 
-        $prizes = Prize::factory()->count(4)->create();
-        foreach ($prizes as $prize) {
-            \App\Models\PrizeFromClub::factory()->create([
-                'club_id' => $club->id_club,
-                'prize_id' => $prize->id_prize,
-            ]);
-        }
+        Sponsor::factory()->forClub($club)->create();
 
         // Attempt to delete the club
         $response = $this->deleteJson("/api/v1/manager/clubs/{$club->id_club}");
@@ -119,11 +113,11 @@ class ClubDeletionIntegrationTest extends TestCase
         $response->assertStatus(409)
             ->assertJson([
                 'success' => false,
-                'message' => 'Club cannot be deleted because it has linked data. Please remove all associated locations_count, prizes_count first.',
+                'message' => 'Club cannot be deleted because it has linked data. Please remove all associated locations_count, sponsors_count first.',
                 'errors' => [
                     'linked_data' => [
                         'locations_count' => 3,
-                        'prizes_count' => 4,
+                        'sponsors_count' => 1,
                     ],
                 ],
             ]);

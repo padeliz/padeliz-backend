@@ -6,8 +6,7 @@ namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Edition;
 use App\Models\EditionLottery;
-use App\Models\EditionLotteryLucky;
-use App\Models\EditionLotteryRule;
+use App\Models\EditionLotteryPrize;
 use App\Models\Player;
 use App\Models\Prize;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -22,8 +21,6 @@ class EditionLotteryControllerTest extends TestCase
 
     private Edition $edition;
 
-    private Prize $prize;
-
     public function setUp(): void
     {
         parent::setUp();
@@ -36,17 +33,15 @@ class EditionLotteryControllerTest extends TestCase
         $this->edition = Edition::factory()->create([
             'name' => 'Test Edition',
         ]);
-
-        $this->prize = Prize::factory()->create([
-            'name' => 'Test Prize',
-        ]);
     }
 
     public function test_manager_can_view_lotteries(): void
     {
         Sanctum::actingAs($this->manager);
 
-        EditionLottery::factory()->count(5)->create();
+        EditionLottery::factory()->count(5)->create([
+            'edition_id' => $this->edition->id_edition,
+        ]);
 
         $response = $this->getJson('/api/v1/manager/edition-lotteries');
 
@@ -56,8 +51,8 @@ class EditionLotteryControllerTest extends TestCase
                     '*' => [
                         'id_lottery',
                         'edition_id',
-                        'prize_id',
-                        'prize_quantity',
+                        'name',
+                        'display_order',
                     ],
                 ],
             ]);
@@ -71,8 +66,8 @@ class EditionLotteryControllerTest extends TestCase
 
         $lottery = EditionLottery::factory()->create([
             'edition_id' => $this->edition->id_edition,
-            'prize_id' => $this->prize->id_prize,
-            'prize_quantity' => 10,
+            'name' => 'Main Draw',
+            'display_order' => 2,
         ]);
 
         $response = $this->getJson("/api/v1/manager/edition-lotteries/{$lottery->id_lottery}");
@@ -83,31 +78,20 @@ class EditionLotteryControllerTest extends TestCase
                 'data' => [
                     'id_lottery' => $lottery->id_lottery,
                     'edition_id' => $this->edition->id_edition,
-                    'prize_id' => $this->prize->id_prize,
-                    'prize_quantity' => 10,
+                    'name' => 'Main Draw',
+                    'display_order' => 2,
                 ],
             ]);
     }
 
-    public function test_manager_can_create_lottery_with_rules(): void
+    public function test_manager_can_create_lottery(): void
     {
         Sanctum::actingAs($this->manager);
 
         $payload = [
             'edition_id' => $this->edition->id_edition,
-            'prize_id' => $this->prize->id_prize,
-            'prize_quantity' => 5,
-            'rules' => [
-                [
-                    'rule_prize_quantity' => 3,
-                    'orderliness' => 0,
-                ],
-                [
-                    'rule_prize_quantity' => 2,
-                    'orderliness' => 1,
-                    'has_social_status' => 'STUDENT',
-                ],
-            ],
+            'name' => 'Opening Lottery',
+            'display_order' => 1,
         ];
 
         $response = $this->postJson('/api/v1/manager/edition-lotteries', $payload);
@@ -117,15 +101,56 @@ class EditionLotteryControllerTest extends TestCase
                 'success' => true,
                 'data' => [
                     'edition_id' => $this->edition->id_edition,
-                    'prize_quantity' => 5,
+                    'name' => 'Opening Lottery',
+                    'display_order' => 1,
                 ],
             ]);
 
         $this->assertDatabaseHas('edition_lotteries', [
             'edition_id' => $this->edition->id_edition,
-            'prize_quantity' => 5,
+            'name' => 'Opening Lottery',
+            'display_order' => 1,
         ]);
-        $this->assertDatabaseCount('edition_lottery_rules', 2);
+        $this->assertDatabaseCount('edition_lottery_rules', 0);
+        $this->assertDatabaseCount('edition_lottery_prizes', 0);
+    }
+
+    public function test_create_rejects_legacy_prize_and_rules_fields(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $prize = Prize::factory()->create();
+
+        $response = $this->postJson('/api/v1/manager/edition-lotteries', [
+            'edition_id' => $this->edition->id_edition,
+            'name' => 'Legacy Payload',
+            'prize_id' => $prize->id_prize,
+            'prize_quantity' => 5,
+            'rules' => [
+                ['rule_prize_quantity' => 1, 'orderliness' => 0],
+            ],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['prize_id', 'prize_quantity', 'rules']);
+    }
+
+    public function test_create_enforces_unique_edition_id_name(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        EditionLottery::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'name' => 'Duplicate Name',
+        ]);
+
+        $response = $this->postJson('/api/v1/manager/edition-lotteries', [
+            'edition_id' => $this->edition->id_edition,
+            'name' => 'Duplicate Name',
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJsonValidationErrors(['name']);
     }
 
     public function test_manager_can_update_lottery(): void
@@ -134,21 +159,22 @@ class EditionLotteryControllerTest extends TestCase
 
         $lottery = EditionLottery::factory()->create([
             'edition_id' => $this->edition->id_edition,
-            'prize_quantity' => 3,
+            'name' => 'Old Name',
+            'display_order' => 0,
         ]);
 
         $response = $this->putJson("/api/v1/manager/edition-lotteries/{$lottery->id_lottery}", [
             'edition_id' => $this->edition->id_edition,
-            'prize_id' => $this->prize->id_prize,
-            'prize_quantity' => 8,
+            'name' => 'New Name',
+            'display_order' => 4,
         ]);
 
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
                 'data' => [
-                    'prize_quantity' => 8,
-                    'prize_id' => $this->prize->id_prize,
+                    'name' => 'New Name',
+                    'display_order' => 4,
                 ],
             ]);
     }
@@ -159,36 +185,34 @@ class EditionLotteryControllerTest extends TestCase
 
         $lottery = EditionLottery::factory()->create([
             'edition_id' => $this->edition->id_edition,
-            'prize_quantity' => 3,
+            'name' => 'Patch Me',
+            'display_order' => 1,
         ]);
 
         $response = $this->patchJson("/api/v1/manager/edition-lotteries/{$lottery->id_lottery}", [
-            'prize_quantity' => 7,
+            'display_order' => 9,
         ]);
 
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
                 'data' => [
-                    'prize_quantity' => 7,
+                    'name' => 'Patch Me',
+                    'display_order' => 9,
                 ],
             ]);
     }
 
-    public function test_manager_cannot_delete_lottery_with_rules_or_luckies(): void
+    public function test_manager_cannot_delete_lottery_with_lottery_prizes(): void
     {
         Sanctum::actingAs($this->manager);
 
         $lottery = EditionLottery::factory()->create([
             'edition_id' => $this->edition->id_edition,
-            'prize_quantity' => 2,
+            'name' => 'Blocked',
         ]);
-        $rule = EditionLotteryRule::factory()->create([
+        EditionLotteryPrize::factory()->create([
             'lottery_id' => $lottery->id_lottery,
-            'rule_prize_quantity' => 2,
-        ]);
-        EditionLotteryLucky::factory()->create([
-            'lottery_rule_id' => $rule->id_lottery_rule,
         ]);
 
         $response = $this->deleteJson("/api/v1/manager/edition-lotteries/{$lottery->id_lottery}");
@@ -205,7 +229,7 @@ class EditionLotteryControllerTest extends TestCase
 
         $lottery = EditionLottery::factory()->create([
             'edition_id' => $this->edition->id_edition,
-            'prize_quantity' => 1,
+            'name' => 'Empty',
         ]);
 
         $response = $this->deleteJson("/api/v1/manager/edition-lotteries/{$lottery->id_lottery}");
@@ -216,7 +240,7 @@ class EditionLotteryControllerTest extends TestCase
         ]);
     }
 
-    public function test_create_requires_prize_quantity(): void
+    public function test_create_requires_name(): void
     {
         Sanctum::actingAs($this->manager);
 
@@ -225,7 +249,7 @@ class EditionLotteryControllerTest extends TestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['prize_quantity']);
+            ->assertJsonValidationErrors(['name']);
     }
 
     public function test_unauthenticated_user_cannot_access_lotteries(): void

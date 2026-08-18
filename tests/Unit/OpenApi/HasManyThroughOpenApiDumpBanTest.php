@@ -75,12 +75,6 @@ class HasManyThroughOpenApiDumpBanTest extends TestCase
             'HasManyThrough Division.participations must not be dumped in OA'
         );
 
-        $this->assertNotContains(
-            'App\\Models\\EditionLottery.luckies',
-            $discoveredArrayRefs,
-            'HasManyThrough EditionLottery.luckies must not be dumped in OA'
-        );
-
         $this->assertSame(
             [],
             $violations,

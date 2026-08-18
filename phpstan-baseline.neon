@@ -4,6 +4,42 @@ parameters:
 			message: '#^Offset ''includePartnersVarColumn'' does not exist on array\{includeCourtsColumn\: bool, teamsColspan\: int\}\.$#'
 			identifier: offsetAccess.notFound
 			count: 1
+			path: app/Console/Commands/GenerateTemplatesCommand.php
+
+		-
+			message: '#^Offset ''includePartnersVarColumn'' does not exist on array\{includeCourtsColumn\: bool, totalColumns\: int\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: app/Console/Commands/GenerateTemplatesCommand.php
+
+		-
+			message: '#^Offset ''includePartnersVarColumn'' does not exist on array\{includeCourtsColumn\: bool, teamsColspan\: int\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: app/Console/Commands/RecalculateQualityMetricsCommand.php
+
+		-
+			message: '#^Offset ''includePartnersVarColumn'' does not exist on array\{includeCourtsColumn\: bool, totalColumns\: int\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: app/Console/Commands/RecalculateQualityMetricsCommand.php
+
+		-
+			message: '#^Offset ''includePartnersVarColumn'' does not exist on array\{includeCourtsColumn\: bool, teamsColspan\: int\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: app/Console/Commands/RegenerateTemplatesCommand.php
+
+		-
+			message: '#^Offset ''includePartnersVarColumn'' does not exist on array\{includeCourtsColumn\: bool, totalColumns\: int\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
+			path: app/Console/Commands/RegenerateTemplatesCommand.php
+
+		-
+			message: '#^Offset ''includePartnersVarColumn'' does not exist on array\{includeCourtsColumn\: bool, teamsColspan\: int\}\.$#'
+			identifier: offsetAccess.notFound
+			count: 1
 			path: app/Console/Commands/TemplatesMetricsCommand.php
 
 		-
@@ -171,17 +207,41 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$finalized_at\.$#'
 			identifier: property.notFound
+			count: 4
+			path: app/Http/Controllers/Api/V1/Manager/EditionDivisionController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$finalized_at\.$#'
+			identifier: property.notFound
+			count: 3
+			path: app/Http/Controllers/Api/V1/Manager/EditionDivisionPosterController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$edition\.$#'
+			identifier: property.notFound
 			count: 1
 			path: app/Http/Controllers/Api/V1/Manager/EditionDivisionReplacementController.php
 
 		-
-			message: '#^Parameter \#1 \$editionDivision of method App\\Http\\Controllers\\Api\\V1\\Manager\\EditionDivisionReplacementController\:\:setGotReplaced\(\) expects App\\Models\\EditionDivision, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
-			identifier: argument.type
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$finalized_at\.$#'
+			identifier: property.notFound
 			count: 1
 			path: app/Http/Controllers/Api/V1/Manager/EditionDivisionReplacementController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$finalized_at\.$#'
+			identifier: property.notFound
+			count: 5
+			path: app/Http/Controllers/Api/V1/Manager/EditionDivisionScheduleController.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/Manager/EditionDivisionScheduleController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$players\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Controllers/Api/V1/Manager/EditionDivisionScheduleController.php
@@ -193,10 +253,40 @@ parameters:
 			path: app/Http/Controllers/Api/V1/Manager/EditionDivisionScheduleController.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$finalized_at\.$#'
+			message: '#^Parameter \#1 \$matches of method App\\Http\\Controllers\\Api\\V1\\Manager\\EditionDivisionScheduleController\:\:attachCoupleImageUrls\(\) expects Illuminate\\Support\\Collection\<int, App\\Models\\GameMatch\>, Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Http/Controllers/Api/V1/Manager/EditionDivisionScheduleController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>id_player" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Http/Controllers/Api/V1/Manager/EditionDivisionScheduleController.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>is_collecting_points" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 2
+			path: app/Http/Controllers/Api/V1/Manager/EditionDivisionScheduleController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$edition\.$#'
 			identifier: property.notFound
 			count: 2
 			path: app/Http/Controllers/Api/V1/Manager/EditionDivisionStandingController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$finalized_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/Manager/EditionDivisionStandingController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$finalized_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/Manager/EditionLotteryLiveController.php
 
 		-
 			message: '#^Parameter \#2 \$edition of method App\\Services\\Lottery\\LotteryDrawService\:\:accept\(\) expects App\\Models\\Edition, Illuminate\\Database\\Eloquent\\Model given\.$#'
@@ -209,6 +299,18 @@ parameters:
 			identifier: argument.type
 			count: 1
 			path: app/Http/Controllers/Api/V1/Manager/EditionLotteryLiveController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$finalized_at\.$#'
+			identifier: property.notFound
+			count: 4
+			path: app/Http/Controllers/Api/V1/Manager/EditionParticipationController.php
+
+		-
+			message: '#^Parameter \#1 \$editionDivision of method App\\Services\\Pdf\\EditionDivisionPosterInvalidator\:\:clearMatchesAndRanking\(\) expects App\\Models\\EditionDivision, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			identifier: argument.type
+			count: 4
+			path: app/Http/Controllers/Api/V1/Manager/EditionParticipationController.php
 
 		-
 			message: '#^Relation ''player'' is not found in App\\Models\\Eligibility model\.$#'
@@ -241,10 +343,22 @@ parameters:
 			path: app/Http/Controllers/Api/V1/Manager/ManagerAuthController.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$finalized_at\.$#'
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$edition\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Controllers/Api/V1/Manager/MatchScoreController.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$profile_path\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Controllers/Api/V1/Manager/PlayerController.php
+
+		-
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:storageDisk\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Http/Controllers/Api/V1/Manager/PlayerController.php
 
 		-
 			message: '#^Access to property \$id_player on an unknown class App\\Models\\User\.$#'
@@ -269,6 +383,12 @@ parameters:
 			identifier: identical.alwaysFalse
 			count: 1
 			path: app/Http/Controllers/Api/V1/Manager/PrizeMediaController.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between string and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Http/Controllers/Api/V1/Manager/SponsorPrizeMediaController.php
 
 		-
 			message: '#^Dead catch \- Illuminate\\Database\\QueryException is never thrown in the try block\.$#'
@@ -331,7 +451,7 @@ parameters:
 			path: app/Http/Resources/ClubResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\ClubResource\:\:\$prizes\.$#'
+			message: '#^Access to an undefined property App\\Http\\Resources\\ClubResource\:\:\$sponsors\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/ClubResource.php
@@ -428,12 +548,6 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\DivisionResource\:\:\$name\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/DivisionResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\DivisionResource\:\:\$participations\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/DivisionResource.php
@@ -553,6 +667,12 @@ parameters:
 			path: app/Http/Resources/EditionDivisionPosterResource.php
 
 		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionReplacementResource\:\:\$editionDivision\.$#'
+			identifier: property.notFound
+			count: 4
+			path: app/Http/Resources/EditionDivisionReplacementResource.php
+
+		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionReplacementResource\:\:\$edition_division_id\.$#'
 			identifier: property.notFound
 			count: 1
@@ -577,13 +697,25 @@ parameters:
 			path: app/Http/Resources/EditionDivisionReplacementResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionReplacementResource\:\:\$match_scope_key\.$#'
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionReplacementResource\:\:\$originalParticipation\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/EditionDivisionReplacementResource.php
 
 		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionReplacementResource\:\:\$original_participation_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionReplacementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionReplacementResource\:\:\$substituteParticipation\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionReplacementResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionReplacementResource\:\:\$substitutePlayer\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/EditionDivisionReplacementResource.php
@@ -655,12 +787,6 @@ parameters:
 			path: app/Http/Resources/EditionDivisionResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$finalized_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/EditionDivisionResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$formatted_playing_end_time\.$#'
 			identifier: property.notFound
 			count: 1
@@ -722,6 +848,12 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$points_per_match\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionDivisionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionDivisionResource\:\:\$template_version\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/EditionDivisionResource.php
@@ -861,8 +993,92 @@ parameters:
 		-
 			message: '#^Call to an undefined method App\\Http\\Resources\\EditionLotteryLuckyResource\:\:relationLoaded\(\)\.$#'
 			identifier: method.notFound
-			count: 3
+			count: 4
 			path: app/Http/Resources/EditionLotteryLuckyResource.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>is_collecting_points" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Http/Resources/EditionLotteryLuckyResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryPrizeResource\:\:\$display_order\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryPrizeResource\:\:\$id_lottery_prize\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryPrizeResource\:\:\$inserted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryPrizeResource\:\:\$lottery\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryPrizeResource\:\:\$lottery_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryPrizeResource\:\:\$prize\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryPrizeResource\:\:\$prize_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryPrizeResource\:\:\$prize_quantity\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryPrizeResource\:\:\$rules\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryPrizeResource\:\:\$sponsor\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryPrizeResource\:\:\$sponsor_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryPrizeResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryResource\:\:\$display_order\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryResource.php
 
 		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryResource\:\:\$edition\.$#'
@@ -889,31 +1105,13 @@ parameters:
 			path: app/Http/Resources/EditionLotteryResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryResource\:\:\$luckies\.$#'
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryResource\:\:\$lotteryPrizes\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/EditionLotteryResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryResource\:\:\$prize\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/EditionLotteryResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryResource\:\:\$prize_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/EditionLotteryResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryResource\:\:\$prize_quantity\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/EditionLotteryResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryResource\:\:\$rules\.$#'
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryResource\:\:\$name\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/EditionLotteryResource.php
@@ -1003,7 +1201,13 @@ parameters:
 			path: app/Http/Resources/EditionLotteryRuleResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryRuleResource\:\:\$lottery_id\.$#'
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryRuleResource\:\:\$lotteryPrize\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionLotteryRuleResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionLotteryRuleResource\:\:\$lottery_prize_id\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/EditionLotteryRuleResource.php
@@ -1117,6 +1321,12 @@ parameters:
 			path: app/Http/Resources/EditionParticipationResource.php
 
 		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionParticipationResource\:\:\$player_history\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionParticipationResource.php
+
+		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\EditionParticipationResource\:\:\$player_id\.$#'
 			identifier: property.notFound
 			count: 1
@@ -1142,6 +1352,12 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\EditionResource\:\:\$entry_fee\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/EditionResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\EditionResource\:\:\$finalized_at\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/EditionResource.php
@@ -1525,12 +1741,6 @@ parameters:
 			path: app/Http/Resources/LocationResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\MatchPlayerResource\:\:\$got_replaced\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/MatchPlayerResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\MatchPlayerResource\:\:\$id_match_player\.$#'
 			identifier: property.notFound
 			count: 1
@@ -1837,102 +2047,6 @@ parameters:
 			path: app/Http/Resources/PlayerResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$box_1_bg_color\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/PrizeFromClubResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$box_1_text\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/PrizeFromClubResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$box_1_text_color\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/PrizeFromClubResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$box_2_bg_color\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/PrizeFromClubResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$box_2_text\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/PrizeFromClubResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$box_2_text_color\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/PrizeFromClubResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$club\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/PrizeFromClubResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$club_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/PrizeFromClubResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$id_club_prize\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/PrizeFromClubResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$inserted_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/PrizeFromClubResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$media_path\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/PrizeFromClubResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$prize\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/PrizeFromClubResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$prize_id\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/PrizeFromClubResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$template\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/PrizeFromClubResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$updated_at\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/PrizeFromClubResource.php
-
-		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeFromClubResource\:\:\$url\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/PrizeFromClubResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeResource\:\:\$box_1_bg_color\.$#'
 			identifier: property.notFound
 			count: 1
@@ -1969,12 +2083,6 @@ parameters:
 			path: app/Http/Resources/PrizeResource.php
 
 		-
-			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeResource\:\:\$clubPrizes\.$#'
-			identifier: property.notFound
-			count: 1
-			path: app/Http/Resources/PrizeResource.php
-
-		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeResource\:\:\$id_prize\.$#'
 			identifier: property.notFound
 			count: 1
@@ -1987,6 +2095,12 @@ parameters:
 			path: app/Http/Resources/PrizeResource.php
 
 		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeResource\:\:\$lotteryPrizes\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeResource.php
+
+		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeResource\:\:\$media_path\.$#'
 			identifier: property.notFound
 			count: 1
@@ -1994,6 +2108,12 @@ parameters:
 
 		-
 			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeResource\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/PrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\PrizeResource\:\:\$sponsorPrizes\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/PrizeResource.php
@@ -2015,6 +2135,150 @@ parameters:
 			identifier: property.notFound
 			count: 1
 			path: app/Http/Resources/PrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SponsorPrizeResource\:\:\$box_1_bg_color\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SponsorPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SponsorPrizeResource\:\:\$box_1_text\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SponsorPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SponsorPrizeResource\:\:\$box_1_text_color\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SponsorPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SponsorPrizeResource\:\:\$box_2_bg_color\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SponsorPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SponsorPrizeResource\:\:\$box_2_text\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SponsorPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SponsorPrizeResource\:\:\$box_2_text_color\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SponsorPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SponsorPrizeResource\:\:\$id_sponsor_prize\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SponsorPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SponsorPrizeResource\:\:\$inserted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SponsorPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SponsorPrizeResource\:\:\$media_path\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SponsorPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SponsorPrizeResource\:\:\$prize\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SponsorPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SponsorPrizeResource\:\:\$prize_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SponsorPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SponsorPrizeResource\:\:\$sponsor\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SponsorPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SponsorPrizeResource\:\:\$sponsor_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SponsorPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SponsorPrizeResource\:\:\$template\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SponsorPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SponsorPrizeResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SponsorPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SponsorPrizeResource\:\:\$url\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SponsorPrizeResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SponsorResource\:\:\$club\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SponsorResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SponsorResource\:\:\$club_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SponsorResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SponsorResource\:\:\$id_sponsor\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SponsorResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SponsorResource\:\:\$inserted_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SponsorResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SponsorResource\:\:\$name\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SponsorResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SponsorResource\:\:\$players\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Http/Resources/SponsorResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SponsorResource\:\:\$sponsorPrizes\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SponsorResource.php
+
+		-
+			message: '#^Access to an undefined property App\\Http\\Resources\\SponsorResource\:\:\$updated_at\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Http/Resources/SponsorResource.php
 
 		-
 			message: '#^PHPDoc tag @param references unknown parameter\: \$ageGroupTexts$#'
@@ -2197,12 +2461,6 @@ parameters:
 			path: app/Models/EditionDivision.php
 
 		-
-			message: '#^PHPDoc type array of property App\\Models\\EditionLottery\:\:\$casts is not covariant with PHPDoc type array\<string, string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$casts\.$#'
-			identifier: property.phpDocType
-			count: 1
-			path: app/Models/EditionLottery.php
-
-		-
 			message: '#^Static property App\\Models\\EditionLottery\:\:\$filterableFields \(array\) on left side of \?\? is not nullable\.$#'
 			identifier: nullCoalesce.property
 			count: 1
@@ -2243,6 +2501,24 @@ parameters:
 			identifier: nullCoalesce.property
 			count: 1
 			path: app/Models/EditionLotteryLucky.php
+
+		-
+			message: '#^Static property App\\Models\\EditionLotteryPrize\:\:\$filterableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/EditionLotteryPrize.php
+
+		-
+			message: '#^Static property App\\Models\\EditionLotteryPrize\:\:\$searchableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/EditionLotteryPrize.php
+
+		-
+			message: '#^Static property App\\Models\\EditionLotteryPrize\:\:\$sortableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/EditionLotteryPrize.php
 
 		-
 			message: '#^Static property App\\Models\\EditionParticipation\:\:\$filterableFields \(array\) on left side of \?\? is not nullable\.$#'
@@ -2383,28 +2659,40 @@ parameters:
 			path: app/Models/Prize.php
 
 		-
-			message: '#^PHPDoc type array of property App\\Models\\PrizeFromClub\:\:\$casts is not covariant with PHPDoc type array\<string, string\> of overridden property Illuminate\\Database\\Eloquent\\Model\:\:\$casts\.$#'
-			identifier: property.phpDocType
-			count: 1
-			path: app/Models/PrizeFromClub.php
-
-		-
-			message: '#^Static property App\\Models\\PrizeFromClub\:\:\$filterableFields \(array\) on left side of \?\? is not nullable\.$#'
+			message: '#^Static property App\\Models\\Sponsor\:\:\$filterableFields \(array\) on left side of \?\? is not nullable\.$#'
 			identifier: nullCoalesce.property
 			count: 1
-			path: app/Models/PrizeFromClub.php
+			path: app/Models/Sponsor.php
 
 		-
-			message: '#^Static property App\\Models\\PrizeFromClub\:\:\$searchableFields \(array\) on left side of \?\? is not nullable\.$#'
+			message: '#^Static property App\\Models\\Sponsor\:\:\$searchableFields \(array\) on left side of \?\? is not nullable\.$#'
 			identifier: nullCoalesce.property
 			count: 1
-			path: app/Models/PrizeFromClub.php
+			path: app/Models/Sponsor.php
 
 		-
-			message: '#^Static property App\\Models\\PrizeFromClub\:\:\$sortableFields \(array\) on left side of \?\? is not nullable\.$#'
+			message: '#^Static property App\\Models\\Sponsor\:\:\$sortableFields \(array\) on left side of \?\? is not nullable\.$#'
 			identifier: nullCoalesce.property
 			count: 1
-			path: app/Models/PrizeFromClub.php
+			path: app/Models/Sponsor.php
+
+		-
+			message: '#^Static property App\\Models\\SponsorPrize\:\:\$filterableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/SponsorPrize.php
+
+		-
+			message: '#^Static property App\\Models\\SponsorPrize\:\:\$searchableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/SponsorPrize.php
+
+		-
+			message: '#^Static property App\\Models\\SponsorPrize\:\:\$sortableFields \(array\) on left side of \?\? is not nullable\.$#'
+			identifier: nullCoalesce.property
+			count: 1
+			path: app/Models/SponsorPrize.php
 
 		-
 			message: '#^Called ''env'' outside of the config directory which returns null when the config is cached, use ''config''\.$#'
@@ -2413,7 +2701,37 @@ parameters:
 			path: app/Services/ApiDocumentationService.php
 
 		-
-			message: '#^Access to an undefined property App\\Models\\Edition\:\:\$location\.$#'
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$box_1_bg_color\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$box_1_text\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$box_1_text_color\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$box_2_bg_color\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$box_2_text\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$box_2_text_color\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Services/Lottery/LotteryDrawService.php
@@ -2421,7 +2739,13 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$date\.$#'
 			identifier: property.notFound
-			count: 2
+			count: 3
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$display_order\.$#'
+			identifier: property.notFound
+			count: 1
 			path: app/Services/Lottery/LotteryDrawService.php
 
 		-
@@ -2445,7 +2769,7 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id_edition\.$#'
 			identifier: property.notFound
-			count: 6
+			count: 3
 			path: app/Services/Lottery/LotteryDrawService.php
 
 		-
@@ -2455,15 +2779,27 @@ parameters:
 			path: app/Services/Lottery/LotteryDrawService.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$location\.$#'
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id_prize\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id_sponsor\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Services/Lottery/LotteryDrawService.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$lottery\.$#'
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$is_collecting_points\.$#'
 			identifier: property.notFound
 			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$lotteryPrize\.$#'
+			identifier: property.notFound
+			count: 3
 			path: app/Services/Lottery/LotteryDrawService.php
 
 		-
@@ -2473,9 +2809,21 @@ parameters:
 			path: app/Services/Lottery/LotteryDrawService.php
 
 		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$lottery_prize_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$media_path\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$name\.$#'
 			identifier: property.notFound
-			count: 2
+			count: 4
 			path: app/Services/Lottery/LotteryDrawService.php
 
 		-
@@ -2493,25 +2841,31 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$playing_end_time\.$#'
 			identifier: property.notFound
-			count: 2
+			count: 1
 			path: app/Services/Lottery/LotteryDrawService.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$playing_start_time\.$#'
 			identifier: property.notFound
-			count: 7
+			count: 4
 			path: app/Services/Lottery/LotteryDrawService.php
 
 		-
-			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$prize\.$#'
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$template\.$#'
 			identifier: property.notFound
 			count: 1
 			path: app/Services/Lottery/LotteryDrawService.php
 
 		-
-			message: '#^Parameter \#1 \$edition of method App\\Services\\Lottery\\LotteryDrawService\:\:createFirstDraw\(\) expects App\\Models\\Edition, Illuminate\\Database\\Eloquent\\Model given\.$#'
+			message: '#^Call to an undefined method Illuminate\\Database\\Eloquent\\Model\:\:storageDisk\(\)\.$#'
+			identifier: method.notFound
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Parameter \#1 \$line of method App\\Services\\Lottery\\LotteryDrawService\:\:resolvePrizePayload\(\) expects App\\Models\\EditionLotteryPrize\|null, Illuminate\\Database\\Eloquent\\Model\|null given\.$#'
 			identifier: argument.type
-			count: 2
+			count: 1
 			path: app/Services/Lottery/LotteryDrawService.php
 
 		-
@@ -2527,43 +2881,31 @@ parameters:
 			path: app/Services/Lottery/LotteryDrawService.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>box_1_bg_color" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			message: '#^Strict comparison using \=\=\= between DateTimeImmutable and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Services/Lottery/LotteryDrawService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>display_order" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Services/Lottery/LotteryDrawService.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>box_1_text" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			message: '#^Using nullsafe property access "\?\-\>is_collecting_points" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Services/Lottery/LotteryDrawService.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>box_1_text_color" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			message: '#^Using nullsafe property access "\?\-\>lottery_id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Services/Lottery/LotteryDrawService.php
 
 		-
-			message: '#^Using nullsafe property access "\?\-\>box_2_bg_color" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Services/Lottery/LotteryDrawService.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>box_2_text" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Services/Lottery/LotteryDrawService.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>box_2_text_color" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
-			identifier: nullsafe.neverNull
-			count: 1
-			path: app/Services/Lottery/LotteryDrawService.php
-
-		-
-			message: '#^Using nullsafe property access "\?\-\>template" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			message: '#^Using nullsafe property access "\?\-\>prize_quantity" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
 			identifier: nullsafe.neverNull
 			count: 1
 			path: app/Services/Lottery/LotteryDrawService.php
@@ -2579,6 +2921,90 @@ parameters:
 			identifier: notIdentical.alwaysTrue
 			count: 1
 			path: app/Services/Lottery/LotteryHtmlHelper.php
+
+		-
+			message: '#^Cannot cast Carbon\\Carbon to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: app/Services/Pdf/CachedPdfPairImageService.php
+
+		-
+			message: '#^Comparison operation "\<\=" between int\<1, max\> and 0 is always false\.$#'
+			identifier: smallerOrEqual.alwaysFalse
+			count: 2
+			path: app/Services/Pdf/CachedPdfPairImageService.php
+
+		-
+			message: '#^Property App\\Models\\CachedPdfPairImage\:\:\$updated_at \(Carbon\\Carbon\|string\|null\) does not accept int\<1, max\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Services/Pdf/CachedPdfPairImageService.php
+
+		-
+			message: '#^Result of \|\| is always false\.$#'
+			identifier: booleanOr.alwaysFalse
+			count: 1
+			path: app/Services/Pdf/CachedPdfPairImageService.php
+
+		-
+			message: '#^Cannot cast Carbon\\Carbon to int\.$#'
+			identifier: cast.int
+			count: 1
+			path: app/Services/Pdf/CachedPdfPlayerImageService.php
+
+		-
+			message: '#^Comparison operation "\<\=" between int\<1, max\> and 0 is always false\.$#'
+			identifier: smallerOrEqual.alwaysFalse
+			count: 2
+			path: app/Services/Pdf/CachedPdfPlayerImageService.php
+
+		-
+			message: '#^Property App\\Models\\CachedPdfPlayerImage\:\:\$updated_at \(Carbon\\Carbon\|string\|null\) does not accept int\<1, max\>\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Services/Pdf/CachedPdfPlayerImageService.php
+
+		-
+			message: '#^Result of \|\| is always false\.$#'
+			identifier: booleanOr.alwaysFalse
+			count: 1
+			path: app/Services/Pdf/CachedPdfPlayerImageService.php
+
+		-
+			message: '#^Comparison operation "\<\=" between int\<1, max\> and 0 is always false\.$#'
+			identifier: smallerOrEqual.alwaysFalse
+			count: 2
+			path: app/Services/Pdf/PdfRoundMask.php
+
+		-
+			message: '#^Offset ''alpha'' on array\{red\: int\<0, 255\>, green\: int\<0, 255\>, blue\: int\<0, 255\>, alpha\: int\<0, 127\>\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/Pdf/PdfRoundMask.php
+
+		-
+			message: '#^Offset ''blue'' on array\{red\: int\<0, 255\>, green\: int\<0, 255\>, blue\: int\<0, 255\>, alpha\: int\<0, 127\>\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/Pdf/PdfRoundMask.php
+
+		-
+			message: '#^Offset ''green'' on array\{red\: int\<0, 255\>, green\: int\<0, 255\>, blue\: int\<0, 255\>, alpha\: int\<0, 127\>\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/Pdf/PdfRoundMask.php
+
+		-
+			message: '#^Offset ''red'' on array\{red\: int\<0, 255\>, green\: int\<0, 255\>, blue\: int\<0, 255\>, alpha\: int\<0, 127\>\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/Pdf/PdfRoundMask.php
+
+		-
+			message: '#^Result of \|\| is always false\.$#'
+			identifier: booleanOr.alwaysFalse
+			count: 1
+			path: app/Services/Pdf/PdfRoundMask.php
 
 		-
 			message: '#^Access to an undefined property App\\Models\\Player\:\:\$name\.$#'
@@ -2607,13 +3033,13 @@ parameters:
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$player\.$#'
 			identifier: property.notFound
-			count: 1
+			count: 2
 			path: app/Services/Pdf/PosterPdfService.php
 
 		-
 			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$player_id\.$#'
 			identifier: property.notFound
-			count: 2
+			count: 1
 			path: app/Services/Pdf/PosterPdfService.php
 
 		-
@@ -2653,10 +3079,106 @@ parameters:
 			path: app/Services/Pdf/PosterPdfService.php
 
 		-
-			message: '#^Call to function is_array\(\) with array\<int, mixed\> will always evaluate to true\.$#'
-			identifier: function.alreadyNarrowedType
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$date\.$#'
+			identifier: property.notFound
 			count: 1
-			path: app/Services/Schedule/OpponentsMetSummary.php
+			path: app/Services/PlayerEditionHistoryService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$division_title\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/PlayerEditionHistoryService.php
+
+		-
+			message: '#^Instanceof between Carbon\\Carbon and DateTimeInterface will always evaluate to true\.$#'
+			identifier: instanceof.alwaysTrue
+			count: 1
+			path: app/Services/PlayerEditionHistoryService.php
+
+		-
+			message: '#^Unreachable statement \- code above always terminates\.$#'
+			identifier: deadCode.unreachable
+			count: 1
+			path: app/Services/PlayerEditionHistoryService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>division_title" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/PlayerEditionHistoryService.php
+
+		-
+			message: '#^Offset 0 on array\{int, int\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 2
+			path: app/Services/Schedule/PlayerDistributionScorer.php
+
+		-
+			message: '#^Offset 1 on array\{int, int\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 2
+			path: app/Services/Schedule/PlayerDistributionScorer.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-list\<array\{size\: int, isEdge\: bool\}\> and array\{\} will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Services/Schedule/PlayerDistributionScorer.php
+
+		-
+			message: '#^Comparison operation "\>" between int\<1, max\> and 0 is always true\.$#'
+			identifier: greater.alwaysTrue
+			count: 1
+			path: app/Services/Schedule/RoundClockCalculator.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$id_participation\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Schedule/ScheduleBoardMetricsService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$is_collecting_points\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Schedule/ScheduleBoardMetricsService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$player\.$#'
+			identifier: property.notFound
+			count: 2
+			path: app/Services/Schedule/ScheduleBoardMetricsService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$player_id\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Schedule/ScheduleBoardMetricsService.php
+
+		-
+			message: '#^Access to an undefined property Illuminate\\Database\\Eloquent\\Model\:\:\$players\.$#'
+			identifier: property.notFound
+			count: 1
+			path: app/Services/Schedule/ScheduleBoardMetricsService.php
+
+		-
+			message: '#^Method App\\Services\\Schedule\\ScheduleBoardMetricsService\:\:regularMatches\(\) should return Illuminate\\Support\\Collection\<int, App\\Models\\GameMatch\> but returns Illuminate\\Database\\Eloquent\\Collection\<int, Illuminate\\Database\\Eloquent\\Model\>\.$#'
+			identifier: return.type
+			count: 2
+			path: app/Services/Schedule/ScheduleBoardMetricsService.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between non\-empty\-array\<int\<0, max\>, array\{array\{int, int\}, array\{int, int\}\}\> and array\{\} will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Services/Schedule/ScheduleBoardMetricsService.php
+
+		-
+			message: '#^Using nullsafe property access "\?\-\>player_id" on left side of \?\? is unnecessary\. Use \-\> instead\.$#'
+			identifier: nullsafe.neverNull
+			count: 1
+			path: app/Services/Schedule/ScheduleBoardMetricsService.php
 
 		-
 			message: '#^Parameter \#1 \$array \(list\<int\>\) of array_values is already a list, call has no effect\.$#'
@@ -2683,16 +3205,160 @@ parameters:
 			path: app/Services/Schedule/ScheduleMatchPersister.php
 
 		-
+			message: '#^Parameter \#1 \$array \(list\<int\>\) of array_values is already a list, call has no effect\.$#'
+			identifier: arrayValues.list
+			count: 1
+			path: app/Services/Schedule/ScheduleMatchReorderService.php
+
+		-
+			message: '#^Property App\\Models\\GameMatch\:\:\$scheduled_end \(Carbon\\Carbon\|null\) does not accept string\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Services/Schedule/ScheduleMatchReorderService.php
+
+		-
+			message: '#^Property App\\Models\\GameMatch\:\:\$scheduled_start \(Carbon\\Carbon\|null\) does not accept string\.$#'
+			identifier: assign.propertyType
+			count: 1
+			path: app/Services/Schedule/ScheduleMatchReorderService.php
+
+		-
+			message: '#^Call to function is_array\(\) with array\<int, mixed\> will always evaluate to true\.$#'
+			identifier: function.alreadyNarrowedType
+			count: 1
+			path: app/Services/Schedule/TemplateMatchDerivation.php
+
+		-
 			message: '#^Call to function is_array\(\) with array\<string, mixed\> will always evaluate to true\.$#'
 			identifier: function.alreadyNarrowedType
 			count: 2
 			path: app/Services/Schedule/TemplateMatches.php
 
 		-
-			message: '#^Static method App\\Services\\Schedule\\TemplateMatches\:\:opponentsMetBounds\(\) is unused\.$#'
+			message: '#^Comparison operation "\<\=" between \*NEVER\* and 1 results in an error\.$#'
+			identifier: smallerOrEqual.invalid
+			count: 2
+			path: app/Services/Schedule/TemplateMatchesGenerator.php
+
+		-
+			message: '#^If condition is always false\.$#'
+			identifier: if.alwaysFalse
+			count: 1
+			path: app/Services/Schedule/TemplateMatchesGenerator.php
+
+		-
+			message: '#^Method App\\Services\\Schedule\\TemplateMatchesGenerator\:\:pcNextPermutation\(\) is unused\.$#'
 			identifier: method.unused
 			count: 1
-			path: app/Services/Schedule/TemplateMatches.php
+			path: app/Services/Schedule/TemplateMatchesGenerator.php
+
+		-
+			message: '#^Method App\\Services\\Schedule\\TemplateMatchesGenerator\:\:runOrderingPhase\(\) should return array\{ordered\: array\<int, array\<int, array\<int, array\<int, int\>\>\>\>, stopReason\: string, min\: float\|null, avg\: float\|null, permutationsIterated\: int, permutationIndex\: int\|null, minBreak\: int\|null, maxBreak\: int\|null, \.\.\.\} but returns array\{ordered\: null, stopReason\: string, min\: null, avg\: null, permutationsIterated\: int, permutationIndex\: null, minBreak\: null, maxBreak\: null, \.\.\.\}\.$#'
+			identifier: return.type
+			count: 2
+			path: app/Services/Schedule/TemplateMatchesGenerator.php
+
+		-
+			message: '#^Offset ''consecutiveMaxBreaks'' on array\{ordered\: array\<int, array\<int, array\<int, array\<int, int\>\>\>\>, stopReason\: string, min\: float\|null, avg\: float\|null, normCourtSwitches\: float\|null, permutationsIterated\: int, permutationIndex\: int\|null, minBreak\: int\|null, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/Schedule/TemplateMatchesGenerator.php
+
+		-
+			message: '#^Offset ''consecutiveMaxBreaks'' on array\{ordered\: array\<int, array\<int, array\<int, array\<int, int\>\>\>\>, stopReason\: string, min\: float\|null, avg\: float\|null, permutationsIterated\: int, permutationIndex\: int\|null, minBreak\: int\|null, maxBreak\: int\|null, \.\.\.\} on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/Schedule/TemplateMatchesGenerator.php
+
+		-
+			message: '#^Offset ''consecutiveMinBreaks'' on array\{ordered\: array\<int, array\<int, array\<int, array\<int, int\>\>\>\>, stopReason\: string, min\: float\|null, avg\: float\|null, normCourtSwitches\: float\|null, permutationsIterated\: int, permutationIndex\: int\|null, minBreak\: int\|null, \.\.\.\} on left side of \?\? always exists and is not nullable\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/Schedule/TemplateMatchesGenerator.php
+
+		-
+			message: '#^Offset ''consecutiveMinBreaks'' on array\{ordered\: array\<int, array\<int, array\<int, array\<int, int\>\>\>\>, stopReason\: string, min\: float\|null, avg\: float\|null, permutationsIterated\: int, permutationIndex\: int\|null, minBreak\: int\|null, maxBreak\: int\|null, \.\.\.\} on left side of \?\? does not exist\.$#'
+			identifier: nullCoalesce.offset
+			count: 1
+			path: app/Services/Schedule/TemplateMatchesGenerator.php
+
+		-
+			message: '#^Parameter \#2 \$used of method App\\Services\\Schedule\\TemplateMatchesGenerator\:\:collectRoundSliceCandidates\(\) expects array\<int, int\>, array\<int, bool\> given\.$#'
+			identifier: argument.type
+			count: 1
+			path: app/Services/Schedule/TemplateMatchesGenerator.php
+
+		-
+			message: '#^Parameter &\$bestState by\-ref type of method App\\Services\\Schedule\\TemplateMatchesGenerator\:\:sortRoundDfsExpand\(\) expects array\{ordered\: array\<int, array\<int, array\<int, array\<int, int\>\>\>\>\|null, min\: float\|null, avg\: float\|null, permutationIndex\: int\|null, minBreak\: int\|null, maxBreak\: int\|null, normCourtSwitches\: float\|null, courtSwitches\: int\|null, \.\.\.\}, array\{ordered\: array\<int, array\<int, array\<int, array\<int, int\>\>\>\>, min\: float, avg\: float, permutationIndex\: int, minBreak\: mixed, maxBreak\: int\|null, normCourtSwitches\: float\|null, courtSwitches\: int\|null, \.\.\.\} given\.$#'
+			identifier: parameterByRef.type
+			count: 1
+			path: app/Services/Schedule/TemplateMatchesGenerator.php
+
+		-
+			message: '#^Parameter &\$bestState by\-ref type of method App\\Services\\Schedule\\TemplateMatchesGenerator\:\:sortRoundDfsExpand\(\) expects array\{ordered\: array\<int, array\<int, array\<int, array\<int, int\>\>\>\>\|null, min\: float\|null, avg\: float\|null, permutationIndex\: int\|null, minBreak\: int\|null, maxBreak\: int\|null, normCourtSwitches\: float\|null, courtSwitches\: int\|null, \.\.\.\}, array\{ordered\: array\<int, array\<int, array\<int, array\<int, int\>\>\>\>, min\: float, avg\: float, permutationIndex\: int, minBreak\: mixed, maxBreak\: mixed, normCourtSwitches\: \(float\|int\), courtSwitches\: int\|null, \.\.\.\} given\.$#'
+			identifier: parameterByRef.type
+			count: 1
+			path: app/Services/Schedule/TemplateMatchesGenerator.php
+
+		-
+			message: '#^Parameter &\$bestState by\-ref type of method App\\Services\\Schedule\\TemplateMatchesGenerator\:\:sortRoundDfsExpand\(\) expects array\{ordered\: array\<int, array\<int, array\<int, array\<int, int\>\>\>\>\|null, min\: float\|null, avg\: float\|null, permutationIndex\: int\|null, minBreak\: int\|null, maxBreak\: int\|null, normCourtSwitches\: float\|null, courtSwitches\: int\|null, \.\.\.\}, array\{ordered\: array\<int, array\<int, array\<int, array\<int, int\>\>\>\>, min\: float, avg\: float, permutationIndex\: int, minBreak\: mixed, maxBreak\: mixed, normCourtSwitches\: \(float\|int\), courtSwitches\: mixed, \.\.\.\} given\.$#'
+			identifier: parameterByRef.type
+			count: 2
+			path: app/Services/Schedule/TemplateMatchesGenerator.php
+
+		-
+			message: '#^Parameter &\$bestState by\-ref type of method App\\Services\\Schedule\\TemplateMatchesGenerator\:\:sortRoundDfsExpand\(\) expects array\{ordered\: array\<int, array\<int, array\<int, array\<int, int\>\>\>\>\|null, min\: float\|null, avg\: float\|null, permutationIndex\: int\|null, minBreak\: int\|null, maxBreak\: int\|null, normCourtSwitches\: float\|null, courtSwitches\: int\|null, \.\.\.\}, array\{ordered\: array\<int, array\<int, array\<int, array\<int, int\>\>\>\>, min\: float, avg\: float, permutationIndex\: int, minBreak\: mixed, maxBreak\: mixed, normCourtSwitches\: float\|null, courtSwitches\: int\|null, \.\.\.\} given\.$#'
+			identifier: parameterByRef.type
+			count: 3
+			path: app/Services/Schedule/TemplateMatchesGenerator.php
+
+		-
+			message: '#^Parameter &\$matchesByCourt by\-ref type of method App\\Services\\Schedule\\TemplateMatchesGenerator\:\:sortRoundDfsExpand\(\) expects array\<int, array\<int, array\<int, array\<int, int\>\>\>\>, array given\.$#'
+			identifier: parameterByRef.type
+			count: 4
+			path: app/Services/Schedule/TemplateMatchesGenerator.php
+
+		-
+			message: '#^Parameter &\$playersMet by\-ref type of method App\\Services\\Schedule\\TemplateMatchesGenerator\:\:matchMakingDfsExpand\(\) expects array\<int, array\<int, int\>\>, array given\.$#'
+			identifier: parameterByRef.type
+			count: 1
+			path: app/Services/Schedule/TemplateMatchesGenerator.php
+
+		-
+			message: '#^Parameter &\$used by\-ref type of method App\\Services\\Schedule\\TemplateMatchesGenerator\:\:sortRoundDfsExpand\(\) expects array\<int, bool\>, array given\.$#'
+			identifier: parameterByRef.type
+			count: 4
+			path: app/Services/Schedule/TemplateMatchesGenerator.php
+
+		-
+			message: '#^Result of && is always false\.$#'
+			identifier: booleanAnd.alwaysFalse
+			count: 3
+			path: app/Services/Schedule/TemplateMatchesGenerator.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between array\<int, array\<int, array\<int, array\<int, int\>\>\>\> and null will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 1
+			path: app/Services/Schedule/TemplateMatchesGenerator.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between non\-empty\-list\<array\{meetingsVariationLimit\: int, candidatesTried\: int\<0, max\>, eligible\: bool, time\: float, stopReason\: string\|null\}\> and array\{\} will always evaluate to true\.$#'
+			identifier: notIdentical.alwaysTrue
+			count: 3
+			path: app/Services/Schedule/TemplateMatchesGenerator.php
+
+		-
+			message: '#^Strict comparison using \!\=\= between null and null will always evaluate to false\.$#'
+			identifier: notIdentical.alwaysFalse
+			count: 2
+			path: app/Services/Schedule/TemplateMatchesGenerator.php
+
+		-
+			message: '#^Strict comparison using \=\=\= between array\<int, array\<int, array\<int, array\<int, int\>\>\>\> and null will always evaluate to false\.$#'
+			identifier: identical.alwaysFalse
+			count: 1
+			path: app/Services/Schedule/TemplateMatchesGenerator.php
 
 		-
 			message: '#^Dead catch \- App\\Services\\Schedule\\Exception\\TemplateMatchesNotFoundException is never thrown in the try block\.$#'

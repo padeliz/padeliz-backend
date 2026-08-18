@@ -543,7 +543,7 @@ class PlayerController extends V1BaseController
     {
         return $this->deleteResourceWithResponse(
             $player,
-            [],
+            ['sponsors' => 'sponsors_count'],
             'player',
             'Player deleted successfully'
         );
@@ -664,7 +664,7 @@ class PlayerController extends V1BaseController
         return $this->deleteBulkResourcesWithResponse(
             $request->player_ids,
             Player::class,
-            [],
+            ['sponsors' => 'sponsors_count'],
             'player',
             'Players deleted successfully'
         );

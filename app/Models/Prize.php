@@ -140,19 +140,19 @@ use Illuminate\Support\Facades\Storage;
  *         description="Timestamp when the prize was last updated"
  *     ),
  *     @OA\Property(
- *         property="clubPrizes",
+ *         property="lotteryPrizes",
  *         type="array",
- *         @OA\Items(ref="#/components/schemas/PrizeFromClub"),
- *         title="Club Prizes",
- *         description="Array of related club prizes",
+ *         @OA\Items(ref="#/components/schemas/EditionLotteryPrize"),
+ *         title="Lottery Prizes",
+ *         description="Array of related lottery prize lines",
  *         nullable=true
  *     ),
  *     @OA\Property(
- *         property="lotteries",
+ *         property="sponsorPrizes",
  *         type="array",
- *         @OA\Items(ref="#/components/schemas/EditionLottery"),
- *         title="Lotteries",
- *         description="Array of related edition lotteries",
+ *         @OA\Items(ref="#/components/schemas/SponsorPrize"),
+ *         title="Sponsor Prizes",
+ *         description="Array of related sponsor prize overlays",
  *         nullable=true
  *     )
  * )
@@ -235,14 +235,14 @@ class Prize extends Model
 
     protected $appends = ['url'];
 
-    public function clubPrizes(): HasMany
+    public function lotteryPrizes(): HasMany
     {
-        return $this->hasMany(PrizeFromClub::class, 'prize_id', 'id_prize');
+        return $this->hasMany(EditionLotteryPrize::class, 'prize_id', 'id_prize');
     }
 
-    public function lotteries(): HasMany
+    public function sponsorPrizes(): HasMany
     {
-        return $this->hasMany(EditionLottery::class, 'prize_id');
+        return $this->hasMany(SponsorPrize::class, 'prize_id', 'id_prize');
     }
 
     public function storageDisk(): string

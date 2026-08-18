@@ -10,8 +10,6 @@ use Illuminate\Http\Resources\Json\JsonResource;
 class EditionLotteryResource extends JsonResource
 {
     /**
-     * Transform the resource into an array.
-     *
      * @return array<string, mixed>
      */
     public function toArray(Request $request): array
@@ -19,18 +17,15 @@ class EditionLotteryResource extends JsonResource
         return [
             'id_lottery' => $this->id_lottery,
             'edition_id' => $this->edition_id,
-            'prize_id' => $this->prize_id,
-            'prize_quantity' => $this->prize_quantity,
+            'name' => $this->name,
+            'display_order' => $this->display_order,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
             'edition' => $this->whenLoaded('edition', function () {
                 return new EditionResource($this->edition);
             }),
-            'prize' => $this->whenLoaded('prize', function () {
-                return new PrizeResource($this->prize);
-            }),
-            'rules' => $this->whenLoaded('rules', function () {
-                return EditionLotteryRuleResource::collection($this->rules);
+            'lottery_prizes' => $this->whenLoaded('lotteryPrizes', function () {
+                return EditionLotteryPrizeResource::collection($this->lotteryPrizes);
             }),
         ];
     }

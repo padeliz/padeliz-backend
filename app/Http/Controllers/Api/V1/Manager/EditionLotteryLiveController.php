@@ -94,7 +94,7 @@ class EditionLotteryLiveController extends Controller
 
         $lucky = $this->findLuckyForLotteryEdition((int) $validated['id_lucky'], $lottery);
         if ($lucky === null) {
-            return response()->json(['message' => 'Lucky does not belong to this lottery edition.'], 404);
+            return response()->json(['message' => 'Lucky does not belong to this lottery.'], 404);
         }
 
         $this->lotteryDrawService->announce($lucky);
@@ -127,7 +127,7 @@ class EditionLotteryLiveController extends Controller
 
         $lucky = $this->findLuckyForLotteryEdition((int) $validated['id_lucky'], $lottery);
         if ($lucky === null) {
-            return response()->json(['message' => 'Lucky does not belong to this lottery edition.'], 404);
+            return response()->json(['message' => 'Lucky does not belong to this lottery.'], 404);
         }
 
         $edition = $lottery->edition()->firstOrFail();
@@ -161,7 +161,7 @@ class EditionLotteryLiveController extends Controller
 
         $lucky = $this->findLuckyForLotteryEdition((int) $validated['id_lucky'], $lottery);
         if ($lucky === null) {
-            return response()->json(['message' => 'Lucky does not belong to this lottery edition.'], 404);
+            return response()->json(['message' => 'Lucky does not belong to this lottery.'], 404);
         }
 
         $edition = $lottery->edition()->firstOrFail();
@@ -190,8 +190,8 @@ class EditionLotteryLiveController extends Controller
     {
         return EditionLotteryLucky::query()
             ->whereKey($luckyId)
-            ->whereHas('lotteryRule.lottery', function ($q) use ($lottery): void {
-                $q->where('edition_id', $lottery->edition_id);
+            ->whereHas('lotteryRule.lotteryPrize', function ($q) use ($lottery): void {
+                $q->where('lottery_id', $lottery->id_lottery);
             })
             ->first();
     }

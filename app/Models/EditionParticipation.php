@@ -12,7 +12,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @OA\Schema(
  *     schema="EditionParticipation",
- *     required={"edition_id", "player_id", "edition_division_id", "is_minor", "is_student", "payment"},
+ *     required={"edition_id", "player_id", "edition_division_id"},
  *     @OA\Property(
  *         property="id_participation",
  *         type="integer",
@@ -58,35 +58,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *         default=true,
  *         title="Collecting Points",
  *         description="Whether the participant is collecting points"
- *     ),
- *     @OA\Property(
- *         property="is_minor",
- *         type="boolean",
- *         title="Minor",
- *         description="Whether the participant is a minor"
- *     ),
- *     @OA\Property(
- *         property="is_student",
- *         type="boolean",
- *         title="Student",
- *         description="Whether the participant is a student"
- *     ),
- *     @OA\Property(
- *         property="discount",
- *         type="integer",
- *         nullable=true,
- *         minimum=0,
- *         title="Discount",
- *         description="Discount amount in RON",
- *         example=10
- *     ),
- *     @OA\Property(
- *         property="payment",
- *         type="integer",
- *         minimum=0,
- *         title="Payment",
- *         description="Payment amount in RON",
- *         example=45
  *     ),
  *     @OA\Property(
  *         property="absence_reason",
@@ -166,10 +137,6 @@ class EditionParticipation extends Model
         'edition_division_id',
         'sort_order',
         'is_collecting_points',
-        'is_minor',
-        'is_student',
-        'discount',
-        'payment',
     ];
 
     /**
@@ -182,10 +149,6 @@ class EditionParticipation extends Model
         'edition_division_id',
         'sort_order',
         'is_collecting_points',
-        'is_minor',
-        'is_student',
-        'discount',
-        'payment',
         'inserted_at',
         'updated_at',
     ];
@@ -212,10 +175,6 @@ class EditionParticipation extends Model
         'edition_division_id',
         'sort_order',
         'is_collecting_points',
-        'is_minor',
-        'is_student',
-        'discount',
-        'payment',
         'absence_reason',
         'ban_reason',
     ];
@@ -225,8 +184,6 @@ class EditionParticipation extends Model
         'updated_at' => 'integer',
         'sort_order' => 'integer',
         'is_collecting_points' => 'boolean',
-        'is_minor' => 'boolean',
-        'is_student' => 'boolean',
     ];
 
     public function edition(): BelongsTo

@@ -74,10 +74,6 @@ class EditionParticipationControllerTest extends TestCase
                         'edition_id',
                         'player_id',
                         'edition_division_id',
-                        'is_minor',
-                        'is_student',
-                        'discount',
-                        'payment',
                         'absence_reason',
                         'ban_reason',
                     ],
@@ -110,8 +106,6 @@ class EditionParticipationControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
             'edition_division_id' => $this->editionDivision->id_edition_division,
-            'is_minor' => true,
-            'is_student' => false,
         ]);
 
         $response = $this->getJson("/api/v1/manager/edition-participations/{$editionParticipation->id_participation}");
@@ -125,10 +119,12 @@ class EditionParticipationControllerTest extends TestCase
                     'edition_id' => $this->edition->id_edition,
                     'player_id' => $this->player->id_player,
                     'edition_division_id' => $this->editionDivision->id_edition_division,
-                    'is_minor' => true,
-                    'is_student' => false,
                 ],
             ]);
+        $this->assertArrayNotHasKey('is_minor', $response->json('data'));
+        $this->assertArrayNotHasKey('is_student', $response->json('data'));
+        $this->assertArrayNotHasKey('discount', $response->json('data'));
+        $this->assertArrayNotHasKey('payment', $response->json('data'));
     }
 
     public function test_manager_can_create_participation()
@@ -139,10 +135,6 @@ class EditionParticipationControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
             'edition_division_id' => $this->editionDivision->id_edition_division,
-            'is_minor' => true,
-            'is_student' => false,
-            'discount' => 10.00,
-            'payment' => 50.00,
             'absence_reason' => null,
             'ban_reason' => null,
         ];
@@ -157,12 +149,10 @@ class EditionParticipationControllerTest extends TestCase
                     'edition_id' => $this->edition->id_edition,
                     'player_id' => $this->player->id_player,
                     'edition_division_id' => $this->editionDivision->id_edition_division,
-                    'is_minor' => true,
-                    'is_student' => false,
-                    'discount' => 10.00,
-                    'payment' => 50.00,
                 ],
             ]);
+        $this->assertArrayNotHasKey('is_minor', $response->json('data'));
+        $this->assertArrayNotHasKey('payment', $response->json('data'));
 
         $this->assertDatabaseHas('edition_participations', [
             'edition_id' => $this->edition->id_edition,
@@ -179,8 +169,6 @@ class EditionParticipationControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
             'edition_division_id' => $this->editionDivision->id_edition_division,
-            'is_minor' => false,
-            'is_student' => false,
         ]);
 
         $updateData = [
@@ -189,10 +177,6 @@ class EditionParticipationControllerTest extends TestCase
             'edition_division_id' => $this->editionDivision->id_edition_division,
             'sort_order' => 1,
             'is_collecting_points' => true,
-            'is_minor' => true,
-            'is_student' => true,
-            'discount' => 15.00,
-            'payment' => 45.00,
         ];
 
         $response = $this->putJson("/api/v1/manager/edition-participations/{$editionParticipation->id_participation}", $updateData);
@@ -203,18 +187,11 @@ class EditionParticipationControllerTest extends TestCase
                 'message' => 'Participation updated successfully',
                 'data' => [
                     'id_participation' => $editionParticipation->id_participation,
-                    'is_minor' => true,
-                    'is_student' => true,
-                    'discount' => 15.00,
-                    'payment' => 45.00,
+                    'sort_order' => 1,
+                    'is_collecting_points' => true,
                 ],
             ]);
-
-        $this->assertDatabaseHas('edition_participations', [
-            'id_participation' => $editionParticipation->id_participation,
-            'is_minor' => true,
-            'is_student' => true,
-        ]);
+        $this->assertArrayNotHasKey('is_minor', $response->json('data'));
     }
 
     public function test_manager_can_partially_update_participation()
@@ -225,13 +202,11 @@ class EditionParticipationControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
             'edition_division_id' => $this->editionDivision->id_edition_division,
-            'is_minor' => false,
-            'is_student' => false,
+            'is_collecting_points' => true,
         ]);
 
-        // Test partial update with only is_minor
         $response = $this->patchJson("/api/v1/manager/edition-participations/{$editionParticipation->id_participation}", [
-            'is_minor' => true,
+            'is_collecting_points' => false,
         ]);
 
         $response->assertStatus(200)
@@ -239,25 +214,10 @@ class EditionParticipationControllerTest extends TestCase
                 'success' => true,
                 'message' => 'Participation partially updated successfully',
                 'data' => [
-                    'is_minor' => true,
-                    'is_student' => false, // Should remain unchanged
+                    'is_collecting_points' => false,
                 ],
             ]);
-
-        // Test partial update with only is_student
-        $response = $this->patchJson("/api/v1/manager/edition-participations/{$editionParticipation->id_participation}", [
-            'is_student' => true,
-        ]);
-
-        $response->assertStatus(200)
-            ->assertJson([
-                'success' => true,
-                'message' => 'Participation partially updated successfully',
-                'data' => [
-                    'is_minor' => true, // Should remain from previous update
-                    'is_student' => true,
-                ],
-            ]);
+        $this->assertArrayNotHasKey('is_minor', $response->json('data'));
     }
 
     public function test_manager_cannot_update_participation_without_required_fields()
@@ -272,25 +232,22 @@ class EditionParticipationControllerTest extends TestCase
 
         // Test PUT without required fields
         $response = $this->putJson("/api/v1/manager/edition-participations/{$editionParticipation->id_participation}", [
-            'is_minor' => true,
+            'absence_reason' => 'SICK',
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['edition_id', 'player_id', 'edition_division_id', 'sort_order', 'is_collecting_points', 'is_student']);
+            ->assertJsonValidationErrors(['edition_id', 'player_id', 'edition_division_id', 'sort_order', 'is_collecting_points']);
 
-        // Test PUT with empty required fields
         $response = $this->putJson("/api/v1/manager/edition-participations/{$editionParticipation->id_participation}", [
             'edition_id' => '',
             'player_id' => '',
             'edition_division_id' => '',
             'sort_order' => '',
             'is_collecting_points' => '',
-            'is_minor' => '',
-            'is_student' => '',
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['edition_id', 'player_id', 'edition_division_id', 'sort_order', 'is_collecting_points', 'is_minor', 'is_student']);
+            ->assertJsonValidationErrors(['edition_id', 'player_id', 'edition_division_id', 'sort_order', 'is_collecting_points']);
     }
 
     public function test_manager_can_delete_participation()
@@ -440,8 +397,6 @@ class EditionParticipationControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition,
             'player_id' => $this->player->id_player,
             'edition_division_id' => $this->editionDivision->id_edition_division,
-            'is_minor' => false,
-            'is_student' => false,
         ];
 
         $response = $this->postJson('/api/v1/manager/edition-participations', $duplicateData);
@@ -479,8 +434,6 @@ class EditionParticipationControllerTest extends TestCase
             'edition_division_id' => $this->editionDivision->id_edition_division,
             'sort_order' => 0,
             'is_collecting_points' => true,
-            'is_minor' => false,
-            'is_student' => false,
         ]);
 
         $response->assertStatus(422)
@@ -638,10 +591,6 @@ class EditionParticipationControllerTest extends TestCase
             'edition_division_id' => $this->editionDivision->id_edition_division,
             'sort_order' => 0,
             'is_collecting_points' => 1,
-            'is_minor' => 0,
-            'is_student' => 0,
-            'discount' => 0,
-            'payment' => 0,
         ]);
     }
 
@@ -721,9 +670,6 @@ class EditionParticipationControllerTest extends TestCase
             'edition_id' => $this->edition->id_edition,
             'player_id' => $otherPlayer->id_player,
             'edition_division_id' => $this->editionDivision->id_edition_division,
-            'is_minor' => false,
-            'is_student' => false,
-            'payment' => 50,
         ]);
         $create->assertStatus(201);
         $this->assertArrayNotHasKey('player_history', $create->json('data'));
@@ -734,9 +680,6 @@ class EditionParticipationControllerTest extends TestCase
             'edition_division_id' => $this->editionDivision->id_edition_division,
             'sort_order' => 0,
             'is_collecting_points' => true,
-            'is_minor' => false,
-            'is_student' => false,
-            'payment' => 55,
         ]);
         $update->assertStatus(200);
         $this->assertArrayNotHasKey('player_history', $update->json('data'));

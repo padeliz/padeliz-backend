@@ -5,15 +5,23 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\CachedPdfPlayerImage;
+use App\Models\Club;
+use App\Models\Court;
 use App\Models\Edition;
 use App\Models\EditionDivision;
+use App\Models\EditionDivisionCourt;
 use App\Models\EditionDivisionReplacement;
+use App\Models\GameMatch;
 use App\Models\EditionLottery;
+use App\Models\EditionLotteryLucky;
+use App\Models\EditionLotteryPrize;
 use App\Models\EditionLotteryRule;
 use App\Models\EditionParticipation;
 use App\Models\Player;
 use App\Models\PlayerProfileImage;
 use App\Models\Prize;
+use App\Models\Sponsor;
+use App\Models\SponsorPrize;
 use App\Services\Lottery\LotteryDrawService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -23,6 +31,36 @@ use Tests\TestCase;
 final class EditionLotteryLiveControllerTest extends TestCase
 {
     use RefreshDatabase;
+
+    /**
+     * @return array{0: EditionLottery, 1: EditionLotteryPrize, 2: EditionLotteryRule}
+     */
+    private function createLotteryWithPrizeLineAndRule(
+        Edition $edition,
+        Prize $prize,
+        ?EditionDivision $division = null,
+        int $prizeQuantity = 1,
+        ?int $sponsorId = null,
+    ): array {
+        $lottery = EditionLottery::factory()->create([
+            'edition_id' => $edition->id_edition,
+            'name' => 'Live Lottery ' . uniqid(),
+        ]);
+        $lotteryPrize = EditionLotteryPrize::factory()->create([
+            'lottery_id' => $lottery->id_lottery,
+            'prize_id' => $prize->id_prize,
+            'prize_quantity' => $prizeQuantity,
+            'sponsor_id' => $sponsorId,
+        ]);
+        $rule = EditionLotteryRule::factory()->create([
+            'lottery_prize_id' => $lotteryPrize->id_lottery_prize,
+            'edition_division_id' => $division?->id_edition_division,
+            'rule_prize_quantity' => $prizeQuantity,
+            'orderliness' => 0,
+        ]);
+
+        return [$lottery, $lotteryPrize, $rule];
+    }
 
     public function test_live_draw_skips_division_wide_replaced_and_absent(): void
     {
@@ -73,17 +111,7 @@ final class EditionLotteryLiveControllerTest extends TestCase
             'box_1_text' => 'Next: {{edition.next.name}}',
             'box_2_text' => '{{edition.next.date.short}}',
         ]);
-        $lottery = EditionLottery::factory()->create([
-            'edition_id' => $edition->id_edition,
-            'prize_id' => $prize->id_prize,
-            'prize_quantity' => 1,
-        ]);
-        EditionLotteryRule::factory()->create([
-            'lottery_id' => $lottery->id_lottery,
-            'edition_division_id' => $division->id_edition_division,
-            'rule_prize_quantity' => 1,
-            'orderliness' => 0,
-        ]);
+        [$lottery] = $this->createLotteryWithPrizeLineAndRule($edition, $prize, $division);
 
         $response = $this->getJson("/api/v1/manager/edition-lotteries/{$lottery->id_lottery}/live");
         $response->assertStatus(200)
@@ -107,16 +135,7 @@ final class EditionLotteryLiveControllerTest extends TestCase
             'box_2_text' => 'On {{edition.next.date.short}}',
             'media_path' => 'prizes/1/media/demo.mp4',
         ]);
-        $lottery = EditionLottery::factory()->create([
-            'edition_id' => $edition->id_edition,
-            'prize_id' => $prize->id_prize,
-            'prize_quantity' => 1,
-        ]);
-        EditionLotteryRule::factory()->create([
-            'lottery_id' => $lottery->id_lottery,
-            'edition_division_id' => null,
-            'rule_prize_quantity' => 1,
-        ]);
+        [$lottery] = $this->createLotteryWithPrizeLineAndRule($edition, $prize);
 
         $response = $this->getJson("/api/v1/manager/edition-lotteries/{$lottery->id_lottery}/prizes-board");
         $response->assertStatus(200);
@@ -157,6 +176,51 @@ final class EditionLotteryLiveControllerTest extends TestCase
         $this->assertNotContains((int) $replaced->id_participation, $ids);
     }
 
+    public function test_eligible_query_keeps_match_scoped_replaced(): void
+    {
+        $edition = Edition::factory()->create();
+        $division = EditionDivision::factory()->create(['edition_id' => $edition->id_edition]);
+        $ok = EditionParticipation::factory()->create([
+            'edition_id' => $edition->id_edition,
+            'edition_division_id' => $division->id_edition_division,
+            'absence_reason' => null,
+        ]);
+        $replacedOnOneMatch = EditionParticipation::factory()->create([
+            'edition_id' => $edition->id_edition,
+            'edition_division_id' => $division->id_edition_division,
+            'absence_reason' => null,
+        ]);
+        $court = Court::factory()->create();
+        $edCourt = EditionDivisionCourt::factory()->create([
+            'edition_division_id' => $division->id_edition_division,
+            'court_id' => $court->id_court,
+            'display_order' => 0,
+        ]);
+        $match = GameMatch::create([
+            'edition_division_id' => $division->id_edition_division,
+            'edition_division_court_id' => $edCourt->id_edition_division_court,
+            'match_kind' => 'REGULAR',
+            'sequence_no' => 1,
+            'scheduled_start' => '14:00:00',
+            'scheduled_end' => '14:30:00',
+            'points_target' => 21,
+        ]);
+        EditionDivisionReplacement::query()->create([
+            'edition_division_id' => $division->id_edition_division,
+            'original_participation_id' => $replacedOnOneMatch->id_participation,
+            'match_id' => $match->id_match,
+            'inserted_at' => time(),
+        ]);
+
+        $ids = (new LotteryDrawService())
+            ->eligibleParticipationsQuery((int) $edition->id_edition)
+            ->pluck('id_participation')
+            ->all();
+
+        $this->assertContains((int) $ok->id_participation, $ids);
+        $this->assertContains((int) $replacedOnOneMatch->id_participation, $ids);
+    }
+
     public function test_live_avatar_url_uses_pdf_cache_not_profile_image(): void
     {
         $manager = Player::factory()->manager()->create([
@@ -188,17 +252,7 @@ final class EditionLotteryLiveControllerTest extends TestCase
         ]);
 
         $prize = Prize::factory()->create();
-        $lottery = EditionLottery::factory()->create([
-            'edition_id' => $edition->id_edition,
-            'prize_id' => $prize->id_prize,
-            'prize_quantity' => 1,
-        ]);
-        EditionLotteryRule::factory()->create([
-            'lottery_id' => $lottery->id_lottery,
-            'edition_division_id' => $division->id_edition_division,
-            'rule_prize_quantity' => 1,
-            'orderliness' => 0,
-        ]);
+        [$lottery] = $this->createLotteryWithPrizeLineAndRule($edition, $prize, $division);
 
         $miss = $this->getJson("/api/v1/manager/edition-lotteries/{$lottery->id_lottery}/live");
         $miss->assertOk()->assertJsonPath('data.lucky.player.avatar_url', null);
@@ -217,5 +271,322 @@ final class EditionLotteryLiveControllerTest extends TestCase
         $this->assertNotNull($hit->json('data.lucky.player.avatar_url'));
         $this->assertStringContainsString('cached-pdf-player-images', (string) $hit->json('data.lucky.player.avatar_url'));
         $this->assertSame($participation->player_id, $hit->json('data.lucky.player.id_player'));
+    }
+
+    public function test_two_lotteries_have_independent_drawn_queues(): void
+    {
+        $manager = Player::factory()->manager()->create([
+            'user_types' => ['player', 'manager'],
+        ]);
+        Sanctum::actingAs($manager);
+
+        $edition = Edition::factory()->create(['date' => now()->toDateString()]);
+        $division = EditionDivision::factory()->create([
+            'edition_id' => $edition->id_edition,
+            'playing_start_time' => '10:00:00',
+            'playing_end_time' => '13:00:00',
+        ]);
+        $onlyPlayer = Player::factory()->create();
+        $participation = EditionParticipation::factory()->create([
+            'edition_id' => $edition->id_edition,
+            'edition_division_id' => $division->id_edition_division,
+            'player_id' => $onlyPlayer->id_player,
+            'absence_reason' => null,
+        ]);
+
+        $prizeA = Prize::factory()->create(['name' => 'Prize A']);
+        $prizeB = Prize::factory()->create(['name' => 'Prize B']);
+        [$lotteryA] = $this->createLotteryWithPrizeLineAndRule($edition, $prizeA, $division);
+        [$lotteryB] = $this->createLotteryWithPrizeLineAndRule($edition, $prizeB, $division);
+
+        $liveA = $this->getJson("/api/v1/manager/edition-lotteries/{$lotteryA->id_lottery}/live");
+        $liveA->assertOk()
+            ->assertJsonPath('data.lucky.player.id_player', $participation->player_id);
+
+        $this->postJson("/api/v1/manager/edition-lotteries/{$lotteryA->id_lottery}/accept", [
+            'id_lucky' => $liveA->json('data.lucky.id_lucky'),
+        ])->assertOk();
+
+        $liveB = $this->getJson("/api/v1/manager/edition-lotteries/{$lotteryB->id_lottery}/live");
+        $liveB->assertOk()
+            ->assertJsonPath('data.status', 'pending')
+            ->assertJsonPath('data.lucky.player.id_player', $participation->player_id);
+    }
+
+    public function test_already_drawn_is_scoped_per_lottery(): void
+    {
+        $edition = Edition::factory()->create();
+        $division = EditionDivision::factory()->create(['edition_id' => $edition->id_edition]);
+        $p1 = EditionParticipation::factory()->create([
+            'edition_id' => $edition->id_edition,
+            'edition_division_id' => $division->id_edition_division,
+            'absence_reason' => null,
+        ]);
+        $p2 = EditionParticipation::factory()->create([
+            'edition_id' => $edition->id_edition,
+            'edition_division_id' => $division->id_edition_division,
+            'absence_reason' => null,
+        ]);
+
+        $prize = Prize::factory()->create();
+        [$lotteryA, , $ruleA] = $this->createLotteryWithPrizeLineAndRule($edition, $prize, $division);
+        [$lotteryB] = $this->createLotteryWithPrizeLineAndRule($edition, $prize, $division);
+
+        EditionLotteryLucky::factory()->create([
+            'lottery_rule_id' => $ruleA->id_lottery_rule,
+            'drawn_participation_id' => $p1->id_participation,
+            'accepted_at' => time(),
+        ]);
+
+        $service = new LotteryDrawService();
+        $idsA = $service->eligibleParticipationsQuery((int) $edition->id_edition, null, null, (int) $lotteryA->id_lottery)
+            ->pluck('id_participation')
+            ->all();
+        $idsB = $service->eligibleParticipationsQuery((int) $edition->id_edition, null, null, (int) $lotteryB->id_lottery)
+            ->pluck('id_participation')
+            ->all();
+
+        $this->assertNotContains((int) $p1->id_participation, $idsA);
+        $this->assertContains((int) $p2->id_participation, $idsA);
+        $this->assertContains((int) $p1->id_participation, $idsB);
+        $this->assertContains((int) $p2->id_participation, $idsB);
+    }
+
+    public function test_prize_index_increments_per_prize_line(): void
+    {
+        $manager = Player::factory()->manager()->create([
+            'user_types' => ['player', 'manager'],
+        ]);
+        Sanctum::actingAs($manager);
+
+        $edition = Edition::factory()->create(['date' => now()->toDateString()]);
+        $division = EditionDivision::factory()->create([
+            'edition_id' => $edition->id_edition,
+            'playing_start_time' => '10:00:00',
+            'playing_end_time' => '13:00:00',
+        ]);
+        $players = Player::factory()->count(2)->create();
+        foreach ($players as $player) {
+            EditionParticipation::factory()->create([
+                'edition_id' => $edition->id_edition,
+                'edition_division_id' => $division->id_edition_division,
+                'player_id' => $player->id_player,
+                'absence_reason' => null,
+            ]);
+        }
+
+        $prize = Prize::factory()->create();
+        [$lottery] = $this->createLotteryWithPrizeLineAndRule($edition, $prize, $division, 2);
+
+        $first = $this->getJson("/api/v1/manager/edition-lotteries/{$lottery->id_lottery}/live");
+        $first->assertOk()->assertJsonPath('data.lucky.prize_index', 1);
+
+        $this->postJson("/api/v1/manager/edition-lotteries/{$lottery->id_lottery}/accept", [
+            'id_lucky' => $first->json('data.lucky.id_lucky'),
+        ])->assertOk();
+
+        $second = $this->getJson("/api/v1/manager/edition-lotteries/{$lottery->id_lottery}/live");
+        $second->assertOk()->assertJsonPath('data.lucky.prize_index', 2);
+    }
+
+    public function test_organizer_prize_line_has_no_host_club_overlay(): void
+    {
+        $manager = Player::factory()->manager()->create([
+            'user_types' => ['player', 'manager'],
+        ]);
+        Sanctum::actingAs($manager);
+
+        $edition = Edition::factory()->create(['date' => now()->toDateString()]);
+        $division = EditionDivision::factory()->create([
+            'edition_id' => $edition->id_edition,
+            'playing_start_time' => '10:00:00',
+            'playing_end_time' => '13:00:00',
+        ]);
+        EditionParticipation::factory()->create([
+            'edition_id' => $edition->id_edition,
+            'edition_division_id' => $division->id_edition_division,
+            'absence_reason' => null,
+        ]);
+
+        $club = Club::factory()->create();
+        Sponsor::factory()->forClub($club)->create();
+
+        $prize = Prize::factory()->create([
+            'box_1_text' => 'Catalog text',
+            'box_1_bg_color' => '#111111',
+        ]);
+        [$lottery] = $this->createLotteryWithPrizeLineAndRule($edition, $prize, $division, 1, null);
+
+        $response = $this->getJson("/api/v1/manager/edition-lotteries/{$lottery->id_lottery}/live");
+        $response->assertOk();
+        $prizePayload = $response->json('data.lucky.prize');
+        $this->assertSame('Catalog text', $prizePayload['box_1_text']);
+        $this->assertSame('#111111', $prizePayload['box_1_bg_color']);
+        $this->assertArrayNotHasKey('sponsor', $prizePayload);
+        $this->assertArrayNotHasKey('club', $prizePayload);
+        $this->assertArrayNotHasKey('players', $prizePayload);
+    }
+
+    public function test_sponsor_overlay_merges_non_null_and_includes_sponsor_name_only(): void
+    {
+        $manager = Player::factory()->manager()->create([
+            'user_types' => ['player', 'manager'],
+        ]);
+        Sanctum::actingAs($manager);
+
+        $edition = Edition::factory()->create(['date' => now()->toDateString()]);
+        $division = EditionDivision::factory()->create([
+            'edition_id' => $edition->id_edition,
+            'playing_start_time' => '10:00:00',
+            'playing_end_time' => '13:00:00',
+        ]);
+        EditionParticipation::factory()->create([
+            'edition_id' => $edition->id_edition,
+            'edition_division_id' => $division->id_edition_division,
+            'absence_reason' => null,
+        ]);
+
+        $sponsor = Sponsor::factory()->create(['name' => 'Acme Sponsor']);
+
+        $prize = Prize::factory()->create([
+            'box_1_text' => 'Catalog box 1',
+            'box_2_text' => 'Catalog box 2',
+            'box_1_bg_color' => '#AAAAAA',
+            'box_2_bg_color' => '#BBBBBB',
+            'template' => 'IMAGE_LEFT',
+        ]);
+        SponsorPrize::factory()->create([
+            'sponsor_id' => $sponsor->id_sponsor,
+            'prize_id' => $prize->id_prize,
+            'box_1_text' => 'Overlay box 1',
+            'box_2_text' => null,
+            'box_1_bg_color' => '#FF0000',
+            'box_2_bg_color' => null,
+            'template' => null,
+        ]);
+
+        [$lottery] = $this->createLotteryWithPrizeLineAndRule(
+            $edition,
+            $prize,
+            $division,
+            1,
+            (int) $sponsor->id_sponsor
+        );
+
+        $response = $this->getJson("/api/v1/manager/edition-lotteries/{$lottery->id_lottery}/live");
+        $response->assertOk();
+        $prizePayload = $response->json('data.lucky.prize');
+
+        $this->assertSame('Overlay box 1', $prizePayload['box_1_text']);
+        $this->assertSame('Catalog box 2', $prizePayload['box_2_text']);
+        $this->assertSame('#FF0000', $prizePayload['box_1_bg_color']);
+        $this->assertSame('#BBBBBB', $prizePayload['box_2_bg_color']);
+        $this->assertSame('IMAGE_LEFT', $prizePayload['template']);
+        $this->assertSame($sponsor->id_sponsor, $prizePayload['sponsor']['id_sponsor'] ?? null);
+        $this->assertSame('Acme Sponsor', $prizePayload['sponsor']['name'] ?? null);
+        $this->assertArrayNotHasKey('club', $prizePayload['sponsor'] ?? []);
+        $this->assertArrayNotHasKey('players', $prizePayload['sponsor'] ?? []);
+        $this->assertArrayNotHasKey('club', $prizePayload);
+        $this->assertArrayNotHasKey('players', $prizePayload);
+    }
+
+    public function test_live_draw_ignores_prize_line_display_order(): void
+    {
+        $manager = Player::factory()->manager()->create([
+            'user_types' => ['player', 'manager'],
+        ]);
+        Sanctum::actingAs($manager);
+
+        $edition = Edition::factory()->create(['date' => now()->toDateString()]);
+        $division = EditionDivision::factory()->create([
+            'edition_id' => $edition->id_edition,
+            'playing_start_time' => '10:00:00',
+            'playing_end_time' => '13:00:00',
+        ]);
+        EditionParticipation::factory()->create([
+            'edition_id' => $edition->id_edition,
+            'edition_division_id' => $division->id_edition_division,
+            'absence_reason' => null,
+        ]);
+
+        $lottery = EditionLottery::factory()->create([
+            'edition_id' => $edition->id_edition,
+        ]);
+        $firstLine = EditionLotteryPrize::factory()->create([
+            'lottery_id' => $lottery->id_lottery,
+            'display_order' => 0,
+            'prize_quantity' => 1,
+        ]);
+        $laterLine = EditionLotteryPrize::factory()->create([
+            'lottery_id' => $lottery->id_lottery,
+            'display_order' => 9,
+            'prize_quantity' => 1,
+        ]);
+        EditionLotteryRule::factory()->create([
+            'lottery_prize_id' => $firstLine->id_lottery_prize,
+            'edition_division_id' => $division->id_edition_division,
+            'rule_prize_quantity' => 1,
+            'orderliness' => 10,
+        ]);
+        $winningRule = EditionLotteryRule::factory()->create([
+            'lottery_prize_id' => $laterLine->id_lottery_prize,
+            'edition_division_id' => $division->id_edition_division,
+            'rule_prize_quantity' => 1,
+            'orderliness' => 0,
+        ]);
+
+        $response = $this->getJson("/api/v1/manager/edition-lotteries/{$lottery->id_lottery}/live");
+        $response->assertOk()
+            ->assertJsonPath('data.lucky.lottery_rule_id', $winningRule->id_lottery_rule);
+    }
+
+    public function test_live_draw_tie_break_uses_lower_rule_id(): void
+    {
+        $manager = Player::factory()->manager()->create([
+            'user_types' => ['player', 'manager'],
+        ]);
+        Sanctum::actingAs($manager);
+
+        $edition = Edition::factory()->create(['date' => now()->toDateString()]);
+        $division = EditionDivision::factory()->create([
+            'edition_id' => $edition->id_edition,
+            'playing_start_time' => '10:00:00',
+            'playing_end_time' => '13:00:00',
+        ]);
+        EditionParticipation::factory()->create([
+            'edition_id' => $edition->id_edition,
+            'edition_division_id' => $division->id_edition_division,
+            'absence_reason' => null,
+        ]);
+
+        $lottery = EditionLottery::factory()->create([
+            'edition_id' => $edition->id_edition,
+        ]);
+        $firstLine = EditionLotteryPrize::factory()->create([
+            'lottery_id' => $lottery->id_lottery,
+            'display_order' => 0,
+            'prize_quantity' => 1,
+        ]);
+        $secondLine = EditionLotteryPrize::factory()->create([
+            'lottery_id' => $lottery->id_lottery,
+            'display_order' => 0,
+            'prize_quantity' => 1,
+        ]);
+        $winningRule = EditionLotteryRule::factory()->create([
+            'lottery_prize_id' => $secondLine->id_lottery_prize,
+            'edition_division_id' => $division->id_edition_division,
+            'rule_prize_quantity' => 1,
+            'orderliness' => 0,
+        ]);
+        EditionLotteryRule::factory()->create([
+            'lottery_prize_id' => $firstLine->id_lottery_prize,
+            'edition_division_id' => $division->id_edition_division,
+            'rule_prize_quantity' => 1,
+            'orderliness' => 0,
+        ]);
+
+        $response = $this->getJson("/api/v1/manager/edition-lotteries/{$lottery->id_lottery}/live");
+        $response->assertOk()
+            ->assertJsonPath('data.lucky.lottery_rule_id', $winningRule->id_lottery_rule);
     }
 }

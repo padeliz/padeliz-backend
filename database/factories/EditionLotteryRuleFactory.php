@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
-use App\Models\EditionLottery;
+use App\Models\EditionLotteryPrize;
 use App\Models\EditionLotteryRule;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -15,7 +15,7 @@ class EditionLotteryRuleFactory extends Factory
     public function definition()
     {
         return [
-            'lottery_id' => EditionLottery::factory(),
+            'lottery_prize_id' => EditionLotteryPrize::factory(),
             'rule_prize_quantity' => $this->faker->numberBetween(1, 5),
             'orderliness' => $this->faker->numberBetween(0, 99),
             'edition_division_id' => null,

@@ -104,7 +104,7 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      */
     public function index(Request $request)
     {
-        $query = Prize::with('clubPrizes');
+        $query = Prize::with(['sponsorPrizes', 'lotteryPrizes']);
 
         // Apply advanced pagination
         $this->applyAdvancedPagination(
@@ -176,7 +176,7 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      */
     public function show(Prize $prize)
     {
-        $prize->load('clubPrizes');
+        $prize->load(['sponsorPrizes', 'lotteryPrizes']);
 
         return $this->resourceResponse(
             new PrizeResource($prize),
@@ -473,8 +473,8 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *                         property="linked_data",
      *                         type="object",
      *                         description="Information about linked data preventing deletion",
-     *                         @OA\Property(property="club_prizes_count", type="integer", example=3),
-     *                         @OA\Property(property="lotteries_count", type="integer", example=2)
+     *                         @OA\Property(property="lottery_prizes_count", type="integer", example=2),
+     *                         @OA\Property(property="sponsor_prizes_count", type="integer", example=3)
      *                     )
      *                 )
      *             }
@@ -490,8 +490,8 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
     public function destroy(Prize $prize)
     {
         $linkedDataRelations = [
-            'clubPrizes' => 'club_prizes_count',
-            'lotteries' => 'lotteries_count',
+            'lotteryPrizes' => 'lottery_prizes_count',
+            'sponsorPrizes' => 'sponsor_prizes_count',
         ];
 
         return $this->deleteResourceWithResponse(
@@ -615,8 +615,8 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
         ]);
 
         $linkedDataRelations = [
-            'clubPrizes' => 'club_prizes_count',
-            'lotteries' => 'lotteries_count',
+            'lotteryPrizes' => 'lottery_prizes_count',
+            'sponsorPrizes' => 'sponsor_prizes_count',
         ];
 
         return $this->deleteBulkResourcesWithResponse(

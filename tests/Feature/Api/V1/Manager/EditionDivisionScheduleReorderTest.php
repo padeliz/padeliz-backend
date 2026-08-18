@@ -310,7 +310,6 @@ final class EditionDivisionScheduleReorderTest extends TestCase
                 'slot' => $slot,
                 'participation_id' => $p->id_participation,
                 'player_id' => $p->player_id,
-                'got_replaced' => false,
             ]);
         }
 

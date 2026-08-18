@@ -62,6 +62,27 @@ trait HasAdvancedPagination
     }
 
     /**
+     * Pull a filter that is not a real column and remove it so applyAdvancedPagination skips it.
+     */
+    protected function pullJoinFilter(Request $request, string $field): mixed
+    {
+        $filters = $request->get('filters');
+        if (! is_array($filters) || ! array_key_exists($field, $filters)) {
+            return null;
+        }
+
+        $value = $filters[$field];
+        unset($filters[$field]);
+        $request->merge(['filters' => $filters]);
+
+        if ($value === '' || $value === null) {
+            return null;
+        }
+
+        return $value;
+    }
+
+    /**
      * Get pagination parameters from request
      */
     protected function getPaginationParams(Request $request): array

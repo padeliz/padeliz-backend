@@ -216,6 +216,11 @@ class Edition extends Model
         return $this->hasMany(EditionParticipation::class, 'edition_id');
     }
 
+    public function registrations()
+    {
+        return $this->hasMany(EditionRegistration::class, 'edition_id');
+    }
+
     public function lotteries()
     {
         return $this->hasMany(EditionLottery::class, 'edition_id');

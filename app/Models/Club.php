@@ -61,11 +61,11 @@ use Illuminate\Database\Eloquent\Model;
  *         nullable=true
  *     ),
  *     @OA\Property(
- *         property="prizes",
+ *         property="sponsors",
  *         type="array",
- *         @OA\Items(ref="#/components/schemas/PrizeFromClub"),
- *         title="Prizes",
- *         description="Array of related club prizes",
+ *         @OA\Items(ref="#/components/schemas/Sponsor"),
+ *         title="Sponsors",
+ *         description="Sponsors linked to this club",
  *         nullable=true
  *     )
  * )
@@ -140,8 +140,8 @@ class Club extends Model
         return $this->hasMany(Location::class, 'club_id');
     }
 
-    public function prizes()
+    public function sponsors()
     {
-        return $this->hasMany(PrizeFromClub::class, 'club_id');
+        return $this->hasMany(Sponsor::class, 'club_id');
     }
 }

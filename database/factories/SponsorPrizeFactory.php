@@ -4,21 +4,22 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
-use App\Models\Club;
 use App\Models\Prize;
-use App\Models\PrizeFromClub;
+use App\Models\Sponsor;
+use App\Models\SponsorPrize;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
-class PrizeFromClubFactory extends Factory
+class SponsorPrizeFactory extends Factory
 {
-    protected $model = PrizeFromClub::class;
+    protected $model = SponsorPrize::class;
 
     public function definition()
     {
         return [
-            'club_id' => Club::factory(),
+            'sponsor_id' => Sponsor::factory(),
             'prize_id' => Prize::factory(),
             'media_path' => $this->faker->optional()->passthrough('prizes-from-clubs/1/media/placeholder.jpg'),
+            'template' => $this->faker->optional()->randomElement(['IMAGE_LEFT', 'IMAGE_TOP', 'IMAGE_RIGHT', 'IMAGE_MIDDLE', 'IMAGE_BOTTOM']),
             'box_1_text' => $this->faker->optional()->sentence(),
             'box_1_bg_color' => $this->faker->optional()->hexColor(),
             'box_1_text_color' => $this->faker->optional()->hexColor(),
@@ -27,14 +28,5 @@ class PrizeFromClubFactory extends Factory
             'box_2_text_color' => $this->faker->optional()->hexColor(),
             'inserted_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
         ];
-    }
-
-    public function forClub(Club $club)
-    {
-        return $this->state(function (array $attributes) use ($club) {
-            return [
-                'club_id' => $club->id_club,
-            ];
-        });
     }
 }

@@ -221,7 +221,7 @@ class ResourceMetadataServiceTest extends TestCase
 
         $this->assertArrayHasKey('display_field', $metadata);
         // Display field should be 'name' for models with searchable fields, null for models without
-        if (in_array($expectedSchemaName, ['EditionLottery', 'EditionLotteryLucky', 'EditionParticipation', 'PrizeFromClub', 'Eligibility'])) {
+        if (in_array($expectedSchemaName, ['EditionLotteryLucky', 'EditionParticipation', 'EditionRegistration', 'EditionLotteryPrize', 'SponsorPrize', 'Eligibility'])) {
             $this->assertNull($metadata['display_field']);
         } elseif ($expectedSchemaName === 'EditionDivision') {
             $this->assertEquals('division_title', $metadata['display_field']);
@@ -249,11 +249,11 @@ class ResourceMetadataServiceTest extends TestCase
             'EditionLottery' => ['EditionLottery', 'EditionLottery'],
             'EditionLotteryLucky' => ['EditionLotteryLucky', 'EditionLotteryLucky'],
             'EditionParticipation' => ['EditionParticipation', 'EditionParticipation'],
+            'EditionRegistration' => ['EditionRegistration', 'EditionRegistration'],
             'Location' => ['Location', 'Location'],
             'Player' => ['Player', 'Player'],
             'Eligibility' => ['Eligibility', 'Eligibility'],
             'Prize' => ['Prize', 'Prize'],
-            'PrizeFromClub' => ['PrizeFromClub', 'PrizeFromClub'],
         ];
     }
 
@@ -499,8 +499,8 @@ class ResourceMetadataServiceTest extends TestCase
         $eligibilityMetadata = $this->metadataService->getMetadata('Eligibility', 'v1');
         $this->assertArrayHasKey('request_body', $eligibilityMetadata);
 
-        $prizeFromClubMetadata = $this->metadataService->getMetadata('PrizeFromClub', 'v1');
-        $this->assertArrayHasKey('request_body', $prizeFromClubMetadata);
+        $sponsorMetadata = $this->metadataService->getMetadata('Sponsor', 'v1');
+        $this->assertArrayHasKey('request_body', $sponsorMetadata);
     }
 
     /**
@@ -613,10 +613,13 @@ class ResourceMetadataServiceTest extends TestCase
             // Hyphenated models (only last word should be pluralized)
             'EditionLottery' => ['EditionLottery', 'edition-lotteries'],
             'EditionParticipation' => ['EditionParticipation', 'edition-participations'],
+            'EditionRegistration' => ['EditionRegistration', 'edition-registrations'],
             'EditionDivision' => ['EditionDivision', 'edition-divisions'],
             'EditionLotteryLucky' => ['EditionLotteryLucky', 'edition-lottery-luckies'],
+            'EditionLotteryPrize' => ['EditionLotteryPrize', 'edition-lottery-prizes'],
             'Eligibility' => ['Eligibility', 'eligibilities'],
-            'PrizeFromClub' => ['PrizeFromClub', 'prize-from-clubs'],
+            'Sponsor' => ['Sponsor', 'sponsors'],
+            'SponsorPrize' => ['SponsorPrize', 'sponsor-prizes'],
 
             // Edge cases with multiple hyphens (using existing models)
             'EditionDivision' => ['EditionDivision', 'edition-divisions'],
@@ -673,6 +676,8 @@ class ResourceMetadataServiceTest extends TestCase
             'Division' => 'name',
             'Edition' => 'name',
             'Prize' => 'name',
+            'EditionLottery' => 'name',
+            'Sponsor' => 'name',
         ];
 
         foreach ($modelsWithDisplayField as $modelName => $expectedDisplayField) {
@@ -688,10 +693,11 @@ class ResourceMetadataServiceTest extends TestCase
 
         // Test models with display_field set to null (no searchable fields / explicit null)
         $modelsWithNullDisplayField = [
-            'EditionLottery',
             'EditionLotteryLucky',
+            'EditionLotteryPrize',
             'EditionParticipation',
-            'PrizeFromClub',
+            'EditionRegistration',
+            'SponsorPrize',
             'Eligibility',
         ];
 
@@ -715,8 +721,6 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertArrayHasKey('location', $courtMetadata['swagger_schema']['properties']);
 
         $replacementMetadata = $this->metadataService->getMetadata('EditionDivisionReplacement', 'v1');
-        $matchScope = $replacementMetadata['swagger_schema']['properties']['match_scope_key'] ?? null;
-        $this->assertNotNull($matchScope);
-        $this->assertTrue($matchScope['readOnly'] ?? false);
+        $this->assertArrayHasKey('match_id', $replacementMetadata['swagger_schema']['properties']);
     }
 }

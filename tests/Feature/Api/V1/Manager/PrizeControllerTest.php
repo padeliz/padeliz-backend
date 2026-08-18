@@ -7,9 +7,11 @@ namespace Tests\Feature\Api\V1\Manager;
 use App\Models\Club;
 use App\Models\Edition;
 use App\Models\EditionLottery;
+use App\Models\EditionLotteryPrize;
 use App\Models\Player;
 use App\Models\Prize;
-use App\Models\PrizeFromClub;
+use App\Models\Sponsor;
+use App\Models\SponsorPrize;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -241,14 +243,14 @@ class PrizeControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $prize = Prize::factory()->create();
-        PrizeFromClub::factory()->create(['prize_id' => $prize->id_prize]);
+        SponsorPrize::factory()->create(['prize_id' => $prize->id_prize]);
 
         $response = $this->deleteJson("/api/v1/manager/prizes/{$prize->id_prize}");
 
         $response->assertStatus(409)
             ->assertJson([
                 'success' => false,
-                'message' => 'Prize cannot be deleted because it has linked data. Please remove all associated club_prizes_count, lotteries_count first.',
+                'message' => 'Prize cannot be deleted because it has linked data. Please remove all associated lottery_prizes_count, sponsor_prizes_count first.',
             ]);
 
         $this->assertDatabaseHas('prizes', [
@@ -261,14 +263,14 @@ class PrizeControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $prize = Prize::factory()->create();
-        EditionLottery::factory()->create(['prize_id' => $prize->id_prize]);
+        EditionLotteryPrize::factory()->create(['prize_id' => $prize->id_prize]);
 
         $response = $this->deleteJson("/api/v1/manager/prizes/{$prize->id_prize}");
 
         $response->assertStatus(409)
             ->assertJson([
                 'success' => false,
-                'message' => 'Prize cannot be deleted because it has linked data. Please remove all associated club_prizes_count, lotteries_count first.',
+                'message' => 'Prize cannot be deleted because it has linked data. Please remove all associated lottery_prizes_count, sponsor_prizes_count first.',
             ]);
 
         $this->assertDatabaseHas('prizes', [
@@ -403,8 +405,8 @@ class PrizeControllerTest extends TestCase
 
         $prize = Prize::factory()->create();
         $club = Club::factory()->create();
-        $clubPrize = PrizeFromClub::factory()->create([
-            'club_id' => $club->id_club,
+        $sponsorPrize = SponsorPrize::factory()->create([
+            'sponsor_id' => Sponsor::factory()->forClub($club)->create()->id_sponsor,
             'prize_id' => $prize->id_prize,
         ]);
 
@@ -413,7 +415,7 @@ class PrizeControllerTest extends TestCase
         $response->assertStatus(409)
             ->assertJson([
                 'success' => false,
-                'message' => 'Prize cannot be deleted because it has linked data. Please remove all associated club_prizes_count, lotteries_count first.',
+                'message' => 'Prize cannot be deleted because it has linked data. Please remove all associated lottery_prizes_count, sponsor_prizes_count first.',
             ]);
 
         $this->assertDatabaseHas('prizes', ['id_prize' => $prize->id_prize]);
@@ -427,6 +429,9 @@ class PrizeControllerTest extends TestCase
         $edition = Edition::factory()->create();
         $lottery = EditionLottery::factory()->create([
             'edition_id' => $edition->id_edition,
+        ]);
+        EditionLotteryPrize::factory()->create([
+            'lottery_id' => $lottery->id_lottery,
             'prize_id' => $prize->id_prize,
         ]);
 
@@ -435,7 +440,7 @@ class PrizeControllerTest extends TestCase
         $response->assertStatus(409)
             ->assertJson([
                 'success' => false,
-                'message' => 'Prize cannot be deleted because it has linked data. Please remove all associated club_prizes_count, lotteries_count first.',
+                'message' => 'Prize cannot be deleted because it has linked data. Please remove all associated lottery_prizes_count, sponsor_prizes_count first.',
             ]);
 
         $this->assertDatabaseHas('prizes', ['id_prize' => $prize->id_prize]);
@@ -490,10 +495,10 @@ class PrizeControllerTest extends TestCase
         $prize2 = Prize::factory()->create();
         $prize3 = Prize::factory()->create();
 
-        // Create linked club prize for prize1
+        // Create linked sponsor prize for prize1
         $club = Club::factory()->create();
-        PrizeFromClub::factory()->create([
-            'club_id' => $club->id_club,
+        SponsorPrize::factory()->create([
+            'sponsor_id' => Sponsor::factory()->forClub($club)->create()->id_sponsor,
             'prize_id' => $prize1->id_prize,
         ]);
 

@@ -94,6 +94,9 @@ class EditionDivisionScheduleControllerTest extends TestCase
             isset($firstPlayer['name']) || isset($firstPlayer['first_name']),
             'Generated matches must include nested player on side players'
         );
+        $slot = data_get($response->json(), 'data.matches.0.sides.0.players.0');
+        $this->assertIsArray($slot);
+        $this->assertArrayNotHasKey('got_replaced', $slot);
 
         $this->assertGreaterThan(0, GameMatch::query()
             ->where('edition_division_id', $this->editionDivision->id_edition_division)
@@ -325,6 +328,36 @@ class EditionDivisionScheduleControllerTest extends TestCase
         $this->getJson("/api/v1/manager/edition-divisions/{$edId}")
             ->assertOk()
             ->assertJsonPath('data.playing_end_time', '24:00:00');
+    }
+
+    public function test_schedule_form_without_participation_keys_leaves_order_and_collecting(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $edId = $this->editionDivision->id_edition_division;
+        $first = $this->participations[0];
+        $second = $this->participations[1];
+        $first->update([
+            'sort_order' => 50,
+            'is_collecting_points' => false,
+        ]);
+        $second->update([
+            'sort_order' => 7,
+            'is_collecting_points' => true,
+        ]);
+
+        $this->putJson("/api/v1/manager/edition-divisions/{$edId}/schedule/form", [
+            'playing_start_time' => '15:00',
+            'playing_end_time' => '18:00',
+            'court_ids' => [$this->court->id_court],
+        ])->assertOk();
+
+        $first->refresh();
+        $second->refresh();
+        $this->assertSame(50, (int) $first->sort_order);
+        $this->assertFalse((bool) $first->is_collecting_points);
+        $this->assertSame(7, (int) $second->sort_order);
+        $this->assertTrue((bool) $second->is_collecting_points);
     }
 
     public function test_preview_succeeds_for_overnight_and_end_of_day_windows(): void

@@ -17,7 +17,6 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *     @OA\Property(property="slot", type="integer"),
  *     @OA\Property(property="participation_id", type="integer", format="int64", nullable=true),
  *     @OA\Property(property="player_id", type="integer", format="int64", nullable=true),
- *     @OA\Property(property="got_replaced", type="boolean", default=false),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true)
  * )
@@ -42,12 +41,10 @@ class MatchPlayer extends Model
         'slot',
         'participation_id',
         'player_id',
-        'got_replaced',
     ];
 
     protected $casts = [
         'slot' => 'integer',
-        'got_replaced' => 'boolean',
         'inserted_at' => 'integer',
         'updated_at' => 'integer',
     ];

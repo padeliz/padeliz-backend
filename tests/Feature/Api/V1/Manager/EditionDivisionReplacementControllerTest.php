@@ -86,28 +86,24 @@ class EditionDivisionReplacementControllerTest extends TestCase
             'slot' => 0,
             'participation_id' => $this->participations[0]->id_participation,
             'player_id' => $this->participations[0]->player_id,
-            'got_replaced' => false,
         ]);
         MatchPlayer::create([
             'match_side_id' => $left->id_match_side,
             'slot' => 1,
             'participation_id' => $this->participations[1]->id_participation,
             'player_id' => $this->participations[1]->player_id,
-            'got_replaced' => false,
         ]);
         MatchPlayer::create([
             'match_side_id' => $right->id_match_side,
             'slot' => 0,
             'participation_id' => $this->participations[2]->id_participation,
             'player_id' => $this->participations[2]->player_id,
-            'got_replaced' => false,
         ]);
         MatchPlayer::create([
             'match_side_id' => $right->id_match_side,
             'slot' => 1,
             'participation_id' => $this->participations[3]->id_participation,
             'player_id' => $this->participations[3]->player_id,
-            'got_replaced' => false,
         ]);
     }
 
@@ -137,9 +133,10 @@ class EditionDivisionReplacementControllerTest extends TestCase
             'edition_division_id' => $edId,
         ]);
 
-        $this->assertTrue((bool) MatchPlayer::query()
-            ->where('participation_id', $originalId)
-            ->value('got_replaced'));
+        $slot = MatchPlayer::query()->where('participation_id', $originalId)->firstOrFail();
+        $this->assertSame($originalId, (int) $slot->participation_id);
+        $this->assertSame((int) $this->participations[0]->player_id, (int) $slot->player_id);
+        $this->assertArrayNotHasKey('got_replaced', $slot->getAttributes());
 
         $this->getJson("/api/v1/manager/edition-divisions/{$edId}/replacements")
             ->assertOk()
@@ -153,9 +150,9 @@ class EditionDivisionReplacementControllerTest extends TestCase
         $this->assertDatabaseMissing('edition_division_replacements', [
             'id_replacement' => $replacementId,
         ]);
-        $this->assertFalse((bool) MatchPlayer::query()
-            ->where('participation_id', $originalId)
-            ->value('got_replaced'));
+        $slotAfter = MatchPlayer::query()->where('participation_id', $originalId)->firstOrFail();
+        $this->assertSame($originalId, (int) $slotAfter->participation_id);
+        $this->assertSame((int) $this->participations[0]->player_id, (int) $slotAfter->player_id);
     }
 
     public function test_finalize_blocks_replacements(): void
@@ -265,4 +262,229 @@ class EditionDivisionReplacementControllerTest extends TestCase
         $this->assertNotNull($data[0]['original_participation']['player']['id_player'] ?? null);
         $this->assertNotNull($data[0]['substitute_participation']['player']['id_player'] ?? null);
     }
+
+    public function test_create_with_neither_substitute(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $edId = $this->editionDivision->id_edition_division;
+        $create = $this->postJson("/api/v1/manager/edition-divisions/{$edId}/replacements", [
+            'original_participation_id' => $this->participations[0]->id_participation,
+            'match_id' => $this->match->id_match,
+        ]);
+
+        $create->assertStatus(201)
+            ->assertJsonPath('data.substitute_participation_id', null)
+            ->assertJsonPath('data.substitute_player_id', null);
+    }
+
+    public function test_create_with_only_guest_substitute(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $guestId = Player::factory()->create()->id_player;
+        $edId = $this->editionDivision->id_edition_division;
+        $this->postJson("/api/v1/manager/edition-divisions/{$edId}/replacements", [
+            'original_participation_id' => $this->participations[0]->id_participation,
+            'substitute_player_id' => $guestId,
+        ])->assertStatus(201)
+            ->assertJsonPath('data.substitute_player_id', $guestId)
+            ->assertJsonPath('data.substitute_participation_id', null);
+    }
+
+    public function test_create_with_both_substitutes_is_422(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $edId = $this->editionDivision->id_edition_division;
+        $this->postJson("/api/v1/manager/edition-divisions/{$edId}/replacements", [
+            'original_participation_id' => $this->participations[0]->id_participation,
+            'substitute_participation_id' => $this->participations[1]->id_participation,
+            'substitute_player_id' => Player::factory()->create()->id_player,
+        ])->assertStatus(422);
+    }
+
+    public function test_create_unique_conflict_same_match(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $edId = $this->editionDivision->id_edition_division;
+        $payload = [
+            'original_participation_id' => $this->participations[0]->id_participation,
+            'substitute_participation_id' => $this->participations[1]->id_participation,
+            'match_id' => $this->match->id_match,
+        ];
+        $this->postJson("/api/v1/manager/edition-divisions/{$edId}/replacements", $payload)
+            ->assertStatus(201);
+        $this->postJson("/api/v1/manager/edition-divisions/{$edId}/replacements", $payload)
+            ->assertStatus(422);
+    }
+
+    public function test_create_unique_conflict_both_match_id_null(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $edId = $this->editionDivision->id_edition_division;
+        $payload = [
+            'original_participation_id' => $this->participations[0]->id_participation,
+        ];
+        $this->postJson("/api/v1/manager/edition-divisions/{$edId}/replacements", $payload)
+            ->assertStatus(201);
+        $this->postJson("/api/v1/manager/edition-divisions/{$edId}/replacements", $payload)
+            ->assertStatus(422);
+    }
+
+    public function test_patch_omit_keeps_unspecified_fields(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $edId = $this->editionDivision->id_edition_division;
+        $create = $this->postJson("/api/v1/manager/edition-divisions/{$edId}/replacements", [
+            'original_participation_id' => $this->participations[0]->id_participation,
+            'substitute_participation_id' => $this->participations[1]->id_participation,
+            'match_id' => $this->match->id_match,
+        ]);
+        $create->assertStatus(201);
+        $id = (int) $create->json('data.id_replacement');
+
+        $this->patchJson("/api/v1/manager/edition-division-replacements/{$id}", [
+            'original_participation_id' => $this->participations[2]->id_participation,
+        ])->assertOk()
+            ->assertJsonPath('data.original_participation_id', $this->participations[2]->id_participation)
+            ->assertJsonPath('data.substitute_participation_id', $this->participations[1]->id_participation)
+            ->assertJsonPath('data.match_id', $this->match->id_match);
+    }
+
+    public function test_patch_one_substitute_id_nulls_the_other_type(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $edId = $this->editionDivision->id_edition_division;
+        $guestId = Player::factory()->create()->id_player;
+        $create = $this->postJson("/api/v1/manager/edition-divisions/{$edId}/replacements", [
+            'original_participation_id' => $this->participations[0]->id_participation,
+            'substitute_participation_id' => $this->participations[1]->id_participation,
+        ]);
+        $create->assertStatus(201);
+        $id = (int) $create->json('data.id_replacement');
+
+        $this->patchJson("/api/v1/manager/edition-division-replacements/{$id}", [
+            'substitute_player_id' => $guestId,
+        ])->assertOk()
+            ->assertJsonPath('data.substitute_player_id', $guestId)
+            ->assertJsonPath('data.substitute_participation_id', null);
+    }
+
+    public function test_patch_both_substitute_ids_null_is_unknown(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $edId = $this->editionDivision->id_edition_division;
+        $create = $this->postJson("/api/v1/manager/edition-divisions/{$edId}/replacements", [
+            'original_participation_id' => $this->participations[0]->id_participation,
+            'substitute_participation_id' => $this->participations[1]->id_participation,
+        ]);
+        $id = (int) $create->json('data.id_replacement');
+
+        $this->patchJson("/api/v1/manager/edition-division-replacements/{$id}", [
+            'substitute_participation_id' => null,
+            'substitute_player_id' => null,
+        ])->assertOk()
+            ->assertJsonPath('data.substitute_participation_id', null)
+            ->assertJsonPath('data.substitute_player_id', null);
+    }
+
+    public function test_patch_match_id_null_is_division_wide(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $edId = $this->editionDivision->id_edition_division;
+        $create = $this->postJson("/api/v1/manager/edition-divisions/{$edId}/replacements", [
+            'original_participation_id' => $this->participations[0]->id_participation,
+            'match_id' => $this->match->id_match,
+        ]);
+        $id = (int) $create->json('data.id_replacement');
+
+        $this->patchJson("/api/v1/manager/edition-division-replacements/{$id}", [
+            'match_id' => null,
+        ])->assertOk()
+            ->assertJsonPath('data.match_id', null);
+    }
+
+    public function test_patch_unique_conflict_is_422(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $edId = $this->editionDivision->id_edition_division;
+        $this->postJson("/api/v1/manager/edition-divisions/{$edId}/replacements", [
+            'original_participation_id' => $this->participations[0]->id_participation,
+            'match_id' => $this->match->id_match,
+        ])->assertStatus(201);
+
+        $other = $this->postJson("/api/v1/manager/edition-divisions/{$edId}/replacements", [
+            'original_participation_id' => $this->participations[1]->id_participation,
+            'match_id' => $this->match->id_match,
+        ]);
+        $other->assertStatus(201);
+        $id = (int) $other->json('data.id_replacement');
+
+        $this->patchJson("/api/v1/manager/edition-division-replacements/{$id}", [
+            'original_participation_id' => $this->participations[0]->id_participation,
+        ])->assertStatus(422);
+    }
+
+    public function test_patch_blocked_when_finalized(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $edId = $this->editionDivision->id_edition_division;
+        $create = $this->postJson("/api/v1/manager/edition-divisions/{$edId}/replacements", [
+            'original_participation_id' => $this->participations[0]->id_participation,
+        ]);
+        $id = (int) $create->json('data.id_replacement');
+
+        $this->postJson("/api/v1/manager/editions/{$this->edition->id_edition}/finalize")
+            ->assertOk();
+
+        $this->patchJson("/api/v1/manager/edition-division-replacements/{$id}", [
+            'match_id' => $this->match->id_match,
+        ])->assertStatus(409);
+    }
+
+    public function test_patch_blocked_when_replacements_not_allowed(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $edId = $this->editionDivision->id_edition_division;
+        $create = $this->postJson("/api/v1/manager/edition-divisions/{$edId}/replacements", [
+            'original_participation_id' => $this->participations[0]->id_participation,
+        ]);
+        $id = (int) $create->json('data.id_replacement');
+
+        $this->editionDivision->update(['allow_replacements' => false]);
+
+        $this->patchJson("/api/v1/manager/edition-division-replacements/{$id}", [
+            'match_id' => $this->match->id_match,
+        ])->assertStatus(409);
+    }
+
+    public function test_delete_when_replacements_not_allowed(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $edId = $this->editionDivision->id_edition_division;
+        $create = $this->postJson("/api/v1/manager/edition-divisions/{$edId}/replacements", [
+            'original_participation_id' => $this->participations[0]->id_participation,
+        ]);
+        $id = (int) $create->json('data.id_replacement');
+
+        $this->editionDivision->update(['allow_replacements' => false]);
+
+        $this->deleteJson("/api/v1/manager/edition-division-replacements/{$id}")
+            ->assertOk();
+        $this->assertDatabaseMissing('edition_division_replacements', [
+            'id_replacement' => $id,
+        ]);
+    }
 }
+

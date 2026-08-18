@@ -7,9 +7,7 @@ namespace App\Http\Controllers\Api\V1\Manager;
 use App\Http\Resources\EditionDivisionReplacementResource;
 use App\Models\EditionDivision;
 use App\Models\EditionDivisionReplacement;
-use App\Models\MatchPlayer;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 
 /**
@@ -80,7 +78,7 @@ class EditionDivisionReplacementController extends \App\Http\Controllers\BaseVer
     /**
      * @OA\Post(
      *     path="/api/v1/manager/edition-divisions/{editionDivision}/replacements",
-     *     summary="Create a replacement and mark match players as got_replaced",
+     *     summary="Create a replacement",
      *     tags={"🐧 Manager: Edition Divisions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(name="editionDivision", in="path", required=true, @OA\Schema(type="integer")),
@@ -95,68 +93,48 @@ class EditionDivisionReplacementController extends \App\Http\Controllers\BaseVer
      *         )
      *     ),
      *     @OA\Response(response=201, description="Created"),
-     *     @OA\Response(response=409, description="Blocked")
+     *     @OA\Response(response=409, description="Blocked"),
+     *     @OA\Response(response=422, description="Validation error")
      * )
      */
     public function store(Request $request, EditionDivision $editionDivision)
     {
-        $editionDivision->loadMissing('edition');
-        if ($editionDivision->edition?->finalized_at !== null) {
-            return $this->errorResponse('Replacements cannot be created after finalize.', 409);
+        $blocked = $this->blockedResponse($editionDivision);
+        if ($blocked !== null) {
+            return $blocked;
         }
 
-        if (! $editionDivision->allow_replacements) {
-            return $this->errorResponse('Replacements are not allowed for this edition division.', 409);
-        }
+        $validated = $request->validate($this->writeRules($editionDivision, requiredOriginal: true));
 
-        $validated = $request->validate([
-            'original_participation_id' => [
-                'required',
-                'integer',
-                Rule::exists('edition_participations', 'id_participation')
-                    ->where('edition_division_id', $editionDivision->id_edition_division),
-            ],
-            'substitute_participation_id' => [
-                'nullable',
-                'integer',
-                Rule::exists('edition_participations', 'id_participation')
-                    ->where('edition_division_id', $editionDivision->id_edition_division),
-            ],
-            'substitute_player_id' => 'nullable|integer|exists:players,id_player',
-            'match_id' => [
-                'nullable',
-                'integer',
-                Rule::exists('matches', 'id_match')
-                    ->where('edition_division_id', $editionDivision->id_edition_division),
-            ],
-        ]);
-
-        if (empty($validated['substitute_participation_id']) && empty($validated['substitute_player_id'])) {
+        $subPart = $validated['substitute_participation_id'] ?? null;
+        $subPlayer = $validated['substitute_player_id'] ?? null;
+        if ($subPart !== null && $subPlayer !== null) {
             return $this->errorResponse(
-                'Provide substitute_participation_id or substitute_player_id.',
+                'Provide at most one of substitute_participation_id or substitute_player_id.',
+                422
+            );
+        }
+
+        $matchId = $validated['match_id'] ?? null;
+        if ($this->scopeConflictExists(
+            $editionDivision->id_edition_division,
+            (int) $validated['original_participation_id'],
+            $matchId !== null ? (int) $matchId : null,
+        )) {
+            return $this->errorResponse(
+                'A replacement for this player and match scope already exists.',
                 422
             );
         }
 
         try {
-            $replacement = DB::transaction(function () use ($editionDivision, $validated) {
-                $replacement = EditionDivisionReplacement::create([
-                    'edition_division_id' => $editionDivision->id_edition_division,
-                    'original_participation_id' => $validated['original_participation_id'],
-                    'substitute_participation_id' => $validated['substitute_participation_id'] ?? null,
-                    'substitute_player_id' => $validated['substitute_player_id'] ?? null,
-                    'match_id' => $validated['match_id'] ?? null,
-                ]);
-
-                $this->setGotReplaced(
-                    $editionDivision,
-                    (int) $validated['original_participation_id'],
-                    isset($validated['match_id']) ? (int) $validated['match_id'] : null,
-                    true
-                );
-
-                return $replacement;
-            });
+            $replacement = EditionDivisionReplacement::create([
+                'edition_division_id' => $editionDivision->id_edition_division,
+                'original_participation_id' => $validated['original_participation_id'],
+                'substitute_participation_id' => $subPart,
+                'substitute_player_id' => $subPlayer,
+                'match_id' => $validated['match_id'] ?? null,
+            ]);
         } catch (\Throwable $e) {
             return $this->errorResponse('Failed to create replacement: ' . $e->getMessage(), 422);
         }
@@ -169,9 +147,108 @@ class EditionDivisionReplacementController extends \App\Http\Controllers\BaseVer
     }
 
     /**
+     * @OA\Patch(
+     *     path="/api/v1/manager/edition-division-replacements/{replacement}",
+     *     summary="Update a replacement",
+     *     tags={"🐧 Manager: Edition Divisions"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(name="replacement", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             @OA\Property(property="original_participation_id", type="integer"),
+     *             @OA\Property(property="substitute_participation_id", type="integer", nullable=true),
+     *             @OA\Property(property="substitute_player_id", type="integer", nullable=true),
+     *             @OA\Property(property="match_id", type="integer", nullable=true)
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Updated"),
+     *     @OA\Response(response=409, description="Blocked"),
+     *     @OA\Response(response=422, description="Validation error")
+     * )
+     */
+    public function patch(Request $request, EditionDivisionReplacement $replacement)
+    {
+        $replacement->loadMissing('editionDivision.edition');
+        $editionDivision = $replacement->editionDivision;
+        if ($editionDivision === null) {
+            return $this->errorResponse('Replacement edition division was not found.', 422);
+        }
+
+        $blocked = $this->blockedResponse($editionDivision);
+        if ($blocked !== null) {
+            return $blocked;
+        }
+
+        $validated = $request->validate($this->writeRules($editionDivision, requiredOriginal: false));
+
+        $sentPartNonNull = array_key_exists('substitute_participation_id', $validated)
+            && $validated['substitute_participation_id'] !== null;
+        $sentPlayerNonNull = array_key_exists('substitute_player_id', $validated)
+            && $validated['substitute_player_id'] !== null;
+
+        if ($sentPartNonNull && $sentPlayerNonNull) {
+            return $this->errorResponse(
+                'Provide at most one of substitute_participation_id or substitute_player_id.',
+                422
+            );
+        }
+
+        if ($sentPartNonNull) {
+            $validated['substitute_player_id'] = null;
+        } elseif ($sentPlayerNonNull) {
+            $validated['substitute_participation_id'] = null;
+        }
+
+        $resultingPart = array_key_exists('substitute_participation_id', $validated)
+            ? $validated['substitute_participation_id']
+            : $replacement->substitute_participation_id;
+        $resultingPlayer = array_key_exists('substitute_player_id', $validated)
+            ? $validated['substitute_player_id']
+            : $replacement->substitute_player_id;
+
+        if ($resultingPart !== null && $resultingPlayer !== null) {
+            return $this->errorResponse(
+                'Provide at most one of substitute_participation_id or substitute_player_id.',
+                422
+            );
+        }
+
+        $resultingOriginal = array_key_exists('original_participation_id', $validated)
+            ? (int) $validated['original_participation_id']
+            : (int) $replacement->original_participation_id;
+        $resultingMatchId = array_key_exists('match_id', $validated)
+            ? ($validated['match_id'] !== null ? (int) $validated['match_id'] : null)
+            : ($replacement->match_id !== null ? (int) $replacement->match_id : null);
+
+        if ($this->scopeConflictExists(
+            $editionDivision->id_edition_division,
+            $resultingOriginal,
+            $resultingMatchId,
+            (int) $replacement->id_replacement,
+        )) {
+            return $this->errorResponse(
+                'A replacement for this player and match scope already exists.',
+                422
+            );
+        }
+
+        try {
+            $replacement->update($validated);
+        } catch (\Throwable $e) {
+            return $this->errorResponse('Failed to update replacement: ' . $e->getMessage(), 422);
+        }
+
+        return $this->resourceResponse(
+            new EditionDivisionReplacementResource($replacement->fresh()->load(self::LIST_WITH)),
+            'Replacement updated successfully'
+        );
+    }
+
+    /**
      * @OA\Delete(
      *     path="/api/v1/manager/edition-division-replacements/{replacement}",
-     *     summary="Delete a replacement and clear got_replaced",
+     *     summary="Delete a replacement",
      *     tags={"🐧 Manager: Edition Divisions"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(name="replacement", in="path", required=true, @OA\Schema(type="integer")),
@@ -188,34 +265,75 @@ class EditionDivisionReplacementController extends \App\Http\Controllers\BaseVer
             return $this->errorResponse('Replacements cannot be deleted after finalize.', 409);
         }
 
-        DB::transaction(function () use ($replacement, $editionDivision) {
-            $this->setGotReplaced(
-                $editionDivision,
-                (int) $replacement->original_participation_id,
-                $replacement->match_id !== null ? (int) $replacement->match_id : null,
-                false
-            );
-            $replacement->delete();
-        });
+        $replacement->delete();
 
         return $this->successResponse(null, 'Replacement deleted successfully');
     }
 
-    private function setGotReplaced(
-        EditionDivision $editionDivision,
+    private function blockedResponse(EditionDivision $editionDivision)
+    {
+        $editionDivision->loadMissing('edition');
+        if ($editionDivision->edition?->finalized_at !== null) {
+            return $this->errorResponse('Replacements cannot be created after finalize.', 409);
+        }
+
+        if (! $editionDivision->allow_replacements) {
+            return $this->errorResponse('Replacements are not allowed for this edition division.', 409);
+        }
+
+        return null;
+    }
+
+    private function scopeConflictExists(
+        int $editionDivisionId,
         int $originalParticipationId,
         ?int $matchId,
-        bool $gotReplaced,
-    ): void {
-        $query = MatchPlayer::query()
-            ->where('participation_id', $originalParticipationId)
-            ->whereHas('matchSide.match', function ($q) use ($editionDivision, $matchId) {
-                $q->where('edition_division_id', $editionDivision->id_edition_division);
-                if ($matchId !== null) {
-                    $q->where('id_match', $matchId);
-                }
-            });
+        ?int $excludeReplacementId = null,
+    ): bool {
+        $query = EditionDivisionReplacement::query()
+            ->where('edition_division_id', $editionDivisionId)
+            ->where('original_participation_id', $originalParticipationId);
 
-        $query->update(['got_replaced' => $gotReplaced]);
+        if ($matchId === null) {
+            $query->whereNull('match_id');
+        } else {
+            $query->where('match_id', $matchId);
+        }
+
+        if ($excludeReplacementId !== null) {
+            $query->where('id_replacement', '!=', $excludeReplacementId);
+        }
+
+        return $query->exists();
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function writeRules(EditionDivision $editionDivision, bool $requiredOriginal): array
+    {
+        $original = [
+            $requiredOriginal ? 'required' : 'sometimes',
+            'integer',
+            Rule::exists('edition_participations', 'id_participation')
+                ->where('edition_division_id', $editionDivision->id_edition_division),
+        ];
+
+        return [
+            'original_participation_id' => $original,
+            'substitute_participation_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('edition_participations', 'id_participation')
+                    ->where('edition_division_id', $editionDivision->id_edition_division),
+            ],
+            'substitute_player_id' => 'nullable|integer|exists:players,id_player',
+            'match_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('matches', 'id_match')
+                    ->where('edition_division_id', $editionDivision->id_edition_division),
+            ],
+        ];
     }
 }

@@ -7,6 +7,7 @@ namespace Tests\Feature\Api\V1\Manager;
 use App\Models\Edition;
 use App\Models\EditionDivision;
 use App\Models\EditionLottery;
+use App\Models\EditionLotteryPrize;
 use App\Models\EditionLotteryRule;
 use App\Models\EditionParticipation;
 use App\Models\Player;
@@ -86,26 +87,30 @@ final class LotteryPlayingWindowIntegrationTest extends TestCase
         $prize = Prize::factory()->create();
         $lottery = EditionLottery::factory()->create([
             'edition_id' => $edition->id_edition,
+            'name' => 'Playing Window Lottery',
+        ]);
+        $lotteryPrize = EditionLotteryPrize::factory()->create([
+            'lottery_id' => $lottery->id_lottery,
             'prize_id' => $prize->id_prize,
             'prize_quantity' => 3,
         ]);
         EditionLotteryRule::factory()->create([
-            'lottery_id' => $lottery->id_lottery,
+            'lottery_prize_id' => $lotteryPrize->id_lottery_prize,
             'edition_division_id' => $div24->id_edition_division,
             'rule_prize_quantity' => 1,
         ]);
         EditionLotteryRule::factory()->create([
-            'lottery_id' => $lottery->id_lottery,
+            'lottery_prize_id' => $lotteryPrize->id_lottery_prize,
             'edition_division_id' => $div00->id_edition_division,
             'rule_prize_quantity' => 1,
         ]);
         EditionLotteryRule::factory()->create([
-            'lottery_id' => $lottery->id_lottery,
+            'lottery_prize_id' => $lotteryPrize->id_lottery_prize,
             'edition_division_id' => $divOther->id_edition_division,
             'rule_prize_quantity' => 1,
         ]);
         EditionLotteryRule::factory()->create([
-            'lottery_id' => $lottery->id_lottery,
+            'lottery_prize_id' => $lotteryPrize->id_lottery_prize,
             'edition_division_id' => null,
             'rule_prize_quantity' => 1,
         ]);

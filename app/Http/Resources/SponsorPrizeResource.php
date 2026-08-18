@@ -7,13 +7,16 @@ namespace App\Http\Resources;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-class PrizeFromClubResource extends JsonResource
+class SponsorPrizeResource extends JsonResource
 {
+    /**
+     * @return array<string, mixed>
+     */
     public function toArray(Request $request): array
     {
         return [
-            'id_club_prize' => $this->id_club_prize,
-            'club_id' => $this->club_id,
+            'id_sponsor_prize' => $this->id_sponsor_prize,
+            'sponsor_id' => $this->sponsor_id,
             'prize_id' => $this->prize_id,
             'media_path' => $this->media_path,
             'url' => $this->url,
@@ -26,8 +29,8 @@ class PrizeFromClubResource extends JsonResource
             'box_2_text_color' => $this->box_2_text_color,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
-            'club' => $this->whenLoaded('club', function () {
-                return new ClubResource($this->club);
+            'sponsor' => $this->whenLoaded('sponsor', function () {
+                return new SponsorResource($this->sponsor);
             }),
             'prize' => $this->whenLoaded('prize', function () {
                 return new PrizeResource($this->prize);

@@ -422,7 +422,7 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      *                         type="object",
      *                         description="Information about linked data preventing deletion",
      *                         @OA\Property(property="locations_count", type="integer", example=3),
-     *                         @OA\Property(property="prizes_count", type="integer", example=2)
+     *                         @OA\Property(property="sponsors_count", type="integer", example=1)
      *                     )
      *                 )
      *             }
@@ -439,7 +439,7 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
     {
         $linkedDataRelations = [
             'locations' => 'locations_count',
-            'prizes' => 'prizes_count',
+            'sponsors' => 'sponsors_count',
         ];
 
         return $this->deleteResourceWithResponse(
@@ -564,7 +564,7 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
 
         $linkedDataRelations = [
             'locations' => 'locations_count',
-            'prizes' => 'prizes_count',
+            'sponsors' => 'sponsors_count',
         ];
 
         return $this->deleteBulkResourcesWithResponse(

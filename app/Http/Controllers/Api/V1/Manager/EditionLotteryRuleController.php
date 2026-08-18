@@ -24,24 +24,20 @@ class EditionLotteryRuleController extends \App\Http\Controllers\BaseVersions\V1
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer", default=15, maximum=100)),
-     *     @OA\Parameter(
-     *         name="with_luckies",
-     *         in="query",
-     *         description="When true, nest ordered luckies (with drawn participation player) on each rule",
-     *         required=false,
-     *         @OA\Schema(type="boolean")
-     *     ),
      *     @OA\Response(response=200, description="Successful operation")
      * )
      */
     public function index(Request $request)
     {
-        $with = ['lottery.prize', 'editionDivision'];
-        if ($request->boolean('with_luckies')) {
-            $with[] = 'luckies.drawnParticipation.player.phones';
-        }
+        $with = ['lotteryPrize.prize', 'lotteryPrize.sponsor', 'lotteryPrize.lottery', 'editionDivision'];
 
         $query = EditionLotteryRule::with($with);
+
+        $lotteryId = $this->pullJoinFilter($request, 'lottery_id');
+        if ($lotteryId !== null) {
+            $ids = is_array($lotteryId) ? $lotteryId : [$lotteryId];
+            $query->whereHas('lotteryPrize', fn ($q) => $q->whereIn('lottery_id', $ids));
+        }
 
         $this->applyAdvancedPagination(
             $query,
@@ -75,9 +71,10 @@ class EditionLotteryRuleController extends \App\Http\Controllers\BaseVersions\V1
     public function show(EditionLotteryRule $lotteryRule)
     {
         $lotteryRule->load([
-            'lottery.prize',
+            'lotteryPrize.prize',
+            'lotteryPrize.sponsor',
+            'lotteryPrize.lottery',
             'editionDivision',
-            'luckies.drawnParticipation.player.phones',
         ]);
 
         return $this->resourceResponse(
@@ -95,8 +92,8 @@ class EditionLotteryRuleController extends \App\Http\Controllers\BaseVersions\V1
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"lottery_id", "rule_prize_quantity"},
-     *             @OA\Property(property="lottery_id", type="integer"),
+     *             required={"lottery_prize_id", "rule_prize_quantity"},
+     *             @OA\Property(property="lottery_prize_id", type="integer"),
      *             @OA\Property(property="rule_prize_quantity", type="integer"),
      *             @OA\Property(property="orderliness", type="integer"),
      *             @OA\Property(property="edition_division_id", type="integer", nullable=true),
@@ -121,7 +118,7 @@ class EditionLotteryRuleController extends \App\Http\Controllers\BaseVersions\V1
         $validated['orderliness'] = $validated['orderliness'] ?? 0;
 
         $rule = EditionLotteryRule::create($validated);
-        $rule->load(['lottery.prize', 'editionDivision']);
+        $rule->load(['lotteryPrize.prize', 'lotteryPrize.sponsor', 'lotteryPrize.lottery', 'editionDivision']);
 
         return $this->resourceResponse(
             new EditionLotteryRuleResource($rule),
@@ -144,7 +141,7 @@ class EditionLotteryRuleController extends \App\Http\Controllers\BaseVersions\V1
     {
         $validated = $request->validate($this->ruleValidation(true));
         $lotteryRule->update($validated);
-        $lotteryRule->load(['lottery.prize', 'editionDivision']);
+        $lotteryRule->load(['lotteryPrize.prize', 'lotteryPrize.sponsor', 'lotteryPrize.lottery', 'editionDivision']);
 
         return $this->resourceResponse(
             new EditionLotteryRuleResource($lotteryRule),
@@ -166,7 +163,7 @@ class EditionLotteryRuleController extends \App\Http\Controllers\BaseVersions\V1
     {
         $validated = $request->validate($this->ruleValidation(false));
         $lotteryRule->update($validated);
-        $lotteryRule->load(['lottery.prize', 'editionDivision']);
+        $lotteryRule->load(['lotteryPrize.prize', 'lotteryPrize.sponsor', 'lotteryPrize.lottery', 'editionDivision']);
 
         return $this->resourceResponse(
             new EditionLotteryRuleResource($lotteryRule),
@@ -228,7 +225,7 @@ class EditionLotteryRuleController extends \App\Http\Controllers\BaseVersions\V1
         $required = $requireCore ? 'required' : 'sometimes';
 
         return [
-            'lottery_id' => $required . '|integer|exists:edition_lotteries,id_lottery',
+            'lottery_prize_id' => $required . '|integer|exists:edition_lottery_prizes,id_lottery_prize',
             'rule_prize_quantity' => $required . '|integer|min:1',
             'orderliness' => 'nullable|integer|min:0',
             'edition_division_id' => 'nullable|integer|exists:edition_divisions,id_edition_division',

@@ -370,7 +370,6 @@ final class EditionDivisionPosterControllerTest extends TestCase
                 'slot' => $slot,
                 'participation_id' => $omitParticipation ? null : $participations[$idx]->id_participation,
                 'player_id' => $playerIdOnMatchPlayer ? $players[$idx]->id_player : null,
-                'got_replaced' => false,
                 'inserted_at' => time(),
             ]);
         }

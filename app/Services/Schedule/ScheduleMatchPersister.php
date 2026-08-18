@@ -6,6 +6,7 @@ namespace App\Services\Schedule;
 
 use App\Models\EditionDivision;
 use App\Models\EditionDivisionCourt;
+use App\Models\EditionDivisionReplacement;
 use App\Models\EditionParticipation;
 use App\Models\GameMatch;
 use App\Models\MatchPlayer;
@@ -104,6 +105,10 @@ final class ScheduleMatchPersister
             return 0;
         }
 
+        EditionDivisionReplacement::query()
+            ->where('edition_division_id', $editionDivision->id_edition_division)
+            ->delete();
+
         return GameMatch::query()->whereIn('id_match', $matchIds)->delete();
     }
 
@@ -148,7 +153,6 @@ final class ScheduleMatchPersister
                 'slot' => (int) $slot,
                 'participation_id' => $participation->id_participation,
                 'player_id' => $playerId,
-                'got_replaced' => false,
             ]);
         }
     }

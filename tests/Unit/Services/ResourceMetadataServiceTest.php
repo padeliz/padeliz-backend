@@ -43,7 +43,9 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertEquals('edition-divisions', $method->invoke($this->metadataService, 'EditionDivision'));
         $this->assertEquals('edition-lottery-luckies', $method->invoke($this->metadataService, 'EditionLotteryLucky'));
         $this->assertEquals('eligibilities', $method->invoke($this->metadataService, 'Eligibility'));
-        $this->assertEquals('prize-from-clubs', $method->invoke($this->metadataService, 'PrizeFromClub'));
+        $this->assertEquals('sponsors', $method->invoke($this->metadataService, 'Sponsor'));
+        $this->assertEquals('sponsor-prizes', $method->invoke($this->metadataService, 'SponsorPrize'));
+        $this->assertEquals('edition-lottery-prizes', $method->invoke($this->metadataService, 'EditionLotteryPrize'));
 
         // Test edge cases with multiple hyphens (using existing models)
         $this->assertEquals('edition-divisions', $method->invoke($this->metadataService, 'EditionDivision'));
@@ -126,7 +128,9 @@ class ResourceMetadataServiceTest extends TestCase
             'EditionLottery',
             'EditionParticipation',
             'Eligibility',
-            'PrizeFromClub',
+            'Sponsor',
+            'SponsorPrize',
+            'EditionLotteryPrize',
         ];
 
         foreach ($testCases as $modelName) {
@@ -272,7 +276,9 @@ class ResourceMetadataServiceTest extends TestCase
             'Player',
             'Eligibility',
             'Prize',
-            'PrizeFromClub',
+            'Sponsor',
+            'SponsorPrize',
+            'EditionLotteryPrize',
         ];
     }
 

@@ -6,7 +6,6 @@ namespace Database\Factories;
 
 use App\Models\Edition;
 use App\Models\EditionLottery;
-use App\Models\Prize;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class EditionLotteryFactory extends Factory
@@ -17,8 +16,8 @@ class EditionLotteryFactory extends Factory
     {
         return [
             'edition_id' => Edition::factory(),
-            'prize_id' => $this->faker->optional()->randomElement([Prize::factory(), null]),
-            'prize_quantity' => $this->faker->numberBetween(1, 10),
+            'name' => $this->faker->unique()->words(3, true),
+            'display_order' => $this->faker->numberBetween(0, 20),
             'inserted_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
         ];
     }

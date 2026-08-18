@@ -20,7 +20,6 @@ class MatchPlayerResource extends JsonResource
             'slot' => $this->slot,
             'participation_id' => $this->participation_id,
             'player_id' => $this->player_id,
-            'got_replaced' => $this->got_replaced,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
             'participation' => $this->whenLoaded('participation', function () {

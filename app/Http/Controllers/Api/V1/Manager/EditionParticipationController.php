@@ -61,11 +61,7 @@ class EditionParticipationController extends V1BaseController
      *             @OA\Property(property="player_id", type="string", description="Filter by player ID"),
      *             @OA\Property(property="edition_division_id", type="string", description="Filter by edition division ID"),
      *             @OA\Property(property="sort_order", type="string", description="Filter by sort order"),
-     *             @OA\Property(property="is_collecting_points", type="string", description="Filter by collecting points (use 0 or 1)"),
-     *             @OA\Property(property="is_minor", type="string", description="Filter by minor status (use 0 or 1)"),
-     *             @OA\Property(property="is_student", type="string", description="Filter by student status (use 0 or 1)"),
-     *             @OA\Property(property="discount", type="string", description="Filter by discount amount"),
-     *             @OA\Property(property="payment", type="string", description="Filter by payment amount")
+     *             @OA\Property(property="is_collecting_points", type="string", description="Filter by collecting points (use 0 or 1)")
      *         )
      *     ),
      *     @OA\Parameter(
@@ -84,10 +80,6 @@ class EditionParticipationController extends V1BaseController
      *             @OA\Property(property="edition_division_id", type="string", enum={"asc", "desc"}, description="Sort by edition division ID"),
      *             @OA\Property(property="sort_order", type="string", enum={"asc", "desc"}, description="Sort by sort order"),
      *             @OA\Property(property="is_collecting_points", type="string", enum={"asc", "desc"}, description="Sort by collecting points"),
-     *             @OA\Property(property="is_minor", type="string", enum={"asc", "desc"}, description="Sort by minor status"),
-     *             @OA\Property(property="is_student", type="string", enum={"asc", "desc"}, description="Sort by student status"),
-     *             @OA\Property(property="discount", type="string", enum={"asc", "desc"}, description="Sort by discount amount"),
-     *             @OA\Property(property="payment", type="string", enum={"asc", "desc"}, description="Sort by payment amount"),
      *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}, description="Sort by creation date"),
      *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"}, description="Sort by update date")
      *         )
@@ -247,10 +239,6 @@ class EditionParticipationController extends V1BaseController
      *             @OA\Property(property="edition_division_id", type="integer"),
      *             @OA\Property(property="sort_order", type="integer", description="Sort order", default=0),
      *             @OA\Property(property="is_collecting_points", type="boolean", description="Is collecting points", default=true),
-     *             @OA\Property(property="is_minor", type="boolean", description="Is minor player"),
-     *             @OA\Property(property="is_student", type="boolean", description="Is student"),
-     *             @OA\Property(property="discount", type="integer", description="Discount amount"),
-     *             @OA\Property(property="payment", type="integer", description="Payment amount"),
      *             @OA\Property(property="absence_reason", type="string", enum={"SICK", "FORGOT", "EXAMS", "RECONSIDERED"}, description="Absence reason"),
      *             @OA\Property(property="ban_reason", type="string", enum={"LEFT SUDDENLY", "AGGRESSIVE PLAYER", "LIBIDINOUS", ""}, description="Ban reason")
      *         )
@@ -297,10 +285,6 @@ class EditionParticipationController extends V1BaseController
             'edition_division_id' => 'required|exists:edition_divisions,id_edition_division',
             'sort_order' => 'integer|min:0',
             'is_collecting_points' => 'boolean',
-            'is_minor' => 'boolean',
-            'is_student' => 'boolean',
-            'discount' => 'nullable|integer|min:0',
-            'payment' => 'nullable|integer|min:0',
             'absence_reason' => 'nullable|in:SICK,FORGOT,EXAMS,RECONSIDERED',
             'ban_reason' => 'nullable|in:LEFT SUDDENLY,AGGRESSIVE PLAYER,LIBIDINOUS,',
         ]);
@@ -323,10 +307,6 @@ class EditionParticipationController extends V1BaseController
         // Set default values for optional fields
         $validated['sort_order'] = $validated['sort_order'] ?? 0;
         $validated['is_collecting_points'] = $validated['is_collecting_points'] ?? true;
-        $validated['is_minor'] = $validated['is_minor'] ?? false;
-        $validated['is_student'] = $validated['is_student'] ?? false;
-        $validated['discount'] = $validated['discount'] ?? 0;
-        $validated['payment'] = $validated['payment'] ?? 0;
 
         $editionParticipation = EditionParticipation::create($validated);
 
@@ -361,10 +341,6 @@ class EditionParticipationController extends V1BaseController
      *             @OA\Property(property="edition_division_id", type="integer", description="Edition division ID"),
      *             @OA\Property(property="sort_order", type="integer", description="Sort order"),
      *             @OA\Property(property="is_collecting_points", type="boolean", description="Is collecting points"),
-     *             @OA\Property(property="is_minor", type="boolean", description="Is minor player"),
-     *             @OA\Property(property="is_student", type="boolean", description="Is student"),
-     *             @OA\Property(property="discount", type="integer", description="Discount amount"),
-     *             @OA\Property(property="payment", type="integer", description="Payment amount"),
      *             @OA\Property(property="absence_reason", type="string", enum={"SICK", "FORGOT", "EXAMS", "RECONSIDERED"}, description="Absence reason"),
      *             @OA\Property(property="ban_reason", type="string", enum={"LEFT SUDDENLY", "AGGRESSIVE PLAYER", "LIBIDINOUS", ""}, description="Ban reason")
      *         )
@@ -421,10 +397,6 @@ class EditionParticipationController extends V1BaseController
             'edition_division_id' => 'required|exists:edition_divisions,id_edition_division',
             'sort_order' => 'required|integer|min:0',
             'is_collecting_points' => 'required|boolean',
-            'is_minor' => 'required|boolean',
-            'is_student' => 'required|boolean',
-            'discount' => 'nullable|integer|min:0',
-            'payment' => 'nullable|integer|min:0',
             'absence_reason' => 'nullable|in:SICK,FORGOT,EXAMS,RECONSIDERED',
             'ban_reason' => 'nullable|in:LEFT SUDDENLY,AGGRESSIVE PLAYER,LIBIDINOUS,',
         ]);
@@ -471,10 +443,6 @@ class EditionParticipationController extends V1BaseController
      *             @OA\Property(property="edition_division_id", type="integer", description="Edition division ID"),
      *             @OA\Property(property="sort_order", type="integer", description="Sort order"),
      *             @OA\Property(property="is_collecting_points", type="boolean", description="Is collecting points"),
-     *             @OA\Property(property="is_minor", type="boolean", description="Is minor player"),
-     *             @OA\Property(property="is_student", type="boolean", description="Is student"),
-     *             @OA\Property(property="discount", type="integer", description="Discount amount"),
-     *             @OA\Property(property="payment", type="integer", description="Payment amount"),
      *             @OA\Property(property="absence_reason", type="string", enum={"SICK", "FORGOT", "EXAMS", "RECONSIDERED"}, description="Absence reason"),
      *             @OA\Property(property="ban_reason", type="string", enum={"LEFT SUDDENLY", "AGGRESSIVE PLAYER", "LIBIDINOUS", ""}, description="Ban reason")
      *         )
@@ -531,10 +499,6 @@ class EditionParticipationController extends V1BaseController
             'edition_division_id' => 'sometimes|exists:edition_divisions,id_edition_division',
             'sort_order' => 'integer|min:0',
             'is_collecting_points' => 'boolean',
-            'is_minor' => 'boolean',
-            'is_student' => 'boolean',
-            'discount' => 'nullable|integer|min:0',
-            'payment' => 'nullable|integer|min:0',
             'absence_reason' => 'nullable|in:SICK,FORGOT,EXAMS,RECONSIDERED',
             'ban_reason' => 'nullable|in:LEFT SUDDENLY,AGGRESSIVE PLAYER,LIBIDINOUS,',
         ]);

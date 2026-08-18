@@ -11,6 +11,7 @@ use App\Models\Edition;
 use App\Models\EditionDivision;
 use App\Models\EditionLottery;
 use App\Models\EditionLotteryLucky;
+use App\Models\EditionLotteryPrize;
 use App\Models\EditionLotteryRule;
 use App\Models\EditionParticipation;
 use App\Models\Eligibility;
@@ -23,7 +24,8 @@ use App\Models\PlayerIdentity;
 use App\Models\PlayerPhone;
 use App\Models\PlayerProfileImage;
 use App\Models\Prize;
-use App\Models\PrizeFromClub;
+use App\Models\Sponsor;
+use App\Models\SponsorPrize;
 use Carbon\Carbon;
 use Faker\Factory as Faker;
 use Illuminate\Database\Seeder;
@@ -73,8 +75,11 @@ class DatabaseSeeder extends Seeder
 
         EditionLotteryLucky::truncate();
         EditionLotteryRule::truncate();
+        EditionLotteryPrize::truncate();
         EditionLottery::truncate();
-        PrizeFromClub::truncate();
+        SponsorPrize::truncate();
+        DB::table('sponsor_players')->truncate();
+        Sponsor::truncate();
         Prize::truncate();
         EditionParticipation::truncate();
         EditionDivision::truncate();
@@ -207,26 +212,39 @@ class DatabaseSeeder extends Seeder
             $division->update(['its_first_edition_id' => $allEditions->random()->id_edition]);
         }
 
-        $this->command->info('Creating prizes and club prizes...');
+        $this->command->info('Creating prizes and sponsors...');
         $prizes = Prize::factory()->count(5)->create();
 
-        // Create prizes from clubs
-        foreach ($clubs as $club) {
-            PrizeFromClub::factory()
-                ->count(\rand(1, 3))
-                ->forClub($club)
-                ->create([
-                    'prize_id' => $prizes->random()->id_prize,
-                ]);
+        $sponsors = collect();
+        foreach ($clubs->take(2) as $club) {
+            $sponsor = Sponsor::factory()->forClub($club)->create();
+            $sponsor->syncPlayerIds($players->random(min(2, $players->count()))->pluck('id_player')->all());
+            $sponsors->push($sponsor->fresh(['players']));
+
+            SponsorPrize::factory()->create([
+                'sponsor_id' => $sponsor->id_sponsor,
+                'prize_id' => $prizes->random()->id_prize,
+                'media_path' => 'prizes-from-clubs/' . $club->id_club . '/media/seed.jpg',
+                'box_1_text' => 'Offered by ' . $club->name,
+            ]);
         }
+
+        $organizerSponsor = Sponsor::factory()->create(['name' => 'Padeliz Partners', 'club_id' => null]);
+        $sponsors->push($organizerSponsor);
+        SponsorPrize::factory()->create([
+            'sponsor_id' => $organizerSponsor->id_sponsor,
+            'prize_id' => $prizes->first()->id_prize,
+            'media_path' => null,
+            'box_1_text' => null,
+        ]);
 
         $this->command->info('Creating edition divisions and participations...');
         foreach ($pastEditions->merge($futureEditions) as $edition) {
             $this->createEditionDivisionsAndParticipations($edition, $players);
         }
 
-        $this->command->info('Creating lotteries, rules and luckies...');
-        $this->createLotteriesAndLuckies($pastEditions, $prizes, $faker);
+        $this->command->info('Creating lotteries, prize lines, rules and luckies...');
+        $this->createLotteriesAndLuckies($pastEditions, $prizes, $sponsors, $faker);
 
         $this->command->info('Creating player eligibilities...');
         $this->createEligibilities($players, $allEditions, $faker);
@@ -451,27 +469,38 @@ class DatabaseSeeder extends Seeder
         }
     }
 
-    private function createLotteriesAndLuckies($editions, $prizes, $faker)
+    private function createLotteriesAndLuckies($editions, $prizes, $sponsors, $faker)
     {
         foreach ($editions as $edition) {
-            $lotteries = EditionLottery::factory()
-                ->count(\rand(1, 2))
-                ->create([
+            $lotteryCount = \rand(1, 2);
+            $lotteries = collect();
+            for ($i = 0; $i < $lotteryCount; $i++) {
+                $lotteries->push(EditionLottery::factory()->create([
                     'edition_id' => $edition->id_edition,
-                    'prize_id' => $prizes->random()->id_prize,
-                    'prize_quantity' => \rand(1, 5),
-                ]);
+                    'name' => $i === 0 ? 'Main draw' : 'Kids raffle',
+                    'display_order' => $i,
+                ]));
+            }
 
             $editionDivisions = EditionDivision::where('edition_id', $edition->id_edition)->get();
 
-            foreach ($lotteries as $lottery) {
-                $rules = collect();
-                $remaining = (int) $lottery->prize_quantity;
+            foreach ($lotteries as $lotteryIndex => $lottery) {
+                $prize = $prizes->random();
+                $useSponsor = $lotteryIndex === 0 && $sponsors->isNotEmpty() && $faker->boolean(50);
+                $line = EditionLotteryPrize::factory()->create([
+                    'lottery_id' => $lottery->id_lottery,
+                    'prize_id' => $prize->id_prize,
+                    'prize_quantity' => \rand(1, 5),
+                    'sponsor_id' => $useSponsor ? $sponsors->random()->id_sponsor : null,
+                    'display_order' => 0,
+                ]);
 
-                // Live-like: one open rule + optional scoped rules (student / division)
+                $rules = collect();
+                $remaining = (int) $line->prize_quantity;
+
                 $openQty = max(1, (int) ceil($remaining / 2));
                 $rules->push(EditionLotteryRule::factory()->create([
-                    'lottery_id' => $lottery->id_lottery,
+                    'lottery_prize_id' => $line->id_lottery_prize,
                     'rule_prize_quantity' => $openQty,
                     'orderliness' => 0,
                     'edition_division_id' => null,
@@ -481,7 +510,7 @@ class DatabaseSeeder extends Seeder
 
                 if ($remaining > 0) {
                     $rules->push(EditionLotteryRule::factory()->create([
-                        'lottery_id' => $lottery->id_lottery,
+                        'lottery_prize_id' => $line->id_lottery_prize,
                         'rule_prize_quantity' => $remaining,
                         'orderliness' => 1,
                         'edition_division_id' => $editionDivisions->isNotEmpty()

@@ -28,14 +28,6 @@ class EditionLotteryLuckyResource extends JsonResource
         $player = $participation?->player;
         $name = $player !== null ? (string) $player->name : '';
         $collecting = (bool) ($participation?->is_collecting_points ?? false);
-        $pdfAvatarUrl = null;
-        if ($player !== null) {
-            $cached = CachedPdfPlayerImage::query()
-                ->where('player_id', (int) $player->id_player)
-                ->where('player_is_collecting_points', $collecting)
-                ->first();
-            $pdfAvatarUrl = $cached?->url;
-        }
 
         return [
             'id_lucky' => $this->id_lucky,
@@ -49,7 +41,7 @@ class EditionLotteryLuckyResource extends JsonResource
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
             'short_name' => $name !== '' ? PdfHtmlHelper::shortenPlayerName($name) : null,
-            'pdf_avatar_url' => $pdfAvatarUrl,
+            'pdf_avatar_url' => $this->resolvePdfAvatarUrl($player, $collecting),
             'lottery_rule' => $this->whenLoaded('lotteryRule', function () {
                 return new EditionLotteryRuleResource($this->lotteryRule);
             }),
@@ -60,5 +52,26 @@ class EditionLotteryLuckyResource extends JsonResource
                 }
             ),
         ];
+    }
+
+    private function resolvePdfAvatarUrl(mixed $player, bool $collecting): ?string
+    {
+        $attributes = $this->resource->getAttributes();
+        if (array_key_exists('pdf_avatar_url', $attributes)) {
+            $value = $attributes['pdf_avatar_url'];
+
+            return $value !== null ? (string) $value : null;
+        }
+
+        if ($player === null) {
+            return null;
+        }
+
+        $cached = CachedPdfPlayerImage::query()
+            ->where('player_id', (int) $player->id_player)
+            ->where('player_is_collecting_points', $collecting)
+            ->first();
+
+        return $cached?->url;
     }
 }

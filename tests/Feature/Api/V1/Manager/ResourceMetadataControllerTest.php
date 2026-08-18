@@ -327,11 +327,11 @@ class ResourceMetadataControllerTest extends TestCase
             'EditionLottery' => ['EditionLottery', 'EditionLottery'],
             'EditionLotteryLucky' => ['EditionLotteryLucky', 'EditionLotteryLucky'],
             'EditionParticipation' => ['EditionParticipation', 'EditionParticipation'],
+            'EditionRegistration' => ['EditionRegistration', 'EditionRegistration'],
             'Location' => ['Location', 'Location'],
             'Player' => ['Player', 'Player'],
             'Eligibility' => ['Eligibility', 'Eligibility'],
             'Prize' => ['Prize', 'Prize'],
-            'PrizeFromClub' => ['PrizeFromClub', 'PrizeFromClub'],
         ];
     }
 
@@ -389,6 +389,7 @@ class ResourceMetadataControllerTest extends TestCase
 
         $this->assertContains('name', $response->json('data.searchable_fields'));
         $this->assertIsArray($response->json('data.request_body'));
+        $this->assertArrayNotHasKey('registrations', $response->json('data.swagger_schema.properties') ?? []);
     }
 
     public function test_edition_participation_metadata_endpoint(): void
@@ -438,7 +439,41 @@ class ResourceMetadataControllerTest extends TestCase
             $this->assertEquals('first_name', $filterableFields['player_id']['related_schema_field']);
         }
 
+        $this->assertArrayNotHasKey('is_minor', $filterableFields);
+        $this->assertArrayNotHasKey('is_student', $filterableFields);
+        $this->assertArrayNotHasKey('discount', $filterableFields);
+        $this->assertArrayNotHasKey('payment', $filterableFields);
+
+        $swagger = $response->json('data.swagger_schema');
+        $this->assertArrayNotHasKey('is_minor', $swagger['properties'] ?? []);
+
         $this->assertIsArray($response->json('data.request_body'));
+    }
+
+    public function test_edition_registration_metadata_endpoint(): void
+    {
+        $manager = Player::factory()->create();
+        $manager->addUserType('manager');
+
+        $response = $this->actingAs($manager)
+            ->getJson('/api/v1/manager/metadata/EditionRegistration');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.schema_name', 'EditionRegistration');
+
+        $filterableFields = $response->json('data.filterable_fields');
+        $this->assertArrayHasKey('player_id', $filterableFields);
+        $this->assertArrayHasKey('edition_id', $filterableFields);
+        $this->assertArrayHasKey('edition_division_id', $filterableFields);
+        $this->assertArrayHasKey('is_minor', $filterableFields);
+        $this->assertArrayHasKey('payment', $filterableFields);
+
+        $swagger = $response->json('data.swagger_schema');
+        $this->assertArrayHasKey('is_minor', $swagger['properties']);
+        $this->assertTrue($swagger['properties']['edition_division_id']['nullable'] ?? false);
+        $this->assertNotContains('edition_division_id', $swagger['required'] ?? []);
+        $this->assertContains('edition_id', $swagger['required'] ?? []);
+        $this->assertContains('payment', $swagger['required'] ?? []);
     }
 
     public function test_eligibility_metadata_endpoint(): void
@@ -564,6 +599,8 @@ class ResourceMetadataControllerTest extends TestCase
             'Edition' => 'name',
             'EditionDivision' => 'division_title',
             'Prize' => 'name',
+            'EditionLottery' => 'name',
+            'Sponsor' => 'name',
         ];
 
         foreach ($modelsWithDisplayField as $modelName => $expectedDisplayField) {
@@ -580,10 +617,11 @@ class ResourceMetadataControllerTest extends TestCase
 
         // Test models with display_field set to null (no searchable fields)
         $modelsWithNullDisplayField = [
-            'EditionLottery',
             'EditionLotteryLucky',
+            'EditionLotteryPrize',
             'EditionParticipation',
-            'PrizeFromClub',
+            'EditionRegistration',
+            'SponsorPrize',
             'Eligibility',
         ];
 

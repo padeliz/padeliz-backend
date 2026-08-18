@@ -12,9 +12,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @OA\Schema(
  *     schema="EditionLotteryRule",
- *     required={"lottery_id", "rule_prize_quantity"},
+ *     required={"lottery_prize_id", "rule_prize_quantity"},
  *     @OA\Property(property="id_lottery_rule", type="integer", format="int64", readOnly=true),
- *     @OA\Property(property="lottery_id", type="integer", format="int64"),
+ *     @OA\Property(property="lottery_prize_id", type="integer", format="int64"),
  *     @OA\Property(property="rule_prize_quantity", type="integer"),
  *     @OA\Property(property="orderliness", type="integer", default=0),
  *     @OA\Property(property="edition_division_id", type="integer", format="int64", nullable=true),
@@ -58,7 +58,7 @@ class EditionLotteryRule extends Model
     ];
 
     public static array $filterableFields = [
-        'lottery_id',
+        'lottery_prize_id',
         'edition_division_id',
         'gender',
         'has_social_status',
@@ -67,7 +67,7 @@ class EditionLotteryRule extends Model
 
     public static array $sortableFields = [
         'id_lottery_rule',
-        'lottery_id',
+        'lottery_prize_id',
         'rule_prize_quantity',
         'orderliness',
         'inserted_at',
@@ -88,7 +88,7 @@ class EditionLotteryRule extends Model
     public const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
-        'lottery_id',
+        'lottery_prize_id',
         'rule_prize_quantity',
         'orderliness',
         'edition_division_id',
@@ -115,9 +115,9 @@ class EditionLotteryRule extends Model
         'updated_at' => 'integer',
     ];
 
-    public function lottery(): BelongsTo
+    public function lotteryPrize(): BelongsTo
     {
-        return $this->belongsTo(EditionLottery::class, 'lottery_id', 'id_lottery');
+        return $this->belongsTo(EditionLotteryPrize::class, 'lottery_prize_id', 'id_lottery_prize');
     }
 
     public function editionDivision(): BelongsTo

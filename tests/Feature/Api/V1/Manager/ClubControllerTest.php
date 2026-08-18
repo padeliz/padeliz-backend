@@ -7,7 +7,7 @@ namespace Tests\Feature\Api\V1\Manager;
 use App\Models\Club;
 use App\Models\Location;
 use App\Models\Player;
-use App\Models\Prize;
+use App\Models\Sponsor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -287,17 +287,17 @@ class ClubControllerTest extends TestCase
                 'errors' => [
                     'linked_data' => [
                         'locations_count',
-                        'prizes_count',
+                        'sponsors_count',
                     ],
                 ],
             ])
             ->assertJson([
                 'success' => false,
-                'message' => 'Club cannot be deleted because it has linked data. Please remove all associated locations_count, prizes_count first.',
+                'message' => 'Club cannot be deleted because it has linked data. Please remove all associated locations_count, sponsors_count first.',
                 'errors' => [
                     'linked_data' => [
                         'locations_count' => 3,
-                        'prizes_count' => 0,
+                        'sponsors_count' => 0,
                     ],
                 ],
             ]);
@@ -307,20 +307,14 @@ class ClubControllerTest extends TestCase
         ]);
     }
 
-    public function test_manager_cannot_delete_club_with_linked_prizes()
+    public function test_manager_cannot_delete_club_with_linked_sponsors()
     {
         Sanctum::actingAs($this->manager);
 
         $club = Club::factory()->create();
-        $prizes = Prize::factory()->count(2)->create();
 
-        // Create prize from club relationships
-        foreach ($prizes as $prize) {
-            \App\Models\PrizeFromClub::factory()->create([
-                'club_id' => $club->id_club,
-                'prize_id' => $prize->id_prize,
-            ]);
-        }
+        // Create sponsor relationship
+        Sponsor::factory()->forClub($club)->create();
 
         $response = $this->deleteJson("/api/v1/manager/clubs/{$club->id_club}");
 
@@ -331,17 +325,17 @@ class ClubControllerTest extends TestCase
                 'errors' => [
                     'linked_data' => [
                         'locations_count',
-                        'prizes_count',
+                        'sponsors_count',
                     ],
                 ],
             ])
             ->assertJson([
                 'success' => false,
-                'message' => 'Club cannot be deleted because it has linked data. Please remove all associated locations_count, prizes_count first.',
+                'message' => 'Club cannot be deleted because it has linked data. Please remove all associated locations_count, sponsors_count first.',
                 'errors' => [
                     'linked_data' => [
                         'locations_count' => 0,
-                        'prizes_count' => 2,
+                        'sponsors_count' => 1,
                     ],
                 ],
             ]);
@@ -351,20 +345,14 @@ class ClubControllerTest extends TestCase
         ]);
     }
 
-    public function test_manager_cannot_delete_club_with_both_linked_locations_and_prizes()
+    public function test_manager_cannot_delete_club_with_both_linked_locations_and_sponsors()
     {
         Sanctum::actingAs($this->manager);
 
         $club = Club::factory()->create();
         Location::factory()->count(2)->create(['club_id' => $club->id_club]);
 
-        $prizes = Prize::factory()->count(3)->create();
-        foreach ($prizes as $prize) {
-            \App\Models\PrizeFromClub::factory()->create([
-                'club_id' => $club->id_club,
-                'prize_id' => $prize->id_prize,
-            ]);
-        }
+        Sponsor::factory()->forClub($club)->create();
 
         $response = $this->deleteJson("/api/v1/manager/clubs/{$club->id_club}");
 
@@ -375,17 +363,17 @@ class ClubControllerTest extends TestCase
                 'errors' => [
                     'linked_data' => [
                         'locations_count',
-                        'prizes_count',
+                        'sponsors_count',
                     ],
                 ],
             ])
             ->assertJson([
                 'success' => false,
-                'message' => 'Club cannot be deleted because it has linked data. Please remove all associated locations_count, prizes_count first.',
+                'message' => 'Club cannot be deleted because it has linked data. Please remove all associated locations_count, sponsors_count first.',
                 'errors' => [
                     'linked_data' => [
                         'locations_count' => 2,
-                        'prizes_count' => 3,
+                        'sponsors_count' => 1,
                     ],
                 ],
             ]);

@@ -62,9 +62,10 @@ Route::prefix('v1')->group(function () {
         });
 
         // Player participation
-        Route::prefix('editions/{edition}')->group(function () {
-            Route::post('participate', [\App\Http\Controllers\Api\V1\App\EditionParticipationController::class, 'store']);
-            Route::delete('withdraw', [\App\Http\Controllers\Api\V1\App\EditionParticipationController::class, 'destroy']);
+        Route::prefix('edition-registrations')->group(function () {
+            Route::post('/', [\App\Http\Controllers\Api\V1\App\EditionRegistrationController::class, 'store']);
+            Route::delete('{editionRegistration}', [\App\Http\Controllers\Api\V1\App\EditionRegistrationController::class, 'destroy'])
+                ->whereNumber('editionRegistration');
         });
 
         Route::prefix('my/eligibility')->group(function () {
@@ -155,15 +156,41 @@ Route::prefix('v1')->group(function () {
             Route::delete('{prize}', [\App\Http\Controllers\Api\V1\Manager\PrizeController::class, 'destroy']);
         });
 
-        // Club prizes management
-        Route::prefix('prize-from-clubs')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\PrizeFromClubController::class, 'index']);
-            Route::get('{prizeFromClub}', [\App\Http\Controllers\Api\V1\Manager\PrizeFromClubController::class, 'show']);
-            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\PrizeFromClubController::class, 'store']);
-            Route::put('{prizeFromClub}', [\App\Http\Controllers\Api\V1\Manager\PrizeFromClubController::class, 'update']);
-            Route::patch('{prizeFromClub}', [\App\Http\Controllers\Api\V1\Manager\PrizeFromClubController::class, 'patch']);
-            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\PrizeFromClubController::class, 'bulkDestroy']);
-            Route::delete('{prizeFromClub}', [\App\Http\Controllers\Api\V1\Manager\PrizeFromClubController::class, 'destroy']);
+        // Sponsors
+        Route::prefix('sponsors')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\SponsorController::class, 'index']);
+            Route::get('{sponsor}', [\App\Http\Controllers\Api\V1\Manager\SponsorController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\SponsorController::class, 'store']);
+            Route::put('{sponsor}', [\App\Http\Controllers\Api\V1\Manager\SponsorController::class, 'update']);
+            Route::patch('{sponsor}', [\App\Http\Controllers\Api\V1\Manager\SponsorController::class, 'patch']);
+            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\SponsorController::class, 'bulkDestroy']);
+            Route::delete('{sponsor}', [\App\Http\Controllers\Api\V1\Manager\SponsorController::class, 'destroy']);
+        });
+
+        // Sponsor prize overlays
+        Route::prefix('sponsor-prizes')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\SponsorPrizeController::class, 'index']);
+            Route::post('{sponsorPrize}/media', [\App\Http\Controllers\Api\V1\Manager\SponsorPrizeMediaController::class, 'store'])
+                ->whereNumber('sponsorPrize');
+            Route::delete('{sponsorPrize}/media', [\App\Http\Controllers\Api\V1\Manager\SponsorPrizeMediaController::class, 'destroy'])
+                ->whereNumber('sponsorPrize');
+            Route::get('{sponsorPrize}', [\App\Http\Controllers\Api\V1\Manager\SponsorPrizeController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\SponsorPrizeController::class, 'store']);
+            Route::put('{sponsorPrize}', [\App\Http\Controllers\Api\V1\Manager\SponsorPrizeController::class, 'update']);
+            Route::patch('{sponsorPrize}', [\App\Http\Controllers\Api\V1\Manager\SponsorPrizeController::class, 'patch']);
+            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\SponsorPrizeController::class, 'bulkDestroy']);
+            Route::delete('{sponsorPrize}', [\App\Http\Controllers\Api\V1\Manager\SponsorPrizeController::class, 'destroy']);
+        });
+
+        // Lottery prize lines
+        Route::prefix('edition-lottery-prizes')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryPrizeController::class, 'index']);
+            Route::get('{lotteryPrize}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryPrizeController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryPrizeController::class, 'store']);
+            Route::put('{lotteryPrize}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryPrizeController::class, 'update']);
+            Route::patch('{lotteryPrize}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryPrizeController::class, 'patch']);
+            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryPrizeController::class, 'bulkDestroy']);
+            Route::delete('{lotteryPrize}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryPrizeController::class, 'destroy']);
         });
 
         // Lottery management
@@ -243,8 +270,9 @@ Route::prefix('v1')->group(function () {
             Route::patch('{standing}', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionStandingController::class, 'patch']);
         });
 
-        // Replacements destroy (by id)
+        // Replacements destroy / patch (by id)
         Route::delete('edition-division-replacements/{replacement}', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionReplacementController::class, 'destroy']);
+        Route::patch('edition-division-replacements/{replacement}', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionReplacementController::class, 'patch']);
 
         // Edition divisions management
         Route::prefix('edition-divisions')->group(function () {
@@ -306,6 +334,17 @@ Route::prefix('v1')->group(function () {
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\PlayerInviteController::class, 'store']);
             Route::post('{playerInvite}/revoke', [\App\Http\Controllers\Api\V1\Manager\PlayerInviteController::class, 'revoke']);
             Route::delete('{playerInvite}', [\App\Http\Controllers\Api\V1\Manager\PlayerInviteController::class, 'revoke']);
+        });
+
+        // Edition registration management
+        Route::prefix('edition-registrations')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EditionRegistrationController::class, 'index']);
+            Route::get('{editionRegistration}', [\App\Http\Controllers\Api\V1\Manager\EditionRegistrationController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionRegistrationController::class, 'store']);
+            Route::put('{editionRegistration}', [\App\Http\Controllers\Api\V1\Manager\EditionRegistrationController::class, 'update']);
+            Route::patch('{editionRegistration}', [\App\Http\Controllers\Api\V1\Manager\EditionRegistrationController::class, 'patch']);
+            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EditionRegistrationController::class, 'bulkDestroy']);
+            Route::delete('{editionRegistration}', [\App\Http\Controllers\Api\V1\Manager\EditionRegistrationController::class, 'destroy']);
         });
 
         // Edition participation management

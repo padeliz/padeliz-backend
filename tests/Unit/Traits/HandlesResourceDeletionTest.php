@@ -8,7 +8,7 @@ use App\Exceptions\ResourceDeletionException;
 use App\Models\Club;
 use App\Models\Location;
 use App\Models\Player;
-use App\Models\Prize;
+use App\Models\Sponsor;
 use App\Traits\ApiResponse;
 use App\Traits\HandlesResourceDeletion;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -37,7 +37,7 @@ class HandlesResourceDeletionTest extends TestCase
         $club = Club::factory()->create();
         $linkedDataRelations = [
             'locations' => 'locations_count',
-            'prizes' => 'prizes_count',
+            'sponsors' => 'sponsors_count',
         ];
 
         $result = $this->safeDeleteResource($club, $linkedDataRelations, 'club');
@@ -53,11 +53,11 @@ class HandlesResourceDeletionTest extends TestCase
 
         $linkedDataRelations = [
             'locations' => 'locations_count',
-            'prizes' => 'prizes_count',
+            'sponsors' => 'sponsors_count',
         ];
 
         $this->expectException(ResourceDeletionException::class);
-        $this->expectExceptionMessage('Club cannot be deleted because it has linked data. Please remove all associated locations_count, prizes_count first.');
+        $this->expectExceptionMessage('Club cannot be deleted because it has linked data. Please remove all associated locations_count, sponsors_count first.');
 
         $this->safeDeleteResource($club, $linkedDataRelations, 'club');
     }
@@ -69,7 +69,7 @@ class HandlesResourceDeletionTest extends TestCase
 
         $linkedDataRelations = [
             'locations' => 'locations_count',
-            'prizes' => 'prizes_count',
+            'sponsors' => 'sponsors_count',
         ];
 
         try {
@@ -79,7 +79,7 @@ class HandlesResourceDeletionTest extends TestCase
             $this->assertEquals('club', $e->getResourceType());
             $this->assertEquals([
                 'locations_count' => 3,
-                'prizes_count' => 0,
+                'sponsors_count' => 0,
             ], $e->getLinkedData());
         }
     }
@@ -89,7 +89,7 @@ class HandlesResourceDeletionTest extends TestCase
         $club = Club::factory()->create();
         $linkedDataRelations = [
             'locations' => 'locations_count',
-            'prizes' => 'prizes_count',
+            'sponsors' => 'sponsors_count',
         ];
 
         $response = $this->deleteResourceWithResponse(
@@ -114,7 +114,7 @@ class HandlesResourceDeletionTest extends TestCase
 
         $linkedDataRelations = [
             'locations' => 'locations_count',
-            'prizes' => 'prizes_count',
+            'sponsors' => 'sponsors_count',
         ];
 
         $response = $this->deleteResourceWithResponse(
@@ -130,7 +130,7 @@ class HandlesResourceDeletionTest extends TestCase
         $this->assertStringContainsString('Club cannot be deleted because it has linked data', $responseData['message']);
         $this->assertEquals([
             'locations_count' => 2,
-            'prizes_count' => 0,
+            'sponsors_count' => 0,
         ], $responseData['errors']['linked_data']);
     }
 
@@ -139,17 +139,11 @@ class HandlesResourceDeletionTest extends TestCase
         $club = Club::factory()->create();
         Location::factory()->count(3)->create(['club_id' => $club->id_club]);
 
-        $prizes = Prize::factory()->count(2)->create();
-        foreach ($prizes as $prize) {
-            \App\Models\PrizeFromClub::factory()->create([
-                'club_id' => $club->id_club,
-                'prize_id' => $prize->id_prize,
-            ]);
-        }
+        Sponsor::factory()->forClub($club)->create();
 
         $linkedDataRelations = [
             'locations' => 'locations_count',
-            'prizes' => 'prizes_count',
+            'sponsors' => 'sponsors_count',
         ];
 
         try {
@@ -158,9 +152,9 @@ class HandlesResourceDeletionTest extends TestCase
         } catch (ResourceDeletionException $e) {
             $this->assertEquals([
                 'locations_count' => 3,
-                'prizes_count' => 2,
+                'sponsors_count' => 1,
             ], $e->getLinkedData());
-            $this->assertStringContainsString('locations_count, prizes_count', $e->getMessage());
+            $this->assertStringContainsString('locations_count, sponsors_count', $e->getMessage());
         }
     }
 
@@ -171,7 +165,7 @@ class HandlesResourceDeletionTest extends TestCase
 
         $linkedDataRelations = [
             'locations' => 'locations_count',
-            'prizes' => 'prizes_count',
+            'sponsors' => 'sponsors_count',
         ];
 
         $response = $this->deleteBulkResourcesWithResponse(
@@ -201,7 +195,7 @@ class HandlesResourceDeletionTest extends TestCase
 
         $linkedDataRelations = [
             'locations' => 'locations_count',
-            'prizes' => 'prizes_count',
+            'sponsors' => 'sponsors_count',
         ];
 
         $response = $this->deleteBulkResourcesWithResponse(
@@ -224,7 +218,7 @@ class HandlesResourceDeletionTest extends TestCase
     {
         $linkedDataRelations = [
             'locations' => 'locations_count',
-            'prizes' => 'prizes_count',
+            'sponsors' => 'sponsors_count',
         ];
 
         $response = $this->deleteBulkResourcesWithResponse(
@@ -247,7 +241,7 @@ class HandlesResourceDeletionTest extends TestCase
 
         $linkedDataRelations = [
             'locations' => 'locations_count',
-            'prizes' => 'prizes_count',
+            'sponsors' => 'sponsors_count',
         ];
 
         $response = $this->deleteBulkResourcesWithResponse(

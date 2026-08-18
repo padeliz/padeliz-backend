@@ -229,15 +229,27 @@ return new class () extends Migration {
             $table->foreignId('edition_division_id')->constrained('edition_divisions', 'id_edition_division');
             $table->unsignedSmallInteger('sort_order')->default(0);
             $table->boolean('is_collecting_points')->default(true);
-            $table->boolean('is_minor')->default(false);
-            $table->boolean('is_student');
-            $table->integer('discount')->nullable()->comment('ron');
-            $table->integer('payment')->comment('ron');
             $table->enum('absence_reason', ['SICK', 'FORGOT', 'EXAMS', 'RECONSIDERED'])->nullable();
             $table->enum('ban_reason', ['LEFT SUDDENLY', 'AGGRESSIVE PLAYER', 'LIBIDINOUS', ''])->nullable();
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
             $table->unique(['edition_division_id', 'player_id'], 'uq_participation_ed_player');
+        });
+
+        Schema::create('edition_registrations', function (Blueprint $table) {
+            $table->id('id_registration');
+            $table->foreignId('edition_id')->constrained('editions', 'id_edition');
+            $table->foreignId('player_id')->constrained('players', 'id_player');
+            $table->foreignId('edition_division_id')
+                ->nullable()
+                ->constrained('edition_divisions', 'id_edition_division');
+            $table->boolean('is_minor')->default(false);
+            $table->boolean('is_student');
+            $table->integer('discount')->nullable()->comment('ron');
+            $table->integer('payment')->comment('ron');
+            $table->integer('inserted_at')->nullable();
+            $table->integer('updated_at')->nullable();
+            $table->unique(['edition_division_id', 'player_id'], 'uq_registration_ed_player');
         });
 
         Schema::create('prizes', function (Blueprint $table) {
@@ -255,9 +267,26 @@ return new class () extends Migration {
             $table->integer('updated_at')->nullable();
         });
 
-        Schema::create('prizes_from_clubs', function (Blueprint $table) {
-            $table->id('id_club_prize');
-            $table->foreignId('club_id')->nullable()->constrained('clubs', 'id_club');
+        Schema::create('sponsors', function (Blueprint $table) {
+            $table->id('id_sponsor');
+            $table->string('name', 60)->unique();
+            $table->foreignId('club_id')->nullable()->unique()->constrained('clubs', 'id_club');
+            $table->integer('inserted_at')->nullable();
+            $table->integer('updated_at')->nullable();
+        });
+
+        Schema::create('sponsor_players', function (Blueprint $table) {
+            $table->id('id_sponsor_player');
+            $table->foreignId('sponsor_id')->constrained('sponsors', 'id_sponsor');
+            $table->foreignId('player_id')->constrained('players', 'id_player');
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
+            $table->unique(['sponsor_id', 'player_id']);
+        });
+
+        Schema::create('sponsor_prizes', function (Blueprint $table) {
+            $table->id('id_sponsor_prize');
+            $table->foreignId('sponsor_id')->constrained('sponsors', 'id_sponsor');
             $table->foreignId('prize_id')->constrained('prizes', 'id_prize');
             $table->string('media_path', 512)->nullable();
             $table->enum('template', ['IMAGE_LEFT', 'IMAGE_TOP', 'IMAGE_RIGHT', 'IMAGE_MIDDLE', 'IMAGE_BOTTOM'])->nullable();
@@ -269,20 +298,33 @@ return new class () extends Migration {
             $table->string('box_2_text_color', 7)->nullable();
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
+            $table->unique(['sponsor_id', 'prize_id']);
         });
 
         Schema::create('edition_lotteries', function (Blueprint $table) {
             $table->id('id_lottery');
             $table->foreignId('edition_id')->constrained('editions', 'id_edition');
-            $table->foreignId('prize_id')->nullable()->constrained('prizes', 'id_prize');
+            $table->string('name', 60);
+            $table->smallInteger('display_order')->default(0);
+            $table->integer('inserted_at')->nullable();
+            $table->integer('updated_at')->nullable();
+            $table->unique(['edition_id', 'name']);
+        });
+
+        Schema::create('edition_lottery_prizes', function (Blueprint $table) {
+            $table->id('id_lottery_prize');
+            $table->foreignId('lottery_id')->constrained('edition_lotteries', 'id_lottery');
+            $table->foreignId('prize_id')->constrained('prizes', 'id_prize');
             $table->tinyInteger('prize_quantity');
+            $table->foreignId('sponsor_id')->nullable()->constrained('sponsors', 'id_sponsor');
+            $table->smallInteger('display_order')->default(0);
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
         });
 
         Schema::create('edition_lottery_rules', function (Blueprint $table) {
             $table->id('id_lottery_rule');
-            $table->foreignId('lottery_id')->constrained('edition_lotteries', 'id_lottery');
+            $table->foreignId('lottery_prize_id')->constrained('edition_lottery_prizes', 'id_lottery_prize');
             $table->tinyInteger('rule_prize_quantity');
             $table->tinyInteger('orderliness')->default(0);
             $table->foreignId('edition_division_id')->nullable()->constrained('edition_divisions', 'id_edition_division');
@@ -345,7 +387,6 @@ return new class () extends Migration {
             $table->tinyInteger('slot');
             $table->foreignId('participation_id')->nullable()->constrained('edition_participations', 'id_participation');
             $table->foreignId('player_id')->nullable()->constrained('players', 'id_player');
-            $table->boolean('got_replaced')->default(false);
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
             $table->unique(['match_side_id', 'slot'], 'uq_match_side_slot');
@@ -374,15 +415,6 @@ return new class () extends Migration {
             $table->integer('updated_at')->nullable();
         });
 
-        // $prefix already set above for posters generated column
-        DB::statement(
-            "ALTER TABLE `{$prefix}edition_division_replacements` " .
-            'ADD COLUMN `match_scope_key` BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(`match_id`, 0)) STORED'
-        );
-        DB::statement(
-            'CREATE UNIQUE INDEX `uq_replacement_scope` ' .
-            "ON `{$prefix}edition_division_replacements` (`edition_division_id`, `original_participation_id`, `match_scope_key`)"
-        );
         Schema::table('edition_division_replacements', function (Blueprint $table) {
             $table->foreign('edition_division_id', 'fk_repl_ed')
                 ->references('id_edition_division')->on('edition_divisions');
@@ -392,12 +424,15 @@ return new class () extends Migration {
                 ->references('id_participation')->on('edition_participations');
             $table->foreign('substitute_player_id', 'fk_repl_sub_player')
                 ->references('id_player')->on('players');
-            // No FK on match_id: MariaDB rejects FKs on columns used by generated match_scope_key.
-            $table->index('match_id', 'fk_repl_match');
+            $table->foreign('match_id', 'fk_repl_match')
+                ->references('id_match')->on('matches');
         });
 
-        // Note: $prefix already set above for replacements generated column
-        // Reuse for eligibilities below — redefine if needed after other creates.
+        DB::statement(
+            "ALTER TABLE `{$prefix}edition_division_replacements` " .
+            'ADD CONSTRAINT `chk_repl_at_most_one_substitute` ' .
+            'CHECK (`substitute_participation_id` IS NULL OR `substitute_player_id` IS NULL)'
+        );
 
         Schema::create('cached_pdf_pair_images', function (Blueprint $table) {
             $table->id('id_cached_pdf_pair_image');
@@ -514,9 +549,13 @@ return new class () extends Migration {
         Schema::dropIfExists('matches');
         Schema::dropIfExists('edition_lottery_luckies');
         Schema::dropIfExists('edition_lottery_rules');
+        Schema::dropIfExists('edition_lottery_prizes');
         Schema::dropIfExists('edition_lotteries');
-        Schema::dropIfExists('prizes_from_clubs');
+        Schema::dropIfExists('sponsor_prizes');
+        Schema::dropIfExists('sponsor_players');
+        Schema::dropIfExists('sponsors');
         Schema::dropIfExists('prizes');
+        Schema::dropIfExists('edition_registrations');
         Schema::dropIfExists('edition_participations');
         Schema::dropIfExists('edition_division_posters');
         Schema::dropIfExists('edition_division_courts');

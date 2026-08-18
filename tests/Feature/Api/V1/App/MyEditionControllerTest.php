@@ -79,4 +79,26 @@ class MyEditionControllerTest extends TestCase
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id_edition', $inRangeWithParticipation->id_edition);
     }
+
+    public function test_does_not_return_editions_the_player_only_registered_for(): void
+    {
+        $player = Player::factory()->playerOnly()->create();
+        Sanctum::actingAs($player);
+
+        $registeredOnly = Edition::factory()->create(['date' => '2026-04-20']);
+        \App\Models\EditionRegistration::factory()->create([
+            'edition_id' => $registeredOnly->id_edition,
+            'player_id' => $player->id_player,
+            'edition_division_id' => null,
+            'is_student' => false,
+            'payment' => 0,
+        ]);
+
+        $response = $this->getJson('/api/v1/app/my/editions?' . http_build_query([
+            'date_from' => '2026-04-01',
+            'date_to' => '2026-04-30',
+        ]));
+
+        $response->assertOk()->assertJsonCount(0, 'data');
+    }
 }

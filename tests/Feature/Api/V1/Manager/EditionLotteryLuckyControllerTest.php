@@ -8,6 +8,7 @@ use App\Models\Edition;
 use App\Models\EditionDivision;
 use App\Models\EditionLottery;
 use App\Models\EditionLotteryLucky;
+use App\Models\EditionLotteryPrize;
 use App\Models\EditionLotteryRule;
 use App\Models\EditionParticipation;
 use App\Models\Player;
@@ -44,12 +45,16 @@ class EditionLotteryLuckyControllerTest extends TestCase
         $prize = Prize::factory()->create(['name' => 'Towel']);
         $lottery = EditionLottery::factory()->create([
             'edition_id' => $edition->id_edition,
+            'name' => 'Lucky Lottery',
+        ]);
+        $lotteryPrize = EditionLotteryPrize::factory()->create([
+            'lottery_id' => $lottery->id_lottery,
             'prize_id' => $prize->id_prize,
             'prize_quantity' => 3,
         ]);
 
         $this->lotteryRule = EditionLotteryRule::factory()->create([
-            'lottery_id' => $lottery->id_lottery,
+            'lottery_prize_id' => $lotteryPrize->id_lottery_prize,
             'rule_prize_quantity' => 3,
         ]);
 
@@ -296,12 +301,12 @@ class EditionLotteryLuckyControllerTest extends TestCase
         $index = $this->getJson('/api/v1/manager/edition-lottery-luckies');
         $index->assertOk();
         $row = collect($index->json('data'))->firstWhere('id_lucky', $lucky->id_lucky);
-        $this->assertSame('Towel', $row['lottery_rule']['lottery']['prize']['name'] ?? null);
-        $this->assertArrayNotHasKey('rules', $row['lottery_rule']['lottery'] ?? []);
+        $this->assertSame('Towel', $row['lottery_rule']['lottery_prize']['prize']['name'] ?? null);
+        $this->assertArrayNotHasKey('rules', $row['lottery_rule']['lottery_prize'] ?? []);
 
         $show = $this->getJson('/api/v1/manager/edition-lottery-luckies/' . $lucky->id_lucky);
         $show->assertOk();
-        $this->assertSame('Towel', $show->json('data.lottery_rule.lottery.prize.name'));
-        $this->assertArrayNotHasKey('rules', $show->json('data.lottery_rule.lottery') ?? []);
+        $this->assertSame('Towel', $show->json('data.lottery_rule.lottery_prize.prize.name'));
+        $this->assertArrayNotHasKey('rules', $show->json('data.lottery_rule.lottery_prize') ?? []);
     }
 }
