@@ -267,6 +267,14 @@ class PlayerAuthControllerTest extends TestCase
             'provider' => 'dev',
             'provider_subject' => 'dev:dev@example.com',
         ]);
+
+        $this->assertDatabaseHas('players', [
+            'first_name' => 'Dev',
+            'last_name' => 'Player',
+            'created_via' => 'app',
+            'created_via_format' => 'devLogin',
+            'created_via_import_id' => null,
+        ]);
     }
 
     public function test_google_callback_performance_with_large_dataset()

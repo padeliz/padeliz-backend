@@ -58,4 +58,49 @@ final class PlayerNameSplitter
 
         return $parts;
     }
+
+    /**
+     * Preview-safe split: empty names and overlong tokens do not throw.
+     *
+     * @return array{first_name: string, middle_name: ?string, last_name: ?string}
+     */
+    public static function splitForPreview(string $rawName): array
+    {
+        $name = trim($rawName);
+        $name = preg_replace('/\s+\([^)]*\)\s*$/u', '', $name) ?? $name;
+        $name = trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
+
+        if ($name === '') {
+            return [
+                'first_name' => '',
+                'middle_name' => null,
+                'last_name' => null,
+            ];
+        }
+
+        $tokens = preg_split('/\s+/u', $name, -1, PREG_SPLIT_NO_EMPTY) ?: [];
+        $count = count($tokens);
+
+        if ($count === 1) {
+            return [
+                'first_name' => $tokens[0],
+                'middle_name' => null,
+                'last_name' => null,
+            ];
+        }
+
+        if ($count === 2) {
+            return [
+                'first_name' => $tokens[0],
+                'middle_name' => null,
+                'last_name' => $tokens[1],
+            ];
+        }
+
+        return [
+            'first_name' => $tokens[0],
+            'middle_name' => implode(' ', array_slice($tokens, 1, -1)),
+            'last_name' => $tokens[$count - 1],
+        ];
+    }
 }

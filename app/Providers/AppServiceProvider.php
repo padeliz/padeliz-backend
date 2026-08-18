@@ -8,6 +8,8 @@ use App\Integrations\RankedinBpt\BptDivisionMapper;
 use App\Integrations\RankedinBpt\BptTopPlayersService;
 use App\Integrations\RankedinBpt\Contracts\BptTopPlayersReportBuilder;
 use App\Integrations\RankedinBpt\RankedinBptClient;
+use App\Services\PlayerImport\Formats\PlaytomicPlayerCsvFormat;
+use App\Services\PlayerImport\PlayerCsvFormatRegistry;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -28,6 +30,12 @@ class AppServiceProvider extends ServiceProvider
             );
 
             return new BptTopPlayersService($client, new BptDivisionMapper(), $cfg);
+        });
+
+        $this->app->singleton(PlayerCsvFormatRegistry::class, function (): PlayerCsvFormatRegistry {
+            return new PlayerCsvFormatRegistry([
+                new PlaytomicPlayerCsvFormat(),
+            ]);
         });
     }
 

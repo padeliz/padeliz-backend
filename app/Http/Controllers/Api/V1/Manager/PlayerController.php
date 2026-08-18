@@ -40,7 +40,7 @@ class PlayerController extends V1BaseController
      *     @OA\Parameter(
      *         name="q",
      *         in="query",
-     *         description="Search term for first_name, last_name, playtomic_id, rankedin_id fields",
+     *         description="Search term for first_name, last_name, playtomic_id, rankedin_id, email, and phone",
      *         required=false,
      *         @OA\Schema(type="string")
      *     ),
@@ -115,11 +115,25 @@ class PlayerController extends V1BaseController
     {
         $query = Player::with(['participations']);
 
-        // Apply advanced pagination
+        if ($request->filled('q')) {
+            $searchTerm = (string) $request->get('q');
+            $query->where(function ($q) use ($searchTerm) {
+                foreach (Player::$searchableFields as $field) {
+                    $q->orWhere($field, 'LIKE', "%{$searchTerm}%");
+                }
+                $q->orWhereHas('emails', function ($emailQuery) use ($searchTerm) {
+                    $emailQuery->where('email', 'LIKE', "%{$searchTerm}%");
+                });
+                $q->orWhereHas('phones', function ($phoneQuery) use ($searchTerm) {
+                    $phoneQuery->where('phone', 'LIKE', "%{$searchTerm}%");
+                });
+            });
+        }
+
         $this->applyAdvancedPagination(
             $query,
             $request,
-            Player::$searchableFields,
+            [],
             Player::$filterableFields,
             Player::$sortableFields
         );
@@ -247,6 +261,9 @@ class PlayerController extends V1BaseController
 
         $phone = $validated['phone'] ?? null;
         unset($validated['phone']);
+        $validated['created_via'] = 'manager';
+        $validated['created_via_format'] = null;
+        $validated['created_via_import_id'] = null;
 
         $player = Player::create($validated);
 

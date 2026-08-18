@@ -1,0 +1,6 @@
+Name,Email,Phone Number,Level
+Ada Popescu,ADA@Example.test,+40 712 345 678,4.5
+"Popescu, Vlad",vlad@example.test,+40 722 111 222,3
+*fictiv* Guest,fictiv@example.test,+40 700 000 001,1
+,empty.name@example.test,+40 700 000 002,1
+OnlyFirst,,+40 733 444 555,2

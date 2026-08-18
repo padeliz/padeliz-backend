@@ -46,6 +46,8 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertEquals('sponsors', $method->invoke($this->metadataService, 'Sponsor'));
         $this->assertEquals('sponsor-prizes', $method->invoke($this->metadataService, 'SponsorPrize'));
         $this->assertEquals('edition-lottery-prizes', $method->invoke($this->metadataService, 'EditionLotteryPrize'));
+        $this->assertEquals('player-imports', $method->invoke($this->metadataService, 'PlayerImport'));
+        $this->assertEquals('player-import-rows', $method->invoke($this->metadataService, 'PlayerImportRow'));
 
         // Test edge cases with multiple hyphens (using existing models)
         $this->assertEquals('edition-divisions', $method->invoke($this->metadataService, 'EditionDivision'));

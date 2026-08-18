@@ -31,6 +31,10 @@ class PlayerResource extends JsonResource
             'user_types' => $this->user_types,
             'instagram_username' => $this->instagram_username,
             'facebook_username' => $this->facebook_username,
+            'created_via' => $this->created_via,
+            'created_via_format' => $this->created_via_format,
+            'created_via_import_id' => $this->created_via_import_id,
+            'pdf_avatar_url' => $this->pdfAvatarUrl(),
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
             'emails' => $this->whenLoaded('emails', function () {
@@ -62,5 +66,17 @@ class PlayerResource extends JsonResource
                 return EditionParticipationResource::collection($this->participations);
             }),
         ];
+    }
+
+    private function pdfAvatarUrl(): ?string
+    {
+        if (! $this->relationLoaded('cachedPdfImages')) {
+            return null;
+        }
+
+        $preferred = $this->cachedPdfImages->firstWhere('player_is_collecting_points', true)
+            ?? $this->cachedPdfImages->first();
+
+        return $preferred?->url;
     }
 }

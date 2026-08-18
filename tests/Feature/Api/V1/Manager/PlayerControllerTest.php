@@ -149,7 +149,13 @@ class PlayerControllerTest extends TestCase
             'first_name' => 'New',
             'last_name' => 'Player',
             'skill_division' => 3.0,
+            'created_via' => 'manager',
+            'created_via_format' => null,
+            'created_via_import_id' => null,
         ]);
+        $this->assertSame('manager', $response->json('data.created_via'));
+        $this->assertNull($response->json('data.created_via_format'));
+        $this->assertNull($response->json('data.pdf_avatar_url'));
     }
 
     public function test_manager_can_update_player()
@@ -184,6 +190,8 @@ class PlayerControllerTest extends TestCase
             'last_name' => 'Player',
             'skill_division' => 5.0,
             'being_student' => true,
+            'created_via' => null,
+            'created_via_format' => null,
         ]);
     }
 
@@ -299,6 +307,91 @@ class PlayerControllerTest extends TestCase
 
         $response->assertStatus(200);
         $this->assertCount(2, $response->json('data')); // 2 players with "Test" in name (manager + test player)
+    }
+
+    public function test_manager_search_matches_email_when_name_does_not(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $needle = 'unique-email-search-' . $this->player->id_player . '@example.test';
+        $this->player->emails()->update(['email' => 'other-' . $this->player->id_player . '@example.test']);
+        $this->player->emails()->create([
+            'email' => $needle,
+            'purposes' => ['contact'],
+            'is_primary' => false,
+        ]);
+
+        $response = $this->getJson('/api/v1/manager/players?q=' . urlencode($needle));
+
+        $response->assertStatus(200);
+        $ids = collect($response->json('data'))->pluck('id_player')->all();
+        $this->assertContains($this->player->id_player, $ids);
+        $this->assertNotContains($this->manager->id_player, $ids);
+    }
+
+    public function test_manager_search_matches_phone_when_name_does_not(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $needle = '+40999' . str_pad((string) $this->player->id_player, 6, '0', STR_PAD_LEFT);
+        $this->player->phones()->update(['phone' => $needle]);
+
+        $response = $this->getJson('/api/v1/manager/players?q=' . urlencode($needle));
+
+        $response->assertStatus(200);
+        $ids = collect($response->json('data'))->pluck('id_player')->all();
+        $this->assertContains($this->player->id_player, $ids);
+        $this->assertNotContains($this->manager->id_player, $ids);
+    }
+
+    public function test_factory_player_has_null_provenance(): void
+    {
+        $this->assertNull($this->player->fresh()->created_via);
+        $this->assertNull($this->player->fresh()->created_via_format);
+        $this->assertNull($this->player->fresh()->created_via_import_id);
+    }
+
+    public function test_pdf_avatar_url_prefers_collecting_points_cache(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        \App\Models\CachedPdfPlayerImage::query()->create([
+            'player_id' => $this->player->id_player,
+            'player_is_collecting_points' => false,
+            'picture_path' => 'pdf-avatars/other.png',
+        ]);
+        \App\Models\CachedPdfPlayerImage::query()->create([
+            'player_id' => $this->player->id_player,
+            'player_is_collecting_points' => true,
+            'picture_path' => 'pdf-avatars/preferred.png',
+        ]);
+
+        $response = $this->getJson("/api/v1/manager/players/{$this->player->id_player}");
+
+        $response->assertStatus(200);
+        $url = $response->json('data.pdf_avatar_url');
+        $this->assertIsString($url);
+        $this->assertStringContainsString('preferred.png', $url);
+    }
+
+    public function test_update_ignores_posted_provenance_fields(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $this->putJson("/api/v1/manager/players/{$this->player->id_player}", [
+            'first_name' => 'Updated',
+            'middle_name' => null,
+            'last_name' => 'Player',
+            'created_via' => 'csv',
+            'created_via_format' => 'playtomic',
+        ])->assertStatus(200);
+
+        $this->assertDatabaseHas('players', [
+            'id_player' => $this->player->id_player,
+            'first_name' => 'Updated',
+            'created_via' => null,
+            'created_via_format' => null,
+        ]);
     }
 
     public function test_manager_can_filter_players_by_skill_division()

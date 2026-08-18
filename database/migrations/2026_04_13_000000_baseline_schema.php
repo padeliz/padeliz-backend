@@ -84,6 +84,8 @@ return new class () extends Migration {
             $table->float('skill_division', 3, 1)->nullable();
             $table->string('instagram_username', 50)->nullable();
             $table->string('facebook_username', 50)->nullable();
+            $table->string('created_via', 16)->nullable();
+            $table->string('created_via_format', 32)->nullable();
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
         });
@@ -164,6 +166,49 @@ return new class () extends Migration {
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
             $table->index('player_id', 'player_profile_images_player_id_idx');
+        });
+
+        Schema::create('player_imports', function (Blueprint $table) {
+            $table->id('id_player_import');
+            $table->foreignId('imported_by_player_id')
+                ->nullable()
+                ->constrained('players', 'id_player')
+                ->nullOnDelete();
+            $table->string('format', 32);
+            $table->string('original_filename', 255);
+            $table->unsignedInteger('included_count')->default(0);
+            $table->unsignedInteger('created_count')->default(0);
+            $table->unsignedInteger('attached_count')->default(0);
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
+        });
+
+        Schema::table('players', function (Blueprint $table) {
+            $table->foreignId('created_via_import_id')
+                ->nullable()
+                ->after('created_via_format')
+                ->constrained('player_imports', 'id_player_import')
+                ->nullOnDelete();
+        });
+
+        Schema::create('player_import_rows', function (Blueprint $table) {
+            $table->id('id_player_import_row');
+            $table->foreignId('player_import_id')
+                ->constrained('player_imports', 'id_player_import')
+                ->cascadeOnDelete();
+            $table->unsignedInteger('row_index');
+            $table->string('first_name', 50)->nullable();
+            $table->string('middle_name', 50)->nullable();
+            $table->string('last_name', 50)->nullable();
+            $table->string('email', 255)->nullable();
+            $table->string('phone', 30)->nullable();
+            $table->foreignId('player_id')
+                ->nullable()
+                ->constrained('players', 'id_player')
+                ->nullOnDelete();
+            $table->string('action', 16);
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
         });
 
         Schema::create('edition_divisions', function (Blueprint $table) {
@@ -566,6 +611,11 @@ return new class () extends Migration {
         Schema::dropIfExists('player_identities');
         Schema::dropIfExists('player_phones');
         Schema::dropIfExists('player_emails');
+        Schema::dropIfExists('player_import_rows');
+        Schema::table('players', function (Blueprint $table) {
+            $table->dropConstrainedForeignId('created_via_import_id');
+        });
+        Schema::dropIfExists('player_imports');
         Schema::dropIfExists('players');
         Schema::table('divisions', function (Blueprint $table) {
             $table->dropForeign('fk_divisions_its_first_edition');

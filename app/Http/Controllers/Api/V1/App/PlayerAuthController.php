@@ -454,6 +454,8 @@ class PlayerAuthController extends V1BaseController
                     'first_name' => 'Dev',
                     'last_name' => 'Player',
                     'user_types' => ['player'],
+                    'created_via' => 'app',
+                    'created_via_format' => 'devLogin',
                 ]);
 
                 $emailRow = PlayerEmail::create([

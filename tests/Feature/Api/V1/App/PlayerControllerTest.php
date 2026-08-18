@@ -42,6 +42,8 @@ class PlayerControllerTest extends TestCase
             'last_name' => 'Player',
             'skill_division' => 4.5,
             'being_student' => true,
+            'created_via' => 'csv',
+            'created_via_format' => 'playtomic',
         ]);
 
         $response->assertStatus(201)
@@ -67,6 +69,8 @@ class PlayerControllerTest extends TestCase
             'id_player' => $this->player->id_player,
             'first_name' => 'Updated',
             'last_name' => 'Player',
+            'created_via' => null,
+            'created_via_format' => null,
         ]);
     }
 

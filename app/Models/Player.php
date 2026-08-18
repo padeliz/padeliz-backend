@@ -7,6 +7,7 @@ namespace App\Models;
 use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
@@ -124,6 +125,40 @@ use Laravel\Sanctum\HasApiTokens;
  *         description="Facebook username"
  *     ),
  *     @OA\Property(
+ *         property="created_via",
+ *         type="string",
+ *         enum={"app", "manager", "csv"},
+ *         nullable=true,
+ *         readOnly=true,
+ *         title="Created Via",
+ *         description="Insert channel; null for legacy rows"
+ *     ),
+ *     @OA\Property(
+ *         property="created_via_format",
+ *         type="string",
+ *         nullable=true,
+ *         readOnly=true,
+ *         title="Created Via Format",
+ *         description="Insert mechanism (playtomic, devLogin); null when none"
+ *     ),
+ *     @OA\Property(
+ *         property="created_via_import_id",
+ *         type="integer",
+ *         format="int64",
+ *         nullable=true,
+ *         readOnly=true,
+ *         title="Created Via Import",
+ *         description="CSV import batch that created this player"
+ *     ),
+ *     @OA\Property(
+ *         property="pdf_avatar_url",
+ *         type="string",
+ *         nullable=true,
+ *         readOnly=true,
+ *         title="PDF Avatar",
+ *         description="Cached ranking circular avatar URL when present"
+ *     ),
+ *     @OA\Property(
  *         property="inserted_at",
  *         type="integer",
  *         format="timestamp",
@@ -201,6 +236,7 @@ class Player extends Authenticatable
         'profileImages',
         'emails',
         'phones',
+        'cachedPdfImages',
     ];
 
     /**
@@ -264,6 +300,9 @@ class Player extends Authenticatable
         'facebook_username',
         'user_types',
         'remember_token',
+        'created_via',
+        'created_via_format',
+        'created_via_import_id',
     ];
 
     protected $hidden = [
@@ -286,6 +325,7 @@ class Player extends Authenticatable
         'year_of_birth' => 'integer',
         'skill_division' => 'float',
         'user_types' => 'array',
+        'created_via_import_id' => 'integer',
     ];
 
     /**
@@ -349,6 +389,21 @@ class Player extends Authenticatable
         return $this->hasMany(PlayerProfileImage::class, 'player_id', 'id_player')
             ->orderBy('sort_order')
             ->orderBy('id');
+    }
+
+    public function cachedPdfImages(): HasMany
+    {
+        return $this->hasMany(CachedPdfPlayerImage::class, 'player_id', 'id_player');
+    }
+
+    public function createdViaImport(): BelongsTo
+    {
+        return $this->belongsTo(PlayerImport::class, 'created_via_import_id', 'id_player_import');
+    }
+
+    public function importRows(): HasMany
+    {
+        return $this->hasMany(PlayerImportRow::class, 'player_id', 'id_player');
     }
 
     /**

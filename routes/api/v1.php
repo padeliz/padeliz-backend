@@ -314,6 +314,8 @@ Route::prefix('v1')->group(function () {
         // Player management
         Route::prefix('players')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'index']);
+            Route::post('import/preview', [\App\Http\Controllers\Api\V1\Manager\PlayerImportController::class, 'preview']);
+            Route::post('import', [\App\Http\Controllers\Api\V1\Manager\PlayerImportController::class, 'store']);
             Route::post('{player}/profile-images', [\App\Http\Controllers\Api\V1\Manager\PlayerProfileImageController::class, 'store'])
                 ->whereNumber('player');
             Route::delete('{player}/profile-images/{playerProfileImage}', [\App\Http\Controllers\Api\V1\Manager\PlayerProfileImageController::class, 'destroy'])
@@ -321,13 +323,25 @@ Route::prefix('v1')->group(function () {
                 ->whereNumber('playerProfileImage');
             Route::post('{player}/pdf-avatar', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'generatePdfAvatar'])
                 ->whereNumber('player');
-            Route::get('{player}', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'show']);
+            Route::get('{player}', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'show'])
+                ->whereNumber('player');
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'store']);
-            Route::put('{player}', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'update']);
-            Route::patch('{player}', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'patch']);
+            Route::put('{player}', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'update'])
+                ->whereNumber('player');
+            Route::patch('{player}', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'patch'])
+                ->whereNumber('player');
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'bulkDestroy']);
-            Route::delete('{player}', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'destroy']);
+            Route::delete('{player}', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'destroy'])
+                ->whereNumber('player');
         });
+
+        Route::prefix('player-imports')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\PlayerImportController::class, 'index']);
+            Route::get('{playerImport}', [\App\Http\Controllers\Api\V1\Manager\PlayerImportController::class, 'show'])
+                ->whereNumber('playerImport');
+        });
+
+        Route::get('player-import-rows', [\App\Http\Controllers\Api\V1\Manager\PlayerImportRowController::class, 'index']);
 
         // Player invites
         Route::prefix('player-invites')->group(function () {
