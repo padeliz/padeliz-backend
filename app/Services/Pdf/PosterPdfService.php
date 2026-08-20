@@ -621,10 +621,8 @@ final class PosterPdfService
         }
 
         $player->loadMissing('profileImages');
-        $profile = $player->profileImages->sortBy([
-            ['sort_order', 'asc'],
-            ['id', 'asc'],
-        ])->first();
+        $profile = app(\App\Services\PlayerProfileImage\PlayerProfileImageResolver::class)
+            ->resolveForPdf($player);
 
         $profilePath = $profile?->profile_path;
         $abs = null;

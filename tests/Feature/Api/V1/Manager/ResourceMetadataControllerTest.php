@@ -636,4 +636,53 @@ class ResourceMetadataControllerTest extends TestCase
             );
         }
     }
+
+    public function test_get_player_profile_image_import_metadata_endpoint(): void
+    {
+        /** @var Player $manager */
+        $manager = Player::factory()->create();
+        $manager->addUserType('manager');
+
+        $response = $this->actingAs($manager)
+            ->getJson('/api/v1/manager/metadata/PlayerProfileImageImport');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'version' => 'v1',
+                    'schema_name' => 'PlayerProfileImageImport',
+                    'display_field' => 'original_filename',
+                ],
+            ]);
+
+        $this->assertNotNull($response->json('data.swagger_schema'));
+        $properties = $response->json('data.swagger_schema.properties');
+        $this->assertArrayHasKey('importedByPlayer', $properties);
+        $this->assertArrayHasKey('rows', $properties);
+    }
+
+    public function test_get_player_profile_image_import_row_metadata_endpoint(): void
+    {
+        /** @var Player $manager */
+        $manager = Player::factory()->create();
+        $manager->addUserType('manager');
+
+        $response = $this->actingAs($manager)
+            ->getJson('/api/v1/manager/metadata/PlayerProfileImageImportRow');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'version' => 'v1',
+                    'schema_name' => 'PlayerProfileImageImportRow',
+                ],
+            ]);
+
+        $this->assertNotNull($response->json('data.swagger_schema'));
+        $properties = $response->json('data.swagger_schema.properties');
+        $this->assertArrayHasKey('is_pdf_primary', $properties);
+        $this->assertArrayHasKey('player_profile_image_id', $properties);
+    }
 }

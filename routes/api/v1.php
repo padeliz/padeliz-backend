@@ -316,8 +316,13 @@ Route::prefix('v1')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'index']);
             Route::post('import/preview', [\App\Http\Controllers\Api\V1\Manager\PlayerImportController::class, 'preview']);
             Route::post('import', [\App\Http\Controllers\Api\V1\Manager\PlayerImportController::class, 'store']);
+            Route::post('profile-images/import/preview', [\App\Http\Controllers\Api\V1\Manager\PlayerProfileImageImportController::class, 'preview']);
+            Route::post('profile-images/import', [\App\Http\Controllers\Api\V1\Manager\PlayerProfileImageImportController::class, 'store']);
             Route::post('{player}/profile-images', [\App\Http\Controllers\Api\V1\Manager\PlayerProfileImageController::class, 'store'])
                 ->whereNumber('player');
+            Route::post('{player}/profile-images/{playerProfileImage}/pdf-primary', [\App\Http\Controllers\Api\V1\Manager\PlayerProfileImageController::class, 'setPdfPrimary'])
+                ->whereNumber('player')
+                ->whereNumber('playerProfileImage');
             Route::delete('{player}/profile-images/{playerProfileImage}', [\App\Http\Controllers\Api\V1\Manager\PlayerProfileImageController::class, 'destroy'])
                 ->whereNumber('player')
                 ->whereNumber('playerProfileImage');
@@ -342,6 +347,14 @@ Route::prefix('v1')->group(function () {
         });
 
         Route::get('player-import-rows', [\App\Http\Controllers\Api\V1\Manager\PlayerImportRowController::class, 'index']);
+
+        Route::prefix('player-profile-image-imports')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\PlayerProfileImageImportController::class, 'index']);
+            Route::get('{playerProfileImageImport}', [\App\Http\Controllers\Api\V1\Manager\PlayerProfileImageImportController::class, 'show'])
+                ->whereNumber('playerProfileImageImport');
+        });
+
+        Route::get('player-profile-image-import-rows', [\App\Http\Controllers\Api\V1\Manager\PlayerProfileImageImportRowController::class, 'index']);
 
         // Player invites
         Route::prefix('player-invites')->group(function () {

@@ -7,10 +7,10 @@ namespace App\Http\Controllers\Api\V1\Manager;
 use App\Http\Requests\Manager\ManagerPlayerProfileImageUploadRequest;
 use App\Models\Player;
 use App\Models\PlayerProfileImage;
+use App\Services\PlayerProfileImage\PlayerProfileImagePrimaryService;
+use App\Services\PlayerProfileImage\PlayerProfileImageUploadService;
 use Illuminate\Http\JsonResponse;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * @OA\Tag(
@@ -20,62 +20,20 @@ use Illuminate\Support\Facades\Storage;
  */
 class PlayerProfileImageController extends \App\Http\Controllers\BaseVersions\V1\V1BaseController
 {
-    /**
-     * @OA\Post(
-     *     path="/api/v1/manager/players/{player}/profile-images",
-     *     summary="Upload a profile image for a player",
-     *     tags={"🐧 Manager: Player Profile Images"},
-     *     security={{"sanctum":{}}},
-     *     @OA\Parameter(name="player", in="path", required=true, @OA\Schema(type="integer")),
-     *     @OA\RequestBody(
-     *         required=true,
-     *         @OA\MediaType(
-     *             mediaType="multipart/form-data",
-     *             @OA\Schema(@OA\Property(property="image", type="string", format="binary"))
-     *         )
-     *     ),
-     *     @OA\Response(response=201, description="Uploaded"),
-     *     @OA\Response(response=422, description="Validation or max files")
-     * )
-     */
+    public function __construct(
+        private readonly PlayerProfileImageUploadService $uploadService,
+        private readonly PlayerProfileImagePrimaryService $primaryService,
+    ) {
+    }
+
     public function store(ManagerPlayerProfileImageUploadRequest $request, Player $player): JsonResponse
     {
-        if ($player->profileImages()->count() >= PlayerProfileImage::MAX_PER_PLAYER) {
-            return $this->errorResponse(
-                'Maximum number of profile images (3) reached. Delete an existing image first.',
-                422
-            );
-        }
-
-        $disk = config('filesystems.user_uploads_disk', 'public');
-        $storedPath = null;
-
         try {
-            DB::beginTransaction();
-
-            $image = PlayerProfileImage::create([
-                'player_id' => $player->id_player,
-                'profile_path' => '',
-                'sort_order' => $player->profileImages()->count(),
+            $this->uploadService->upload($player, $request->file('image'), [
+                'uploaded_via' => PlayerProfileImage::UPLOADED_VIA_MANAGER,
+                'is_pdf_primary' => false,
             ]);
-
-            $storedPath = Storage::disk($disk)->putFile(
-                'player-profile-images/' . $image->getKey() . '/profile',
-                $request->file('image'),
-                ['visibility' => 'public']
-            );
-
-            if ($storedPath === false || $storedPath === null) {
-                throw new \RuntimeException('Could not store the uploaded file.');
-            }
-
-            $image->update(['profile_path' => $storedPath]);
-            DB::commit();
         } catch (\Throwable $e) {
-            DB::rollBack();
-            if ($storedPath !== null && $storedPath !== false) {
-                Storage::disk($disk)->delete($storedPath);
-            }
             Log::error('Manager PlayerProfileImageController::store failed', [
                 'player_id' => $player->id_player,
                 'error' => $e->getMessage(),
@@ -91,44 +49,64 @@ class PlayerProfileImageController extends \App\Http\Controllers\BaseVersions\V1
 
         return $this->successResponse([
             'uploaded_profile_images' => $player->profileImages
-                ->map(static fn (PlayerProfileImage $img) => [
-                    'id' => $img->id,
-                    'url' => $img->url,
-                ])
+                ->map(static fn (PlayerProfileImage $img) => $img->toApiArray())
                 ->values()
                 ->all(),
         ], 'Image uploaded successfully', 201);
     }
 
-    /**
-     * @OA\Delete(
-     *     path="/api/v1/manager/players/{player}/profile-images/{playerProfileImage}",
-     *     summary="Delete a player profile image",
-     *     tags={"🐧 Manager: Player Profile Images"},
-     *     security={{"sanctum":{}}},
-     *     @OA\Parameter(name="player", in="path", required=true, @OA\Schema(type="integer")),
-     *     @OA\Parameter(name="playerProfileImage", in="path", required=true, @OA\Schema(type="integer")),
-     *     @OA\Response(response=200, description="Deleted"),
-     *     @OA\Response(response=404, description="Not found")
-     * )
-     */
     public function destroy(Player $player, PlayerProfileImage $playerProfileImage): JsonResponse
     {
         if ((int) $playerProfileImage->player_id !== (int) $player->id_player) {
             return $this->errorResponse('Profile image does not belong to this player.', 404);
         }
 
+        $wasPrimary = $this->primaryService->wasResolvedPrimary($player, $playerProfileImage);
         $playerProfileImage->delete();
+
+        if ($wasPrimary) {
+            $player->load('profileImages');
+            $this->primaryService->promoteSurvivorAfterDelete($player);
+        }
+
         $player->load('profileImages');
 
         return $this->successResponse([
             'uploaded_profile_images' => $player->profileImages
-                ->map(static fn (PlayerProfileImage $img) => [
-                    'id' => $img->id,
-                    'url' => $img->url,
-                ])
+                ->map(static fn (PlayerProfileImage $img) => $img->toApiArray())
                 ->values()
                 ->all(),
         ], 'Image deleted successfully');
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/v1/manager/players/{player}/profile-images/{playerProfileImage}/pdf-primary",
+     *     summary="Set a profile image as the PDF source",
+     *     tags={"🐧 Manager: Player Profile Images"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Response(response=200, description="Updated images")
+     * )
+     */
+    public function setPdfPrimary(Player $player, PlayerProfileImage $playerProfileImage): JsonResponse
+    {
+        if ((int) $playerProfileImage->player_id !== (int) $player->id_player) {
+            return $this->errorResponse('Profile image does not belong to this player.', 404);
+        }
+
+        try {
+            $this->primaryService->setPdfPrimary($player, $playerProfileImage);
+        } catch (\InvalidArgumentException $e) {
+            return $this->errorResponse($e->getMessage(), 404);
+        }
+
+        $player->load('profileImages');
+
+        return $this->successResponse([
+            'uploaded_profile_images' => $player->profileImages
+                ->map(static fn (PlayerProfileImage $img) => $img->toApiArray())
+                ->values()
+                ->all(),
+        ], 'PDF primary image updated');
     }
 }

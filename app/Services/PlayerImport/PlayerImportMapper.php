@@ -7,6 +7,8 @@ namespace App\Services\PlayerImport;
 use App\Models\Player;
 use App\Models\PlayerEmail;
 use App\Models\PlayerPhone;
+use App\Support\PlayerDisplayName;
+use App\Support\PlayerFullNameMatchIndex;
 use App\Support\PlayerPhoneNormalizer;
 use Illuminate\Support\Collection;
 
@@ -34,7 +36,18 @@ final class PlayerImportMapper
     {
         $emailOwners = $this->emailOwnerIndex();
         $phoneOwners = $this->phoneOwnerIndex();
-        $nameIndex = $this->nameIndexForRows($rows);
+        $nameLookups = [];
+        foreach ($rows as $row) {
+            $lookup = PlayerDisplayName::fromParts(
+                $row['first_name'],
+                $row['middle_name'],
+                $row['last_name']
+            );
+            if ($lookup !== '') {
+                $nameLookups[] = $lookup;
+            }
+        }
+        $nameIndex = PlayerFullNameMatchIndex::build($nameLookups);
         $playerIds = [];
 
         $mapped = [];
@@ -65,8 +78,12 @@ final class PlayerImportMapper
                 $playerId = $phoneOwner;
             }
 
-            $nameKey = $this->nameKey($row['first_name'], $row['middle_name'], $row['last_name']);
-            $nameMatchIds = $nameKey === '' ? [] : ($nameIndex[$nameKey] ?? []);
+            $lookup = PlayerDisplayName::fromParts(
+                $row['first_name'],
+                $row['middle_name'],
+                $row['last_name']
+            );
+            $nameMatchIds = $lookup === '' ? [] : ($nameIndex[$lookup] ?? []);
             if ($playerId !== null) {
                 $nameMatchIds = array_values(array_filter(
                     $nameMatchIds,
@@ -155,59 +172,6 @@ final class PlayerImportMapper
         });
 
         return $index;
-    }
-
-    /**
-     * @param  list<array{first_name: string, middle_name: ?string, last_name: ?string}>  $rows
-     * @return array<string, list<int>>
-     */
-    private function nameIndexForRows(array $rows): array
-    {
-        $firstNames = [];
-        foreach ($rows as $row) {
-            $first = trim($row['first_name']);
-            if ($first !== '') {
-                $firstNames[mb_strtolower($first)] = true;
-            }
-        }
-
-        if ($firstNames === []) {
-            return [];
-        }
-
-        $players = Player::query()
-            ->where(function ($query) use ($firstNames): void {
-                foreach (array_keys($firstNames) as $firstName) {
-                    $query->orWhereRaw('LOWER(first_name) = ?', [$firstName]);
-                }
-            })
-            ->get(['id_player', 'first_name', 'middle_name', 'last_name']);
-
-        $index = [];
-        foreach ($players as $player) {
-            $key = $this->nameKey(
-                (string) $player->first_name,
-                $player->middle_name,
-                $player->last_name
-            );
-            if ($key === '') {
-                continue;
-            }
-            $index[$key] ??= [];
-            $index[$key][] = (int) $player->id_player;
-        }
-
-        return $index;
-    }
-
-    private function nameKey(string $first, ?string $middle, ?string $last): string
-    {
-        $parts = collect([$first, $middle, $last])
-            ->map(static fn ($part) => is_string($part) ? trim($part) : '')
-            ->filter(static fn (string $part): bool => $part !== '')
-            ->implode(' ');
-
-        return $parts === '' ? '' : mb_strtolower($parts);
     }
 
     /**

@@ -126,10 +126,8 @@ final class ScheduleBoardMetricsService
     private function resolveAvatarUrl(mixed $player, bool $collecting): ?string
     {
         $player->loadMissing('profileImages');
-        $profile = $player->profileImages->sortBy([
-            ['sort_order', 'asc'],
-            ['id', 'asc'],
-        ])->first();
+        $profile = app(\App\Services\PlayerProfileImage\PlayerProfileImageResolver::class)
+            ->resolveForPdf($player);
 
         if ($profile === null || ! $profile->profile_path) {
             return null;

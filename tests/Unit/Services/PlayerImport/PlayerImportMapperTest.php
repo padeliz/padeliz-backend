@@ -17,13 +17,13 @@ final class PlayerImportMapperTest extends TestCase
 
     public function test_unique_email_is_case_insensitive_and_beats_name(): void
     {
-        $player = $this->playerNamed('Ada', 'Popescu');
-        $this->setContacts($player, 'Ada@Example.test', '+40 700 111 111');
-        $nameTwin = $this->playerNamed('Ada', 'Popescu');
+        $player = $this->playerNamed('Mara', 'Popescu');
+        $this->setContacts($player, 'Mara@Example.test', '+40 700 111 111');
+        $nameTwin = $this->playerNamed('Mara', 'Popescu');
         $this->setContacts($nameTwin, 'twin@example.test', '+40 700 111 112');
 
         $mapped = (new PlayerImportMapper())->mapRows([
-            $this->row(0, 'Ada', 'Popescu', 'ada@example.test', '+40700999999'),
+            $this->row(0, 'Mara', 'Popescu', 'mara@example.test', '+40700999999'),
         ])[0];
 
         $this->assertSame('mapped', $mapped['mapping']['status']);
@@ -64,11 +64,11 @@ final class PlayerImportMapperTest extends TestCase
 
     public function test_name_never_auto_maps_but_fills_name_matches(): void
     {
-        $player = $this->playerNamed('Ada', 'Popescu');
-        $this->setContacts($player, 'ada@example.test', '+40 700 000 010');
+        $player = $this->playerNamed('Mara', 'Popescu');
+        $this->setContacts($player, 'mara@example.test', '+40 700 000 010');
 
         $mapped = (new PlayerImportMapper())->mapRows([
-            $this->row(0, 'Ada', 'Popescu', 'new@example.test', '+40700000011'),
+            $this->row(0, 'Mara', 'Popescu', 'new@example.test', '+40700000011'),
         ])[0];
 
         $this->assertSame('unmapped', $mapped['mapping']['status']);
@@ -111,6 +111,20 @@ final class PlayerImportMapperTest extends TestCase
         $this->assertSame('email', $mapped['mapping']['matched_by']);
         $this->assertSame($player->id_player, $mapped['mapping']['player']->id_player);
         $this->assertSame([], $mapped['mapping']['candidates']);
+    }
+
+    public function test_name_match_is_accent_insensitive_for_csv_parts(): void
+    {
+        $player = $this->playerNamed('Ștefan', 'Popescu');
+        $this->setContacts($player, 'stefan@example.test', '+40 700 000 099');
+
+        $mapped = (new PlayerImportMapper())->mapRows([
+            $this->row(0, 'Stefan', 'Popescu', 'new@example.test', '+40700000098'),
+        ])[0];
+
+        $this->assertSame('unmapped', $mapped['mapping']['status']);
+        $this->assertCount(1, $mapped['mapping']['name_matches']);
+        $this->assertSame($player->id_player, $mapped['mapping']['name_matches'][0]->id_player);
     }
 
     /**

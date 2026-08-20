@@ -18,7 +18,6 @@ final class PlayerNameSplitter
     public static function split(string $rawName): array
     {
         $name = trim($rawName);
-        $name = preg_replace('/\s+\([^)]*\)\s*$/u', '', $name) ?? $name;
         $name = trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
 
         if ($name === '') {
@@ -67,7 +66,6 @@ final class PlayerNameSplitter
     public static function splitForPreview(string $rawName): array
     {
         $name = trim($rawName);
-        $name = preg_replace('/\s+\([^)]*\)\s*$/u', '', $name) ?? $name;
         $name = trim(preg_replace('/\s+/u', ' ', $name) ?? $name);
 
         if ($name === '') {

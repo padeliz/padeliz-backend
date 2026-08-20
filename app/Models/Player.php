@@ -244,6 +244,7 @@ class Player extends Authenticatable
      */
     public static array $searchableFields = [
         'first_name',
+        'middle_name',
         'last_name',
         'playtomic_id',
         'rankedin_id',

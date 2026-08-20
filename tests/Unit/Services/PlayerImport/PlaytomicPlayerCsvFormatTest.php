@@ -22,15 +22,15 @@ final class PlaytomicPlayerCsvFormatTest extends TestCase
     {
         $format = new PlaytomicPlayerCsvFormat();
         $parsed = $format->parseRow([
-            'Name' => '  Ada Popescu ',
-            'Email' => ' ADA@Example.test ',
+            'Name' => '  Mara Popescu ',
+            'Email' => ' MARA@Example.test ',
             'Phone Number' => ' +40 712 ',
             'Level' => '4.5',
         ]);
 
         $this->assertSame([
-            'name' => 'Ada Popescu',
-            'email' => 'ADA@Example.test',
+            'name' => 'Mara Popescu',
+            'email' => 'MARA@Example.test',
             'phone' => '+40 712',
         ], $parsed);
     }

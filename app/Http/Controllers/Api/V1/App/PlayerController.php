@@ -280,38 +280,13 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
             );
         }
 
-        $disk = config('filesystems.user_uploads_disk', 'public');
-        $storedPath = null;
-
         try {
-            DB::beginTransaction();
-
-            $image = PlayerProfileImage::create([
-                'player_id' => $player->id_player,
-                'profile_path' => '',
-                'sort_order' => $player->profileImages()->count(),
-            ]);
-
-            $storedPath = Storage::disk($disk)->putFile(
-                'player-profile-images/' . $image->getKey() . '/profile',
-                $request->file('image'),
-                ['visibility' => 'public']
-            );
-
-            if ($storedPath === false || $storedPath === null) {
-                throw new \RuntimeException('Could not store the uploaded file.');
-            }
-
-            $image->update(['profile_path' => $storedPath]);
-
-            DB::commit();
+            app(\App\Services\PlayerProfileImage\PlayerProfileImageUploadService::class)
+                ->upload($player, $request->file('image'), [
+                    'uploaded_via' => PlayerProfileImage::UPLOADED_VIA_APP,
+                    'is_pdf_primary' => false,
+                ]);
         } catch (\Throwable $e) {
-            DB::rollBack();
-
-            if ($storedPath !== null && $storedPath !== false) {
-                Storage::disk($disk)->delete($storedPath);
-            }
-
             Log::error('PlayerController::uploadImage - Error uploading file', [
                 'player_id' => $player->id_player,
                 'error' => $e->getMessage(),
@@ -330,10 +305,7 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
 
         return $this->successResponse([
             'uploaded_profile_images' => $player->profileImages
-                ->map(static fn (PlayerProfileImage $img) => [
-                    'id' => $img->id,
-                    'url' => $img->url,
-                ])
+                ->map(static fn (PlayerProfileImage $img) => $img->toApiArray())
                 ->values()
                 ->all(),
         ], 'Image uploaded successfully', 201);
@@ -395,16 +367,20 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
             return $this->forbiddenResponse('You can only delete your own profile images.');
         }
 
+        $primaryService = app(\App\Services\PlayerProfileImage\PlayerProfileImagePrimaryService::class);
+        $wasPrimary = $primaryService->wasResolvedPrimary($player, $playerProfileImage);
         $playerProfileImage->delete();
+
+        if ($wasPrimary) {
+            $player->load('profileImages');
+            $primaryService->promoteSurvivorAfterDelete($player);
+        }
 
         $player->load('profileImages');
 
         return $this->successResponse([
             'uploaded_profile_images' => $player->profileImages
-                ->map(static fn (PlayerProfileImage $img) => [
-                    'id' => $img->id,
-                    'url' => $img->url,
-                ])
+                ->map(static fn (PlayerProfileImage $img) => $img->toApiArray())
                 ->values()
                 ->all(),
         ], 'Image deleted successfully');

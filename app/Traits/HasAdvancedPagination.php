@@ -22,14 +22,23 @@ trait HasAdvancedPagination
     /**
      * Apply advanced pagination with search, filtering, and sorting
      */
-    protected function applyAdvancedPagination(Builder $query, Request $request, array $searchableFields = [], array $filterableFields = [], array $sortableFields = []): Builder
-    {
+    protected function applyAdvancedPagination(
+        Builder $query,
+        Request $request,
+        array $searchableFields = [],
+        array $filterableFields = [],
+        array $sortableFields = [],
+        ?callable $extendSearch = null,
+    ): Builder {
         // Apply search
         if ($request->has('q') && ! empty($request->get('q')) && ! empty($searchableFields)) {
             $searchTerm = $request->get('q');
-            $query->where(function (Builder $q) use ($searchTerm, $searchableFields) {
+            $query->where(function (Builder $q) use ($searchTerm, $searchableFields, $extendSearch) {
                 foreach ($searchableFields as $field) {
                     $q->orWhere($field, 'LIKE', "%{$searchTerm}%");
+                }
+                if ($extendSearch !== null) {
+                    $extendSearch($q, $searchTerm);
                 }
             });
         }

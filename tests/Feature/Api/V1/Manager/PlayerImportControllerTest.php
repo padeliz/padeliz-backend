@@ -34,7 +34,7 @@ class PlayerImportControllerTest extends TestCase
     public function test_preview_requires_manager_auth(): void
     {
         $this->post('/api/v1/manager/players/import/preview', [
-            'file' => $this->csvUpload("Name,Email,Phone Number\nAda,ada@example.test,+40712\n"),
+            'file' => $this->csvUpload("Name,Email,Phone Number\nMara,mara@example.test,+40712\n"),
         ], ['Accept' => 'application/json'])->assertStatus(401);
     }
 
@@ -45,7 +45,7 @@ class PlayerImportControllerTest extends TestCase
         $importsBefore = PlayerImport::count();
 
         $csv = "\xEF\xBB\xBFName,Email,Phone Number,Level\n"
-            . "Ada Popescu,ADA@Example.test,+40 712 345 678,4.5\n"
+            . "Mara Popescu,MARA@Example.test,+40 712 345 678,4.5\n"
             . "\"Popescu, Vlad\",vlad@example.test,+40 722 111 222,3\n"
             . "*fictiv* Guest,fictiv@example.test,+40 700 000 001,1\n"
             . ",empty.name@example.test,+40 700 000 002,1\n";
@@ -57,9 +57,9 @@ class PlayerImportControllerTest extends TestCase
 
         $rows = $response->json('data.rows');
         $this->assertCount(4, $rows);
-        $this->assertSame('Ada', $rows[0]['first_name']);
+        $this->assertSame('Mara', $rows[0]['first_name']);
         $this->assertSame('Popescu', $rows[0]['last_name']);
-        $this->assertSame('ada@example.test', $rows[0]['email']);
+        $this->assertSame('mara@example.test', $rows[0]['email']);
         $this->assertSame('+40712345678', $rows[0]['phone']);
         $this->assertArrayNotHasKey('name', $rows[0]);
 
@@ -80,20 +80,20 @@ class PlayerImportControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
         $existing = Player::factory()->create([
-            'first_name' => 'Ada',
+            'first_name' => 'Mara',
             'middle_name' => null,
             'last_name' => 'Popescu',
         ]);
-        $this->setContacts($existing, 'ada@example.test', '+40700000001');
+        $this->setContacts($existing, 'mara@example.test', '+40700000001');
 
         $response = $this->postPreview(
-            "Name,Email,Phone Number\nAda Popescu,ada@example.test,+40 700 000 099\n"
+            "Name,Email,Phone Number\nMara Popescu,mara@example.test,+40 700 000 099\n"
         );
 
         $response->assertOk();
         $player = $response->json('data.rows.0.mapping.player');
         $this->assertSame($existing->id_player, $player['id_player']);
-        $this->assertSame('Ada Popescu', $player['name']);
+        $this->assertSame('Mara Popescu', $player['name']);
         $this->assertArrayHasKey('pdf_avatar_url', $player);
         $this->assertArrayHasKey('emails', $player);
         $this->assertArrayHasKey('phones', $player);
@@ -105,7 +105,7 @@ class PlayerImportControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $this->postPreview("Full Name,Mail,Mobile\nAda,ada@example.test,+40712\n")
+        $this->postPreview("Full Name,Mail,Mobile\nMara,mara@example.test,+40712\n")
             ->assertStatus(422)
             ->assertJsonFragment(['Unknown CSV format. Supported: Playtomic.']);
     }
@@ -139,10 +139,10 @@ class PlayerImportControllerTest extends TestCase
             'rows' => [
                 [
                     'index' => 0,
-                    'first_name' => 'Ada',
+                    'first_name' => 'Mara',
                     'middle_name' => null,
                     'last_name' => 'Popescu',
-                    'email' => 'ada.new@example.test',
+                    'email' => 'mara.new@example.test',
                     'phone' => '',
                     'player_id' => null,
                 ],
@@ -209,7 +209,7 @@ class PlayerImportControllerTest extends TestCase
             'filename' => 'x.csv',
             'rows' => [[
                 'index' => 0,
-                'first_name' => 'Ada',
+                'first_name' => 'Mara',
                 'email' => '',
                 'phone' => '',
                 'player_id' => null,
@@ -223,12 +223,12 @@ class PlayerImportControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
         $existing = Player::factory()->create([
-            'first_name' => 'Ada',
+            'first_name' => 'Mara',
             'last_name' => 'Popescu',
             'skill_division' => 4.5,
             'created_via' => 'manager',
         ]);
-        $this->setContacts($existing, 'ada@example.test', '+40 712 000 000');
+        $this->setContacts($existing, 'mara@example.test', '+40 712 000 000');
         $originalPhone = $existing->phones()->first()->phone;
 
         $response = $this->postJson('/api/v1/manager/players/import', [
@@ -238,7 +238,7 @@ class PlayerImportControllerTest extends TestCase
                 'index' => 0,
                 'first_name' => 'Ignored',
                 'last_name' => 'Name',
-                'email' => 'ada@example.test',
+                'email' => 'mara@example.test',
                 'phone' => '+40 799 111 222',
                 'player_id' => $existing->id_player,
             ]],
@@ -246,7 +246,7 @@ class PlayerImportControllerTest extends TestCase
 
         $response->assertCreated()->assertJsonPath('data.rows.0.action', 'attached');
         $existing->refresh();
-        $this->assertSame('Ada', $existing->first_name);
+        $this->assertSame('Mara', $existing->first_name);
         $this->assertSame(4.5, (float) $existing->skill_division);
         $this->assertSame('manager', $existing->created_via);
         $this->assertNull($existing->created_via_format);
@@ -288,7 +288,7 @@ class PlayerImportControllerTest extends TestCase
             'filename' => 'x.csv',
             'rows' => [[
                 'index' => 0,
-                'first_name' => 'Ada',
+                'first_name' => 'Mara',
                 'email' => 'taken@example.test',
                 'phone' => '',
                 'player_id' => $mapped->id_player,
@@ -438,7 +438,7 @@ class PlayerImportControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
         $existing = Player::factory()->create();
-        $this->setContacts($existing, 'ada@example.test', '+40700111111');
+        $this->setContacts($existing, 'mara@example.test', '+40700111111');
         $emailCount = $existing->emails()->count();
 
         $this->postJson('/api/v1/manager/players/import', [
@@ -446,8 +446,8 @@ class PlayerImportControllerTest extends TestCase
             'filename' => 'x.csv',
             'rows' => [[
                 'index' => 0,
-                'first_name' => 'Ada',
-                'email' => 'ADA@example.test',
+                'first_name' => 'Mara',
+                'email' => 'MARA@example.test',
                 'phone' => '+40 700 111 111',
                 'player_id' => $existing->id_player,
             ]],
@@ -465,7 +465,7 @@ class PlayerImportControllerTest extends TestCase
             'filename' => 'hist.csv',
             'rows' => [[
                 'index' => 0,
-                'first_name' => 'Ada',
+                'first_name' => 'Mara',
                 'email' => 'hist@example.test',
                 'player_id' => null,
             ]],

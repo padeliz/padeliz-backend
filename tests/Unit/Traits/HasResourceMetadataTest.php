@@ -24,6 +24,7 @@ class HasResourceMetadataTest extends TestCase
     {
         $expectedFields = [
             'first_name',
+            'middle_name',
             'last_name',
             'playtomic_id',
             'rankedin_id',
@@ -91,6 +92,7 @@ class HasResourceMetadataTest extends TestCase
     public function test_is_searchable_field_returns_true_for_valid_field(): void
     {
         $this->assertTrue(Player::isSearchableField('first_name'));
+        $this->assertTrue(Player::isSearchableField('middle_name'));
         $this->assertTrue(Player::isSearchableField('last_name'));
         $this->assertTrue(Player::isSearchableField('playtomic_id'));
     }
@@ -100,7 +102,6 @@ class HasResourceMetadataTest extends TestCase
         $this->assertFalse(Player::isSearchableField('invalid_field'));
         $this->assertFalse(Player::isSearchableField('skill_division'));
         $this->assertFalse(Player::isSearchableField('name'));
-        $this->assertFalse(Player::isSearchableField('middle_name'));
         $this->assertFalse(Player::isSearchableField(''));
     }
 

@@ -115,27 +115,20 @@ class PlayerController extends V1BaseController
     {
         $query = Player::with(['participations']);
 
-        if ($request->filled('q')) {
-            $searchTerm = (string) $request->get('q');
-            $query->where(function ($q) use ($searchTerm) {
-                foreach (Player::$searchableFields as $field) {
-                    $q->orWhere($field, 'LIKE', "%{$searchTerm}%");
-                }
+        $this->applyAdvancedPagination(
+            $query,
+            $request,
+            Player::$searchableFields,
+            Player::$filterableFields,
+            Player::$sortableFields,
+            function ($q, string $searchTerm): void {
                 $q->orWhereHas('emails', function ($emailQuery) use ($searchTerm) {
                     $emailQuery->where('email', 'LIKE', "%{$searchTerm}%");
                 });
                 $q->orWhereHas('phones', function ($phoneQuery) use ($searchTerm) {
                     $phoneQuery->where('phone', 'LIKE', "%{$searchTerm}%");
                 });
-            });
-        }
-
-        $this->applyAdvancedPagination(
-            $query,
-            $request,
-            [],
-            Player::$filterableFields,
-            Player::$sortableFields
+            }
         );
 
         // Get pagination parameters
@@ -712,12 +705,8 @@ class PlayerController extends V1BaseController
         ]);
 
         $player->loadMissing('profileImages');
-        $profile = $player->profileImages
-            ->sortBy([
-                ['sort_order', 'asc'],
-                ['id', 'asc'],
-            ])
-            ->first();
+        $profile = app(\App\Services\PlayerProfileImage\PlayerProfileImageResolver::class)
+            ->resolveForPdf($player);
 
         if ($profile === null || $profile->profile_path === null || $profile->profile_path === '') {
             return response()->json([

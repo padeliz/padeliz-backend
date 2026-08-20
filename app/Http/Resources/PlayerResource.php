@@ -56,10 +56,7 @@ class PlayerResource extends JsonResource
                 ])->values()->all();
             }),
             'uploaded_profile_images' => $this->profileImages
-                ->map(static fn (PlayerProfileImage $img) => [
-                    'id' => $img->id,
-                    'url' => $img->url,
-                ])
+                ->map(static fn (PlayerProfileImage $img) => $img->toApiArray())
                 ->values()
                 ->all(),
             'participations' => $this->whenLoaded('participations', function () {

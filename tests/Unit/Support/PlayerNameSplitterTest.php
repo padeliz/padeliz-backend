@@ -41,12 +41,12 @@ final class PlayerNameSplitterTest extends TestCase
                     'last_name' => null,
                 ],
             ],
-            'strips trailing parenthetical' => [
-                'Laura Iancovici (Oana Necula)',
+            'keeps captain suffix in last name' => [
+                'Ion Popescu (Captain)',
                 [
-                    'first_name' => 'Laura',
-                    'middle_name' => null,
-                    'last_name' => 'Iancovici',
+                    'first_name' => 'Ion',
+                    'middle_name' => 'Popescu',
+                    'last_name' => '(Captain)',
                 ],
             ],
             'multiple middle initials' => [
@@ -130,12 +130,12 @@ final class PlayerNameSplitterTest extends TestCase
     public function test_split_for_preview_token_shapes(): void
     {
         $this->assertSame(
-            ['first_name' => 'Ada', 'middle_name' => null, 'last_name' => null],
-            PlayerNameSplitter::splitForPreview('Ada')
+            ['first_name' => 'Mara', 'middle_name' => null, 'last_name' => null],
+            PlayerNameSplitter::splitForPreview('Mara')
         );
         $this->assertSame(
-            ['first_name' => 'Ada', 'middle_name' => null, 'last_name' => 'Popescu'],
-            PlayerNameSplitter::splitForPreview('Ada Popescu')
+            ['first_name' => 'Mara', 'middle_name' => null, 'last_name' => 'Popescu'],
+            PlayerNameSplitter::splitForPreview('Mara Popescu')
         );
         $this->assertSame(
             ['first_name' => 'Ana', 'middle_name' => 'Maria', 'last_name' => 'Popescu'],

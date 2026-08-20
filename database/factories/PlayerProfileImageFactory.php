@@ -21,6 +21,7 @@ class PlayerProfileImageFactory extends Factory
             'player_id' => Player::factory(),
             'profile_path' => 'player-profile-images/1/profile/placeholder.png',
             'sort_order' => 0,
+            'is_pdf_primary' => false,
             'inserted_at' => time(),
             'updated_at' => time(),
         ];

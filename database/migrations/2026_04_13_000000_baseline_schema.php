@@ -158,14 +158,71 @@ return new class () extends Migration {
             $table->integer('inserted_at');
         });
 
+        Schema::create('player_profile_image_imports', function (Blueprint $table) {
+            $table->id('id_player_profile_image_import');
+            $table->unsignedBigInteger('imported_by_player_id')->nullable();
+            $table->string('original_filename', 255);
+            $table->unsignedInteger('included_count')->default(0);
+            $table->unsignedInteger('uploaded_count')->default(0);
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
+
+            $table->foreign('imported_by_player_id', 'ppii_imported_by_fk')
+                ->references('id_player')
+                ->on('players')
+                ->nullOnDelete();
+        });
+
         Schema::create('player_profile_images', function (Blueprint $table) {
             $table->id();
             $table->foreignId('player_id')->constrained('players', 'id_player')->cascadeOnDelete();
             $table->string('profile_path', 512);
             $table->unsignedTinyInteger('sort_order');
+            $table->string('uploaded_via', 16)->nullable();
+            $table->unsignedBigInteger('uploaded_via_import_id')->nullable();
+            $table->string('original_filename', 255)->nullable();
+            $table->boolean('is_pdf_primary')->default(false);
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
             $table->index('player_id', 'player_profile_images_player_id_idx');
+            $table->foreign('uploaded_via_import_id', 'ppi_uploaded_via_import_fk')
+                ->references('id_player_profile_image_import')
+                ->on('player_profile_image_imports')
+                ->nullOnDelete();
+        });
+
+        if (Schema::getConnection()->getDriverName() === 'mysql') {
+            $table = Schema::getConnection()->getTablePrefix() . 'player_profile_images';
+            DB::statement(
+                'CREATE UNIQUE INDEX player_profile_images_one_pdf_primary '
+                . 'ON `' . $table . '` ((IF(is_pdf_primary, player_id, NULL)))'
+            );
+        }
+
+        Schema::create('player_profile_image_import_rows', function (Blueprint $table) {
+            $table->id('id_player_profile_image_import_row');
+            $table->unsignedBigInteger('player_profile_image_import_id');
+            $table->unsignedInteger('row_index');
+            $table->string('original_filename', 255);
+            $table->unsignedBigInteger('player_id');
+            $table->unsignedBigInteger('player_profile_image_id');
+            $table->boolean('is_pdf_primary')->default(false);
+            $table->string('action', 32)->default('uploaded');
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
+
+            $table->foreign('player_profile_image_import_id', 'ppii_rows_import_fk')
+                ->references('id_player_profile_image_import')
+                ->on('player_profile_image_imports')
+                ->cascadeOnDelete();
+            $table->foreign('player_id', 'ppii_rows_player_fk')
+                ->references('id_player')
+                ->on('players')
+                ->cascadeOnDelete();
+            $table->foreign('player_profile_image_id', 'ppii_rows_image_fk')
+                ->references('id')
+                ->on('player_profile_images')
+                ->cascadeOnDelete();
         });
 
         Schema::create('player_imports', function (Blueprint $table) {
@@ -244,13 +301,14 @@ return new class () extends Migration {
 
         Schema::create('edition_division_posters', function (Blueprint $table) {
             $table->id('id_edition_division_poster');
-            $table->foreignId('edition_division_id')->constrained('edition_divisions', 'id_edition_division')->cascadeOnDelete();
+            $table->unsignedBigInteger('edition_division_id');
             $table->unsignedBigInteger('edition_division_court_id')->nullable();
             $table->enum('poster_kind', ['MATCHES', 'RANKING', 'COMBINED', 'BATTLES', 'HOUSE', 'SETUP']);
             $table->string('generated_path', 512)->nullable();
             $table->string('printed_path', 512)->nullable();
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
+            $table->index('edition_division_id', 'ed_posters_edition_division_id_idx');
         });
 
         $prefix = DB::getTablePrefix();
@@ -263,6 +321,8 @@ return new class () extends Migration {
             "ON `{$prefix}edition_division_posters` (`edition_division_id`, `poster_kind`, `court_scope_key`)"
         );
         Schema::table('edition_division_posters', function (Blueprint $table) {
+            $table->foreign('edition_division_id')
+                ->references('id_edition_division')->on('edition_divisions')->cascadeOnDelete();
             $table->foreign('edition_division_court_id', 'fk_poster_ed_court')
                 ->references('id_edition_division_court')->on('edition_division_courts');
         });
@@ -348,12 +408,14 @@ return new class () extends Migration {
 
         Schema::create('edition_lotteries', function (Blueprint $table) {
             $table->id('id_lottery');
-            $table->foreignId('edition_id')->constrained('editions', 'id_edition');
+            $table->unsignedBigInteger('edition_id');
             $table->string('name', 60);
             $table->smallInteger('display_order')->default(0);
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
+            $table->index('edition_id', 'pm_edition_lotteries_edition_id_foreign');
             $table->unique(['edition_id', 'name']);
+            $table->foreign('edition_id')->references('id_edition')->on('editions');
         });
 
         Schema::create('edition_lottery_prizes', function (Blueprint $table) {
@@ -458,6 +520,7 @@ return new class () extends Migration {
             $table->unsignedBigInteger('match_id')->nullable();
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
+            $table->index('edition_division_id', 'idx_repl_edition_division');
         });
 
         Schema::table('edition_division_replacements', function (Blueprint $table) {
@@ -605,7 +668,13 @@ return new class () extends Migration {
         Schema::dropIfExists('edition_division_posters');
         Schema::dropIfExists('edition_division_courts');
         Schema::dropIfExists('edition_divisions');
+        Schema::dropIfExists('player_profile_image_import_rows');
+        if (Schema::getConnection()->getDriverName() === 'mysql') {
+            $table = Schema::getConnection()->getTablePrefix() . 'player_profile_images';
+            DB::statement('DROP INDEX player_profile_images_one_pdf_primary ON `' . $table . '`');
+        }
         Schema::dropIfExists('player_profile_images');
+        Schema::dropIfExists('player_profile_image_imports');
         Schema::dropIfExists('player_invite_events');
         Schema::dropIfExists('player_invites');
         Schema::dropIfExists('player_identities');

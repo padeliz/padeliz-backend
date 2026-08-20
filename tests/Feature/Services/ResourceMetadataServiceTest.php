@@ -723,4 +723,36 @@ class ResourceMetadataServiceTest extends TestCase
         $replacementMetadata = $this->metadataService->getMetadata('EditionDivisionReplacement', 'v1');
         $this->assertArrayHasKey('match_id', $replacementMetadata['swagger_schema']['properties']);
     }
+
+    public function test_get_player_profile_image_import_metadata(): void
+    {
+        $metadata = $this->metadataService->getMetadata('PlayerProfileImageImport', 'v1');
+
+        $this->assertEquals('v1', $metadata['version']);
+        $this->assertEquals('PlayerProfileImageImport', $metadata['schema_name']);
+        $this->assertNotNull($metadata['swagger_schema']);
+        $this->assertEquals('original_filename', $metadata['display_field']);
+
+        $properties = $metadata['swagger_schema']['properties'];
+        $this->assertArrayHasKey('id_player_profile_image_import', $properties);
+        $this->assertArrayHasKey('original_filename', $properties);
+        $this->assertArrayHasKey('included_count', $properties);
+        $this->assertArrayHasKey('uploaded_count', $properties);
+        $this->assertArrayHasKey('importedByPlayer', $properties);
+        $this->assertArrayHasKey('rows', $properties);
+    }
+
+    public function test_get_player_profile_image_import_row_metadata(): void
+    {
+        $metadata = $this->metadataService->getMetadata('PlayerProfileImageImportRow', 'v1');
+
+        $this->assertEquals('v1', $metadata['version']);
+        $this->assertEquals('PlayerProfileImageImportRow', $metadata['schema_name']);
+        $this->assertNotNull($metadata['swagger_schema']);
+
+        $properties = $metadata['swagger_schema']['properties'];
+        $this->assertArrayHasKey('id_player_profile_image_import_row', $properties);
+        $this->assertArrayHasKey('is_pdf_primary', $properties);
+        $this->assertArrayHasKey('player_profile_image_id', $properties);
+    }
 }

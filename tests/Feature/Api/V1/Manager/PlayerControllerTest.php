@@ -344,6 +344,40 @@ class PlayerControllerTest extends TestCase
         $this->assertNotContains($this->manager->id_player, $ids);
     }
 
+    public function test_manager_search_finds_diacritic_first_name_without_accent(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $player = Player::factory()->create([
+            'first_name' => 'Ștefan',
+            'middle_name' => null,
+            'last_name' => 'Popescu',
+        ]);
+
+        $response = $this->getJson('/api/v1/manager/players?q=Stefan');
+
+        $response->assertStatus(200);
+        $ids = collect($response->json('data'))->pluck('id_player')->all();
+        $this->assertContains($player->id_player, $ids);
+    }
+
+    public function test_manager_search_matches_middle_name(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $player = Player::factory()->create([
+            'first_name' => 'Ana',
+            'middle_name' => 'Maria',
+            'last_name' => 'Popescu',
+        ]);
+
+        $response = $this->getJson('/api/v1/manager/players?q=Maria');
+
+        $response->assertStatus(200);
+        $ids = collect($response->json('data'))->pluck('id_player')->all();
+        $this->assertContains($player->id_player, $ids);
+    }
+
     public function test_factory_player_has_null_provenance(): void
     {
         $this->assertNull($this->player->fresh()->created_via);

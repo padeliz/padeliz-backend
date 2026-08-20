@@ -332,7 +332,7 @@ final class CachedPdfImagesTest extends TestCase
         $player = Player::factory()->create();
         $players = [[
             'id' => (int) $player->id_player,
-            'name' => 'Ada Lovelace',
+            'name' => 'Mara Lovelace',
             'is_collecting_points' => true,
             'profile_abs_path' => $this->photoA,
         ]];

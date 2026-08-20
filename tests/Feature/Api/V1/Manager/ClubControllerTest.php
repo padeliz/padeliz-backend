@@ -67,6 +67,22 @@ class ClubControllerTest extends TestCase
         $this->assertCount(5, $response->json('data'));
     }
 
+    public function test_manager_search_finds_diacritic_club_name_without_accent(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $club = Club::factory()->create([
+            'name' => 'Club București',
+            'city' => 'București',
+        ]);
+
+        $response = $this->getJson('/api/v1/manager/clubs?q=Bucuresti');
+
+        $response->assertStatus(200);
+        $ids = collect($response->json('data'))->pluck('id_club')->all();
+        $this->assertContains($club->id_club, $ids);
+    }
+
     public function test_manager_can_view_specific_club()
     {
         Sanctum::actingAs($this->manager);
