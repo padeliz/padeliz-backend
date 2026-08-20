@@ -6,13 +6,11 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
 use App\Http\Resources\PlayerResource;
-use App\Models\CachedPdfPlayerImage;
 use App\Models\Player;
 use App\Models\PlayerPhone;
-use App\Services\Pdf\CachedPdfPlayerImageService;
+use App\Services\Pdf\PdfCachedImageGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Storage;
 use Illuminate\Validation\Rule;
 
 /**
@@ -684,6 +682,7 @@ class PlayerController extends V1BaseController
      * @OA\Post(
      *     path="/api/v1/manager/players/{player}/pdf-avatar",
      *     summary="Generate or refresh cached PDF circular avatar for a player",
+     *     description="Players without a usable profile photo get an initials placeholder avatar instead of an error.",
      *     tags={"🐧 Manager: Players"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(name="player", in="path", required=true, @OA\Schema(type="integer")),
@@ -695,7 +694,7 @@ class PlayerController extends V1BaseController
      *         )
      *     ),
      *     @OA\Response(response=200, description="PDF avatar URL"),
-     *     @OA\Response(response=422, description="Missing profile photo or validation error")
+     *     @OA\Response(response=422, description="Validation error or avatar generation failure")
      * )
      */
     public function generatePdfAvatar(Request $request, Player $player): JsonResponse
@@ -704,32 +703,10 @@ class PlayerController extends V1BaseController
             'is_collecting_points' => ['required', 'boolean'],
         ]);
 
-        $player->loadMissing('profileImages');
-        $profile = app(\App\Services\PlayerProfileImage\PlayerProfileImageResolver::class)
-            ->resolveForPdf($player);
-
-        if ($profile === null || $profile->profile_path === null || $profile->profile_path === '') {
-            return response()->json([
-                'message' => 'Player is missing a profile image.',
-                'player_ids' => [(int) $player->id_player],
-                'code' => 'missing_profile_image',
-            ], 422);
-        }
-
-        $abs = Storage::disk($profile->storageDisk())->path((string) $profile->profile_path);
-        if (! is_file($abs)) {
-            return response()->json([
-                'message' => 'Player profile image file is missing on disk.',
-                'player_ids' => [(int) $player->id_player],
-                'code' => 'missing_profile_image',
-            ], 422);
-        }
-
         $collecting = (bool) $validated['is_collecting_points'];
 
         try {
-            $service = new CachedPdfPlayerImageService();
-            $service->resolvePath((int) $player->id_player, $abs, $collecting, true);
+            $url = (new PdfCachedImageGenerator())->generatePlayerAvatarUrl($player, $collecting);
         } catch (\Throwable $e) {
             return response()->json([
                 'message' => $e->getMessage() !== '' ? $e->getMessage() : 'Failed to generate PDF avatar.',
@@ -738,15 +715,10 @@ class PlayerController extends V1BaseController
             ], 422);
         }
 
-        $cached = CachedPdfPlayerImage::query()
-            ->where('player_id', (int) $player->id_player)
-            ->where('player_is_collecting_points', $collecting)
-            ->first();
-
         return response()->json([
             'success' => true,
             'data' => [
-                'pdf_avatar_url' => $cached?->url,
+                'pdf_avatar_url' => $url,
             ],
         ]);
     }

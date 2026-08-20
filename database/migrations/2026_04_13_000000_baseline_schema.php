@@ -549,8 +549,18 @@ return new class () extends Migration {
             $table->boolean('player_1_is_collecting_points')->default(true);
             $table->boolean('player_2_is_collecting_points')->default(true);
             $table->string('picture_path', 512)->nullable();
+            $table->unsignedBigInteger('source_player_1_profile_image_id')->nullable();
+            $table->unsignedBigInteger('source_player_2_profile_image_id')->nullable();
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
+            $table->foreign('source_player_1_profile_image_id', 'cached_pdf_pair_src1_ppi_fk')
+                ->references('id')
+                ->on('player_profile_images')
+                ->nullOnDelete();
+            $table->foreign('source_player_2_profile_image_id', 'cached_pdf_pair_src2_ppi_fk')
+                ->references('id')
+                ->on('player_profile_images')
+                ->nullOnDelete();
             $table->unique(
                 [
                     'player_1_id',
@@ -567,8 +577,13 @@ return new class () extends Migration {
             $table->foreignId('player_id')->constrained('players', 'id_player');
             $table->boolean('player_is_collecting_points')->default(true);
             $table->string('picture_path', 512)->nullable();
+            $table->unsignedBigInteger('source_player_profile_image_id')->nullable();
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
+            $table->foreign('source_player_profile_image_id', 'cached_pdf_player_src_ppi_fk')
+                ->references('id')
+                ->on('player_profile_images')
+                ->nullOnDelete();
             $table->unique(
                 ['player_id', 'player_is_collecting_points'],
                 'uq_cached_pdf_player_images_combo'

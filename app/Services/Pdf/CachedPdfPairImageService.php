@@ -18,8 +18,6 @@ final class CachedPdfPairImageService
 
     private const STORAGE_PREFIX = 'cached-pdf-pair-images';
 
-    private const LEGACY_STORAGE_PREFIX = 'teams-images/';
-
     /**
      * @return string Absolute filesystem path usable by mPDF
      */
@@ -31,14 +29,34 @@ final class CachedPdfPairImageService
         bool $player1Collecting,
         bool $player2Collecting,
         bool $persist,
+        ?int $player1SourceProfileImageId = null,
+        ?int $player2SourceProfileImageId = null,
+        ?int $player1UpdatedAt = null,
+        ?int $player2UpdatedAt = null,
     ): string {
-        [$leftId, $rightId, $leftPath, $rightPath, $leftCollecting, $rightCollecting, $needsFlip] = $this->normalizePair(
+        [
+            $leftId,
+            $rightId,
+            $leftPath,
+            $rightPath,
+            $leftCollecting,
+            $rightCollecting,
+            $needsFlip,
+            $leftSourceId,
+            $rightSourceId,
+            $leftUpdatedAt,
+            $rightUpdatedAt,
+        ] = $this->normalizePair(
             $player1Id,
             $player2Id,
             $player1PhotoAbsPath,
             $player2PhotoAbsPath,
             $player1Collecting,
             $player2Collecting,
+            $player1SourceProfileImageId,
+            $player2SourceProfileImageId,
+            $player1UpdatedAt,
+            $player2UpdatedAt,
         );
 
         if ($persist) {
@@ -53,8 +71,18 @@ final class CachedPdfPairImageService
             $needsRegen = ! $pair->exists
                 || $pair->picture_path === null
                 || $pair->picture_path === ''
-                || $this->isLegacyOrMissingPath($disk, $pair->picture_path)
-                || $this->sourceNewerThanCache($leftPath, $rightPath, $pair);
+                || ! Storage::disk($disk)->exists((string) $pair->picture_path)
+                || $this->sourceIdChanged($pair->source_player_1_profile_image_id, $leftSourceId)
+                || $this->sourceIdChanged($pair->source_player_2_profile_image_id, $rightSourceId)
+                || $this->needsFreshnessRegen(
+                    $leftPath,
+                    $rightPath,
+                    $leftSourceId,
+                    $rightSourceId,
+                    $leftUpdatedAt,
+                    $rightUpdatedAt,
+                    $pair,
+                );
 
             if ($needsRegen) {
                 if (! $pair->exists) {
@@ -65,6 +93,8 @@ final class CachedPdfPairImageService
                 $relative = self::STORAGE_PREFIX . '/' . $pair->id_cached_pdf_pair_image . '/picture/couple.png';
                 Storage::disk($disk)->put($relative, $png, ['visibility' => 'public']);
                 $pair->picture_path = $relative;
+                $pair->source_player_1_profile_image_id = $leftSourceId;
+                $pair->source_player_2_profile_image_id = $rightSourceId;
                 $pair->updated_at = time();
                 $pair->save();
             }
@@ -90,7 +120,7 @@ final class CachedPdfPairImageService
     }
 
     /**
-     * @return array{0: int, 1: int, 2: string, 3: string, 4: bool, 5: bool, 6: bool}
+     * @return array{0: int, 1: int, 2: string, 3: string, 4: bool, 5: bool, 6: bool, 7: ?int, 8: ?int, 9: ?int, 10: ?int}
      */
     private function normalizePair(
         int $player1Id,
@@ -99,33 +129,83 @@ final class CachedPdfPairImageService
         string $player2PhotoAbsPath,
         bool $player1Collecting,
         bool $player2Collecting,
+        ?int $player1SourceProfileImageId,
+        ?int $player2SourceProfileImageId,
+        ?int $player1UpdatedAt,
+        ?int $player2UpdatedAt,
     ): array {
         if ($player1Id <= $player2Id) {
-            return [$player1Id, $player2Id, $player1PhotoAbsPath, $player2PhotoAbsPath, $player1Collecting, $player2Collecting, false];
+            return [
+                $player1Id,
+                $player2Id,
+                $player1PhotoAbsPath,
+                $player2PhotoAbsPath,
+                $player1Collecting,
+                $player2Collecting,
+                false,
+                $player1SourceProfileImageId,
+                $player2SourceProfileImageId,
+                $player1UpdatedAt,
+                $player2UpdatedAt,
+            ];
         }
 
-        return [$player2Id, $player1Id, $player2PhotoAbsPath, $player1PhotoAbsPath, $player2Collecting, $player1Collecting, true];
+        return [
+            $player2Id,
+            $player1Id,
+            $player2PhotoAbsPath,
+            $player1PhotoAbsPath,
+            $player2Collecting,
+            $player1Collecting,
+            true,
+            $player2SourceProfileImageId,
+            $player1SourceProfileImageId,
+            $player2UpdatedAt,
+            $player1UpdatedAt,
+        ];
     }
 
-    private function isLegacyOrMissingPath(string $disk, ?string $picturePath): bool
+    private function sourceIdChanged(mixed $stored, ?int $current): bool
     {
-        if ($picturePath === null || $picturePath === '') {
-            return true;
-        }
-        if (str_starts_with($picturePath, self::LEGACY_STORAGE_PREFIX)) {
-            return true;
-        }
+        $storedId = $stored === null || $stored === '' ? null : (int) $stored;
 
-        return ! Storage::disk($disk)->exists($picturePath);
+        return $storedId !== $current;
     }
 
-    private function sourceNewerThanCache(string $leftPath, string $rightPath, CachedPdfPairImage $pair): bool
-    {
-        $cacheMtime = max((int) $pair->inserted_at, (int) ($pair->updated_at ?? 0));
-        $leftMtime = @filemtime($leftPath) ?: 0;
-        $rightMtime = @filemtime($rightPath) ?: 0;
+    private function needsFreshnessRegen(
+        string $leftPath,
+        string $rightPath,
+        ?int $leftSourceId,
+        ?int $rightSourceId,
+        ?int $leftUpdatedAt,
+        ?int $rightUpdatedAt,
+        CachedPdfPairImage $pair,
+    ): bool {
+        $cacheFreshness = max((int) $pair->inserted_at, (int) ($pair->updated_at ?? 0));
 
-        return max($leftMtime, $rightMtime) > $cacheMtime;
+        if ($leftSourceId === null) {
+            if ($leftUpdatedAt !== null && $leftUpdatedAt > $cacheFreshness) {
+                return true;
+            }
+        } else {
+            $leftMtime = @filemtime($leftPath) ?: 0;
+            if ($leftMtime > $cacheFreshness) {
+                return true;
+            }
+        }
+
+        if ($rightSourceId === null) {
+            if ($rightUpdatedAt !== null && $rightUpdatedAt > $cacheFreshness) {
+                return true;
+            }
+        } else {
+            $rightMtime = @filemtime($rightPath) ?: 0;
+            if ($rightMtime > $cacheFreshness) {
+                return true;
+            }
+        }
+
+        return false;
     }
 
     public function composePng(

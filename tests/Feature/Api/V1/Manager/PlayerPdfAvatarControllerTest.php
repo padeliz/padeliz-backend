@@ -75,21 +75,25 @@ final class PlayerPdfAvatarControllerTest extends TestCase
             ->assertStatus(422);
     }
 
-    public function test_missing_profile_image_returns_422_without_cache_row(): void
+    public function test_missing_profile_image_returns_initials_avatar_with_null_source(): void
     {
+        Storage::fake(config('filesystems.user_uploads_disk', 'public'));
         $manager = Player::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         Sanctum::actingAs($manager);
         $player = Player::factory()->create();
 
-        $this->postJson("/api/v1/manager/players/{$player->id_player}/pdf-avatar", [
+        $res = $this->postJson("/api/v1/manager/players/{$player->id_player}/pdf-avatar", [
             'is_collecting_points' => true,
-        ])
-            ->assertStatus(422)
-            ->assertJsonPath('code', 'missing_profile_image');
+        ]);
+        $res->assertOk();
+        $this->assertNotEmpty($res->json('data.pdf_avatar_url'));
 
-        $this->assertSame(0, CachedPdfPlayerImage::query()->where('player_id', $player->id_player)->count());
+        $row = CachedPdfPlayerImage::query()->where('player_id', $player->id_player)->first();
+        $this->assertNotNull($row);
+        $this->assertNull($row->source_player_profile_image_id);
+        $this->assertStringStartsWith('cached-pdf-player-images/', (string) $row->picture_path);
     }
 
     public function test_generates_pdf_avatar_url_keyed_by_collecting_flag(): void
@@ -99,7 +103,7 @@ final class PlayerPdfAvatarControllerTest extends TestCase
         ]);
         Sanctum::actingAs($manager);
         $player = Player::factory()->create();
-        $this->attachProfile($player);
+        $profile = $this->attachProfile($player);
 
         $res = $this->postJson("/api/v1/manager/players/{$player->id_player}/pdf-avatar", [
             'is_collecting_points' => true,
@@ -114,6 +118,7 @@ final class PlayerPdfAvatarControllerTest extends TestCase
             ->first();
         $this->assertNotNull($row);
         $this->assertNotNull($row->picture_path);
+        $this->assertSame((int) $profile->id, (int) $row->source_player_profile_image_id);
     }
 
     public function test_second_call_does_not_bump_updated_at_when_cache_fresh(): void

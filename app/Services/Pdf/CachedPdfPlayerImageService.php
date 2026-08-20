@@ -22,8 +22,14 @@ final class CachedPdfPlayerImageService
     /**
      * @return string Absolute filesystem path usable by mPDF
      */
-    public function resolvePath(int $playerId, string $photoAbsPath, bool $playerIsCollecting, bool $persist): string
-    {
+    public function resolvePath(
+        int $playerId,
+        string $photoAbsPath,
+        bool $playerIsCollecting,
+        bool $persist,
+        ?int $sourcePlayerProfileImageId = null,
+        ?int $playerUpdatedAt = null,
+    ): string {
         if ($persist) {
             $row = CachedPdfPlayerImage::query()->firstOrNew([
                 'player_id' => $playerId,
@@ -35,7 +41,8 @@ final class CachedPdfPlayerImageService
                 || $row->picture_path === null
                 || $row->picture_path === ''
                 || ! Storage::disk($disk)->exists((string) $row->picture_path)
-                || $this->sourceNewerThanCache($photoAbsPath, $row);
+                || $this->sourceIdChanged($row->source_player_profile_image_id, $sourcePlayerProfileImageId)
+                || $this->needsFreshnessRegen($photoAbsPath, $sourcePlayerProfileImageId, $playerUpdatedAt, $row);
 
             if ($needsRegen) {
                 if (! $row->exists) {
@@ -46,6 +53,7 @@ final class CachedPdfPlayerImageService
                 $relative = self::STORAGE_PREFIX . '/' . $row->id_cached_pdf_player_image . '/picture/avatar.png';
                 Storage::disk($disk)->put($relative, $png, ['visibility' => 'public']);
                 $row->picture_path = $relative;
+                $row->source_player_profile_image_id = $sourcePlayerProfileImageId;
                 $row->updated_at = time();
                 $row->save();
             }
@@ -86,12 +94,28 @@ final class CachedPdfPlayerImageService
         return $png;
     }
 
-    private function sourceNewerThanCache(string $photoAbsPath, CachedPdfPlayerImage $row): bool
+    private function sourceIdChanged(mixed $stored, ?int $current): bool
     {
-        $cacheMtime = max((int) $row->inserted_at, (int) ($row->updated_at ?? 0));
+        $storedId = $stored === null || $stored === '' ? null : (int) $stored;
+
+        return $storedId !== $current;
+    }
+
+    private function needsFreshnessRegen(
+        string $photoAbsPath,
+        ?int $sourcePlayerProfileImageId,
+        ?int $playerUpdatedAt,
+        CachedPdfPlayerImage $row,
+    ): bool {
+        $cacheFreshness = max((int) $row->inserted_at, (int) ($row->updated_at ?? 0));
+
+        if ($sourcePlayerProfileImageId === null) {
+            return $playerUpdatedAt !== null && $playerUpdatedAt > $cacheFreshness;
+        }
+
         $sourceMtime = @filemtime($photoAbsPath) ?: 0;
 
-        return $sourceMtime > $cacheMtime;
+        return $sourceMtime > $cacheFreshness;
     }
 
     /** @return \GdImage */

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1\Manager;
 
-use App\Services\Pdf\MissingPlayerProfileException;
 use App\Services\Pdf\PosterPdfService;
 use App\Services\Schedule\PlayingWindow;
 use App\Services\Schedule\ScheduleGenerationService;
@@ -116,8 +115,6 @@ class ScratchScheduleController extends \App\Http\Controllers\BaseVersions\V1\V1
             ]);
         } catch (ValidationException $e) {
             throw $e;
-        } catch (MissingPlayerProfileException $e) {
-            return $this->errorResponse($e->getMessage(), 422, ['player_ids' => $e->playerIds]);
         } catch (Throwable $e) {
             return $this->errorResponse($e->getMessage(), 501);
         }
@@ -159,8 +156,6 @@ class ScratchScheduleController extends \App\Http\Controllers\BaseVersions\V1\V1
             ]);
         } catch (ValidationException $e) {
             throw $e;
-        } catch (MissingPlayerProfileException $e) {
-            return $this->errorResponse($e->getMessage(), 422, ['player_ids' => $e->playerIds]);
         } catch (Throwable $e) {
             return $this->errorResponse($e->getMessage(), 501);
         }

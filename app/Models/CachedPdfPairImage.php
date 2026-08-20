@@ -33,6 +33,8 @@ class CachedPdfPairImage extends Model
         'player_1_is_collecting_points',
         'player_2_is_collecting_points',
         'picture_path',
+        'source_player_1_profile_image_id',
+        'source_player_2_profile_image_id',
     ];
 
     protected $casts = [
@@ -40,6 +42,8 @@ class CachedPdfPairImage extends Model
         'player_2_id' => 'integer',
         'player_1_is_collecting_points' => 'boolean',
         'player_2_is_collecting_points' => 'boolean',
+        'source_player_1_profile_image_id' => 'integer',
+        'source_player_2_profile_image_id' => 'integer',
         'inserted_at' => 'integer',
         'updated_at' => 'integer',
     ];
@@ -63,6 +67,16 @@ class CachedPdfPairImage extends Model
     public function player2(): BelongsTo
     {
         return $this->belongsTo(Player::class, 'player_2_id', 'id_player');
+    }
+
+    public function sourcePlayer1ProfileImage(): BelongsTo
+    {
+        return $this->belongsTo(PlayerProfileImage::class, 'source_player_1_profile_image_id');
+    }
+
+    public function sourcePlayer2ProfileImage(): BelongsTo
+    {
+        return $this->belongsTo(PlayerProfileImage::class, 'source_player_2_profile_image_id');
     }
 
     public function storageDisk(): string

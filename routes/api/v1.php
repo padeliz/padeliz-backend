@@ -340,6 +340,8 @@ Route::prefix('v1')->group(function () {
                 ->whereNumber('player');
         });
 
+        Route::post('cached-pdf-pair-images', [\App\Http\Controllers\Api\V1\Manager\CachedPdfPairImageController::class, 'store']);
+
         Route::prefix('player-imports')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\Manager\PlayerImportController::class, 'index']);
             Route::get('{playerImport}', [\App\Http\Controllers\Api\V1\Manager\PlayerImportController::class, 'show'])

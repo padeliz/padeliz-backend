@@ -10,7 +10,6 @@ use App\Models\EditionDivision;
 use App\Models\EditionDivisionCourt;
 use App\Models\EditionDivisionPoster;
 use App\Services\Pdf\MissingMatchParticipationException;
-use App\Services\Pdf\MissingPlayerProfileException;
 use App\Services\Pdf\PosterPdfService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -49,7 +48,7 @@ class EditionDivisionPosterController extends Controller
      *     ),
      *     @OA\Response(response=200, description="Generated poster JSON"),
      *     @OA\Response(response=409, description="Edition is finalized"),
-     *     @OA\Response(response=422, description="Missing player profile, participation, or validation error")
+     *     @OA\Response(response=422, description="Missing match participation or validation error")
      * )
      */
     public function matches(Request $request, EditionDivision $editionDivision): JsonResponse
@@ -79,11 +78,6 @@ class EditionDivisionPosterController extends Controller
                 (int) ($validated['organizer'] ?? 1),
                 (int) ($validated['partner'] ?? 1),
             );
-        } catch (MissingPlayerProfileException $e) {
-            return response()->json([
-                'message' => $e->getMessage(),
-                'player_ids' => $e->playerIds,
-            ], 422);
         } catch (MissingMatchParticipationException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
@@ -103,7 +97,7 @@ class EditionDivisionPosterController extends Controller
      *     @OA\Parameter(name="editionDivision", in="path", required=true, @OA\Schema(type="integer")),
      *     @OA\Response(response=200, description="Generated poster JSON"),
      *     @OA\Response(response=409, description="Edition is finalized"),
-     *     @OA\Response(response=422, description="Missing player profile or validation error")
+     *     @OA\Response(response=422, description="Validation error")
      * )
      */
     public function ranking(Request $request, EditionDivision $editionDivision): JsonResponse
@@ -118,18 +112,11 @@ class EditionDivisionPosterController extends Controller
             'partner' => ['nullable', 'integer', Rule::in(array_keys(config('padeliz_branding.partners', [])))],
         ]);
 
-        try {
-            $result = $this->posterPdfService->generateRankingForEditionDivision(
-                $editionDivision,
-                (int) ($validated['organizer'] ?? 1),
-                (int) ($validated['partner'] ?? 1),
-            );
-        } catch (MissingPlayerProfileException $e) {
-            return response()->json([
-                'message' => $e->getMessage(),
-                'player_ids' => $e->playerIds,
-            ], 422);
-        }
+        $result = $this->posterPdfService->generateRankingForEditionDivision(
+            $editionDivision,
+            (int) ($validated['organizer'] ?? 1),
+            (int) ($validated['partner'] ?? 1),
+        );
 
         return response()->json([
             'message' => 'Poster generated.',

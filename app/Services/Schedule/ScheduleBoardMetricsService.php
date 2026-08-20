@@ -4,13 +4,12 @@ declare(strict_types=1);
 
 namespace App\Services\Schedule;
 
+use App\Models\CachedPdfPlayerImage;
 use App\Models\EditionDivision;
 use App\Models\GameMatch;
 use App\Models\MatchPlayer;
-use App\Services\Pdf\CachedPdfPlayerImageService;
 use App\Services\Pdf\PdfHtmlHelper;
 use Illuminate\Support\Collection;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * Board metrics + optional players_board for the schedule Matches UI.
@@ -19,7 +18,6 @@ final class ScheduleBoardMetricsService
 {
     public function __construct(
         private readonly PlayerDistributionScorer $distributionScorer = new PlayerDistributionScorer(),
-        private readonly CachedPdfPlayerImageService $playerImages = new CachedPdfPlayerImageService(),
     ) {
     }
 
@@ -101,7 +99,7 @@ final class ScheduleBoardMetricsService
         $participations = $editionDivision->participations
             ?? $editionDivision->participations()->orderBy('sort_order')->orderBy('id_participation')->get();
 
-        $participations->loadMissing('player.profileImages');
+        $participations->loadMissing('player');
 
         $board = [];
         foreach ($participations as $participation) {
@@ -123,37 +121,17 @@ final class ScheduleBoardMetricsService
         return $board;
     }
 
+    /**
+     * Read-only lookup: the board never generates cached PDF images, it only surfaces already-cached ones.
+     */
     private function resolveAvatarUrl(mixed $player, bool $collecting): ?string
     {
-        $player->loadMissing('profileImages');
-        $profile = app(\App\Services\PlayerProfileImage\PlayerProfileImageResolver::class)
-            ->resolveForPdf($player);
+        $cached = CachedPdfPlayerImage::query()
+            ->where('player_id', (int) $player->id_player)
+            ->where('player_is_collecting_points', $collecting)
+            ->first();
 
-        if ($profile === null || ! $profile->profile_path) {
-            return null;
-        }
-
-        try {
-            $abs = Storage::disk($profile->storageDisk())->path((string) $profile->profile_path);
-            if (! is_file($abs)) {
-                return null;
-            }
-            $this->playerImages->resolvePath(
-                (int) $player->id_player,
-                $abs,
-                $collecting,
-                true,
-            );
-
-            $cached = \App\Models\CachedPdfPlayerImage::query()
-                ->where('player_id', (int) $player->id_player)
-                ->where('player_is_collecting_points', $collecting)
-                ->first();
-
-            return $cached?->url;
-        } catch (\Throwable) {
-            return null;
-        }
+        return $cached?->url;
     }
 
     /**

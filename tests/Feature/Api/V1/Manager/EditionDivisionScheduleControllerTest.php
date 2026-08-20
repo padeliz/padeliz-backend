@@ -561,4 +561,69 @@ class EditionDivisionScheduleControllerTest extends TestCase
         $this->assertArrayHasKey('pdf_avatar_url', $board[0]);
         $this->assertNull($board[0]['pdf_avatar_url']);
     }
+
+    public function test_schedule_show_board_never_generates_cached_pdf_player_images(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $disk = config('filesystems.user_uploads_disk', 'public');
+        \Illuminate\Support\Facades\Storage::fake($disk);
+        foreach ($this->participations as $participation) {
+            $relative = 'player-profile-images/' . $participation->player_id . '/profile/avatar.png';
+            \Illuminate\Support\Facades\Storage::disk($disk)->put($relative, $this->solidPngBytes());
+            \App\Models\PlayerProfileImage::query()->create([
+                'player_id' => $participation->player_id,
+                'profile_path' => $relative,
+                'sort_order' => 0,
+                'inserted_at' => time(),
+            ]);
+        }
+
+        $edId = $this->editionDivision->id_edition_division;
+        $this->postJson("/api/v1/manager/edition-divisions/{$edId}/schedule/generate", [])
+            ->assertStatus(200);
+
+        $this->getJson("/api/v1/manager/edition-divisions/{$edId}/schedule?board=1")->assertOk();
+
+        $this->assertSame(0, \App\Models\CachedPdfPlayerImage::query()->count());
+    }
+
+    public function test_schedule_show_board_returns_existing_cached_avatar_url(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $edId = $this->editionDivision->id_edition_division;
+        $this->postJson("/api/v1/manager/edition-divisions/{$edId}/schedule/generate", [])
+            ->assertStatus(200);
+
+        $playerId = (int) $this->participations[0]->player_id;
+        \App\Models\CachedPdfPlayerImage::query()->create([
+            'player_id' => $playerId,
+            'player_is_collecting_points' => true,
+            'picture_path' => 'cached-pdf-player-images/1/picture/avatar.png',
+            'inserted_at' => time(),
+        ]);
+
+        $board = $this->getJson("/api/v1/manager/edition-divisions/{$edId}/schedule?board=1")
+            ->assertOk()
+            ->json('data.players_board');
+
+        $entry = collect($board)->firstWhere('player_id', $playerId);
+        $this->assertNotNull($entry);
+        $this->assertNotNull($entry['pdf_avatar_url']);
+        $this->assertSame(1, \App\Models\CachedPdfPlayerImage::query()->count());
+    }
+
+    private function solidPngBytes(): string
+    {
+        $img = imagecreatetruecolor(40, 40);
+        $color = imagecolorallocate($img, 10, 200, 90);
+        imagefill($img, 0, 0, $color);
+        ob_start();
+        imagepng($img);
+        $bytes = (string) ob_get_clean();
+        imagedestroy($img);
+
+        return $bytes;
+    }
 }

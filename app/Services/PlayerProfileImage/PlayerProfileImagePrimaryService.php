@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\PlayerProfileImage;
 
+use App\Models\CachedPdfPairImage;
 use App\Models\CachedPdfPlayerImage;
 use App\Models\Player;
 use App\Models\PlayerProfileImage;
@@ -59,6 +60,8 @@ final class PlayerProfileImagePrimaryService
     {
         $player->load('profileImages');
         if ($player->profileImages->isEmpty()) {
+            $this->bustPdfCache((int) $player->id_player);
+
             return;
         }
 
@@ -90,6 +93,13 @@ final class PlayerProfileImagePrimaryService
     {
         CachedPdfPlayerImage::query()
             ->where('player_id', $playerId)
+            ->delete();
+
+        CachedPdfPairImage::query()
+            ->where(function ($query) use ($playerId): void {
+                $query->where('player_1_id', $playerId)
+                    ->orWhere('player_2_id', $playerId);
+            })
             ->delete();
     }
 }

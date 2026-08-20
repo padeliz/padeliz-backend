@@ -21,9 +21,13 @@ use RuntimeException;
 
 final class PosterPdfService
 {
+    /** @var list<string> */
+    private array $ephemeralTemps = [];
+
     public function __construct(
         private readonly CachedPdfPairImageService $pairImages = new CachedPdfPairImageService(),
         private readonly CachedPdfPlayerImageService $playerImages = new CachedPdfPlayerImageService(),
+        private readonly PdfCachedImageGenerator $imageGenerator = new PdfCachedImageGenerator(),
         private readonly ?ScheduleGenerationService $schedule = null,
     ) {
     }
@@ -34,73 +38,78 @@ final class PosterPdfService
         int $organizerId,
         int $partnerId,
     ): PosterPdfResult {
-        $editionDivision->loadMissing([
-            'edition',
-            'division',
-            'participations.player.profileImages',
-            'editionDivisionCourts.court',
-        ]);
+        $this->ephemeralTemps = [];
 
-        $matches = GameMatch::query()
-            ->with(['sides.players.participation.player.profileImages'])
-            ->where('edition_division_id', $editionDivision->id_edition_division)
-            ->where('edition_division_court_id', $court->id_edition_division_court)
-            ->where('match_kind', 'REGULAR')
-            ->orderBy('sequence_no')
-            ->get();
+        try {
+            $editionDivision->loadMissing([
+                'edition',
+                'division',
+                'participations.player.profileImages',
+                'editionDivisionCourts.court',
+            ]);
 
-        $rows = $matches->map(function (GameMatch $match): array {
-            $left = $match->sides->firstWhere('side', 'LEFT');
-            $right = $match->sides->firstWhere('side', 'RIGHT');
-            $leftPlayers = $left?->players?->sortBy('slot')->values() ?? collect();
-            $rightPlayers = $right?->players?->sortBy('slot')->values() ?? collect();
+            $matches = GameMatch::query()
+                ->with(['sides.players.participation.player.profileImages'])
+                ->where('edition_division_id', $editionDivision->id_edition_division)
+                ->where('edition_division_court_id', $court->id_edition_division_court)
+                ->where('match_kind', 'REGULAR')
+                ->orderBy('sequence_no')
+                ->get();
 
-            return [
-                'side_a' => [
-                    $this->playerPayloadFromMatchPlayer($leftPlayers->get(0)),
-                    $this->playerPayloadFromMatchPlayer($leftPlayers->get(1)),
-                ],
-                'side_b' => [
-                    $this->playerPayloadFromMatchPlayer($rightPlayers->get(0)),
-                    $this->playerPayloadFromMatchPlayer($rightPlayers->get(1)),
-                ],
-                'starts_at' => $this->formatTime($match->scheduled_start),
-                'ends_at' => $this->formatTime($match->scheduled_end),
-            ];
-        })->all();
+            $rows = $matches->map(function (GameMatch $match): array {
+                $left = $match->sides->firstWhere('side', 'LEFT');
+                $right = $match->sides->firstWhere('side', 'RIGHT');
+                $leftPlayers = $left?->players?->sortBy('slot')->values() ?? collect();
+                $rightPlayers = $right?->players?->sortBy('slot')->values() ?? collect();
 
-        $this->assertAllPlayersHaveProfiles($this->collectPlayersFromMatchRows($rows));
+                return [
+                    'side_a' => [
+                        $this->playerPayloadFromMatchPlayer($leftPlayers->get(0)),
+                        $this->playerPayloadFromMatchPlayer($leftPlayers->get(1)),
+                    ],
+                    'side_b' => [
+                        $this->playerPayloadFromMatchPlayer($rightPlayers->get(0)),
+                        $this->playerPayloadFromMatchPlayer($rightPlayers->get(1)),
+                    ],
+                    'starts_at' => $this->formatTime($match->scheduled_start),
+                    'ends_at' => $this->formatTime($match->scheduled_end),
+                ];
+            })->all();
 
-        $court->loadMissing('court');
-        $payload = $this->buildMatchesViewData(
-            title: (string) $editionDivision->division_title,
-            color: (string) ($editionDivision->division?->color ?? '#7ab857'),
-            editionLabel: (string) ($editionDivision->edition?->name ?? ''),
-            organizerId: $organizerId,
-            partnerId: $partnerId,
-            courtName: (string) ($court->court?->name ?? 'Court'),
-            pointsPerMatch: (int) ($editionDivision->points_per_match ?? 0),
-            includeScores: (bool) $editionDivision->include_scores,
-            includeFinal: (bool) $editionDivision->include_final,
-            hasDemonstrativeMatch: (bool) $editionDivision->has_demonstrative_match,
-            allowReplacements: (bool) $editionDivision->allow_replacements,
-            finalPointsTarget: (int) ($editionDivision->final_points_target ?? 24),
-            timeEnd: $this->formatTime($editionDivision->playing_end_time),
-            matchRows: $rows,
-            persistCachedPdfImages: true,
-        );
+            $court->loadMissing('court');
+            $payload = $this->buildMatchesViewData(
+                title: (string) $editionDivision->division_title,
+                color: (string) ($editionDivision->division?->color ?? '#7ab857'),
+                editionLabel: (string) ($editionDivision->edition?->name ?? ''),
+                organizerId: $organizerId,
+                partnerId: $partnerId,
+                courtName: (string) ($court->court?->name ?? 'Court'),
+                pointsPerMatch: (int) ($editionDivision->points_per_match ?? 0),
+                includeScores: (bool) $editionDivision->include_scores,
+                includeFinal: (bool) $editionDivision->include_final,
+                hasDemonstrativeMatch: (bool) $editionDivision->has_demonstrative_match,
+                allowReplacements: (bool) $editionDivision->allow_replacements,
+                finalPointsTarget: (int) ($editionDivision->final_points_target ?? 24),
+                timeEnd: $this->formatTime($editionDivision->playing_end_time),
+                matchRows: $rows,
+                persistCachedPdfImages: true,
+            );
 
-        $bytes = $this->renderMatchesPdf($payload);
-        $filename = $this->matchesFilename($payload['title']);
-        $poster = $this->persistGeneratedPoster(
-            $editionDivision,
-            'MATCHES',
-            $court->id_edition_division_court,
-            $bytes,
-            $filename,
-        );
+            $bytes = $this->renderMatchesPdf($payload);
+            $filename = $this->matchesFilename($payload['title']);
+            $poster = $this->persistGeneratedPoster(
+                $editionDivision,
+                'MATCHES',
+                $court->id_edition_division_court,
+                $bytes,
+                $filename,
+            );
 
-        return new PosterPdfResult($bytes, $filename, $poster);
+            return new PosterPdfResult($bytes, $filename, $poster);
+        } finally {
+            $this->imageGenerator->unlinkTemps($this->ephemeralTemps);
+            $this->ephemeralTemps = [];
+        }
     }
 
     public function generateRankingForEditionDivision(
@@ -108,54 +117,59 @@ final class PosterPdfService
         int $organizerId,
         int $partnerId,
     ): PosterPdfResult {
-        $editionDivision->loadMissing(['edition', 'division', 'participations.player.profileImages', 'editionDivisionCourts.court']);
+        $this->ephemeralTemps = [];
 
-        $players = $editionDivision->participations
-            ->filter(fn ($p) => (bool) $p->is_collecting_points)
-            ->map(fn ($p) => $this->playerPayload($p->player, [(int) $p->player_id => true]))
-            ->sortBy(fn (array $p) => mb_strtolower($p['name']))
-            ->values()
-            ->all();
+        try {
+            $editionDivision->loadMissing(['edition', 'division', 'participations.player.profileImages', 'editionDivisionCourts.court']);
 
-        $this->assertAllPlayersHaveProfiles($players);
+            $players = $editionDivision->participations
+                ->filter(fn ($p) => (bool) $p->is_collecting_points)
+                ->map(fn ($p) => $this->playerPayload($p->player, [(int) $p->player_id => true]))
+                ->sortBy(fn (array $p) => mb_strtolower($p['name']))
+                ->values()
+                ->all();
 
-        $opponents = (int) ($editionDivision->player_opponents_nr ?? 0);
-        $repeat = (int) ($editionDivision->player_matches_repeat ?? 1);
-        $playerMatchesCount = max(1, $opponents * max(1, $repeat));
+            $opponents = (int) ($editionDivision->player_opponents_nr ?? 0);
+            $repeat = (int) ($editionDivision->player_matches_repeat ?? 1);
+            $playerMatchesCount = max(1, $opponents * max(1, $repeat));
 
-        $courtNames = $editionDivision->editionDivisionCourts
-            ->sortBy('display_order')
-            ->map(fn ($edc) => (string) ($edc->court?->name ?? 'Court'))
-            ->values()
-            ->all();
+            $courtNames = $editionDivision->editionDivisionCourts
+                ->sortBy('display_order')
+                ->map(fn ($edc) => (string) ($edc->court?->name ?? 'Court'))
+                ->values()
+                ->all();
 
-        $payload = $this->buildRankingViewData(
-            title: (string) $editionDivision->division_title,
-            color: (string) ($editionDivision->division?->color ?? '#7ab857'),
-            editionLabel: (string) ($editionDivision->edition?->name ?? ''),
-            organizerId: $organizerId,
-            partnerId: $partnerId,
-            courtLabel: implode(' / ', $courtNames) ?: 'Courts',
-            pointsPerMatch: (int) ($editionDivision->points_per_match ?? 0),
-            includeScores: (bool) $editionDivision->include_scores,
-            includeFinal: (bool) $editionDivision->include_final,
-            allowReplacements: (bool) $editionDivision->allow_replacements,
-            players: $players,
-            playerMatchesCount: $playerMatchesCount,
-            persistCachedPdfImages: true,
-        );
+            $payload = $this->buildRankingViewData(
+                title: (string) $editionDivision->division_title,
+                color: (string) ($editionDivision->division?->color ?? '#7ab857'),
+                editionLabel: (string) ($editionDivision->edition?->name ?? ''),
+                organizerId: $organizerId,
+                partnerId: $partnerId,
+                courtLabel: implode(' / ', $courtNames) ?: 'Courts',
+                pointsPerMatch: (int) ($editionDivision->points_per_match ?? 0),
+                includeScores: (bool) $editionDivision->include_scores,
+                includeFinal: (bool) $editionDivision->include_final,
+                allowReplacements: (bool) $editionDivision->allow_replacements,
+                players: $players,
+                playerMatchesCount: $playerMatchesCount,
+                persistCachedPdfImages: true,
+            );
 
-        $bytes = $this->renderRankingPdf($payload);
-        $filename = $this->rankingFilename($payload['title']);
-        $poster = $this->persistGeneratedPoster(
-            $editionDivision,
-            'RANKING',
-            null,
-            $bytes,
-            $filename,
-        );
+            $bytes = $this->renderRankingPdf($payload);
+            $filename = $this->rankingFilename($payload['title']);
+            $poster = $this->persistGeneratedPoster(
+                $editionDivision,
+                'RANKING',
+                null,
+                $bytes,
+                $filename,
+            );
 
-        return new PosterPdfResult($bytes, $filename, $poster);
+            return new PosterPdfResult($bytes, $filename, $poster);
+        } finally {
+            $this->imageGenerator->unlinkTemps($this->ephemeralTemps);
+            $this->ephemeralTemps = [];
+        }
     }
 
     /**
@@ -189,51 +203,57 @@ final class PosterPdfService
         $playerIds = array_values(array_map('intval', $input['player_ids']));
         $players = $this->loadPlayersByIds($playerIds);
         $collecting = $this->collectingMap($playerIds, $input['collecting_player_ids'] ?? $playerIds);
-        $this->assertAllPlayersHaveProfiles($players->map(fn (Player $p) => $this->playerPayload($p, $collecting))->all());
 
-        $preview = $this->scratchPreview($input);
-        $courtIndex = (int) $input['court_index'];
-        $courtMatches = $preview['matches_by_court'][$courtIndex] ?? [];
-        if ($courtMatches === []) {
-            throw new RuntimeException('No matches for the requested court index.');
+        $this->ephemeralTemps = [];
+
+        try {
+            $preview = $this->scratchPreview($input);
+            $courtIndex = (int) $input['court_index'];
+            $courtMatches = $preview['matches_by_court'][$courtIndex] ?? [];
+            if ($courtMatches === []) {
+                throw new RuntimeException('No matches for the requested court index.');
+            }
+
+            $rows = array_map(function (array $match) use ($players, $collecting): array {
+                return [
+                    'side_a' => [
+                        $this->playerPayload($players->get($match['side_a'][0]), $collecting),
+                        $this->playerPayload($players->get($match['side_a'][1]), $collecting),
+                    ],
+                    'side_b' => [
+                        $this->playerPayload($players->get($match['side_b'][0]), $collecting),
+                        $this->playerPayload($players->get($match['side_b'][1]), $collecting),
+                    ],
+                    'starts_at' => $this->formatClock($match['starts_at']),
+                    'ends_at' => $this->formatClock($match['ends_at']),
+                ];
+            }, $courtMatches);
+
+            $payload = $this->buildMatchesViewData(
+                title: (string) $input['title'],
+                color: (string) ($input['color'] ?? '#7ab857'),
+                editionLabel: (string) ($input['edition_label'] ?? 'Scratch'),
+                organizerId: (int) $input['organizer_id'],
+                partnerId: (int) $input['partner_id'],
+                courtName: (string) ($preview['court_names'][$courtIndex] ?? 'Court'),
+                pointsPerMatch: (int) ($input['points_per_match'] ?? $preview['points_per_match']),
+                includeScores: (bool) ($input['include_scores'] ?? true),
+                includeFinal: (bool) ($input['include_final'] ?? false),
+                hasDemonstrativeMatch: (bool) ($input['has_demonstrative_match'] ?? false),
+                allowReplacements: (bool) ($input['allow_replacements'] ?? true),
+                finalPointsTarget: (int) ($input['final_points_target'] ?? 24),
+                timeEnd: $this->formatClock((string) $input['time_end']),
+                matchRows: $rows,
+                persistCachedPdfImages: false,
+            );
+
+            $bytes = $this->renderMatchesPdf($payload);
+
+            return new PosterPdfResult($bytes, $this->matchesFilename($payload['title']));
+        } finally {
+            $this->imageGenerator->unlinkTemps($this->ephemeralTemps);
+            $this->ephemeralTemps = [];
         }
-
-        $rows = array_map(function (array $match) use ($players, $collecting): array {
-            return [
-                'side_a' => [
-                    $this->playerPayload($players->get($match['side_a'][0]), $collecting),
-                    $this->playerPayload($players->get($match['side_a'][1]), $collecting),
-                ],
-                'side_b' => [
-                    $this->playerPayload($players->get($match['side_b'][0]), $collecting),
-                    $this->playerPayload($players->get($match['side_b'][1]), $collecting),
-                ],
-                'starts_at' => $this->formatClock($match['starts_at']),
-                'ends_at' => $this->formatClock($match['ends_at']),
-            ];
-        }, $courtMatches);
-
-        $payload = $this->buildMatchesViewData(
-            title: (string) $input['title'],
-            color: (string) ($input['color'] ?? '#7ab857'),
-            editionLabel: (string) ($input['edition_label'] ?? 'Scratch'),
-            organizerId: (int) $input['organizer_id'],
-            partnerId: (int) $input['partner_id'],
-            courtName: (string) ($preview['court_names'][$courtIndex] ?? 'Court'),
-            pointsPerMatch: (int) ($input['points_per_match'] ?? $preview['points_per_match']),
-            includeScores: (bool) ($input['include_scores'] ?? true),
-            includeFinal: (bool) ($input['include_final'] ?? false),
-            hasDemonstrativeMatch: (bool) ($input['has_demonstrative_match'] ?? false),
-            allowReplacements: (bool) ($input['allow_replacements'] ?? true),
-            finalPointsTarget: (int) ($input['final_points_target'] ?? 24),
-            timeEnd: $this->formatClock((string) $input['time_end']),
-            matchRows: $rows,
-            persistCachedPdfImages: false,
-        );
-
-        $bytes = $this->renderMatchesPdf($payload);
-
-        return new PosterPdfResult($bytes, $this->matchesFilename($payload['title']));
     }
 
     /**
@@ -266,36 +286,41 @@ final class PosterPdfService
         $collectingIds = $input['collecting_player_ids'] ?? $playerIds;
         $collecting = $this->collectingMap($playerIds, $collectingIds);
 
-        $players = collect($collectingIds)
-            ->map(fn ($id) => $this->playerPayload($playersById->get((int) $id), $collecting))
-            ->filter()
-            ->sortBy(fn (array $p) => mb_strtolower($p['name']))
-            ->values()
-            ->all();
+        $this->ephemeralTemps = [];
 
-        $this->assertAllPlayersHaveProfiles($players);
+        try {
+            $players = collect($collectingIds)
+                ->map(fn ($id) => $this->playerPayload($playersById->get((int) $id), $collecting))
+                ->filter()
+                ->sortBy(fn (array $p) => mb_strtolower($p['name']))
+                ->values()
+                ->all();
 
-        $preview = $this->scratchPreview($input);
+            $preview = $this->scratchPreview($input);
 
-        $payload = $this->buildRankingViewData(
-            title: (string) $input['title'],
-            color: (string) ($input['color'] ?? '#7ab857'),
-            editionLabel: (string) ($input['edition_label'] ?? 'Scratch'),
-            organizerId: (int) $input['organizer_id'],
-            partnerId: (int) $input['partner_id'],
-            courtLabel: implode(' / ', $preview['court_names']),
-            pointsPerMatch: (int) ($input['points_per_match'] ?? $preview['points_per_match']),
-            includeScores: (bool) ($input['include_scores'] ?? true),
-            includeFinal: (bool) ($input['include_final'] ?? false),
-            allowReplacements: (bool) ($input['allow_replacements'] ?? true),
-            players: $players,
-            playerMatchesCount: max(1, (int) $preview['opponents_per_player'] * max(1, (int) $preview['repeat_partners'])),
-            persistCachedPdfImages: false,
-        );
+            $payload = $this->buildRankingViewData(
+                title: (string) $input['title'],
+                color: (string) ($input['color'] ?? '#7ab857'),
+                editionLabel: (string) ($input['edition_label'] ?? 'Scratch'),
+                organizerId: (int) $input['organizer_id'],
+                partnerId: (int) $input['partner_id'],
+                courtLabel: implode(' / ', $preview['court_names']),
+                pointsPerMatch: (int) ($input['points_per_match'] ?? $preview['points_per_match']),
+                includeScores: (bool) ($input['include_scores'] ?? true),
+                includeFinal: (bool) ($input['include_final'] ?? false),
+                allowReplacements: (bool) ($input['allow_replacements'] ?? true),
+                players: $players,
+                playerMatchesCount: max(1, (int) $preview['opponents_per_player'] * max(1, (int) $preview['repeat_partners'])),
+                persistCachedPdfImages: false,
+            );
 
-        $bytes = $this->renderRankingPdf($payload);
+            $bytes = $this->renderRankingPdf($payload);
 
-        return new PosterPdfResult($bytes, $this->rankingFilename($payload['title']));
+            return new PosterPdfResult($bytes, $this->rankingFilename($payload['title']));
+        } finally {
+            $this->imageGenerator->unlinkTemps($this->ephemeralTemps);
+            $this->ephemeralTemps = [];
+        }
     }
 
     /**
@@ -417,6 +442,8 @@ final class PosterPdfService
                 (string) $player['profile_abs_path'],
                 (bool) $player['is_collecting_points'],
                 $persistCachedPdfImages,
+                $player['source_player_profile_image_id'] ?? null,
+                $player['player_updated_at'] ?? null,
             );
             $player['short_name'] = PdfHtmlHelper::shortenPlayerName($player['name']);
             $player['html_short_name'] = PdfHtmlHelper::htmlShortName($player['short_name'], $player['is_collecting_points']);
@@ -589,6 +616,10 @@ final class PosterPdfService
             (bool) $playerA['is_collecting_points'],
             (bool) $playerB['is_collecting_points'],
             $persist,
+            $playerA['source_player_profile_image_id'] ?? null,
+            $playerB['source_player_profile_image_id'] ?? null,
+            $playerA['player_updated_at'] ?? null,
+            $playerB['player_updated_at'] ?? null,
         );
     }
 
@@ -612,7 +643,7 @@ final class PosterPdfService
 
     /**
      * @param  array<int, bool>  $collectingByPlayerId
-     * @return array{id: int, name: string, is_collecting_points: bool, profile_abs_path: string, short_name?: string, html_short_name?: string, name_font_size?: int}
+     * @return array{id: int, name: string, is_collecting_points: bool, profile_abs_path: string, source_player_profile_image_id: ?int, player_updated_at: ?int, short_name?: string, html_short_name?: string, name_font_size?: int}
      */
     private function playerPayload(?Player $player, array $collectingByPlayerId): array
     {
@@ -620,64 +651,25 @@ final class PosterPdfService
             throw new RuntimeException('Match is missing a player slot.');
         }
 
-        $player->loadMissing('profileImages');
-        $profile = app(\App\Services\PlayerProfileImage\PlayerProfileImageResolver::class)
-            ->resolveForPdf($player);
-
-        $profilePath = $profile?->profile_path;
-        $abs = null;
-        if ($profilePath) {
-            $abs = Storage::disk($profile->storageDisk())->path($profilePath);
-        }
+        $photo = $this->imageGenerator->resolvePhotoForPoster($player, $this->ephemeralTemps);
 
         $collecting = $collectingByPlayerId[(int) $player->id_player] ?? true;
         $name = (string) $player->name;
         $short = PdfHtmlHelper::shortenPlayerName($name);
+        $updatedAt = $player->updated_at;
+        $updatedAtInt = ($updatedAt === null || $updatedAt === '') ? null : (int) $updatedAt;
 
         return [
             'id' => (int) $player->id_player,
             'name' => $name,
             'is_collecting_points' => $collecting,
-            'profile_abs_path' => (string) $abs,
+            'profile_abs_path' => $photo['absolute_path'],
+            'source_player_profile_image_id' => $photo['source_player_profile_image_id'],
+            'player_updated_at' => $updatedAtInt,
             'short_name' => $short,
             'html_short_name' => PdfHtmlHelper::htmlShortName($short, $collecting),
             'name_font_size' => PdfHtmlHelper::getFittedFontSize($short, 210, $collecting ? 43 : 32),
         ];
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $players
-     */
-    private function assertAllPlayersHaveProfiles(array $players): void
-    {
-        $missing = [];
-        foreach ($players as $player) {
-            $path = $player['profile_abs_path'] ?? '';
-            if ($path === '' || ! is_file($path)) {
-                $missing[] = (int) $player['id'];
-            }
-        }
-        if ($missing !== []) {
-            throw new MissingPlayerProfileException(array_values(array_unique($missing)));
-        }
-    }
-
-    /**
-     * @param  list<array<string, mixed>>  $rows
-     * @return list<array<string, mixed>>
-     */
-    private function collectPlayersFromMatchRows(array $rows): array
-    {
-        $out = [];
-        foreach ($rows as $row) {
-            foreach (['side_a', 'side_b'] as $side) {
-                foreach ($row[$side] as $player) {
-                    $out[$player['id']] = $player;
-                }
-            }
-        }
-
-        return array_values($out);
     }
 
     /**

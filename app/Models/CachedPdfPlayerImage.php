@@ -31,11 +31,13 @@ class CachedPdfPlayerImage extends Model
         'player_id',
         'player_is_collecting_points',
         'picture_path',
+        'source_player_profile_image_id',
     ];
 
     protected $casts = [
         'player_id' => 'integer',
         'player_is_collecting_points' => 'boolean',
+        'source_player_profile_image_id' => 'integer',
         'inserted_at' => 'integer',
         'updated_at' => 'integer',
     ];
@@ -54,6 +56,11 @@ class CachedPdfPlayerImage extends Model
     public function player(): BelongsTo
     {
         return $this->belongsTo(Player::class, 'player_id', 'id_player');
+    }
+
+    public function sourcePlayerProfileImage(): BelongsTo
+    {
+        return $this->belongsTo(PlayerProfileImage::class, 'source_player_profile_image_id');
     }
 
     public function storageDisk(): string

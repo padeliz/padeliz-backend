@@ -24,12 +24,13 @@ final class EditionDivisionPosterControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_ranking_pdf_fails_without_profile_images(): void
+    public function test_ranking_pdf_succeeds_without_profile_images(): void
     {
         $manager = Player::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         Sanctum::actingAs($manager);
+        Storage::fake(config('filesystems.user_uploads_disk', 'public'));
 
         $editionDivision = EditionDivision::factory()->create([
             'include_scores' => true,
@@ -55,8 +56,14 @@ final class EditionDivisionPosterControllerTest extends TestCase
             ['organizer' => 1, 'partner' => 1]
         );
 
-        $response->assertStatus(422)
-            ->assertJsonStructure(['message', 'player_ids']);
+        $response->assertOk()
+            ->assertJsonPath('data.poster_kind', 'RANKING');
+
+        $cached = \App\Models\CachedPdfPlayerImage::query()->get();
+        $this->assertCount(4, $cached);
+        foreach ($cached as $row) {
+            $this->assertNull($row->source_player_profile_image_id);
+        }
     }
 
     public function test_post_ranking_returns_json_not_pdf(): void

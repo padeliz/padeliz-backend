@@ -7,6 +7,7 @@ namespace Tests\Feature\Services\Pdf;
 use App\Models\CachedPdfPairImage;
 use App\Models\CachedPdfPlayerImage;
 use App\Models\Player;
+use App\Models\PlayerProfileImage;
 use App\Services\Pdf\CachedPdfPairImageService;
 use App\Services\Pdf\CachedPdfPlayerImageService;
 use App\Services\Pdf\PdfRoundMask;
@@ -36,13 +37,6 @@ final class CachedPdfImagesTest extends TestCase
         @unlink($this->photoA);
         @unlink($this->photoB);
         parent::tearDown();
-    }
-
-    public function test_pair_table_exists_and_teams_images_is_not_required(): void
-    {
-        $this->assertTrue(Schema::hasTable('cached_pdf_pair_images'));
-        $this->assertFalse(Schema::hasTable('teams_images'));
-        $this->assertTrue(Schema::hasColumn('cached_pdf_pair_images', 'id_cached_pdf_pair_image'));
     }
 
     public function test_pair_four_field_unique_allows_different_collecting_combos(): void
@@ -140,7 +134,7 @@ final class CachedPdfImagesTest extends TestCase
         $this->assertSame(2, CachedPdfPairImage::query()->count());
     }
 
-    public function test_pair_stale_teams_images_path_regenerates_without_deleting_legacy_file(): void
+    public function test_pair_missing_picture_file_regenerates(): void
     {
         $p1 = Player::factory()->create();
         $p2 = Player::factory()->create();
@@ -148,15 +142,41 @@ final class CachedPdfImagesTest extends TestCase
         $right = max((int) $p1->id_player, (int) $p2->id_player);
 
         $disk = config('filesystems.user_uploads_disk', 'public');
-        $legacyRelative = 'teams-images/999/picture/couple.png';
-        Storage::disk($disk)->put($legacyRelative, 'legacy-bytes');
+        $missingRelative = 'cached-pdf-pair-images/999/picture/couple.png';
 
         $row = CachedPdfPairImage::query()->create([
             'player_1_id' => $left,
             'player_2_id' => $right,
             'player_1_is_collecting_points' => true,
             'player_2_is_collecting_points' => true,
-            'picture_path' => $legacyRelative,
+            'picture_path' => $missingRelative,
+            'inserted_at' => time(),
+        ]);
+
+        $this->assertFalse(Storage::disk($disk)->exists($missingRelative));
+
+        $service = new CachedPdfPairImageService();
+        $path = $service->resolvePath($left, $right, $this->photoA, $this->photoB, true, true, true);
+
+        $row->refresh();
+        $this->assertStringStartsWith('cached-pdf-pair-images/', (string) $row->picture_path);
+        $this->assertTrue(Storage::disk($disk)->exists((string) $row->picture_path));
+        $this->assertPngCornerTransparent($path);
+    }
+
+    public function test_pair_null_picture_path_regenerates(): void
+    {
+        $p1 = Player::factory()->create();
+        $p2 = Player::factory()->create();
+        $left = min((int) $p1->id_player, (int) $p2->id_player);
+        $right = max((int) $p1->id_player, (int) $p2->id_player);
+
+        $row = CachedPdfPairImage::query()->create([
+            'player_1_id' => $left,
+            'player_2_id' => $right,
+            'player_1_is_collecting_points' => true,
+            'player_2_is_collecting_points' => true,
+            'picture_path' => null,
             'inserted_at' => time(),
         ]);
 
@@ -164,8 +184,9 @@ final class CachedPdfImagesTest extends TestCase
         $path = $service->resolvePath($left, $right, $this->photoA, $this->photoB, true, true, true);
 
         $row->refresh();
+        $this->assertNotNull($row->picture_path);
         $this->assertStringStartsWith('cached-pdf-pair-images/', (string) $row->picture_path);
-        $this->assertTrue(Storage::disk($disk)->exists($legacyRelative));
+        $this->assertFileExists($path);
         $this->assertPngCornerTransparent($path);
     }
 
@@ -216,16 +237,71 @@ final class CachedPdfImagesTest extends TestCase
     {
         $p1 = Player::factory()->create();
         $p2 = Player::factory()->create();
+        $image1 = PlayerProfileImage::factory()->create(['player_id' => $p1->id_player]);
+        $image2 = PlayerProfileImage::factory()->create(['player_id' => $p2->id_player]);
         $service = new CachedPdfPairImageService();
-        $service->resolvePath((int) $p1->id_player, (int) $p2->id_player, $this->photoA, $this->photoB, true, true, true);
+        $service->resolvePath(
+            (int) $p1->id_player,
+            (int) $p2->id_player,
+            $this->photoA,
+            $this->photoB,
+            true,
+            true,
+            true,
+            (int) $image1->id,
+            (int) $image2->id,
+        );
 
         $row = CachedPdfPairImage::query()->firstOrFail();
         $row->forceFill(['inserted_at' => 1, 'updated_at' => 1])->save();
         touch($this->photoA, time());
 
-        $service->resolvePath((int) $p1->id_player, (int) $p2->id_player, $this->photoA, $this->photoB, true, true, true);
+        $service->resolvePath(
+            (int) $p1->id_player,
+            (int) $p2->id_player,
+            $this->photoA,
+            $this->photoB,
+            true,
+            true,
+            true,
+            (int) $image1->id,
+            (int) $image2->id,
+        );
         $row->refresh();
         $this->assertGreaterThan(1, (int) $row->updated_at);
+    }
+
+    public function test_pair_without_source_ids_rewrites_only_when_player_is_newer(): void
+    {
+        $p1 = Player::factory()->create();
+        $p2 = Player::factory()->create();
+        $service = new CachedPdfPairImageService();
+        $service->resolvePath((int) $p1->id_player, (int) $p2->id_player, $this->photoA, $this->photoB, true, true, true);
+
+        $row = CachedPdfPairImage::query()->firstOrFail();
+        $row->forceFill(['inserted_at' => 1000, 'updated_at' => 1000])->save();
+
+        // An untouched player keeps the initials composite as-is.
+        $service->resolvePath((int) $p1->id_player, (int) $p2->id_player, $this->photoA, $this->photoB, true, true, true);
+        $row->refresh();
+        $this->assertSame(1000, (int) $row->updated_at);
+
+        // A renamed player must get fresh initials.
+        $service->resolvePath(
+            (int) $p1->id_player,
+            (int) $p2->id_player,
+            $this->photoA,
+            $this->photoB,
+            true,
+            true,
+            true,
+            null,
+            null,
+            2000,
+            null,
+        );
+        $row->refresh();
+        $this->assertGreaterThan(1000, (int) $row->updated_at);
     }
 
     public function test_player_table_and_mode_a_persist_circular(): void
@@ -292,6 +368,51 @@ final class CachedPdfImagesTest extends TestCase
         @unlink($path);
     }
 
+    public function test_player_missing_picture_file_regenerates(): void
+    {
+        $player = Player::factory()->create();
+        $disk = config('filesystems.user_uploads_disk', 'public');
+        $missingRelative = 'cached-pdf-player-images/999/picture/avatar.png';
+
+        $row = CachedPdfPlayerImage::query()->create([
+            'player_id' => $player->id_player,
+            'player_is_collecting_points' => true,
+            'picture_path' => $missingRelative,
+            'inserted_at' => time(),
+        ]);
+
+        $this->assertFalse(Storage::disk($disk)->exists($missingRelative));
+
+        $service = new CachedPdfPlayerImageService();
+        $path = $service->resolvePath((int) $player->id_player, $this->photoA, true, true);
+
+        $row->refresh();
+        $this->assertStringStartsWith('cached-pdf-player-images/', (string) $row->picture_path);
+        $this->assertTrue(Storage::disk($disk)->exists((string) $row->picture_path));
+        $this->assertPngCornerTransparent($path);
+    }
+
+    public function test_player_null_picture_path_regenerates(): void
+    {
+        $player = Player::factory()->create();
+
+        $row = CachedPdfPlayerImage::query()->create([
+            'player_id' => $player->id_player,
+            'player_is_collecting_points' => true,
+            'picture_path' => null,
+            'inserted_at' => time(),
+        ]);
+
+        $service = new CachedPdfPlayerImageService();
+        $path = $service->resolvePath((int) $player->id_player, $this->photoA, true, true);
+
+        $row->refresh();
+        $this->assertNotNull($row->picture_path);
+        $this->assertStringStartsWith('cached-pdf-player-images/', (string) $row->picture_path);
+        $this->assertFileExists($path);
+        $this->assertPngCornerTransparent($path);
+    }
+
     public function test_player_compose_dims_when_not_collecting(): void
     {
         $service = new CachedPdfPlayerImageService();
@@ -315,16 +436,35 @@ final class CachedPdfImagesTest extends TestCase
     public function test_player_source_newer_forces_rewrite(): void
     {
         $player = Player::factory()->create();
+        $image = PlayerProfileImage::factory()->create(['player_id' => $player->id_player]);
         $service = new CachedPdfPlayerImageService();
-        $service->resolvePath((int) $player->id_player, $this->photoA, true, true);
+        $service->resolvePath((int) $player->id_player, $this->photoA, true, true, (int) $image->id);
 
         $row = CachedPdfPlayerImage::query()->where('player_id', $player->id_player)->firstOrFail();
         $row->forceFill(['inserted_at' => 1, 'updated_at' => 1])->save();
         touch($this->photoA, time());
 
-        $service->resolvePath((int) $player->id_player, $this->photoA, true, true);
+        $service->resolvePath((int) $player->id_player, $this->photoA, true, true, (int) $image->id);
         $row->refresh();
         $this->assertGreaterThan(1, (int) $row->updated_at);
+    }
+
+    public function test_player_without_source_id_rewrites_only_when_player_is_newer(): void
+    {
+        $player = Player::factory()->create();
+        $service = new CachedPdfPlayerImageService();
+        $service->resolvePath((int) $player->id_player, $this->photoA, true, true);
+
+        $row = CachedPdfPlayerImage::query()->where('player_id', $player->id_player)->firstOrFail();
+        $row->forceFill(['inserted_at' => 1000, 'updated_at' => 1000])->save();
+
+        $service->resolvePath((int) $player->id_player, $this->photoA, true, true);
+        $row->refresh();
+        $this->assertSame(1000, (int) $row->updated_at);
+
+        $service->resolvePath((int) $player->id_player, $this->photoA, true, true, null, 2000);
+        $row->refresh();
+        $this->assertGreaterThan(1000, (int) $row->updated_at);
     }
 
     public function test_poster_ranking_avatar_path_is_cached_not_raw_profile(): void

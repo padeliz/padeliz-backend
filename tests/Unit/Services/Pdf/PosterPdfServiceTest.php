@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services\Pdf;
 
+use App\Models\CachedPdfPlayerImage;
 use App\Models\Player;
-use App\Services\Pdf\MissingPlayerProfileException;
 use App\Services\Pdf\PosterPdfService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -14,15 +14,11 @@ final class PosterPdfServiceTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_scratch_ranking_fails_without_profile_path(): void
+    public function test_scratch_ranking_succeeds_without_profile_images(): void
     {
         $players = Player::factory()->count(4)->create();
 
-        $service = new PosterPdfService();
-
-        $this->expectException(MissingPlayerProfileException::class);
-
-        $service->generateRankingFromScratch([
+        $result = (new PosterPdfService())->generateRankingFromScratch([
             'player_ids' => $players->pluck('id_player')->all(),
             'court_names' => ['Court 1'],
             'time_start' => '14:00',
@@ -35,30 +31,51 @@ final class PosterPdfServiceTest extends TestCase
             'include_final' => false,
             'has_demonstrative_match' => false,
         ]);
+
+        $this->assertNotSame('', $result->bytes);
+        $this->assertStringStartsWith('%PDF', $result->bytes);
+        $this->assertStringContainsString('Test Division', $result->filename);
     }
 
-    public function test_missing_profile_exception_lists_player_ids(): void
+    public function test_scratch_ranking_writes_no_cache_rows(): void
     {
         $players = Player::factory()->count(4)->create();
-        $service = new PosterPdfService();
 
-        try {
-            $service->generateRankingFromScratch([
-                'player_ids' => $players->pluck('id_player')->all(),
-                'court_names' => ['Court 1'],
-                'time_start' => '14:00',
-                'time_end' => '17:00',
-                'opponents_per_player' => 3,
-                'repeat_partners' => 1,
-                'title' => 'Test Division',
-                'organizer_id' => 1,
-                'partner_id' => 1,
-            ]);
-            $this->fail('Expected MissingPlayerProfileException');
-        } catch (MissingPlayerProfileException $e) {
-            foreach ($players as $player) {
-                $this->assertContains((int) $player->id_player, $e->playerIds);
-            }
+        (new PosterPdfService())->generateRankingFromScratch([
+            'player_ids' => $players->pluck('id_player')->all(),
+            'court_names' => ['Court 1'],
+            'time_start' => '14:00',
+            'time_end' => '17:00',
+            'opponents_per_player' => 3,
+            'repeat_partners' => 1,
+            'title' => 'Test Division',
+            'organizer_id' => 1,
+            'partner_id' => 1,
+        ]);
+
+        $this->assertSame(0, CachedPdfPlayerImage::query()->count());
+    }
+
+    public function test_scratch_ranking_cleans_up_initials_temp_files(): void
+    {
+        $players = Player::factory()->count(4)->create();
+        $dir = storage_path('app/tmp/pdf-initials-placeholders');
+
+        (new PosterPdfService())->generateRankingFromScratch([
+            'player_ids' => $players->pluck('id_player')->all(),
+            'court_names' => ['Court 1'],
+            'time_start' => '14:00',
+            'time_end' => '17:00',
+            'opponents_per_player' => 3,
+            'repeat_partners' => 1,
+            'title' => 'Test Division',
+            'organizer_id' => 1,
+            'partner_id' => 1,
+        ]);
+
+        foreach ($players as $player) {
+            $leftovers = is_dir($dir) ? glob($dir . '/player_' . $player->id_player . '_*.png') : [];
+            $this->assertSame([], $leftovers ?: []);
         }
     }
 }
