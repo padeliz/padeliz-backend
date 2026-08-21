@@ -655,10 +655,183 @@ return new class () extends Migration {
             $table->integer('updated_at')->nullable();
             $table->index('eligibility_id', 'eligibility_portrait_photos_eligibility_id_idx');
         });
+
+        Schema::create('player_custom_fields', function (Blueprint $table) {
+            $table->id('id_player_custom_field');
+            $table->string('code', 64)->unique();
+            $table->string('label', 255);
+            $table->string('help_text', 512)->nullable();
+            $table->unsignedInteger('sort_order')->default(0);
+            $table->string('type', 32);
+            $table->json('rules_json')->nullable();
+            $table->boolean('is_required')->default(false);
+            $table->integer('archived_at')->nullable();
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
+        });
+
+        Schema::create('player_custom_field_options', function (Blueprint $table) {
+            $table->id('id_player_custom_field_option');
+            $table->unsignedBigInteger('player_custom_field_id');
+            $table->string('code', 64);
+            $table->string('label', 255);
+            $table->unsignedInteger('sort_order')->default(0);
+            $table->boolean('is_active')->default(true);
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
+            $table->unique(['player_custom_field_id', 'code'], 'uq_pcf_option_field_code');
+            $table->foreign('player_custom_field_id', 'fk_pcfo_field')
+                ->references('id_player_custom_field')
+                ->on('player_custom_fields')
+                ->cascadeOnDelete();
+        });
+
+        Schema::create('player_custom_field_value_imports', function (Blueprint $table) {
+            $table->id('id_player_custom_field_value_import');
+            $table->unsignedBigInteger('imported_by_player_id')->nullable();
+            $table->string('format', 64);
+            $table->string('original_filename', 255);
+            $table->unsignedBigInteger('edition_id')->nullable();
+            $table->unsignedInteger('included_count')->default(0);
+            $table->unsignedInteger('values_new_count')->default(0);
+            $table->unsignedInteger('values_replaced_count')->default(0);
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
+            $table->foreign('imported_by_player_id', 'fk_pcfvi_importer')
+                ->references('id_player')
+                ->on('players')
+                ->nullOnDelete();
+            $table->foreign('edition_id', 'fk_pcfvi_edition')
+                ->references('id_edition')
+                ->on('editions')
+                ->nullOnDelete();
+        });
+
+        Schema::create('player_custom_field_value_import_rows', function (Blueprint $table) {
+            $table->id('id_player_custom_field_value_import_row');
+            $table->unsignedBigInteger('player_custom_field_value_import_id');
+            $table->unsignedInteger('row_index');
+            $table->string('full_name', 255)->nullable();
+            $table->string('email', 255)->nullable();
+            $table->string('phone', 30)->nullable();
+            $table->unsignedBigInteger('player_id');
+            $table->string('action', 16);
+            $table->json('answers_json');
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
+            $table->index('player_custom_field_value_import_id', 'pcfvir_import_id_idx');
+            $table->foreign('player_custom_field_value_import_id', 'fk_pcfvir_import')
+                ->references('id_player_custom_field_value_import')
+                ->on('player_custom_field_value_imports')
+                ->cascadeOnDelete();
+            $table->foreign('player_id', 'fk_pcfvir_player')
+                ->references('id_player')
+                ->on('players')
+                ->cascadeOnDelete();
+        });
+
+        Schema::create('player_custom_field_values', function (Blueprint $table) {
+            $table->id('id_player_custom_field_value');
+            $table->unsignedBigInteger('player_id');
+            $table->unsignedBigInteger('player_custom_field_id');
+            $table->unsignedBigInteger('edition_id')->nullable();
+            $table->text('value_text')->nullable();
+            $table->integer('value_integer')->nullable();
+            $table->boolean('value_boolean')->nullable();
+            $table->date('value_date')->nullable();
+            $table->unsignedBigInteger('submitted_by_player_id')->nullable();
+            $table->string('submitted_via', 16);
+            $table->unsignedBigInteger('created_via_import_id')->nullable();
+            $table->integer('invalidated_at')->nullable();
+            $table->unsignedBigInteger('invalidated_by_player_id')->nullable();
+            $table->string('invalidation_reason', 512)->nullable();
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
+            $table->unique(
+                ['player_id', 'player_custom_field_id', 'edition_id'],
+                'uq_pcfv_player_field_edition'
+            );
+            $table->index(['player_id', 'player_custom_field_id'], 'pcfv_player_field_idx');
+            $table->index('player_custom_field_id', 'pcfv_field_idx');
+            $table->index('edition_id', 'pcfv_edition_idx');
+            $table->foreign('player_id', 'fk_pcfv_player')
+                ->references('id_player')
+                ->on('players')
+                ->cascadeOnDelete();
+            $table->foreign('player_custom_field_id', 'fk_pcfv_field')
+                ->references('id_player_custom_field')
+                ->on('player_custom_fields')
+                ->restrictOnDelete();
+            $table->foreign('edition_id', 'fk_pcfv_edition')
+                ->references('id_edition')
+                ->on('editions')
+                ->nullOnDelete();
+            $table->foreign('submitted_by_player_id', 'fk_pcfv_submitted_by')
+                ->references('id_player')
+                ->on('players')
+                ->nullOnDelete();
+            $table->foreign('created_via_import_id', 'fk_pcfv_import')
+                ->references('id_player_custom_field_value_import')
+                ->on('player_custom_field_value_imports')
+                ->nullOnDelete();
+            $table->foreign('invalidated_by_player_id', 'fk_pcfv_invalidated_by')
+                ->references('id_player')
+                ->on('players')
+                ->nullOnDelete();
+        });
+
+        Schema::create('player_custom_field_value_options', function (Blueprint $table) {
+            $table->id('id_player_custom_field_value_option');
+            $table->unsignedBigInteger('player_custom_field_value_id');
+            $table->unsignedBigInteger('option_id')->nullable();
+            $table->string('option_label_snapshot', 255);
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
+            $table->foreign('player_custom_field_value_id', 'fk_pcfvo_value')
+                ->references('id_player_custom_field_value')
+                ->on('player_custom_field_values')
+                ->cascadeOnDelete();
+            $table->foreign('option_id', 'fk_pcfvo_option')
+                ->references('id_player_custom_field_option')
+                ->on('player_custom_field_options')
+                ->restrictOnDelete();
+        });
+
+        $now = time();
+        $rules = json_encode(['max_length' => 2000], JSON_THROW_ON_ERROR);
+        $fields = [
+            ['padel_matches_played', 'Câte meciuri de padel ai mai jucat?', 1],
+            ['tennis_experience', 'Ai jucat tenis vreodată?', 2],
+            ['racket_lessons', 'Ai luat lecții de padel sau tenis?', 3],
+            ['big_tournament_division', 'În caz că ai participat la turnee mari, în ce divizie te încadrezi?', 4],
+            ['age', 'Ce vârstă ai?', 5],
+            ['playtomic_url', 'Ajută-ne cu linkul profilului tău de Playtomic', 6],
+        ];
+
+        foreach ($fields as [$code, $label, $sortOrder]) {
+            DB::table('player_custom_fields')->insert([
+                'code' => $code,
+                'label' => $label,
+                'help_text' => null,
+                'sort_order' => $sortOrder,
+                'type' => 'text',
+                'rules_json' => $rules,
+                'is_required' => false,
+                'archived_at' => null,
+                'inserted_at' => $now,
+                'updated_at' => null,
+            ]);
+        }
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('player_custom_field_value_options');
+        Schema::dropIfExists('player_custom_field_values');
+        Schema::dropIfExists('player_custom_field_value_import_rows');
+        Schema::dropIfExists('player_custom_field_value_imports');
+        Schema::dropIfExists('player_custom_field_options');
+        Schema::dropIfExists('player_custom_fields');
         Schema::dropIfExists('eligibility_portrait_photos');
         Schema::dropIfExists('eligibility_student_proofs');
         Schema::dropIfExists('eligibilities');

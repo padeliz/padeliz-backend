@@ -8,6 +8,8 @@ use App\Integrations\RankedinBpt\BptDivisionMapper;
 use App\Integrations\RankedinBpt\BptTopPlayersService;
 use App\Integrations\RankedinBpt\Contracts\BptTopPlayersReportBuilder;
 use App\Integrations\RankedinBpt\RankedinBptClient;
+use App\Services\PlayerCustomField\Formats\GoogleFormMiniTourWelcomeCsvFormat;
+use App\Services\PlayerCustomField\PlayerCustomFieldValueCsvFormatRegistry;
 use App\Services\PlayerImport\Formats\PlaytomicPlayerCsvFormat;
 use App\Services\PlayerImport\PlayerCsvFormatRegistry;
 use Illuminate\Support\ServiceProvider;
@@ -35,6 +37,12 @@ class AppServiceProvider extends ServiceProvider
         $this->app->singleton(PlayerCsvFormatRegistry::class, function (): PlayerCsvFormatRegistry {
             return new PlayerCsvFormatRegistry([
                 new PlaytomicPlayerCsvFormat(),
+            ]);
+        });
+
+        $this->app->singleton(PlayerCustomFieldValueCsvFormatRegistry::class, function (): PlayerCustomFieldValueCsvFormatRegistry {
+            return new PlayerCustomFieldValueCsvFormatRegistry([
+                new GoogleFormMiniTourWelcomeCsvFormat(),
             ]);
         });
     }

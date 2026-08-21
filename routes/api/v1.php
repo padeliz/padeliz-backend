@@ -311,9 +311,53 @@ Route::prefix('v1')->group(function () {
             Route::post('{editionDivision}/replacements', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionReplacementController::class, 'store']);
         });
 
+        // Player custom fields catalog
+        Route::prefix('player-custom-fields')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldController::class, 'index']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldController::class, 'store']);
+            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldController::class, 'bulkDestroy']);
+            Route::get('{playerCustomField}', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldController::class, 'show'])
+                ->whereNumber('playerCustomField');
+            Route::put('{playerCustomField}', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldController::class, 'update'])
+                ->whereNumber('playerCustomField');
+            Route::patch('{playerCustomField}', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldController::class, 'patch'])
+                ->whereNumber('playerCustomField');
+            Route::delete('{playerCustomField}', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldController::class, 'destroy'])
+                ->whereNumber('playerCustomField');
+            Route::post('{playerCustomField}/archive', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldController::class, 'archive'])
+                ->whereNumber('playerCustomField');
+            Route::post('{playerCustomField}/unarchive', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldController::class, 'unarchive'])
+                ->whereNumber('playerCustomField');
+            Route::prefix('{playerCustomField}/options')->group(function () {
+                Route::get('/', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldOptionController::class, 'index'])
+                    ->whereNumber('playerCustomField');
+                Route::post('/', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldOptionController::class, 'store'])
+                    ->whereNumber('playerCustomField');
+                Route::put('{playerCustomFieldOption}', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldOptionController::class, 'update'])
+                    ->whereNumber('playerCustomField')
+                    ->whereNumber('playerCustomFieldOption');
+                Route::patch('{playerCustomFieldOption}', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldOptionController::class, 'patch'])
+                    ->whereNumber('playerCustomField')
+                    ->whereNumber('playerCustomFieldOption');
+                Route::delete('{playerCustomFieldOption}', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldOptionController::class, 'destroy'])
+                    ->whereNumber('playerCustomField')
+                    ->whereNumber('playerCustomFieldOption');
+            });
+        });
+
+        Route::prefix('player-custom-field-value-imports')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldValueImportController::class, 'index']);
+            Route::get('{playerCustomFieldValueImport}', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldValueImportController::class, 'show'])
+                ->whereNumber('playerCustomFieldValueImport');
+        });
+
+        Route::get('player-custom-field-value-import-rows', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldValueImportRowController::class, 'index']);
+
         // Player management
         Route::prefix('players')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'index']);
+            Route::post('custom-field-values/import/preview', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldValueImportController::class, 'preview']);
+            Route::post('custom-field-values/import', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldValueImportController::class, 'store']);
             Route::post('import/preview', [\App\Http\Controllers\Api\V1\Manager\PlayerImportController::class, 'preview']);
             Route::post('import', [\App\Http\Controllers\Api\V1\Manager\PlayerImportController::class, 'store']);
             Route::post('profile-images/import/preview', [\App\Http\Controllers\Api\V1\Manager\PlayerProfileImageImportController::class, 'preview']);
@@ -328,6 +372,16 @@ Route::prefix('v1')->group(function () {
                 ->whereNumber('playerProfileImage');
             Route::post('{player}/pdf-avatar', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'generatePdfAvatar'])
                 ->whereNumber('player');
+            Route::get('{player}/custom-field-values', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldValueController::class, 'index'])
+                ->whereNumber('player');
+            Route::post('{player}/custom-field-values', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldValueController::class, 'store'])
+                ->whereNumber('player');
+            Route::get('{player}/custom-field-values/{playerCustomFieldValue}', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldValueController::class, 'show'])
+                ->whereNumber('player')
+                ->whereNumber('playerCustomFieldValue');
+            Route::post('{player}/custom-field-values/{playerCustomFieldValue}/invalidate', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldValueController::class, 'invalidate'])
+                ->whereNumber('player')
+                ->whereNumber('playerCustomFieldValue');
             Route::get('{player}', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'show'])
                 ->whereNumber('player');
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'store']);
