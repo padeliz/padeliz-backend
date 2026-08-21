@@ -129,13 +129,13 @@ abstract class GeneratorTestCase extends TestCase
      *     pairs: list<array{0:int,1:int}>,
      *     partnersCount: list<int>,
      *     partnersCountVariation: int,
-     *     minPartnersFairness: float|null,
-     *     avgPartnersFairness: float|null,
+     *     minPartnersFairness: null|float,
+     *     avgPartnersFairness: null|float,
      *     pairCount: int,
      *     stopReason: string,
      *     time: float,
      *     nodesExplored: int,
-     *     seedIndex: int|null,
+     *     seedIndex: null|int,
      *     seedsTotal: int
      * }
      */

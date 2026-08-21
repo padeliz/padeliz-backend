@@ -26,8 +26,8 @@ final class PosterPdfServiceTest extends TestCase
             'opponents_per_player' => 3,
             'repeat_partners' => 1,
             'title' => 'Test Division',
-            'organizer_id' => 1,
-            'partner_id' => 1,
+            'organizer_id' => null,
+            'club_id' => null,
             'include_final' => false,
             'has_demonstrative_match' => false,
         ]);
@@ -49,8 +49,8 @@ final class PosterPdfServiceTest extends TestCase
             'opponents_per_player' => 3,
             'repeat_partners' => 1,
             'title' => 'Test Division',
-            'organizer_id' => 1,
-            'partner_id' => 1,
+            'organizer_id' => null,
+            'club_id' => null,
         ]);
 
         $this->assertSame(0, CachedPdfPlayerImage::query()->count());
@@ -69,8 +69,8 @@ final class PosterPdfServiceTest extends TestCase
             'opponents_per_player' => 3,
             'repeat_partners' => 1,
             'title' => 'Test Division',
-            'organizer_id' => 1,
-            'partner_id' => 1,
+            'organizer_id' => null,
+            'club_id' => null,
         ]);
 
         foreach ($players as $player) {

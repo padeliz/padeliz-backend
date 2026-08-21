@@ -6,7 +6,6 @@ namespace Tests\Unit\Services\Schedule;
 
 use App\Services\Schedule\TemplateMatchesGenerator;
 
-
 /**
  * Pairing-phase behaviour for large partner pools (phase reflection only).
  */

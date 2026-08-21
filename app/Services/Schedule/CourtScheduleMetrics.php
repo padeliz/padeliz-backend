@@ -57,7 +57,7 @@ final class CourtScheduleMetrics
         for ($r = 0; $r < $roundsTotal; $r++) {
             $playersInRound = [];
             for ($c = 0; $c < $courts; $c++) {
-                if (!isset($matchesByCourt[$c][$r])) {
+                if (! isset($matchesByCourt[$c][$r])) {
                     continue;
                 }
                 foreach (self::matchPlayerLookup($matchesByCourt[$c][$r]) as $p => $_) {

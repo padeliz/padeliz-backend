@@ -14,7 +14,17 @@ return new class () extends Migration {
             $table->id('id_club');
             $table->string('name', 30)->unique();
             $table->string('city', 30)->default('Bucharest');
+            $table->string('logo_path', 512)->nullable();
             $table->integer('inserted_at')->nullable();
+            $table->integer('updated_at')->nullable();
+        });
+
+        Schema::create('organizers', function (Blueprint $table) {
+            $table->id('id_organizer');
+            $table->string('name', 60)->unique();
+            $table->string('logo_path', 512)->nullable();
+            $table->boolean('show_edition_label')->default(false);
+            $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
         });
 
@@ -55,6 +65,11 @@ return new class () extends Migration {
             $table->string('name', 25);
             $table->date('date');
             $table->foreignId('location_id')->constrained('locations', 'id_location');
+            $table->foreignId('organizer_id')
+                ->nullable()
+                ->constrained('organizers', 'id_organizer')
+                ->restrictOnDelete();
+            $table->boolean('include_club_host_on_pdf')->default(true);
             $table->integer('entry_fee')->default(55)->comment('ron');
             $table->integer('students_entry_fee')->default(45)->comment('ron');
             $table->time('arriving_time');
@@ -274,8 +289,20 @@ return new class () extends Migration {
             $table->foreignId('division_id')->constrained('divisions', 'id_division');
             $table->string('division_title', 64);
             $table->integer('players_limit');
+            $table->unsignedInteger('skill_order')->default(0);
             $table->time('playing_start_time');
             $table->time('playing_end_time');
+            $table->integer('inserted_at')->nullable();
+            $table->integer('updated_at')->nullable();
+            $table->index(['edition_id', 'skill_order'], 'edition_divisions_edition_skill_order_idx');
+        });
+
+        Schema::create('edition_division_schedules', function (Blueprint $table) {
+            $table->id('id_edition_division_schedule');
+            $table->foreignId('edition_division_id')
+                ->unique()
+                ->constrained('edition_divisions', 'id_edition_division')
+                ->cascadeOnDelete();
             $table->integer('player_opponents_nr')->nullable();
             $table->integer('player_matches_repeat')->nullable()->default(1);
             $table->tinyInteger('include_scores')->default(1);
@@ -285,7 +312,8 @@ return new class () extends Migration {
             $table->unsignedSmallInteger('final_points_target')->default(24);
             $table->boolean('include_final')->default(false);
             $table->unsignedInteger('template_version')->nullable();
-            $table->integer('inserted_at')->nullable();
+            $table->smallInteger('adjust')->default(0);
+            $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
         });
 
@@ -855,6 +883,7 @@ return new class () extends Migration {
         Schema::dropIfExists('edition_participations');
         Schema::dropIfExists('edition_division_posters');
         Schema::dropIfExists('edition_division_courts');
+        Schema::dropIfExists('edition_division_schedules');
         Schema::dropIfExists('edition_divisions');
         Schema::dropIfExists('player_profile_image_import_rows');
         if (Schema::getConnection()->getDriverName() === 'mysql') {
@@ -881,6 +910,7 @@ return new class () extends Migration {
         Schema::dropIfExists('courts');
         Schema::dropIfExists('locations');
         Schema::dropIfExists('divisions');
+        Schema::dropIfExists('organizers');
         Schema::dropIfExists('clubs');
     }
 };

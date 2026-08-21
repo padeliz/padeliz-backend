@@ -9,7 +9,6 @@ use App\Services\Schedule\MatchMakingLex;
 use App\Services\Schedule\TemplateMatchesGenerator;
 use PHPUnit\Framework\TestCase;
 
-
 final class LexFloatTest extends TestCase
 {
     public function test_quantize_rounds_to_two_decimals(): void

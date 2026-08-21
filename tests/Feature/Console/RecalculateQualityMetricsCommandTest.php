@@ -6,11 +6,10 @@ namespace Tests\Feature\Console;
 
 use App\Console\Commands\RecalculateQualityMetricsCommand;
 use App\Services\Schedule\TemplateMatchesRepository;
-use Tests\TestCase;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Tester\CommandTester;
+use Tests\TestCase;
 use Tests\Unit\Services\Schedule\TemplateVersionTestTrait;
-
 
 final class RecalculateQualityMetricsCommandTest extends TestCase
 {
@@ -20,14 +19,14 @@ final class RecalculateQualityMetricsCommandTest extends TestCase
 
     protected function setUp(): void
     {
-        
+
         parent::setUp();
         $this->resetAllocatedVersions();
         $this->tempBaseDir = sys_get_temp_dir()
             . DIRECTORY_SEPARATOR
             . 'padel-recalc-quality-test-'
             . bin2hex(random_bytes(4));
-        if (!mkdir($this->tempBaseDir, 0775, true) && !is_dir($this->tempBaseDir)) {
+        if (! mkdir($this->tempBaseDir, 0775, true) && ! is_dir($this->tempBaseDir)) {
             $this->fail("Could not create temp dir: {$this->tempBaseDir}");
         }
     }
@@ -35,7 +34,7 @@ final class RecalculateQualityMetricsCommandTest extends TestCase
     protected function tearDown(): void
     {
         $this->removeDirRecursive($this->tempBaseDir);
-    
+
         parent::tearDown();
     }
 
@@ -427,7 +426,7 @@ final class RecalculateQualityMetricsCommandTest extends TestCase
 
     private function removeDirRecursive(string $dir): void
     {
-        if (!is_dir($dir)) {
+        if (! is_dir($dir)) {
             return;
         }
         $items = scandir($dir);

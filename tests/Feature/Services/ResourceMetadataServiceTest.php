@@ -256,7 +256,7 @@ class ResourceMetadataServiceTest extends TestCase
                 ],
                 $metadata['list_fields']
             );
-        } elseif ($expectedSchemaName === 'Prize') {
+        } elseif (in_array($expectedSchemaName, ['Club', 'Prize'], true)) {
             $this->assertEquals(['url'], $metadata['list_fields']);
         } else {
             $this->assertEquals([], $metadata['list_fields']);
@@ -745,7 +745,10 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertEquals('division_title', $editionDivisionMetadata['display_field']);
         $edProps = $editionDivisionMetadata['swagger_schema']['properties'];
         $this->assertArrayHasKey('courts', $edProps);
-        $this->assertTrue($edProps['player_matches_repeat']['nullable'] ?? false);
+
+        $scheduleMetadata = $this->metadataService->getMetadata('EditionDivisionSchedule', 'v1');
+        $scheduleProps = $scheduleMetadata['swagger_schema']['properties'];
+        $this->assertTrue($scheduleProps['player_matches_repeat']['nullable'] ?? false);
 
         $courtMetadata = $this->metadataService->getMetadata('Court', 'v1');
         $this->assertArrayHasKey('location', $courtMetadata['swagger_schema']['properties']);

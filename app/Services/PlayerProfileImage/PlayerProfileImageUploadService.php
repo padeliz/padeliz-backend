@@ -20,8 +20,8 @@ final class PlayerProfileImageUploadService
     /**
      * @param  array{
      *     uploaded_via: string,
-     *     uploaded_via_import_id?: int|null,
-     *     original_filename?: string|null,
+     *     uploaded_via_import_id?: null|int,
+     *     original_filename?: null|string,
      *     is_pdf_primary?: bool
      * }  $provenance
      */

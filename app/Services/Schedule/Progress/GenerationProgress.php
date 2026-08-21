@@ -24,12 +24,19 @@ abstract class GenerationProgress
     public const PHASE_ORDERING = 'ordering';
 
     private string $phase;
+
     private int $players;
+
     private int $partners;
+
     private int $repeat;
+
     private bool $fixedTeams;
+
     private int $elapsedNs;
+
     private int $budgetNs;
+
     private bool $isFinal;
 
     protected function __construct(

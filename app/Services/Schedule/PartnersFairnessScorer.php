@@ -104,7 +104,7 @@ final class PartnersFairnessScorer
      * Optimistic upper bound on final min partners fairness for a partial pool.
      *
      * @param  array<int, array{players: array{0: int, 1: int}, used: bool}>  $pairs
-     * @param  array<int, int>|null  $targetPartnersCountByPlayer
+     * @param  null|array<int, int>  $targetPartnersCountByPlayer
      */
     public function minUpperPartial(
         array $pairs,
@@ -140,7 +140,7 @@ final class PartnersFairnessScorer
 
     /**
      * @param  array<int, array{players: array{0: int, 1: int}, used: bool}>  $pairs
-     * @param  array<int, int>|null  $targetPartnersCountByPlayer
+     * @param  null|array<int, int>  $targetPartnersCountByPlayer
      * @return array{min: float, avg: float}
      */
     public function scorePool(
@@ -173,7 +173,7 @@ final class PartnersFairnessScorer
 
     /**
      * @param  list<int>  $partnerIndices
-     * @param  array<int, int>|null  $targetPartnersCountByPlayer
+     * @param  null|array<int, int>  $targetPartnersCountByPlayer
      */
     private function resolvePartnersPerPlayer(
         int $p,

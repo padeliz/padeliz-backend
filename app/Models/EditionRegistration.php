@@ -205,7 +205,7 @@ class EditionRegistration extends Model
      * XOR uniqueness: either one NULL edition_division_id row, or one or more
      * specific edition divisions, not both, per (edition_id, player_id).
      *
-     * @return array<string, array<int, string>>|null
+     * @return null|array<string, array<int, string>>
      */
     public static function xorConflict(
         int $editionId,

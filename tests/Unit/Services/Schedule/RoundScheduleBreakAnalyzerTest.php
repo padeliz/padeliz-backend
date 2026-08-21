@@ -7,7 +7,6 @@ namespace Tests\Unit\Services\Schedule;
 use App\Services\Schedule\RoundScheduleBreakAnalyzer;
 use PHPUnit\Framework\TestCase;
 
-
 final class RoundScheduleBreakAnalyzerTest extends TestCase
 {
     public function test_consecutive_min_breaks_scans_all_gaps_against_threshold(): void

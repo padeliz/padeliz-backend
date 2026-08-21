@@ -71,6 +71,7 @@ final class GenerateTemplatesCommand extends Command
         }
 
         $resolver = new TemplateComboResolver();
+
         try {
             $resolved = $resolver->resolve($this->input, TemplateCombinations::COMBINATIONS, false);
         } catch (\InvalidArgumentException $e) {
@@ -80,6 +81,7 @@ final class GenerateTemplatesCommand extends Command
         }
 
         $this->repository->ensureVersionDirectory($writeVersion);
+
         try {
             $latestVersion = $this->repository->latestVersion();
         } catch (\RuntimeException) {

@@ -5,26 +5,41 @@ declare(strict_types=1);
 namespace App\Services\Schedule;
 
 use App\Models\EditionDivision;
+use App\Models\EditionDivisionSchedule;
 use App\Models\EditionParticipation;
 use App\Services\Pdf\EditionDivisionPosterInvalidator;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
 /**
- * Persists Mode A schedule form fields on an EditionDivision.
+ * Persists Mode A schedule form fields on the edition division schedule row.
+ *
+ * Playing times stay on the edition division and are never written here.
  */
 final class EditionDivisionScheduleFormService
 {
     /** @var list<string> */
-    private const PDF_RELEVANT_ED_FIELDS = [
+    private const SCHEDULE_FIELDS = [
+        'player_opponents_nr',
+        'player_matches_repeat',
         'include_final',
         'has_demonstrative_match',
         'include_scores',
         'allow_replacements',
         'points_per_match',
         'final_points_target',
-        'playing_start_time',
-        'playing_end_time',
+        'adjust',
+    ];
+
+    /** @var list<string> */
+    private const PDF_RELEVANT_FIELDS = self::SCHEDULE_FIELDS;
+
+    /** @var list<string> */
+    private const BOOLEAN_FIELDS = [
+        'include_final',
+        'has_demonstrative_match',
+        'include_scores',
+        'allow_replacements',
     ];
 
     public function __construct(
@@ -38,29 +53,16 @@ final class EditionDivisionScheduleFormService
     public function persist(EditionDivision $editionDivision, array $data): EditionDivision
     {
         return DB::transaction(function () use ($editionDivision, $data): EditionDivision {
-            $shouldInvalidate = $this->detectPdfRelevantChanges($editionDivision, $data);
+            $schedule = $this->firstOrCreateSchedule($editionDivision);
+            $shouldInvalidate = $this->detectPdfRelevantChanges($editionDivision, $schedule, $data);
 
-            $edFields = array_intersect_key($data, array_flip([
-                'playing_start_time',
-                'playing_end_time',
-                'player_opponents_nr',
-                'player_matches_repeat',
-                'include_final',
-                'has_demonstrative_match',
-                'include_scores',
-                'allow_replacements',
-                'points_per_match',
-                'final_points_target',
-            ]));
+            $scheduleFields = array_intersect_key($data, array_flip(self::SCHEDULE_FIELDS));
+            if (array_key_exists('adjust', $scheduleFields)) {
+                $scheduleFields['adjust'] = $this->normalizeAdjust($scheduleFields['adjust']);
+            }
 
-            if ($edFields !== []) {
-                if (isset($edFields['playing_start_time'])) {
-                    $edFields['playing_start_time'] = PlayingWindow::normalizeStoredTime((string) $edFields['playing_start_time']);
-                }
-                if (isset($edFields['playing_end_time'])) {
-                    $edFields['playing_end_time'] = PlayingWindow::normalizeStoredTime((string) $edFields['playing_end_time']);
-                }
-                $editionDivision->update($edFields);
+            if ($scheduleFields !== []) {
+                $schedule->update($scheduleFields);
             }
 
             if (array_key_exists('court_ids', $data)) {
@@ -82,11 +84,27 @@ final class EditionDivisionScheduleFormService
             }
 
             return $editionDivision->fresh([
+                'schedule',
                 'courts',
                 'editionDivisionCourts.court',
                 'participations.player',
             ]) ?? $editionDivision;
         });
+    }
+
+    public function firstOrCreateSchedule(EditionDivision $editionDivision): EditionDivisionSchedule
+    {
+        $schedule = EditionDivisionSchedule::query()->firstOrNew([
+            'edition_division_id' => $editionDivision->id_edition_division,
+        ]);
+
+        if (! $schedule->exists) {
+            $schedule->save();
+            // Column defaults (include_scores, final_points_target, adjust, …) only exist in the DB.
+            $schedule->refresh();
+        }
+
+        return $schedule;
     }
 
     /**
@@ -145,28 +163,40 @@ final class EditionDivisionScheduleFormService
         }
     }
 
+    private function normalizeAdjust(mixed $value): int
+    {
+        $adjust = (int) $value;
+        if (! in_array($adjust, EditionDivisionSchedule::ADJUST_VALUES, true)) {
+            throw new InvalidArgumentException(sprintf(
+                'adjust must be one of %s.',
+                implode(', ', EditionDivisionSchedule::ADJUST_VALUES)
+            ));
+        }
+
+        return $adjust;
+    }
+
     /**
      * @param  array<string, mixed>  $data
      */
-    private function detectPdfRelevantChanges(EditionDivision $editionDivision, array $data): bool
-    {
-        foreach (self::PDF_RELEVANT_ED_FIELDS as $field) {
+    private function detectPdfRelevantChanges(
+        EditionDivision $editionDivision,
+        EditionDivisionSchedule $schedule,
+        array $data,
+    ): bool {
+        foreach (self::PDF_RELEVANT_FIELDS as $field) {
             if (! array_key_exists($field, $data)) {
                 continue;
             }
             $incoming = $data[$field];
-            if (in_array($field, ['playing_start_time', 'playing_end_time'], true) && $incoming !== null) {
-                $incoming = PlayingWindow::normalizeStoredTime((string) $incoming);
-            }
-            if ($field === 'include_final' || $field === 'has_demonstrative_match'
-                || $field === 'include_scores' || $field === 'allow_replacements') {
-                if ((bool) $incoming !== (bool) $editionDivision->{$field}) {
+            if (in_array($field, self::BOOLEAN_FIELDS, true)) {
+                if ((bool) $incoming !== (bool) $schedule->{$field}) {
                     return true;
                 }
 
                 continue;
             }
-            if ((string) $incoming !== (string) $editionDivision->{$field}) {
+            if ((string) $incoming !== (string) $schedule->{$field}) {
                 return true;
             }
         }

@@ -18,16 +18,16 @@ trait TemplateMatchesOrderingRoundDfs
      * @return array{
      *     ordered: array<int, array<int, array<int, array<int, int>>>>,
      *     stopReason: string,
-     *     min: float|null,
-     *     avg: float|null,
+     *     min: null|float,
+     *     avg: null|float,
      *     permutationsIterated: int,
-     *     permutationIndex: int|null,
-     *     minBreak: int|null,
-     *     maxBreak: int|null,
-     *     courtSwitches: int|null,
-     *     courtBalance: float|null,
+     *     permutationIndex: null|int,
+     *     minBreak: null|int,
+     *     maxBreak: null|int,
+     *     courtSwitches: null|int,
+     *     courtBalance: null|float,
      *     nodesExplored: int,
-     *     seedIndex: int|null,
+     *     seedIndex: null|int,
      *     seedsTotal: int
      * }
      */
@@ -184,19 +184,19 @@ trait TemplateMatchesOrderingRoundDfs
     /**
      * @param array<int, array<int, array<int, int>>> $flatMatches
      * @return array{
-     *     ordered: array<int, array<int, array<int, array<int, int>>>>|null,
+     *     ordered: null|array<int, array<int, array<int, array<int, int>>>>,
      *     stopReason: string,
-     *     min: float|null,
-     *     avg: float|null,
-     *     normCourtSwitches: float|null,
+     *     min: null|float,
+     *     avg: null|float,
+     *     normCourtSwitches: null|float,
      *     permutationsIterated: int,
-     *     permutationIndex: int|null,
-     *     minBreak: int|null,
-     *     maxBreak: int|null,
+     *     permutationIndex: null|int,
+     *     minBreak: null|int,
+     *     maxBreak: null|int,
      *     consecutiveMinBreaks: int,
      *     consecutiveMaxBreaks: int,
-     *     courtSwitches: int|null,
-     *     courtBalance: float|null,
+     *     courtSwitches: null|int,
+     *     courtBalance: null|float,
      *     nodesExplored: int
      * }
      */
@@ -298,24 +298,24 @@ trait TemplateMatchesOrderingRoundDfs
 
     /**
      * @param array{
-     *     minBreak?: int|null,
-     *     maxBreak?: int|null,
-     *     consecutiveMinBreaks?: int|null,
-     *     consecutiveMaxBreaks?: int|null,
-     *     normCourtSwitches?: float|null,
-     *     min?: float|null,
-     *     avg?: float|null
+     *     minBreak?: null|int,
+     *     maxBreak?: null|int,
+     *     consecutiveMinBreaks?: null|int,
+     *     consecutiveMaxBreaks?: null|int,
+     *     normCourtSwitches?: null|float,
+     *     min?: null|float,
+     *     avg?: null|float
      * } $candidate
-     * @param array{
-     *     minBreak?: int|null,
-     *     maxBreak?: int|null,
-     *     consecutiveMinBreaks?: int|null,
-     *     consecutiveMaxBreaks?: int|null,
-     *     normCourtSwitches?: float|null,
-     *     min?: float|null,
-     *     avg?: float|null,
-     *     ordered?: array<int, array<int, array<int, array<int, int>>>>|null
-     * }|null $currentBest
+     * @param null|array{
+     *     minBreak?: null|int,
+     *     maxBreak?: null|int,
+     *     consecutiveMinBreaks?: null|int,
+     *     consecutiveMaxBreaks?: null|int,
+     *     normCourtSwitches?: null|float,
+     *     min?: null|float,
+     *     avg?: null|float,
+     *     ordered?: null|array<int, array<int, array<int, array<int, int>>>>
+     * } $currentBest
      */
     private function isOrderingLexBetter(array $candidate, ?array $currentBest): bool
     {
@@ -329,24 +329,24 @@ trait TemplateMatchesOrderingRoundDfs
      * normCourtSwitches (min), minDistribution (max), avgDistribution (max).
      *
      * @param array{
-     *     minBreak?: int|null,
-     *     maxBreak?: int|null,
-     *     consecutiveMinBreaks?: int|null,
-     *     consecutiveMaxBreaks?: int|null,
-     *     normCourtSwitches?: float|null,
-     *     min?: float|null,
-     *     avg?: float|null
+     *     minBreak?: null|int,
+     *     maxBreak?: null|int,
+     *     consecutiveMinBreaks?: null|int,
+     *     consecutiveMaxBreaks?: null|int,
+     *     normCourtSwitches?: null|float,
+     *     min?: null|float,
+     *     avg?: null|float
      * } $candidate
-     * @param array{
-     *     minBreak?: int|null,
-     *     maxBreak?: int|null,
-     *     consecutiveMinBreaks?: int|null,
-     *     consecutiveMaxBreaks?: int|null,
-     *     normCourtSwitches?: float|null,
-     *     min?: float|null,
-     *     avg?: float|null,
-     *     ordered?: array<int, array<int, array<int, array<int, int>>>>|null
-     * }|null $currentBest
+     * @param null|array{
+     *     minBreak?: null|int,
+     *     maxBreak?: null|int,
+     *     consecutiveMinBreaks?: null|int,
+     *     consecutiveMaxBreaks?: null|int,
+     *     normCourtSwitches?: null|float,
+     *     min?: null|float,
+     *     avg?: null|float,
+     *     ordered?: null|array<int, array<int, array<int, array<int, int>>>>
+     * } $currentBest
      * @return int positive when candidate wins, negative when incumbent wins, zero on full tie
      */
     private function compareOrderingLex(array $candidate, ?array $currentBest): int
@@ -428,25 +428,25 @@ trait TemplateMatchesOrderingRoundDfs
 
     /**
      * @param array{
-     *     ordered: array<int, array<int, array<int, array<int, int>>>>|null,
-     *     minBreak?: int|null,
-     *     maxBreak?: int|null,
-     *     consecutiveMinBreaks?: int|null,
-     *     consecutiveMaxBreaks?: int|null,
-     *     normCourtSwitches?: float|null,
-     *     min?: float|null,
-     *     avg?: float|null
+     *     ordered: null|array<int, array<int, array<int, array<int, int>>>>,
+     *     minBreak?: null|int,
+     *     maxBreak?: null|int,
+     *     consecutiveMinBreaks?: null|int,
+     *     consecutiveMaxBreaks?: null|int,
+     *     normCourtSwitches?: null|float,
+     *     min?: null|float,
+     *     avg?: null|float
      * } $candidate
-     * @param array{
-     *     ordered: array<int, array<int, array<int, array<int, int>>>>|null,
-     *     minBreak?: int|null,
-     *     maxBreak?: int|null,
-     *     consecutiveMinBreaks?: int|null,
-     *     consecutiveMaxBreaks?: int|null,
-     *     normCourtSwitches?: float|null,
-     *     min?: float|null,
-     *     avg?: float|null
-     * }|null $currentBest
+     * @param null|array{
+     *     ordered: null|array<int, array<int, array<int, array<int, int>>>>,
+     *     minBreak?: null|int,
+     *     maxBreak?: null|int,
+     *     consecutiveMinBreaks?: null|int,
+     *     consecutiveMaxBreaks?: null|int,
+     *     normCourtSwitches?: null|float,
+     *     min?: null|float,
+     *     avg?: null|float
+     * } $currentBest
      */
     private function isOrderingSeedResultLexBetter(
         array $candidate,
@@ -530,12 +530,12 @@ trait TemplateMatchesOrderingRoundDfs
 
     /**
      * @param array{
-     *     min: float|null,
-     *     avg: float|null,
-     *     permutationIndex: int|null,
-     *     minBreak: int|null,
-     *     maxBreak: int|null,
-     *     courtSwitches: int|null
+     *     min: null|float,
+     *     avg: null|float,
+     *     permutationIndex: null|int,
+     *     minBreak: null|int,
+     *     maxBreak: null|int,
+     *     courtSwitches: null|int
      * } $bestState
      */
     private function emitOrderingProgress(
@@ -620,15 +620,15 @@ trait TemplateMatchesOrderingRoundDfs
      * @param array<int, array<int, array<int, array<int, int>>>> $matchesByCourt
      * @param array<int, bool> $used
      * @param array{
-     *     ordered: array<int, array<int, array<int, array<int, int>>>>|null,
-     *     min: float|null,
-     *     avg: float|null,
-     *     permutationIndex: int|null,
-     *     minBreak: int|null,
-     *     maxBreak: int|null,
-     *     normCourtSwitches: float|null,
-     *     courtSwitches: int|null,
-     *     courtBalance: float|null,
+     *     ordered: null|array<int, array<int, array<int, array<int, int>>>>,
+     *     min: null|float,
+     *     avg: null|float,
+     *     permutationIndex: null|int,
+     *     minBreak: null|int,
+     *     maxBreak: null|int,
+     *     normCourtSwitches: null|float,
+     *     courtSwitches: null|int,
+     *     courtBalance: null|float,
      *     consecutiveMinBreaks: int,
      *     consecutiveMaxBreaks: int
      * } $bestState
@@ -660,6 +660,7 @@ trait TemplateMatchesOrderingRoundDfs
         $now = $this->monotonicNow();
         if ($now >= $deadlineNs) {
             $exit['stopReason'] = self::STOP_REASON_DEADLINE;
+
             return true;
         }
 
@@ -809,12 +810,13 @@ trait TemplateMatchesOrderingRoundDfs
                     $courtSwitches,
                     $courts
                 );
+
                 continue;
             }
 
             if (
                 $this->countUsedMatches($used) < $m
-                && !$this->orderingPartialStreakPruneDeferred(
+                && ! $this->orderingPartialStreakPruneDeferred(
                     $flatMatches,
                     $mockPlayers,
                     $used,
@@ -844,6 +846,7 @@ trait TemplateMatchesOrderingRoundDfs
                     $courtSwitches,
                     $courts
                 );
+
                 continue;
             }
 
@@ -906,7 +909,7 @@ trait TemplateMatchesOrderingRoundDfs
         $unused = [];
         $m = count($flatMatches);
         for ($i = 0; $i < $m; $i++) {
-            if (!$used[$i]) {
+            if (! $used[$i]) {
                 $unused[] = $i;
             }
         }
@@ -936,6 +939,7 @@ trait TemplateMatchesOrderingRoundDfs
     ): void {
         if (count($current) === $sliceSize) {
             $results[] = $current;
+
             return;
         }
 
@@ -943,7 +947,7 @@ trait TemplateMatchesOrderingRoundDfs
         $limit = count($unused) - $need;
         for ($pos = $startPos; $pos <= $limit; $pos++) {
             $idx = $unused[$pos];
-            if (!$this->roundSliceCompatible($current, $idx, $flatMatches)) {
+            if (! $this->roundSliceCompatible($current, $idx, $flatMatches)) {
                 continue;
             }
             $current[] = $idx;
@@ -1007,7 +1011,7 @@ trait TemplateMatchesOrderingRoundDfs
         }
 
         foreach ($mockPlayers as $playerIndex) {
-            if (!isset($playersInRound[$playerIndex])) {
+            if (! isset($playersInRound[$playerIndex])) {
                 $newRun = $currentRuns[$playerIndex] + 1;
                 if ($newRun > $maxBreakThreshold) {
                     return true;

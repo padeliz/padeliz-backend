@@ -59,11 +59,7 @@ class EditionDivisionControllerTest extends TestCase
                         'division_title',
                         'playing_start_time',
                         'playing_end_time',
-                        'player_opponents_nr',
-                        'player_matches_repeat',
-                        'include_scores',
-                        'has_demonstrative_match',
-                        'allow_replacements',
+                        'skill_order',
                     ],
                 ],
                 'links' => [
@@ -119,10 +115,6 @@ class EditionDivisionControllerTest extends TestCase
             'division_title' => 'Adults Explorers A',
             'playing_start_time' => '09:00:00',
             'playing_end_time' => '17:00:00',
-            'player_matches_repeat' => 1,
-            'include_scores' => true,
-            'has_demonstrative_match' => false,
-            'allow_replacements' => true,
         ];
 
         $response = $this->postJson('/api/v1/manager/edition-divisions', $editionDivisionData);
@@ -132,9 +124,6 @@ class EditionDivisionControllerTest extends TestCase
                 'success' => true,
                 'message' => 'Edition division created successfully',
             ]);
-
-        $this->assertSame(true, $response->json('data.include_scores'));
-        $this->assertSame(false, $response->json('data.has_demonstrative_match'));
 
         $this->assertDatabaseHas('edition_divisions', [
             'edition_id' => $this->edition->id_edition,
@@ -160,11 +149,6 @@ class EditionDivisionControllerTest extends TestCase
             'division_title' => 'Adults Explorers B',
             'playing_start_time' => '10:00:00',
             'playing_end_time' => '18:00:00',
-            'player_matches_repeat' => 1,
-            'include_scores' => true,
-            'has_demonstrative_match' => false,
-            'allow_replacements' => true,
-            'include_final' => false,
         ];
 
         $response = $this->putJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}", $updateData);
@@ -223,7 +207,7 @@ class EditionDivisionControllerTest extends TestCase
         $response = $this->putJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}", []);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['edition_id', 'division_id', 'players_limit', 'division_title', 'playing_start_time', 'playing_end_time', 'player_matches_repeat', 'include_scores', 'has_demonstrative_match', 'allow_replacements', 'include_final']);
+            ->assertJsonValidationErrors(['edition_id', 'division_id', 'players_limit', 'division_title', 'playing_start_time', 'playing_end_time']);
     }
 
     public function test_manager_can_delete_edition_division()
@@ -266,10 +250,6 @@ class EditionDivisionControllerTest extends TestCase
             'division_title' => 'Adults Explorers B',
             'playing_start_time' => '10:00:00',
             'playing_end_time' => '18:00:00',
-            'player_matches_repeat' => 1,
-            'include_scores' => true,
-            'has_demonstrative_match' => false,
-            'allow_replacements' => true,
         ]);
 
         $response->assertStatus(422)
@@ -305,11 +285,6 @@ class EditionDivisionControllerTest extends TestCase
             'division_title' => 'Adults Explorers B',
             'playing_start_time' => '10:00:00',
             'playing_end_time' => '18:00:00',
-            'player_matches_repeat' => 1,
-            'include_scores' => true,
-            'has_demonstrative_match' => false,
-            'allow_replacements' => true,
-            'include_final' => false,
         ]);
 
         $response->assertStatus(422)
@@ -326,7 +301,302 @@ class EditionDivisionControllerTest extends TestCase
         $response = $this->postJson('/api/v1/manager/edition-divisions', []);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['edition_id', 'division_id', 'players_limit', 'division_title', 'playing_start_time', 'playing_end_time']);
+            ->assertJsonValidationErrors(['edition_id', 'division_id', 'players_limit', 'playing_start_time', 'playing_end_time'])
+            ->assertJsonMissingValidationErrors(['division_title']);
+    }
+
+    public function test_create_defaults_division_title_to_division_name(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->postJson('/api/v1/manager/edition-divisions', [
+            'edition_id' => $this->edition->id_edition,
+            'division_id' => $this->division->id_division,
+            'players_limit' => 16,
+            'playing_start_time' => '09:00:00',
+            'playing_end_time' => '17:00:00',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.division_title', $this->division->name);
+    }
+
+    public function test_create_defaults_skill_order_to_next_free_slot(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $first = $this->postJson('/api/v1/manager/edition-divisions', [
+            'edition_id' => $this->edition->id_edition,
+            'division_id' => $this->division->id_division,
+            'players_limit' => 16,
+            'playing_start_time' => '09:00:00',
+            'playing_end_time' => '17:00:00',
+        ]);
+        $first->assertStatus(201)->assertJsonPath('data.skill_order', 0);
+
+        $second = $this->postJson('/api/v1/manager/edition-divisions', [
+            'edition_id' => $this->edition->id_edition,
+            'division_id' => Division::factory()->create()->id_division,
+            'players_limit' => 16,
+            'playing_start_time' => '09:00:00',
+            'playing_end_time' => '17:00:00',
+        ]);
+        $second->assertStatus(201)->assertJsonPath('data.skill_order', 1);
+
+        $explicit = $this->postJson('/api/v1/manager/edition-divisions', [
+            'edition_id' => $this->edition->id_edition,
+            'division_id' => Division::factory()->create()->id_division,
+            'players_limit' => 16,
+            'skill_order' => 0,
+            'playing_start_time' => '09:00:00',
+            'playing_end_time' => '17:00:00',
+        ]);
+        $explicit->assertStatus(201)->assertJsonPath('data.skill_order', 0);
+    }
+
+    public function test_create_does_not_create_schedule_row(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->postJson('/api/v1/manager/edition-divisions', [
+            'edition_id' => $this->edition->id_edition,
+            'division_id' => $this->division->id_division,
+            'players_limit' => 16,
+            'playing_start_time' => '09:00:00',
+            'playing_end_time' => '17:00:00',
+        ]);
+
+        $response->assertStatus(201);
+
+        $this->assertDatabaseMissing('edition_division_schedules', [
+            'edition_division_id' => $response->json('data.id_edition_division'),
+        ]);
+    }
+
+    /**
+     * @return list<array{0: string}>
+     */
+    public static function movedScheduleKeyProvider(): array
+    {
+        return [
+            ['player_opponents_nr'],
+            ['player_matches_repeat'],
+            ['include_scores'],
+            ['has_demonstrative_match'],
+            ['allow_replacements'],
+            ['points_per_match'],
+            ['final_points_target'],
+            ['include_final'],
+            ['template_version'],
+            ['adjust'],
+        ];
+    }
+
+    /**
+     * @dataProvider movedScheduleKeyProvider
+     */
+    public function test_store_rejects_moved_schedule_keys(string $key): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->postJson('/api/v1/manager/edition-divisions', [
+            'edition_id' => $this->edition->id_edition,
+            'division_id' => $this->division->id_division,
+            'players_limit' => 16,
+            'division_title' => 'Knobs Division',
+            'playing_start_time' => '09:00:00',
+            'playing_end_time' => '17:00:00',
+            $key => 4,
+        ]);
+
+        $response->assertStatus(422)->assertJsonValidationErrors([$key]);
+    }
+
+    /**
+     * @dataProvider movedScheduleKeyProvider
+     */
+    public function test_update_and_patch_reject_moved_schedule_keys(string $key): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $editionDivision = EditionDivision::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'division_id' => $this->division->id_division,
+        ]);
+
+        $this->putJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}", [
+            'edition_id' => $this->edition->id_edition,
+            'division_id' => $this->division->id_division,
+            'players_limit' => 16,
+            'division_title' => 'Knobs Division',
+            'playing_start_time' => '09:00:00',
+            'playing_end_time' => '17:00:00',
+            $key => 4,
+        ])->assertStatus(422)->assertJsonValidationErrors([$key]);
+
+        $this->patchJson("/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}", [
+            $key => 4,
+        ])->assertStatus(422)->assertJsonValidationErrors([$key]);
+    }
+
+    public function test_index_defaults_to_skill_order_then_id(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $third = EditionDivision::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'division_id' => $this->division->id_division,
+            'skill_order' => 2,
+        ]);
+        $first = EditionDivision::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'skill_order' => 0,
+        ]);
+        $second = EditionDivision::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'skill_order' => 1,
+        ]);
+
+        $response = $this->getJson('/api/v1/manager/edition-divisions?filters[edition_id]=' . $this->edition->id_edition);
+
+        $response->assertStatus(200);
+        $this->assertSame(
+            [
+                $first->id_edition_division,
+                $second->id_edition_division,
+                $third->id_edition_division,
+            ],
+            array_column($response->json('data'), 'id_edition_division')
+        );
+    }
+
+    public function test_reorder_rewrites_skill_order_from_zero(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $a = EditionDivision::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'division_id' => $this->division->id_division,
+            'skill_order' => 0,
+        ]);
+        $b = EditionDivision::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'skill_order' => 1,
+        ]);
+        $c = EditionDivision::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'skill_order' => 2,
+        ]);
+
+        $response = $this->patchJson('/api/v1/manager/edition-divisions/reorder', [
+            'edition_id' => $this->edition->id_edition,
+            'divisions' => [
+                ['id_edition_division' => $a->id_edition_division, 'skill_order' => 7],
+                ['id_edition_division' => $b->id_edition_division, 'skill_order' => 3],
+                ['id_edition_division' => $c->id_edition_division, 'skill_order' => 5],
+            ],
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'message' => 'Edition divisions reordered successfully',
+            ]);
+
+        $this->assertSame(
+            [
+                $b->id_edition_division,
+                $c->id_edition_division,
+                $a->id_edition_division,
+            ],
+            array_column($response->json('data'), 'id_edition_division')
+        );
+        $this->assertSame([0, 1, 2], array_column($response->json('data'), 'skill_order'));
+
+        $this->assertSame(0, (int) $b->fresh()->skill_order);
+        $this->assertSame(1, (int) $c->fresh()->skill_order);
+        $this->assertSame(2, (int) $a->fresh()->skill_order);
+    }
+
+    public function test_reorder_requires_every_division_of_the_edition(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $a = EditionDivision::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'division_id' => $this->division->id_division,
+            'skill_order' => 0,
+        ]);
+        EditionDivision::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'skill_order' => 1,
+        ]);
+
+        $response = $this->patchJson('/api/v1/manager/edition-divisions/reorder', [
+            'edition_id' => $this->edition->id_edition,
+            'divisions' => [
+                ['id_edition_division' => $a->id_edition_division, 'skill_order' => 0],
+            ],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'message' => 'divisions must include every edition division of this edition.',
+            ]);
+    }
+
+    public function test_reorder_rejects_divisions_from_another_edition(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $mine = EditionDivision::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'division_id' => $this->division->id_division,
+            'skill_order' => 0,
+        ]);
+        $foreign = EditionDivision::factory()->create([
+            'edition_id' => Edition::factory()->create()->id_edition,
+            'skill_order' => 0,
+        ]);
+
+        $response = $this->patchJson('/api/v1/manager/edition-divisions/reorder', [
+            'edition_id' => $this->edition->id_edition,
+            'divisions' => [
+                ['id_edition_division' => $mine->id_edition_division, 'skill_order' => 0],
+                ['id_edition_division' => $foreign->id_edition_division, 'skill_order' => 1],
+            ],
+        ]);
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'message' => 'One or more edition divisions do not belong to this edition.',
+            ]);
+    }
+
+    public function test_reorder_rejected_after_finalize(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $finalized = Edition::factory()->create(['finalized_at' => time()]);
+        $editionDivision = EditionDivision::factory()->create([
+            'edition_id' => $finalized->id_edition,
+            'skill_order' => 0,
+        ]);
+
+        $response = $this->patchJson('/api/v1/manager/edition-divisions/reorder', [
+            'edition_id' => $finalized->id_edition,
+            'divisions' => [
+                ['id_edition_division' => $editionDivision->id_edition_division, 'skill_order' => 0],
+            ],
+        ]);
+
+        $response->assertStatus(409)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Edition divisions cannot be reordered after finalize.',
+            ]);
     }
 
     public function test_edition_division_creation_allows_overnight_and_end_of_day(): void
@@ -340,11 +610,6 @@ class EditionDivisionControllerTest extends TestCase
             'division_title' => 'Overnight Division',
             'playing_start_time' => '17:00:00',
             'playing_end_time' => '09:00:00',
-            'player_matches_repeat' => 1,
-            'include_scores' => true,
-            'has_demonstrative_match' => false,
-            'allow_replacements' => true,
-            'include_final' => false,
         ]);
 
         $overnight->assertStatus(201)
@@ -359,11 +624,6 @@ class EditionDivisionControllerTest extends TestCase
             'division_title' => 'End of day Division',
             'playing_start_time' => '18:00:00',
             'playing_end_time' => '24:00:00',
-            'player_matches_repeat' => 1,
-            'include_scores' => true,
-            'has_demonstrative_match' => false,
-            'allow_replacements' => true,
-            'include_final' => false,
         ]);
 
         $endOfDay->assertStatus(201)
@@ -381,11 +641,6 @@ class EditionDivisionControllerTest extends TestCase
             'division_title' => 'Bad times',
             'playing_start_time' => '25:00:00',
             'playing_end_time' => '18:00:00',
-            'player_matches_repeat' => 1,
-            'include_scores' => true,
-            'has_demonstrative_match' => false,
-            'allow_replacements' => true,
-            'include_final' => false,
         ]);
 
         $response->assertStatus(422)

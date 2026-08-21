@@ -22,8 +22,7 @@ final class HasAdvancedPaginationTest extends TestCase
     {
         parent::setUp();
 
-        $this->subject = new class
-        {
+        $this->subject = new class () {
             use HasAdvancedPagination;
 
             public function paginate(Request $request, ?callable $extendSearch = null): Builder

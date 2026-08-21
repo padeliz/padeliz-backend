@@ -6,7 +6,6 @@ namespace Tests\Unit\Services\Database;
 
 use App\Services\Database\CollationPreflightService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Tests\TestCase;
 
 final class CollationPreflightServiceTest extends TestCase
@@ -29,7 +28,7 @@ final class CollationPreflightServiceTest extends TestCase
         ]);
 
         $exists = \App\Models\Player::query()
-            ->whereRaw(\App\Support\PlayerFullNameSql::expression().' = ?', ['Stefan Popescu'])
+            ->whereRaw(\App\Support\PlayerFullNameSql::expression() . ' = ?', ['Stefan Popescu'])
             ->whereKey($player->id_player)
             ->exists();
 

@@ -97,7 +97,7 @@ final class TemplateMatchDerivation
     /**
      * Total matches across all courts.
      *
-     * @param array<int, array<int, mixed>>|null $matchesByCourt
+     * @param null|array<int, array<int, mixed>> $matchesByCourt
      */
     public static function matchesCount(?array $matchesByCourt): ?int
     {
@@ -116,7 +116,7 @@ final class TemplateMatchDerivation
     /**
      * Simultaneous time slots (rounds on court 0). All courts share the same length.
      *
-     * @param array<int, array<int, mixed>>|null $matchesByCourt
+     * @param null|array<int, array<int, mixed>> $matchesByCourt
      */
     public static function roundsCount(?array $matchesByCourt): ?int
     {
@@ -125,7 +125,7 @@ final class TemplateMatchDerivation
         }
 
         $first = reset($matchesByCourt);
-        if (!is_array($first)) {
+        if (! is_array($first)) {
             return null;
         }
 
@@ -149,10 +149,10 @@ final class TemplateMatchDerivation
         foreach ($matchPlayers as $p1) {
             foreach ($matchPlayers as $p2) {
                 if ($p1 !== $p2) {
-                    if (!isset($playersMet[$p1])) {
+                    if (! isset($playersMet[$p1])) {
                         $playersMet[$p1] = [];
                     }
-                    if (!isset($playersMet[$p1][$p2])) {
+                    if (! isset($playersMet[$p1][$p2])) {
                         $playersMet[$p1][$p2] = 0;
                     }
                     $playersMet[$p1][$p2]++;

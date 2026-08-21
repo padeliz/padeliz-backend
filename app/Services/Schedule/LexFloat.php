@@ -17,7 +17,7 @@ final class LexFloat
     /** Quantize for comparison only. */
     public static function quantize(float $value): float
     {
-        if (!is_finite($value)) {
+        if (! is_finite($value)) {
             return $value;
         }
 

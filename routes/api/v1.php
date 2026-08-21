@@ -93,11 +93,32 @@ Route::prefix('v1')->group(function () {
             Route::get('me', [\App\Http\Controllers\Api\V1\Manager\ManagerAuthController::class, 'me']);
         });
 
-        Route::get('branding', [\App\Http\Controllers\Api\V1\Manager\BrandingController::class, 'index']);
+        // Organizer management
+        Route::prefix('organizers')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\OrganizerController::class, 'index']);
+            Route::post('{organizer}/logo', [\App\Http\Controllers\Api\V1\Manager\OrganizerLogoController::class, 'store'])
+                ->whereNumber('organizer');
+            Route::delete('{organizer}/logo', [\App\Http\Controllers\Api\V1\Manager\OrganizerLogoController::class, 'destroy'])
+                ->whereNumber('organizer');
+            Route::get('{organizer}', [\App\Http\Controllers\Api\V1\Manager\OrganizerController::class, 'show'])
+                ->whereNumber('organizer');
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\OrganizerController::class, 'store']);
+            Route::put('{organizer}', [\App\Http\Controllers\Api\V1\Manager\OrganizerController::class, 'update'])
+                ->whereNumber('organizer');
+            Route::patch('{organizer}', [\App\Http\Controllers\Api\V1\Manager\OrganizerController::class, 'patch'])
+                ->whereNumber('organizer');
+            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\OrganizerController::class, 'bulkDestroy']);
+            Route::delete('{organizer}', [\App\Http\Controllers\Api\V1\Manager\OrganizerController::class, 'destroy'])
+                ->whereNumber('organizer');
+        });
 
         // Club management
         Route::prefix('clubs')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\Manager\ClubController::class, 'index']);
+            Route::post('{club}/logo', [\App\Http\Controllers\Api\V1\Manager\ClubLogoController::class, 'store'])
+                ->whereNumber('club');
+            Route::delete('{club}/logo', [\App\Http\Controllers\Api\V1\Manager\ClubLogoController::class, 'destroy'])
+                ->whereNumber('club');
             Route::get('{club}', [\App\Http\Controllers\Api\V1\Manager\ClubController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\ClubController::class, 'store']);
             Route::put('{club}', [\App\Http\Controllers\Api\V1\Manager\ClubController::class, 'update']);
@@ -287,6 +308,7 @@ Route::prefix('v1')->group(function () {
         // Edition divisions management
         Route::prefix('edition-divisions')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'index']);
+            Route::patch('reorder', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'reorder']);
             Route::get('{editionDivision}', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'store']);
             Route::put('{editionDivision}', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'update']);

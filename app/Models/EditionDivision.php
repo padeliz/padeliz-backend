@@ -11,57 +11,25 @@ use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasOne;
+use InvalidArgumentException;
 
 /**
  * @OA\Schema(
  *     schema="EditionDivision",
- *     required={"edition_id", "division_id", "division_title", "players_limit", "playing_start_time", "playing_end_time", "include_scores", "has_demonstrative_match"},
- *     @OA\Property(
- *         property="id_edition_division",
- *         type="integer",
- *         format="int64",
- *         readOnly=true,
- *         title="ID",
- *         description="Unique Identifier"
- *     ),
- *     @OA\Property(
- *         property="edition_id",
- *         type="integer",
- *         format="int64",
- *         minimum=1,
- *         title="Edition",
- *         description="Edition of the division"
- *     ),
- *     @OA\Property(
- *         property="division_id",
- *         type="integer",
- *         format="int64",
- *         minimum=1,
- *         title="Division",
- *         description="Division of the edition"
- *     ),
- *     @OA\Property(
- *         property="division_title",
- *         type="string",
- *         maxLength=64,
- *         title="Division Title",
- *         description="Display title for this edition division"
- *     ),
- *     @OA\Property(
- *         property="players_limit",
- *         type="integer",
- *         minimum=1,
- *         title="Players Limit",
- *         description="Maximum number of players allowed",
- *         example=16
- *     ),
+ *     required={"edition_id", "division_id", "division_title", "players_limit", "playing_start_time", "playing_end_time"},
+ *     @OA\Property(property="id_edition_division", type="integer", format="int64", readOnly=true, title="ID"),
+ *     @OA\Property(property="edition_id", type="integer", format="int64", minimum=1, title="Edition"),
+ *     @OA\Property(property="division_id", type="integer", format="int64", minimum=1, title="Division"),
+ *     @OA\Property(property="division_title", type="string", maxLength=64, title="Division Title"),
+ *     @OA\Property(property="players_limit", type="integer", minimum=1, title="Players Limit", example=16),
+ *     @OA\Property(property="skill_order", type="integer", minimum=0, title="Skill Order"),
  *     @OA\Property(
  *         property="playing_start_time",
  *         type="string",
  *         format="time",
  *         pattern="^([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$",
  *         title="Playing Start Time",
- *         description="Playing start time in HH:MM:SS format",
  *         example="10:00:00"
  *     ),
  *     @OA\Property(
@@ -70,75 +38,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *         format="time",
  *         pattern="^([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$",
  *         title="Playing End Time",
- *         description="Playing end time in HH:MM:SS format",
  *         example="16:00:00"
  *     ),
- *     @OA\Property(
- *         property="player_opponents_nr",
- *         type="integer",
- *         nullable=true,
- *         minimum=1,
- *         title="Player Opponents NR",
- *         description="Number of opponents per player",
- *         example=3
- *     ),
- *     @OA\Property(
- *         property="player_matches_repeat",
- *         type="integer",
- *         nullable=true,
- *         minimum=1,
- *         title="Player Matches Repeat",
- *         description="Number of times matches repeat",
- *         example=1
- *     ),
- *     @OA\Property(property="include_scores", type="boolean", title="Include Scores", description="Whether to include scores"),
- *     @OA\Property(property="has_demonstrative_match", type="boolean", title="Has Demonstrative Match", description="Whether to include a demonstrative match"),
- *     @OA\Property(property="allow_replacements", type="boolean", default=true, title="Allow Replacements", description="Whether replacements are allowed"),
- *     @OA\Property(
- *         property="points_per_match",
- *         type="integer",
- *         nullable=true,
- *         title="Points Per Match",
- *         description="Points awarded per match"
- *     ),
- *     @OA\Property(
- *         property="final_points_target",
- *         type="integer",
- *         default=24,
- *         title="Final Points Target",
- *         description="Points target for the final match"
- *     ),
- *     @OA\Property(
- *         property="include_final",
- *         type="boolean",
- *         default=false,
- *         title="Include Final",
- *         description="Whether this edition division includes a final"
- *     ),
- *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true, title="Created At", description="Timestamp when the edition division was created"),
- *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true, title="Updated At", description="Timestamp when the edition division was last updated"),
- *     @OA\Property(
- *         property="edition",
- *         ref="#/components/schemas/Edition",
- *         title="Edition",
- *         description="Related edition object",
- *         nullable=true
- *     ),
- *     @OA\Property(
- *         property="division",
- *         ref="#/components/schemas/Division",
- *         title="Division",
- *         description="Related division object",
- *         nullable=true
- *     ),
- *     @OA\Property(
- *         property="courts",
- *         type="array",
- *         @OA\Items(ref="#/components/schemas/Court"),
- *         title="Courts",
- *         description="Array of related courts",
- *         nullable=true
- *     )
+ *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true),
+ *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true),
+ *     @OA\Property(property="edition", ref="#/components/schemas/Edition", nullable=true),
+ *     @OA\Property(property="division", ref="#/components/schemas/Division", nullable=true),
+ *     @OA\Property(property="courts", type="array", @OA\Items(ref="#/components/schemas/Court"), nullable=true),
+ *     @OA\Property(property="schedule", ref="#/components/schemas/EditionDivisionSchedule", nullable=true)
  * )
  */
 class EditionDivision extends Model
@@ -146,54 +53,30 @@ class EditionDivision extends Model
     use HasFactory;
     use HasResourceMetadata;
 
-    /**
-     * Fields that can be searched
-     */
     public static array $searchableFields = [
         'division_title',
     ];
 
-    /**
-     * Fields that can be filtered
-     */
     public static array $filterableFields = [
         'edition_id',
         'division_id',
         'players_limit',
-        'player_opponents_nr',
-        'player_matches_repeat',
-        'include_scores',
-        'has_demonstrative_match',
-        'allow_replacements',
-        'include_final',
+        'skill_order',
     ];
 
-    /**
-     * Fields that can be sorted
-     */
     public static array $sortableFields = [
         'id_edition_division',
         'edition_id',
         'division_id',
         'division_title',
         'players_limit',
+        'skill_order',
         'playing_start_time',
         'playing_end_time',
-        'player_opponents_nr',
-        'player_matches_repeat',
-        'include_scores',
-        'has_demonstrative_match',
-        'allow_replacements',
-        'points_per_match',
-        'final_points_target',
-        'include_final',
         'inserted_at',
         'updated_at',
     ];
 
-    /**
-     * Field that will be used to display the edition division in the UI
-     */
     public static ?string $displayField = 'division_title';
 
     protected $table = 'edition_divisions';
@@ -212,29 +95,15 @@ class EditionDivision extends Model
         'division_id',
         'division_title',
         'players_limit',
+        'skill_order',
         'playing_start_time',
         'playing_end_time',
-        'player_opponents_nr',
-        'player_matches_repeat',
-        'include_scores',
-        'has_demonstrative_match',
-        'allow_replacements',
-        'points_per_match',
-        'final_points_target',
-        'include_final',
-        'template_version',
     ];
 
     protected $casts = [
         'inserted_at' => 'integer',
         'updated_at' => 'integer',
-        'include_scores' => 'boolean',
-        'has_demonstrative_match' => 'boolean',
-        'allow_replacements' => 'boolean',
-        'include_final' => 'boolean',
-        'points_per_match' => 'integer',
-        'final_points_target' => 'integer',
-        'template_version' => 'integer',
+        'skill_order' => 'integer',
     ];
 
     protected $appends = [
@@ -250,6 +119,30 @@ class EditionDivision extends Model
     public function division(): BelongsTo
     {
         return $this->belongsTo(Division::class, 'division_id');
+    }
+
+    public function schedule(): HasOne
+    {
+        return $this->hasOne(EditionDivisionSchedule::class, 'edition_division_id', 'id_edition_division');
+    }
+
+    /**
+     * Schedule knobs live on their own row; callers that cannot work without them use this.
+     */
+    public function requireSchedule(): EditionDivisionSchedule
+    {
+        $schedule = $this->relationLoaded('schedule')
+            ? $this->getRelation('schedule')
+            : $this->schedule()->first();
+
+        if (! $schedule instanceof EditionDivisionSchedule) {
+            throw new InvalidArgumentException(sprintf(
+                'Edition division %d has no schedule row.',
+                (int) $this->id_edition_division
+            ));
+        }
+
+        return $schedule;
     }
 
     public function editionDivisionCourts(): HasMany
@@ -303,17 +196,11 @@ class EditionDivision extends Model
         return $this->hasMany(GameMatch::class, 'edition_division_id', 'id_edition_division');
     }
 
-    /**
-     * Get the formatted playing start time as H:i:s
-     */
     public function getFormattedPlayingStartTimeAttribute()
     {
         return PlayingWindow::toClockString($this->attributes['playing_start_time'] ?? null);
     }
 
-    /**
-     * Get the formatted playing end time as H:i:s
-     */
     public function getFormattedPlayingEndTimeAttribute()
     {
         return PlayingWindow::toClockString($this->attributes['playing_end_time'] ?? null);

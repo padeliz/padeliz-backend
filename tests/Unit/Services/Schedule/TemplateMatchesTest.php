@@ -10,7 +10,6 @@ use App\Services\Schedule\Progress\PairingProgress;
 use App\Services\Schedule\TemplateMatches;
 use PHPUnit\Framework\TestCase;
 
-
 final class TemplateMatchesTest extends TestCase
 {
     public function test_getters_return_constructor_values(): void
@@ -217,6 +216,7 @@ final class TemplateMatchesTest extends TestCase
             unset($data[$omittedKey]);
 
             $thrown = null;
+
             try {
                 TemplateMatches::fromArray($data);
             } catch (\InvalidArgumentException $e) {
@@ -244,6 +244,7 @@ final class TemplateMatchesTest extends TestCase
             unset($data['metrics'][$phase]);
 
             $thrown = null;
+
             try {
                 TemplateMatches::fromArray($data);
             } catch (\InvalidArgumentException $e) {
@@ -273,6 +274,7 @@ final class TemplateMatchesTest extends TestCase
             $data[$forbidden] = 1;
 
             $thrown = null;
+
             try {
                 TemplateMatches::fromArray($data);
             } catch (\InvalidArgumentException $e) {

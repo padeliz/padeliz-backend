@@ -7,7 +7,6 @@ namespace Tests\Unit\Services\Schedule;
 use App\Services\Schedule\PartnersFairnessScorer;
 use App\Services\Schedule\TemplateMatchesGenerator;
 
-
 final class TemplateMatchesPairingTest extends GeneratorTestCase
 {
     public function test_compute_pairing_dfs_branch_cap_clamps_to_formula(): void
@@ -90,8 +89,8 @@ final class TemplateMatchesPairingTest extends GeneratorTestCase
         $this->assertSame($first['pairCount'], $second['pairCount']);
         $this->assertSame($first['seedIndex'], $second['seedIndex']);
         $this->assertSame(
-            array_map(static fn(array $pair): array => $pair['players'], $first['pairs']),
-            array_map(static fn(array $pair): array => $pair['players'], $second['pairs'])
+            array_map(static fn (array $pair): array => $pair['players'], $first['pairs']),
+            array_map(static fn (array $pair): array => $pair['players'], $second['pairs'])
         );
         $this->assertEqualsWithDelta($first['minPartnersFairness'], $second['minPartnersFairness'], 1e-9);
         $this->assertEqualsWithDelta($first['avgPartnersFairness'], $second['avgPartnersFairness'], 1e-9);

@@ -20,7 +20,7 @@ final class RecordingGenerator extends TemplateMatchesGenerator
     /** @var list<array{players:int,partners:int,repeat:int,courts:int,fixedTeams:bool}> */
     public array $calls = [];
 
-    /** @var callable|null */
+    /** @var null|callable */
     private $progressCallback = null;
 
     private bool $eligible = true;

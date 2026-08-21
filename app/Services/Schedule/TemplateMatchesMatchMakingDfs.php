@@ -18,16 +18,16 @@ trait TemplateMatchesMatchMakingDfs
      * @param array<int, int> $partnersCount
      * @return array{
      *     bestTemplate: array{
-     *         meetingsVariation: float|null,
-     *         matches: array<int, array<int, array<int, int>>>|null,
+     *         meetingsVariation: null|float,
+     *         matches: null|array<int, array<int, array<int, int>>>,
      *         playersMet: array<int, array<int, int>>,
-     *         minOpponentsMet: int|null,
-     *         minPlayingFairness: float|null,
-     *         maxPlayingFairnessPenalty: float|null,
-     *         avgPlayingFairness: float|null,
-     *         permutationIndex: int|null,
-     *         templateIndex: int|null,
-     *         seedIndex: int|null
+     *         minOpponentsMet: null|int,
+     *         minPlayingFairness: null|float,
+     *         maxPlayingFairnessPenalty: null|float,
+     *         avgPlayingFairness: null|float,
+     *         permutationIndex: null|int,
+     *         templateIndex: null|int,
+     *         seedIndex: null|int
      *     },
      *     candidates: array<int, array<string, mixed>>,
      *     candidatesCollected: int,
@@ -146,16 +146,16 @@ trait TemplateMatchesMatchMakingDfs
 
     /**
      * @return array{
-     *     meetingsVariation: float|null,
-     *     matches: array<int, array<int, array<int, int>>>|null,
+     *     meetingsVariation: null|float,
+     *     matches: null|array<int, array<int, array<int, int>>>,
      *     playersMet: array<int, array<int, int>>,
-     *     minOpponentsMet: int|null,
-     *     minPlayingFairness: float|null,
-     *     maxPlayingFairnessPenalty: float|null,
-     *     avgPlayingFairness: float|null,
-     *     permutationIndex: int|null,
-     *     templateIndex: int|null,
-     *     seedIndex: int|null
+     *     minOpponentsMet: null|int,
+     *     minPlayingFairness: null|float,
+     *     maxPlayingFairnessPenalty: null|float,
+     *     avgPlayingFairness: null|float,
+     *     permutationIndex: null|int,
+     *     templateIndex: null|int,
+     *     seedIndex: null|int
      * }
      */
     private function emptyMatchMakingBestTemplate(): array
@@ -177,16 +177,16 @@ trait TemplateMatchesMatchMakingDfs
     /**
      * @param array<string, mixed> $candidate
      * @return array{
-     *     meetingsVariation: float|null,
-     *     matches: array<int, array<int, array<int, int>>>|null,
+     *     meetingsVariation: null|float,
+     *     matches: null|array<int, array<int, array<int, int>>>,
      *     playersMet: array<int, array<int, int>>,
-     *     minOpponentsMet: int|null,
-     *     minPlayingFairness: float|null,
-     *     maxPlayingFairnessPenalty: float|null,
-     *     avgPlayingFairness: float|null,
-     *     permutationIndex: int|null,
-     *     templateIndex: int|null,
-     *     seedIndex: int|null
+     *     minOpponentsMet: null|int,
+     *     minPlayingFairness: null|float,
+     *     maxPlayingFairnessPenalty: null|float,
+     *     avgPlayingFairness: null|float,
+     *     permutationIndex: null|int,
+     *     templateIndex: null|int,
+     *     seedIndex: null|int
      * }
      */
     private function matchMakingCandidateToBestTemplate(array $candidate): array
@@ -291,7 +291,7 @@ trait TemplateMatchesMatchMakingDfs
 
                 $key = MatchMakingLex::canonicalMatchMultisetKey($leaf['matches']);
                 if (
-                    !isset($candidatePool[$key])
+                    ! isset($candidatePool[$key])
                     || MatchMakingLex::compare($leaf, $candidatePool[$key]) > 0
                 ) {
                     $candidatePool[$key] = $leaf;
@@ -319,7 +319,7 @@ trait TemplateMatchesMatchMakingDfs
 
     /**
      * @param array<int, array{players: array{0:int,1:int}, used: bool}> $orderedPairs
-     * @return array{leaves: array<int, array<string, mixed>>, leavesCollected: int, nodesExplored: int}|null
+     * @return null|array{leaves: array<int, array<string, mixed>>, leavesCollected: int, nodesExplored: int}
      */
     private function buildMatchMakingByBacktracking(
         array $orderedPairs,
@@ -373,7 +373,7 @@ trait TemplateMatchesMatchMakingDfs
      * @param array<int, bool> $used
      * @param array<int, array<int, int>> $playersMet
      * @param array<int, array{0: array{0:int,1:int}, 1: array{0:int,1:int}}> $matches
-     * @param array<string, mixed>|null $seedBest
+     * @param null|array<string, mixed> $seedBest
      * @param array<string, array<string, mixed>> $seedLeavesByKey
      */
     private function matchMakingDfsExpand(
@@ -429,8 +429,9 @@ trait TemplateMatchesMatchMakingDfs
         $pair1Idx = -1;
         $pairCount = count($pairs);
         for ($i = 0; $i < $pairCount; $i++) {
-            if (!$used[$i]) {
+            if (! $used[$i]) {
                 $pair1Idx = $i;
+
                 break;
             }
         }
@@ -439,7 +440,7 @@ trait TemplateMatchesMatchMakingDfs
             $nodesExplored++;
             $leafKey = MatchMakingLex::canonicalMatchMultisetKey($matches);
             $leavesCollected++;
-            if (!isset($seedLeavesByKey[$leafKey])) {
+            if (! isset($seedLeavesByKey[$leafKey])) {
                 $candidate = MatchMakingLex::scoreLeaf(
                     $matches,
                     $playersMet,
@@ -497,10 +498,12 @@ trait TemplateMatchesMatchMakingDfs
 
             if ($branchesRemaining <= 0) {
                 $used[$pair1Idx] = false;
+
                 return;
             }
             if ($this->monotonicNow() >= $deadlineNs) {
                 $used[$pair1Idx] = false;
+
                 return;
             }
         }
@@ -509,7 +512,7 @@ trait TemplateMatchesMatchMakingDfs
     }
 
     /**
-     * @param array{minOpponentsMet?: int}|null $seedBest
+     * @param null|array{minOpponentsMet?: int} $seedBest
      */
     private function resolveMatchMakingPruneMinOpponentsMet(?int $globalMin, ?array $seedBest): ?int
     {
@@ -543,7 +546,7 @@ trait TemplateMatchesMatchMakingDfs
 
         $candidatePool = [];
         foreach (array_slice($candidates, 0, self::MAX_MM_CANDIDATE_POOL) as $candidate) {
-            if (!isset($candidate['matches']) || !is_array($candidate['matches'])) {
+            if (! isset($candidate['matches']) || ! is_array($candidate['matches'])) {
                 continue;
             }
             $key = MatchMakingLex::canonicalMatchMultisetKey($candidate['matches']);

@@ -10,6 +10,7 @@ use App\Models\Edition;
 use App\Models\EditionDivision;
 use App\Models\EditionDivisionCourt;
 use App\Models\EditionDivisionPoster;
+use App\Models\EditionDivisionSchedule;
 use App\Models\EditionDivisionStanding;
 use App\Models\EditionParticipation;
 use App\Models\GameMatch;
@@ -56,6 +57,10 @@ final class EditionDivisionScheduleReorderTest extends TestCase
             'players_limit' => 8,
             'playing_start_time' => '14:00:00',
             'playing_end_time' => '17:00:00',
+        ]);
+
+        EditionDivisionSchedule::factory()->create([
+            'edition_division_id' => $this->editionDivision->id_edition_division,
             'player_opponents_nr' => 4,
             'player_matches_repeat' => 1,
             'include_final' => false,

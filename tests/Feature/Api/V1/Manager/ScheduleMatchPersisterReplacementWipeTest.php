@@ -13,7 +13,6 @@ use App\Models\EditionDivisionReplacement;
 use App\Models\EditionParticipation;
 use App\Models\GameMatch;
 use App\Models\MatchSide;
-use App\Models\Player;
 use App\Services\Schedule\ScheduleMatchPersister;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;

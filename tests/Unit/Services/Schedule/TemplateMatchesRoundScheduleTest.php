@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Unit\Services\Schedule;
 
 use App\Services\Schedule\TemplateMatches;
-use App\Services\Schedule\TemplateMatchesGenerator;
 use App\Services\Schedule\TemplateMatchesRepository;
 use PHPUnit\Framework\TestCase;
 
@@ -139,7 +138,7 @@ final class TemplateMatchesRoundScheduleTest extends TestCase
 
     private function removeDirRecursive(string $dir): void
     {
-        if (!is_dir($dir)) {
+        if (! is_dir($dir)) {
             return;
         }
 

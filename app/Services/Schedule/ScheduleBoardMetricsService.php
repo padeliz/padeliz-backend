@@ -71,10 +71,14 @@ final class ScheduleBoardMetricsService
             ? $editionDivision->courts->count()
             : $editionDivision->courts()->count();
 
+        $schedule = $editionDivision->relationLoaded('schedule')
+            ? $editionDivision->getRelation('schedule')
+            : $editionDivision->schedule()->first();
+
         return [
             'players_count' => $participations->count(),
             'matches_count' => $matches->count(),
-            'points_per_match' => $editionDivision->points_per_match,
+            'points_per_match' => $schedule?->points_per_match,
             'partners_count' => $partnersCount,
             'partners_count_variation' => $variation,
             'players_met' => $playersMet,
@@ -83,10 +87,10 @@ final class ScheduleBoardMetricsService
             'playing_distribution' => $distribution,
             'template_identity' => [
                 'players' => $participations->count(),
-                'partners' => $editionDivision->player_opponents_nr,
-                'repeat' => $editionDivision->player_matches_repeat,
+                'partners' => $schedule?->player_opponents_nr,
+                'repeat' => $schedule?->player_matches_repeat,
                 'courts' => $courtsCount,
-                'version' => $editionDivision->template_version,
+                'version' => $schedule?->template_version,
             ],
         ];
     }

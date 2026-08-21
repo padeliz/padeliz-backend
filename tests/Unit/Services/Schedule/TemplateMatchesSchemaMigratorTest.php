@@ -7,7 +7,6 @@ namespace Tests\Unit\Services\Schedule;
 use App\Services\Schedule\TemplateMatchesSchemaMigrator;
 use PHPUnit\Framework\TestCase;
 
-
 final class TemplateMatchesSchemaMigratorTest extends TestCase
 {
     public function test_legacy_wrapper_maps_stats_and_wraps_matches(): void

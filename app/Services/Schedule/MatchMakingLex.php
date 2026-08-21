@@ -52,14 +52,14 @@ final class MatchMakingLex
      *     maxPlayingFairnessPenalty?: float,
      *     avgPlayingFairness?: float
      * } $candidate
-     * @param array{
+     * @param null|array{
      *     minOpponentsMet?: int,
      *     meetingsVariation?: float,
      *     minPlayingFairness?: float,
      *     maxPlayingFairnessPenalty?: float,
      *     avgPlayingFairness?: float,
-     *     matches?: array|null
-     * }|null $incumbent
+     *     matches?: null|array
+     * } $incumbent
      * @return int positive when candidate wins, negative when incumbent wins, zero on full tie
      */
     public static function compare(array $candidate, ?array $incumbent): int
@@ -117,8 +117,8 @@ final class MatchMakingLex
     }
 
     /**
-     * @param array{matches?: array|null, ...} $candidate
-     * @param array{matches?: array|null, ...}|null $incumbent
+     * @param array{matches?: null|array, ...} $candidate
+     * @param null|array{matches?: null|array, ...} $incumbent
      */
     public static function isSeedResultBetter(
         array $candidate,
@@ -225,11 +225,11 @@ final class MatchMakingLex
     {
         $byKey = [];
         foreach ($leaves as $leaf) {
-            if (!isset($leaf['matches']) || !is_array($leaf['matches'])) {
+            if (! isset($leaf['matches']) || ! is_array($leaf['matches'])) {
                 continue;
             }
             $key = self::canonicalMatchMultisetKey($leaf['matches']);
-            if (!isset($byKey[$key]) || self::compare($leaf, $byKey[$key]) > 0) {
+            if (! isset($byKey[$key]) || self::compare($leaf, $byKey[$key]) > 0) {
                 $byKey[$key] = $leaf;
             }
         }

@@ -10,7 +10,9 @@ namespace App\Services\Schedule;
 final class CompletedScheduleQualityCalculator
 {
     private PartnersFairnessScorer $partnersFairnessScorer;
+
     private PlayingFairnessScorer $playingFairnessScorer;
+
     private PlayerDistributionScorer $distributionScorer;
 
     public function __construct(
@@ -35,8 +37,8 @@ final class CompletedScheduleQualityCalculator
      *     },
      *     matchMaking: array{
      *         meetingsVariation: float,
-     *         minOpponentsMet: int|null,
-     *         maxOpponentsMet: int|null,
+     *         minOpponentsMet: null|int,
+     *         maxOpponentsMet: null|int,
      *         playersMet: array<int, array<int, int>>,
      *         matchesCount: int,
      *         minPlayingFairness: float,
@@ -48,8 +50,8 @@ final class CompletedScheduleQualityCalculator
      *         avgDistribution: float,
      *         minBreak: int,
      *         maxBreak: int,
-     *         consecutiveMinBreaks: int|null,
-     *         consecutiveMaxBreaks: int|null,
+     *         consecutiveMinBreaks: null|int,
+     *         consecutiveMaxBreaks: null|int,
      *         courtSwitches: int,
      *         courtBalance: float,
      *         roundsCount: int

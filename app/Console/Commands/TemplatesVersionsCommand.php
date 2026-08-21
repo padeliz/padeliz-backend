@@ -39,6 +39,7 @@ final class TemplatesVersionsCommand extends Command
         }
 
         $latestVersion = null;
+
         try {
             $latestVersion = $this->repository->latestVersion();
         } catch (\RuntimeException) {

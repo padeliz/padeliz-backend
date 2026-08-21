@@ -11,9 +11,7 @@ use App\Services\Schedule\Progress\ProgressReporter;
 use App\Services\Schedule\RoundScheduleBreakAnalyzer;
 use App\Services\Schedule\TemplateMatches;
 use App\Services\Schedule\TemplateMatchesGenerator;
-use App\Services\Schedule\TemplateMatchesRepository;
 use PHPUnit\Framework\TestCase;
-
 
 /**
  * Unit tests for the (now backtracking DFS) runOrderingPhase() implementation.
@@ -215,7 +213,7 @@ final class TemplateMatchesGeneratorOrderingTest extends TestCase
         $matches = $this->makeSyntheticMatchesSix();
         $mockPlayers = range(0, 5);
 
-        $first  = $this->invokeOrderingPhase($this->makeGenerator(60_000_000_000), $matches, $mockPlayers);
+        $first = $this->invokeOrderingPhase($this->makeGenerator(60_000_000_000), $matches, $mockPlayers);
         $second = $this->invokeOrderingPhase($this->makeGenerator(60_000_000_000), $matches, $mockPlayers);
 
         $this->assertSame($first['ordered'], $second['ordered']);
@@ -235,7 +233,7 @@ final class TemplateMatchesGeneratorOrderingTest extends TestCase
         // best-so-far, not the PRUNE_INFEASIBLE fallback.
         $tick = 0;
         $clock = static function () use (&$tick): int {
-            return ($tick++);
+            return $tick++;
         };
 
         // Sort budget = 5 ticks. After ~5 recursion entries the deadline check fires.
@@ -325,7 +323,7 @@ final class TemplateMatchesGeneratorOrderingTest extends TestCase
 
         $tiesAtMinBreak = array_values(array_filter(
             $brute['leaves'],
-            static fn(array $leaf): bool => $leaf['minBreak'] === $brute['minBreak']
+            static fn (array $leaf): bool => $leaf['minBreak'] === $brute['minBreak']
         ));
         $this->assertGreaterThanOrEqual(
             2,
@@ -334,7 +332,7 @@ final class TemplateMatchesGeneratorOrderingTest extends TestCase
         );
         $worseMaxBreakLeaves = array_filter(
             $tiesAtMinBreak,
-            static fn(array $leaf): bool => $leaf['maxBreak'] > $brute['maxBreak']
+            static fn (array $leaf): bool => $leaf['maxBreak'] > $brute['maxBreak']
         );
         $this->assertNotEmpty(
             $worseMaxBreakLeaves,
@@ -366,7 +364,7 @@ final class TemplateMatchesGeneratorOrderingTest extends TestCase
 
         $breakTies = array_values(array_filter(
             $brute['leaves'],
-            static fn(array $leaf): bool => $leaf['minBreak'] === $brute['minBreak']
+            static fn (array $leaf): bool => $leaf['minBreak'] === $brute['minBreak']
                 && $leaf['maxBreak'] === $brute['maxBreak']
         ));
         $this->assertGreaterThanOrEqual(2, count($breakTies));
@@ -428,7 +426,7 @@ final class TemplateMatchesGeneratorOrderingTest extends TestCase
         $tickNs = 300_000_000;
         $generator = new TemplateMatchesGenerator(
             static function () use (&$now, $tickNs): int {
-                return ($now += $tickNs);
+                return $now += $tickNs;
             },
             TemplateMatchesGenerator::DEFAULT_OUTER_WALL_BUDGET_NS,
             2_000_000_000,
@@ -462,7 +460,7 @@ final class TemplateMatchesGeneratorOrderingTest extends TestCase
 
         $interimOrdering = array_values(array_filter(
             $events,
-            static fn ($event) => $event instanceof OrderingProgress && !$event->isFinal()
+            static fn ($event) => $event instanceof OrderingProgress && ! $event->isFinal()
         ));
         $finalOrdering = array_values(array_filter(
             $events,
@@ -507,7 +505,7 @@ final class TemplateMatchesGeneratorOrderingTest extends TestCase
 
         $leafInterim = null;
         foreach ($events as $event) {
-            if (!$event instanceof OrderingProgress || $event->isFinal()) {
+            if (! $event instanceof OrderingProgress || $event->isFinal()) {
                 continue;
             }
             if ($event->getBestMin() !== null) {
@@ -693,7 +691,7 @@ final class TemplateMatchesGeneratorOrderingTest extends TestCase
         $repo = $this->productionRepository();
         $version = $this->latestProductionVersion();
         $path = $repo->path($version, 12, 8, 1, 2, false);
-        if (!is_file($path)) {
+        if (! is_file($path)) {
             $this->fail("No template at {$path}; regenerate offline: php bin/console templates:regenerate --players=12 --partners=8 --courts=2");
         }
 
@@ -749,7 +747,7 @@ final class TemplateMatchesGeneratorOrderingTest extends TestCase
     /**
      * @param array<int, array<int, array<int, int>>> $matches
      * @param array<int, int>                         $mockPlayers
-     * @return array{ordered: array, stopReason: string, min: float|null, avg: float|null}
+     * @return array{ordered: array, stopReason: string, min: null|float, avg: null|float}
      */
     private function invokeOrderingPhase(
         TemplateMatchesGenerator $generator,

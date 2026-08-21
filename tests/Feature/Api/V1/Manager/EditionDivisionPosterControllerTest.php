@@ -8,6 +8,7 @@ use App\Models\CachedPdfPairImage;
 use App\Models\EditionDivision;
 use App\Models\EditionDivisionCourt;
 use App\Models\EditionDivisionPoster;
+use App\Models\EditionDivisionSchedule;
 use App\Models\EditionParticipation;
 use App\Models\GameMatch;
 use App\Models\MatchPlayer;
@@ -32,7 +33,9 @@ final class EditionDivisionPosterControllerTest extends TestCase
         Sanctum::actingAs($manager);
         Storage::fake(config('filesystems.user_uploads_disk', 'public'));
 
-        $editionDivision = EditionDivision::factory()->create([
+        $editionDivision = EditionDivision::factory()->create();
+        EditionDivisionSchedule::factory()->create([
+            'edition_division_id' => $editionDivision->id_edition_division,
             'include_scores' => true,
             'final_points_target' => 24,
             'player_opponents_nr' => 3,
@@ -53,7 +56,7 @@ final class EditionDivisionPosterControllerTest extends TestCase
 
         $response = $this->postJson(
             "/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}/posters/ranking",
-            ['organizer' => 1, 'partner' => 1]
+            []
         );
 
         $response->assertOk()
@@ -84,7 +87,7 @@ final class EditionDivisionPosterControllerTest extends TestCase
 
         $response = $this->postJson(
             "/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}/posters/ranking",
-            ['organizer' => 1, 'partner' => 1]
+            []
         );
 
         $response->assertOk()
@@ -100,7 +103,7 @@ final class EditionDivisionPosterControllerTest extends TestCase
 
         $this->postJson(
             "/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}/posters/matches",
-            ['organizer' => 1, 'partner' => 1]
+            []
         )->assertStatus(422)
             ->assertJsonValidationErrors(['court']);
     }
@@ -168,7 +171,7 @@ final class EditionDivisionPosterControllerTest extends TestCase
 
         $this->postJson(
             "/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}/posters/ranking",
-            ['organizer' => 1]
+            []
         )->assertStatus(409);
     }
 
@@ -216,7 +219,7 @@ final class EditionDivisionPosterControllerTest extends TestCase
 
         $response = $this->postJson(
             "/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}/posters/matches",
-            ['court' => $court->id_edition_division_court, 'organizer' => 1, 'partner' => 1]
+            ['court' => $court->id_edition_division_court]
         );
 
         $response->assertOk()
@@ -231,7 +234,7 @@ final class EditionDivisionPosterControllerTest extends TestCase
 
         $this->postJson(
             "/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}/posters/matches",
-            ['court' => $court->id_edition_division_court, 'organizer' => 1, 'partner' => 1]
+            ['court' => $court->id_edition_division_court]
         )->assertStatus(422);
     }
 
@@ -247,7 +250,7 @@ final class EditionDivisionPosterControllerTest extends TestCase
 
         $this->postJson(
             "/api/v1/manager/edition-divisions/{$editionDivision->id_edition_division}/posters/matches",
-            ['court' => $court->id_edition_division_court, 'organizer' => 1, 'partner' => 1]
+            ['court' => $court->id_edition_division_court]
         )->assertOk();
 
         $row = CachedPdfPairImage::query()->first();
@@ -288,6 +291,9 @@ final class EditionDivisionPosterControllerTest extends TestCase
         $manager = Player::factory()->manager()->create(['user_types' => ['player', 'manager']]);
         Sanctum::actingAs($manager);
         $editionDivision = EditionDivision::factory()->create();
+        EditionDivisionSchedule::factory()->create([
+            'edition_division_id' => $editionDivision->id_edition_division,
+        ]);
 
         return [$manager, $editionDivision];
     }

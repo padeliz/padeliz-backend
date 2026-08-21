@@ -6,12 +6,11 @@ namespace Tests\Unit\Services\Schedule;
 
 use App\Services\Schedule\MatchMakingLex;
 use App\Services\Schedule\Progress\GenerationProgress;
-use App\Services\Schedule\Progress\OrderingProgress;
 use App\Services\Schedule\Progress\MatchMakingProgress;
+use App\Services\Schedule\Progress\OrderingProgress;
 use App\Services\Schedule\Progress\PairingProgress;
 use App\Services\Schedule\TemplateMatches;
 use App\Services\Schedule\TemplateMatchesGenerator;
-
 
 /**
  * Behavior-level tests for the pure {@see TemplateMatchesGenerator}.
@@ -165,13 +164,19 @@ final class TemplateMatchesGeneratorTest extends GeneratorTestCase
 
         $this->assertGreaterThanOrEqual(1, count($events));
 
-        $pairingFinals = array_values(array_filter($events, static fn(GenerationProgress $e) =>
+        $pairingFinals = array_values(array_filter(
+            $events,
+            static fn (GenerationProgress $e) =>
             $e instanceof PairingProgress && $e->isFinal()
         ));
-        $matchMakingFinals = array_values(array_filter($events, static fn(GenerationProgress $e) =>
+        $matchMakingFinals = array_values(array_filter(
+            $events,
+            static fn (GenerationProgress $e) =>
             $e instanceof MatchMakingProgress && $e->isFinal()
         ));
-        $orderingFinals = array_values(array_filter($events, static fn(GenerationProgress $e) =>
+        $orderingFinals = array_values(array_filter(
+            $events,
+            static fn (GenerationProgress $e) =>
             $e instanceof OrderingProgress && $e->isFinal()
         ));
 
@@ -209,13 +214,19 @@ final class TemplateMatchesGeneratorTest extends GeneratorTestCase
     {
         $events = $this->capturePipelineEvents(new TemplateMatchesGenerator(), 4, 2, 1, true);
 
-        $pairingFinals = array_values(array_filter($events, static fn(GenerationProgress $e) =>
+        $pairingFinals = array_values(array_filter(
+            $events,
+            static fn (GenerationProgress $e) =>
             $e instanceof PairingProgress && $e->isFinal()
         ));
-        $matchMakingFinals = array_values(array_filter($events, static fn(GenerationProgress $e) =>
+        $matchMakingFinals = array_values(array_filter(
+            $events,
+            static fn (GenerationProgress $e) =>
             $e instanceof MatchMakingProgress && $e->isFinal()
         ));
-        $orderingFinals = array_values(array_filter($events, static fn(GenerationProgress $e) =>
+        $orderingFinals = array_values(array_filter(
+            $events,
+            static fn (GenerationProgress $e) =>
             $e instanceof OrderingProgress && $e->isFinal()
         ));
 
@@ -259,8 +270,10 @@ final class TemplateMatchesGeneratorTest extends GeneratorTestCase
             $events[] = $event;
         });
 
-        $pairingNonFinals = array_values(array_filter($events, static fn(GenerationProgress $e) =>
-            $e instanceof PairingProgress && !$e->isFinal()
+        $pairingNonFinals = array_values(array_filter(
+            $events,
+            static fn (GenerationProgress $e) =>
+            $e instanceof PairingProgress && ! $e->isFinal()
         ));
 
         $this->assertGreaterThan(1, count($pairingNonFinals), 'Expected at least a couple of interim emits');
@@ -366,7 +379,9 @@ final class TemplateMatchesGeneratorTest extends GeneratorTestCase
     {
         $events = $this->capturePipelineEvents(new TemplateMatchesGenerator(), 4, 2, 1, false);
 
-        $pairingEvents = array_values(array_filter($events, static fn(GenerationProgress $e) =>
+        $pairingEvents = array_values(array_filter(
+            $events,
+            static fn (GenerationProgress $e) =>
             $e instanceof PairingProgress
         ));
 
@@ -392,16 +407,18 @@ final class TemplateMatchesGeneratorTest extends GeneratorTestCase
             $events[] = $event;
         });
 
-        $pairingEvents = array_values(array_filter($events, static fn(GenerationProgress $e) =>
+        $pairingEvents = array_values(array_filter(
+            $events,
+            static fn (GenerationProgress $e) =>
             $e instanceof PairingProgress
         ));
 
         $this->assertNotEmpty($pairingEvents);
 
-        $totals = array_unique(array_map(static fn(PairingProgress $e) => $e->getTotalSeeds(), $pairingEvents));
+        $totals = array_unique(array_map(static fn (PairingProgress $e) => $e->getTotalSeeds(), $pairingEvents));
         $this->assertSame([4], array_values($totals), 'Every pairing event must report the same totalSeeds');
 
-        $finals = array_values(array_filter($pairingEvents, static fn(PairingProgress $e) => $e->isFinal()));
+        $finals = array_values(array_filter($pairingEvents, static fn (PairingProgress $e) => $e->isFinal()));
         $this->assertCount(1, $finals, 'Multi-seed must still emit exactly one pairing-final per pipeline run');
         /** @var PairingProgress $final */
         $final = $finals[0];
@@ -423,7 +440,9 @@ final class TemplateMatchesGeneratorTest extends GeneratorTestCase
             $events[] = $event;
         });
 
-        $pairingEvents = array_values(array_filter($events, static fn(GenerationProgress $e) =>
+        $pairingEvents = array_values(array_filter(
+            $events,
+            static fn (GenerationProgress $e) =>
             $e instanceof PairingProgress
         ));
 
@@ -880,6 +899,7 @@ final class TemplateMatchesGeneratorTest extends GeneratorTestCase
         $clock = static function () use (&$tick): int {
             $val = $tick;
             $tick = $tick === 0 ? 1_000_000_000 : $tick;
+
             return $val;
         };
 
@@ -934,7 +954,9 @@ final class TemplateMatchesGeneratorTest extends GeneratorTestCase
             $events[] = $event;
         });
 
-        $pairingFinals = array_values(array_filter($events, static fn(GenerationProgress $e) =>
+        $pairingFinals = array_values(array_filter(
+            $events,
+            static fn (GenerationProgress $e) =>
             $e instanceof PairingProgress && $e->isFinal()
         ));
         $this->assertCount(1, $pairingFinals);
@@ -952,7 +974,9 @@ final class TemplateMatchesGeneratorTest extends GeneratorTestCase
             $events[] = $event;
         });
 
-        $pairingFinals = array_values(array_filter($events, static fn(GenerationProgress $e) =>
+        $pairingFinals = array_values(array_filter(
+            $events,
+            static fn (GenerationProgress $e) =>
             $e instanceof PairingProgress && $e->isFinal()
         ));
         $this->assertCount(1, $pairingFinals);
@@ -1027,7 +1051,7 @@ final class TemplateMatchesGeneratorTest extends GeneratorTestCase
      */
     private function stripWallClockFields(array $data): array
     {
-        if (!isset($data['metrics']) || !is_array($data['metrics'])) {
+        if (! isset($data['metrics']) || ! is_array($data['metrics'])) {
             return $data;
         }
 
@@ -1038,8 +1062,8 @@ final class TemplateMatchesGeneratorTest extends GeneratorTestCase
         }
 
         foreach (['matchMaking', 'ordering'] as $phase) {
-            if (!isset($data['metrics'][$phase]['stats']['relaxAttempts'])
-                || !is_array($data['metrics'][$phase]['stats']['relaxAttempts'])
+            if (! isset($data['metrics'][$phase]['stats']['relaxAttempts'])
+                || ! is_array($data['metrics'][$phase]['stats']['relaxAttempts'])
             ) {
                 continue;
             }
@@ -1056,7 +1080,7 @@ final class TemplateMatchesGeneratorTest extends GeneratorTestCase
 
     /**
      * @param array<int, array{players: array{0:int,1:int}, used: bool}> $orderedPairs
-     * @return array{candidate: array<string, mixed>, nodesExplored: int}|null
+     * @return null|array{candidate: array<string, mixed>, nodesExplored: int}
      */
     private function invokeBuildTemplateByBacktracking(
         array $orderedPairs,
@@ -1104,4 +1128,3 @@ final class TemplateMatchesGeneratorTest extends GeneratorTestCase
         ];
     }
 }
-

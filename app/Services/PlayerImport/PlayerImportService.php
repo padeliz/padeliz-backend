@@ -83,6 +83,7 @@ final class PlayerImportService
         $formatKey = (string) ($payload['format'] ?? '');
         if ($this->registry->byKey($formatKey) === null) {
             $supported = implode(', ', $this->registry->formatKeys()) ?: 'playtomic';
+
             throw new PlayerImportFailedException(
                 'Unknown format. Supported: ' . $supported . '.',
                 ['format' => ['Unknown format. Supported: ' . $supported . '.']],
@@ -254,7 +255,7 @@ final class PlayerImportService
     }
 
     /**
-     * @param  list<string|null>  $data
+     * @param  list<null|string>  $data
      */
     private function isEmptyCsvLine(array $data): bool
     {
@@ -386,6 +387,7 @@ final class PlayerImportService
             foreach ($errors as $key => $messages) {
                 $errors[$key] = array_values(array_unique($messages));
             }
+
             throw new PlayerImportFailedException('Validation failed', $errors);
         }
     }

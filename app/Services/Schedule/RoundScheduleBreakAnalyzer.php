@@ -15,7 +15,7 @@ final class RoundScheduleBreakAnalyzer
     /**
      * @param array<int, array<int, array<int, array<int, int>>>> $matchesByCourt
      * @param array<int, int>                                     $playerIndices
-     * @return array{consecutiveMinBreaks: int|null, consecutiveMaxBreaks: int|null}
+     * @return array{consecutiveMinBreaks: null|int, consecutiveMaxBreaks: null|int}
      */
     public static function analyze(
         array $matchesByCourt,
@@ -80,7 +80,7 @@ final class RoundScheduleBreakAnalyzer
     /**
      * Upper bound on final minBreak from locked (non-null) shortestInner values only.
      *
-     * @param array<int, int|null> $shortestInner
+     * @param array<int, null|int> $shortestInner
      */
     public static function minBreakUpperBound(array $shortestInner): ?int
     {
@@ -126,12 +126,12 @@ final class RoundScheduleBreakAnalyzer
     /**
      * Lex-implied mid-search prune on minBreak / maxBreak vs incumbent (no deferral).
      *
-     * @param array<int, int|null> $shortestInner
+     * @param array<int, null|int> $shortestInner
      * @param array<int, int>      $longestRuns
      * @param array{
      *     ordered: mixed,
-     *     minBreak: int|null,
-     *     maxBreak: int|null
+     *     minBreak: null|int,
+     *     maxBreak: null|int
      * } $bestState
      */
     public static function shouldPrunePartialBreakBounds(
@@ -175,15 +175,15 @@ final class RoundScheduleBreakAnalyzer
      * @param array<int, array<int, array<int, array<int, int>>>> $matchesByCourt
      * @param array<int, int>                                     $playerIndices
      * @param array<int, bool>                                    $playedAtLeastOnce
-     * @param array<int, int|null>                                $shortestInner
+     * @param array<int, null|int>                                $shortestInner
      * @param array<int, int>                                     $longestRuns
-     * @param array{
+     * @param null|array{
      *     ordered: mixed,
-     *     minBreak: int|null,
-     *     maxBreak: int|null,
+     *     minBreak: null|int,
+     *     maxBreak: null|int,
      *     consecutiveMinBreaks: int,
      *     consecutiveMaxBreaks: int
-     * }|null $bestState
+     * } $bestState
      */
     public static function shouldPrunePartialConsecutiveMinBreaks(
         array $matchesByCourt,
@@ -199,7 +199,7 @@ final class RoundScheduleBreakAnalyzer
         $playedPlayers = [];
         $innerBreaks = [];
         foreach ($playerIndices as $player) {
-            if (!($playedAtLeastOnce[$player] ?? false)) {
+            if (! ($playedAtLeastOnce[$player] ?? false)) {
                 continue;
             }
             $playedPlayers[] = (int) $player;
@@ -406,7 +406,7 @@ final class RoundScheduleBreakAnalyzer
     private static function playerPlaysRound(array $matchesByCourt, int $player, int $round): bool
     {
         foreach ($matchesByCourt as $courtRounds) {
-            if (!isset($courtRounds[$round])) {
+            if (! isset($courtRounds[$round])) {
                 continue;
             }
             $match = $courtRounds[$round];

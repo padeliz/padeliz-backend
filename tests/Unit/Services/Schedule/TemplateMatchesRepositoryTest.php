@@ -23,7 +23,7 @@ final class TemplateMatchesRepositoryTest extends TestCase
             . DIRECTORY_SEPARATOR
             . 'padel-template-matches-test-'
             . bin2hex(random_bytes(4));
-        if (!mkdir($this->tempBaseDir, 0775, true) && !is_dir($this->tempBaseDir)) {
+        if (! mkdir($this->tempBaseDir, 0775, true) && ! is_dir($this->tempBaseDir)) {
             $this->fail("Could not create temp dir: {$this->tempBaseDir}");
         }
     }
@@ -73,7 +73,7 @@ final class TemplateMatchesRepositoryTest extends TestCase
         $version = $this->allocVersion();
 
         $path = $repo->path($version, 8, 4, 1, 1, false);
-        if (!is_dir(dirname($path))) {
+        if (! is_dir(dirname($path))) {
             mkdir(dirname($path), 0775, true);
         }
         file_put_contents($path, 'not-json{');
@@ -204,7 +204,7 @@ final class TemplateMatchesRepositoryTest extends TestCase
 
         $foreign = $this->makeTemplate(8, 2, 1, false);
         $foreignPath = $repo->path($version, 12, 8, 1, 1, false);
-        if (!is_dir(dirname($foreignPath))) {
+        if (! is_dir(dirname($foreignPath))) {
             mkdir(dirname($foreignPath), 0775, true);
         }
         file_put_contents(
@@ -234,7 +234,7 @@ final class TemplateMatchesRepositoryTest extends TestCase
         ];
 
         $path = $repo->path($version, 8, 4, 1, 1, false);
-        if (!is_dir(dirname($path))) {
+        if (! is_dir(dirname($path))) {
             mkdir(dirname($path), 0775, true);
         }
         file_put_contents($path, json_encode($legacyShape));
@@ -415,7 +415,7 @@ final class TemplateMatchesRepositoryTest extends TestCase
         $versions = $repo->listVersions();
         $compatibleVersions = array_values(array_filter(
             $versions,
-            static fn(array $entry): bool => $entry['isCompatible'] && $entry['version'] !== null
+            static fn (array $entry): bool => $entry['isCompatible'] && $entry['version'] !== null
         ));
 
         $this->assertSame(
@@ -606,7 +606,7 @@ final class TemplateMatchesRepositoryTest extends TestCase
 
     private function removeDirRecursive(string $dir): void
     {
-        if (!is_dir($dir)) {
+        if (! is_dir($dir)) {
             return;
         }
 

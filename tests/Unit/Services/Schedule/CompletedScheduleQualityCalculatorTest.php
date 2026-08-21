@@ -9,7 +9,6 @@ use App\Services\Schedule\CourtScheduleMetrics;
 use App\Services\Schedule\TemplateMatchDerivation;
 use PHPUnit\Framework\TestCase;
 
-
 final class CompletedScheduleQualityCalculatorTest extends TestCase
 {
     public function test_rounds_count_is_time_slots_not_total_matches(): void

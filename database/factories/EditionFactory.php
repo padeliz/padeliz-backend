@@ -16,7 +16,7 @@ class EditionFactory extends Factory
     public function definition()
     {
         return [
-            'name' => '#' . $this->faker->unique()->numberBetween(1, 1000),
+            'name' => '#' . $this->faker->unique()->numberBetween(1, 1000000),
             'date' => $this->faker->dateTimeBetween('-1 year', '+3 months')->format('Y-m-d'),
             'location_id' => Location::factory(),
             'entry_fee' => 55,

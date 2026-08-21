@@ -73,7 +73,7 @@ SQL,
             $sampleSelectParts = [];
             foreach ($columns as $column) {
                 if (($columnTypes[$column] ?? '') === 'text') {
-                    $groupExprs[] = "LOWER(CONVERT(`{$column}` USING utf8mb4) COLLATE ".self::TARGET_COLLATION.')';
+                    $groupExprs[] = "LOWER(CONVERT(`{$column}` USING utf8mb4) COLLATE " . self::TARGET_COLLATION . ')';
                     $sampleSelectParts[] = "MIN(`{$column}`) AS `{$column}`";
                 } else {
                     $groupExprs[] = "`{$column}`";
@@ -109,7 +109,7 @@ SQL,
             foreach ($rows as $row) {
                 $parts = [];
                 foreach ($columns as $column) {
-                    $parts[] = "{$column}=".((string) ($row->{$column} ?? ''));
+                    $parts[] = "{$column}=" . ((string) ($row->{$column} ?? ''));
                 }
                 $samples[] = implode(', ', $parts);
             }
@@ -128,7 +128,7 @@ SQL,
 
     /**
      * @param  list<string>  $columns
-     * @return array<string, 'text'|'other'>
+     * @return array<string, 'other'|'text'>
      */
     private function columnTypes(
         string $connection,
@@ -166,10 +166,10 @@ SQL,
     public function formatCollisionReport(array $collisions): string
     {
         if ($collisions === []) {
-            return 'No UNIQUE index collisions detected under '.self::TARGET_COLLATION.'.';
+            return 'No UNIQUE index collisions detected under ' . self::TARGET_COLLATION . '.';
         }
 
-        $lines = ['UNIQUE index collisions detected under '.self::TARGET_COLLATION.':'];
+        $lines = ['UNIQUE index collisions detected under ' . self::TARGET_COLLATION . ':'];
         foreach ($collisions as $collision) {
             $lines[] = sprintf(
                 '- %s.%s (%s): %d collision group(s); sample: %s',

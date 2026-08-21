@@ -9,6 +9,7 @@ use App\Models\Division;
 use App\Models\Edition;
 use App\Models\EditionDivision;
 use App\Models\EditionDivisionCourt;
+use App\Models\EditionDivisionSchedule;
 use App\Models\EditionDivisionStanding;
 use App\Models\EditionParticipation;
 use App\Models\GameMatch;
@@ -25,6 +26,8 @@ class EditionDivisionScheduleControllerTest extends TestCase
     private Player $manager;
 
     private EditionDivision $editionDivision;
+
+    private EditionDivisionSchedule $schedule;
 
     /** @var list<EditionParticipation> */
     private array $participations = [];
@@ -48,6 +51,10 @@ class EditionDivisionScheduleControllerTest extends TestCase
             'players_limit' => 8,
             'playing_start_time' => '14:00:00',
             'playing_end_time' => '17:00:00',
+        ]);
+
+        $this->schedule = EditionDivisionSchedule::factory()->create([
+            'edition_division_id' => $this->editionDivision->id_edition_division,
             'player_opponents_nr' => 4,
             'player_matches_repeat' => 1,
             'include_final' => false,
@@ -103,7 +110,7 @@ class EditionDivisionScheduleControllerTest extends TestCase
             ->where('match_kind', 'REGULAR')
             ->count());
 
-        $this->assertNotNull($this->editionDivision->fresh()->points_per_match);
+        $this->assertNotNull($this->schedule->fresh()->points_per_match);
     }
 
     public function test_generate_can_persist_points_above_signed_tinyint(): void
@@ -112,9 +119,12 @@ class EditionDivisionScheduleControllerTest extends TestCase
 
         $edId = $this->editionDivision->id_edition_division;
 
-        $this->putJson("/api/v1/manager/edition-divisions/{$edId}/schedule/form", [
+        $this->editionDivision->update([
             'playing_start_time' => '10:00:00',
             'playing_end_time' => '24:00:00',
+        ]);
+
+        $this->putJson("/api/v1/manager/edition-divisions/{$edId}/schedule/form", [
             'final_points_target' => 200,
             'participation_ids' => array_map(
                 static fn (EditionParticipation $p): int => (int) $p->id_participation,
@@ -123,7 +133,7 @@ class EditionDivisionScheduleControllerTest extends TestCase
             'court_ids' => [$this->court->id_court],
         ])->assertOk();
 
-        $this->assertSame(200, (int) $this->editionDivision->fresh()->final_points_target);
+        $this->assertSame(200, (int) $this->schedule->fresh()->final_points_target);
 
         $response = $this->postJson(
             "/api/v1/manager/edition-divisions/{$edId}/schedule/generate",
@@ -134,7 +144,7 @@ class EditionDivisionScheduleControllerTest extends TestCase
         $ppm = (int) $response->json('data.points_per_match');
         $this->assertGreaterThan(127, $ppm, '14h window should yield points_per_match > 127');
 
-        $this->assertSame($ppm, (int) $this->editionDivision->fresh()->points_per_match);
+        $this->assertSame($ppm, (int) $this->schedule->fresh()->points_per_match);
         $this->assertSame(
             $ppm,
             (int) GameMatch::query()
@@ -305,20 +315,15 @@ class EditionDivisionScheduleControllerTest extends TestCase
         }
     }
 
-    public function test_schedule_form_persists_end_of_day_playing_end(): void
+    public function test_edition_division_persists_end_of_day_playing_end(): void
     {
         Sanctum::actingAs($this->manager);
 
         $edId = $this->editionDivision->id_edition_division;
 
-        $this->putJson("/api/v1/manager/edition-divisions/{$edId}/schedule/form", [
+        $this->patchJson("/api/v1/manager/edition-divisions/{$edId}", [
             'playing_start_time' => '18:00',
             'playing_end_time' => '24:00',
-            'participation_ids' => array_map(
-                static fn (EditionParticipation $p): int => (int) $p->id_participation,
-                $this->participations
-            ),
-            'court_ids' => [$this->court->id_court],
         ])->assertOk();
 
         $fresh = $this->editionDivision->fresh();
@@ -328,6 +333,60 @@ class EditionDivisionScheduleControllerTest extends TestCase
         $this->getJson("/api/v1/manager/edition-divisions/{$edId}")
             ->assertOk()
             ->assertJsonPath('data.playing_end_time', '24:00:00');
+    }
+
+    public function test_schedule_form_rejects_playing_times(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $edId = $this->editionDivision->id_edition_division;
+
+        $this->putJson("/api/v1/manager/edition-divisions/{$edId}/schedule/form", [
+            'playing_start_time' => '18:00',
+        ])->assertStatus(422);
+
+        $this->putJson("/api/v1/manager/edition-divisions/{$edId}/schedule/form", [
+            'playing_end_time' => '24:00',
+        ])->assertStatus(422);
+    }
+
+    public function test_schedule_form_rejects_adjust_outside_allowed_values(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $edId = $this->editionDivision->id_edition_division;
+
+        $this->putJson("/api/v1/manager/edition-divisions/{$edId}/schedule/form", [
+            'adjust' => 3,
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['adjust']);
+
+        $this->putJson("/api/v1/manager/edition-divisions/{$edId}/schedule/form", [
+            'adjust' => -4,
+        ])->assertOk();
+
+        $this->assertSame(-4, (int) $this->schedule->fresh()->adjust);
+    }
+
+    public function test_schedule_form_persists_knobs_on_schedule_row(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $edId = $this->editionDivision->id_edition_division;
+
+        $this->putJson("/api/v1/manager/edition-divisions/{$edId}/schedule/form", [
+            'include_scores' => false,
+            'allow_replacements' => false,
+            'final_points_target' => 32,
+        ])->assertOk()
+            ->assertJsonPath('data.schedule.include_scores', false)
+            ->assertJsonPath('data.schedule.allow_replacements', false)
+            ->assertJsonPath('data.schedule.final_points_target', 32);
+
+        $fresh = $this->schedule->fresh();
+        $this->assertFalse((bool) $fresh->include_scores);
+        $this->assertFalse((bool) $fresh->allow_replacements);
+        $this->assertSame(32, (int) $fresh->final_points_target);
     }
 
     public function test_schedule_form_without_participation_keys_leaves_order_and_collecting(): void
@@ -347,8 +406,6 @@ class EditionDivisionScheduleControllerTest extends TestCase
         ]);
 
         $this->putJson("/api/v1/manager/edition-divisions/{$edId}/schedule/form", [
-            'playing_start_time' => '15:00',
-            'playing_end_time' => '18:00',
             'court_ids' => [$this->court->id_court],
         ])->assertOk();
 
@@ -366,12 +423,14 @@ class EditionDivisionScheduleControllerTest extends TestCase
 
         $edId = $this->editionDivision->id_edition_division;
 
+        $this->editionDivision->update([
+            'playing_start_time' => '18:00:00',
+            'playing_end_time' => '00:00:00',
+        ]);
+
         $overnight = $this->postJson(
             "/api/v1/manager/edition-divisions/{$edId}/schedule/preview",
-            [
-                'playing_start_time' => '18:00',
-                'playing_end_time' => '00:00',
-            ]
+            []
         );
 
         $overnight->assertStatus(200)
@@ -380,12 +439,14 @@ class EditionDivisionScheduleControllerTest extends TestCase
         $this->assertStringNotContainsString('PT-', (string) $overnight->json('message'));
         $this->assertStringNotContainsString('Unknown or bad format', (string) json_encode($overnight->json()));
 
+        $this->editionDivision->update([
+            'playing_start_time' => '18:00:00',
+            'playing_end_time' => '24:00:00',
+        ]);
+
         $endOfDay = $this->postJson(
             "/api/v1/manager/edition-divisions/{$edId}/schedule/preview",
-            [
-                'playing_start_time' => '18:00',
-                'playing_end_time' => '24:00:00',
-            ]
+            []
         );
 
         $endOfDay->assertStatus(200)
@@ -397,7 +458,7 @@ class EditionDivisionScheduleControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $this->assertNull($this->editionDivision->fresh()->template_version);
+        $this->assertNull($this->schedule->fresh()->template_version);
 
         $response = $this->postJson(
             "/api/v1/manager/edition-divisions/{$this->editionDivision->id_edition_division}/schedule/generate",
@@ -407,14 +468,14 @@ class EditionDivisionScheduleControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJsonPath('success', true);
 
-        $version = data_get($response->json(), 'data.edition_division.template_version');
+        $version = data_get($response->json(), 'data.schedule.template_version');
         $this->assertNotNull($version);
-        $this->assertSame((int) $version, (int) $this->editionDivision->fresh()->template_version);
+        $this->assertSame((int) $version, (int) $this->schedule->fresh()->template_version);
 
         $this->getJson(
             "/api/v1/manager/edition-divisions/{$this->editionDivision->id_edition_division}/schedule"
         )->assertOk()
-            ->assertJsonPath('data.edition_division.template_version', (int) $version);
+            ->assertJsonPath('data.schedule.template_version', (int) $version);
     }
 
     public function test_destroy_schedule_nulls_template_version(): void
@@ -426,13 +487,14 @@ class EditionDivisionScheduleControllerTest extends TestCase
             []
         )->assertStatus(200);
 
-        $this->assertNotNull($this->editionDivision->fresh()->template_version);
+        $this->assertNotNull($this->schedule->fresh()->template_version);
 
         $this->deleteJson(
             "/api/v1/manager/edition-divisions/{$this->editionDivision->id_edition_division}/schedule"
         )->assertStatus(200);
 
-        $this->assertNull($this->editionDivision->fresh()->template_version);
+        $this->assertNull($this->schedule->fresh()->template_version);
+        $this->assertNotNull($this->editionDivision->fresh()->schedule);
     }
 
     public function test_schedule_show_includes_board_metrics_without_players_board(): void

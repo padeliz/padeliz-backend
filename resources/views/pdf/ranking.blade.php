@@ -11,8 +11,10 @@
     <tr>
         <td colspan="2" style="text-align: left; vertical-align: bottom;">
             <div>
-                <img style="max-width: 100%; width: 280px; max-height: 80px;" src="{{ $organizer_image }}" />
-                @if ($organizer_id == 1)
+                @if ($organizer_image)
+                    <img style="max-width: 100%; width: 280px; max-height: 80px;" src="{{ $organizer_image }}" />
+                @endif
+                @if ($show_edition_label)
                     <span style="font-size: 40px;">&nbsp;</span>
                     <b style="font-family: sans; font-size: 40px; color: #a9d78b;">
                         @if (is_numeric($edition_label))#@endif<span style="color: #7ab857;">{{ $edition_label }}</span>
@@ -31,7 +33,9 @@
             @endif
         </td>
         <td colspan="2" style="text-align: right; vertical-align: bottom;">
-            <img style="max-width: 100%; max-height: 55px;" src="{{ $partner_image }}" />
+            @if ($club_host_image)
+                <img style="max-width: 100%; max-height: 55px;" src="{{ $club_host_image }}" />
+            @endif
         </td>
     </tr>
 </table>

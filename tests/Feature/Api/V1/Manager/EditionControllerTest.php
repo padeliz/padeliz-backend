@@ -7,7 +7,10 @@ namespace Tests\Feature\Api\V1\Manager;
 use App\Models\Club;
 use App\Models\Division;
 use App\Models\Edition;
+use App\Models\EditionDivision;
+use App\Models\EditionDivisionPoster;
 use App\Models\Location;
+use App\Models\Organizer;
 use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -270,6 +273,130 @@ class EditionControllerTest extends TestCase
 
         $response->assertStatus(422)
             ->assertJsonValidationErrors(['name', 'date']);
+    }
+
+    public function test_edition_creation_defaults_branding(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->postJson('/api/v1/manager/editions', [
+            'name' => 'Branding Defaults',
+            'date' => now()->addDays(5)->format('Y-m-d'),
+            'location_id' => $this->location->id_location,
+            'arriving_time' => '09:00:00',
+            'closing_time' => '18:00:00',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.organizer_id', null)
+            ->assertJsonPath('data.include_club_host_on_pdf', true);
+
+        $this->assertDatabaseHas('editions', [
+            'id_edition' => $response->json('data.id_edition'),
+            'organizer_id' => null,
+            'include_club_host_on_pdf' => 1,
+        ]);
+    }
+
+    public function test_manager_can_create_edition_with_branding(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $organizer = Organizer::factory()->create(['name' => 'Branding Tour']);
+
+        $response = $this->postJson('/api/v1/manager/editions', [
+            'name' => 'Branded Edition',
+            'date' => now()->addDays(5)->format('Y-m-d'),
+            'location_id' => $this->location->id_location,
+            'organizer_id' => $organizer->id_organizer,
+            'include_club_host_on_pdf' => false,
+            'arriving_time' => '09:00:00',
+            'closing_time' => '18:00:00',
+        ]);
+
+        $response->assertStatus(201)
+            ->assertJsonPath('data.organizer_id', $organizer->id_organizer)
+            ->assertJsonPath('data.include_club_host_on_pdf', false)
+            ->assertJsonPath('data.organizer.name', 'Branding Tour');
+    }
+
+    public function test_edition_branding_rejects_unknown_organizer(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $this->patchJson("/api/v1/manager/editions/{$this->edition->id_edition}", [
+            'organizer_id' => 99999,
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['organizer_id']);
+    }
+
+    public function test_manager_can_patch_edition_branding(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $organizer = Organizer::factory()->create();
+
+        $this->patchJson("/api/v1/manager/editions/{$this->edition->id_edition}", [
+            'organizer_id' => $organizer->id_organizer,
+            'include_club_host_on_pdf' => false,
+        ])->assertStatus(200)
+            ->assertJsonPath('data.organizer_id', $organizer->id_organizer)
+            ->assertJsonPath('data.include_club_host_on_pdf', false)
+            ->assertJsonPath('data.organizer.id_organizer', $organizer->id_organizer);
+
+        $this->patchJson("/api/v1/manager/editions/{$this->edition->id_edition}", [
+            'organizer_id' => null,
+        ])->assertStatus(200)
+            ->assertJsonPath('data.organizer_id', null);
+
+        $this->assertDatabaseHas('editions', [
+            'id_edition' => $this->edition->id_edition,
+            'organizer_id' => null,
+            'include_club_host_on_pdf' => 0,
+        ]);
+    }
+
+    public function test_edition_branding_is_patchable_after_finalize(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $organizer = Organizer::factory()->create();
+        $edition = Edition::factory()->create([
+            'location_id' => $this->location->id_location,
+            'finalized_at' => time(),
+        ]);
+
+        $this->patchJson("/api/v1/manager/editions/{$edition->id_edition}", [
+            'organizer_id' => $organizer->id_organizer,
+            'include_club_host_on_pdf' => false,
+        ])->assertStatus(200)
+            ->assertJsonPath('data.organizer_id', $organizer->id_organizer)
+            ->assertJsonPath('data.include_club_host_on_pdf', false);
+    }
+
+    public function test_edition_branding_change_keeps_generated_posters(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $organizer = Organizer::factory()->create();
+        $editionDivision = EditionDivision::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+        ]);
+
+        $poster = new EditionDivisionPoster();
+        $poster->edition_division_id = $editionDivision->id_edition_division;
+        $poster->poster_kind = 'RANKING';
+        $poster->inserted_at = time();
+        $poster->save();
+        $poster->generated_path = 'edition-division-posters/' . $poster->id_edition_division_poster . '/generated/ranking.pdf';
+        $poster->save();
+
+        $this->patchJson("/api/v1/manager/editions/{$this->edition->id_edition}", [
+            'organizer_id' => $organizer->id_organizer,
+            'include_club_host_on_pdf' => false,
+        ])->assertStatus(200);
+
+        $this->assertNotNull($poster->fresh()->generated_path);
     }
 
     public function test_manager_can_create_edition_with_overnight_and_end_of_day_closing(): void

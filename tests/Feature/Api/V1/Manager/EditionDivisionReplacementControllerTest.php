@@ -10,6 +10,7 @@ use App\Models\Edition;
 use App\Models\EditionDivision;
 use App\Models\EditionDivisionCourt;
 use App\Models\EditionDivisionReplacement;
+use App\Models\EditionDivisionSchedule;
 use App\Models\EditionParticipation;
 use App\Models\GameMatch;
 use App\Models\MatchPlayer;
@@ -28,6 +29,8 @@ class EditionDivisionReplacementControllerTest extends TestCase
     private Edition $edition;
 
     private EditionDivision $editionDivision;
+
+    private EditionDivisionSchedule $schedule;
 
     /** @var list<EditionParticipation> */
     private array $participations = [];
@@ -48,6 +51,10 @@ class EditionDivisionReplacementControllerTest extends TestCase
         $this->editionDivision = EditionDivision::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'division_id' => $division->id_division,
+        ]);
+
+        $this->schedule = EditionDivisionSchedule::factory()->create([
+            'edition_division_id' => $this->editionDivision->id_edition_division,
             'allow_replacements' => true,
         ]);
 
@@ -183,7 +190,7 @@ class EditionDivisionReplacementControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $this->editionDivision->update(['allow_replacements' => false]);
+        $this->schedule->update(['allow_replacements' => false]);
         $edId = $this->editionDivision->id_edition_division;
 
         $this->postJson("/api/v1/manager/edition-divisions/{$edId}/replacements", [
@@ -225,8 +232,11 @@ class EditionDivisionReplacementControllerTest extends TestCase
         $otherEd = EditionDivision::factory()->create([
             'edition_id' => $this->edition->id_edition,
             'division_id' => $otherDivision->id_division,
-            'allow_replacements' => true,
             'division_title' => 'Other ED',
+        ]);
+        EditionDivisionSchedule::factory()->create([
+            'edition_division_id' => $otherEd->id_edition_division,
+            'allow_replacements' => true,
         ]);
 
         $edId = $this->editionDivision->id_edition_division;
@@ -461,7 +471,7 @@ class EditionDivisionReplacementControllerTest extends TestCase
         ]);
         $id = (int) $create->json('data.id_replacement');
 
-        $this->editionDivision->update(['allow_replacements' => false]);
+        $this->schedule->update(['allow_replacements' => false]);
 
         $this->patchJson("/api/v1/manager/edition-division-replacements/{$id}", [
             'match_id' => $this->match->id_match,
@@ -478,7 +488,7 @@ class EditionDivisionReplacementControllerTest extends TestCase
         ]);
         $id = (int) $create->json('data.id_replacement');
 
-        $this->editionDivision->update(['allow_replacements' => false]);
+        $this->schedule->update(['allow_replacements' => false]);
 
         $this->deleteJson("/api/v1/manager/edition-division-replacements/{$id}")
             ->assertOk();
@@ -487,4 +497,3 @@ class EditionDivisionReplacementControllerTest extends TestCase
         ]);
     }
 }
-

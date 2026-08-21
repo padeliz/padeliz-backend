@@ -12,9 +12,7 @@ use App\Models\PlayerEmail;
 use App\Models\PlayerPhone;
 use App\Models\PlayerProfileImage;
 use Illuminate\Http\Request;
-use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Log;
-use Illuminate\Support\Facades\Storage;
 
 /**
  * @OA\Tag(

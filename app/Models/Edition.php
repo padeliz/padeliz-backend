@@ -30,6 +30,22 @@ use Illuminate\Database\Eloquent\Model;
  *         description="Location of the edition"
  *     ),
  *     @OA\Property(
+ *         property="organizer_id",
+ *         type="integer",
+ *         format="int64",
+ *         minimum=1,
+ *         nullable=true,
+ *         title="Organizer",
+ *         description="Organizer whose logo brands the edition posters"
+ *     ),
+ *     @OA\Property(
+ *         property="include_club_host_on_pdf",
+ *         type="boolean",
+ *         title="Include Club Host On PDF",
+ *         description="Whether posters show the hosting club logo",
+ *         example=true
+ *     ),
+ *     @OA\Property(
  *         property="name",
  *         type="string",
  *         maxLength=25,
@@ -98,6 +114,13 @@ use Illuminate\Database\Eloquent\Model;
  *         nullable=true
  *     ),
  *     @OA\Property(
+ *         property="organizer",
+ *         ref="#/components/schemas/Organizer",
+ *         title="Organizer",
+ *         description="Related organizer object",
+ *         nullable=true
+ *     ),
+ *     @OA\Property(
  *         property="divisions",
  *         type="array",
  *         @OA\Items(ref="#/components/schemas/EditionDivision"),
@@ -140,6 +163,7 @@ class Edition extends Model
      */
     public static array $filterableFields = [
         'location_id',
+        'organizer_id',
         'entry_fee',
         'students_entry_fee',
     ];
@@ -152,6 +176,7 @@ class Edition extends Model
         'name',
         'date',
         'location_id',
+        'organizer_id',
         'entry_fee',
         'students_entry_fee',
         'arriving_time',
@@ -181,6 +206,8 @@ class Edition extends Model
         'name',
         'date',
         'location_id',
+        'organizer_id',
+        'include_club_host_on_pdf',
         'entry_fee',
         'students_entry_fee',
         'arriving_time',
@@ -191,6 +218,7 @@ class Edition extends Model
     protected $casts = [
         'date' => 'date:Y-m-d',
         'finalized_at' => 'integer',
+        'include_club_host_on_pdf' => 'boolean',
         'inserted_at' => 'integer',
         'updated_at' => 'integer',
     ];
@@ -204,6 +232,11 @@ class Edition extends Model
     public function location()
     {
         return $this->belongsTo(Location::class, 'location_id');
+    }
+
+    public function organizer()
+    {
+        return $this->belongsTo(Organizer::class, 'organizer_id', 'id_organizer');
     }
 
     public function divisions()

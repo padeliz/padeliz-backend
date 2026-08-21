@@ -41,21 +41,23 @@ class EditionDivisionPosterController extends Controller
      *         required=true,
      *         @OA\JsonContent(
      *             required={"court"},
-     *             @OA\Property(property="court", type="integer"),
-     *             @OA\Property(property="organizer", type="integer", default=1),
-     *             @OA\Property(property="partner", type="integer", default=1)
+     *             @OA\Property(property="court", type="integer")
      *         )
      *     ),
      *     @OA\Response(response=200, description="Generated poster JSON"),
      *     @OA\Response(response=409, description="Edition is finalized"),
-     *     @OA\Response(response=422, description="Missing match participation or validation error")
+     *     @OA\Response(response=422, description="Missing schedule, missing match participation, or validation error")
      * )
      */
     public function matches(Request $request, EditionDivision $editionDivision): JsonResponse
     {
-        $editionDivision->loadMissing('edition');
+        $editionDivision->loadMissing(['edition.organizer', 'edition.location.club', 'schedule']);
         if ($editionDivision->edition?->finalized_at !== null) {
             return response()->json(['message' => 'Edition is finalized.'], 409);
+        }
+
+        if ($editionDivision->schedule === null) {
+            return response()->json(['message' => 'Edition division has no schedule.'], 422);
         }
 
         $validated = $request->validate([
@@ -65,19 +67,12 @@ class EditionDivisionPosterController extends Controller
                 Rule::exists('edition_division_courts', 'id_edition_division_court')
                     ->where('edition_division_id', $editionDivision->id_edition_division),
             ],
-            'organizer' => ['nullable', 'integer', Rule::in(array_keys(config('padeliz_branding.organizers', [])))],
-            'partner' => ['nullable', 'integer', Rule::in(array_keys(config('padeliz_branding.partners', [])))],
         ]);
 
         $court = EditionDivisionCourt::query()->findOrFail((int) $validated['court']);
 
         try {
-            $result = $this->posterPdfService->generateMatchesForEditionDivision(
-                $editionDivision,
-                $court,
-                (int) ($validated['organizer'] ?? 1),
-                (int) ($validated['partner'] ?? 1),
-            );
+            $result = $this->posterPdfService->generateMatchesForEditionDivision($editionDivision, $court);
         } catch (MissingMatchParticipationException $e) {
             return response()->json(['message' => $e->getMessage()], 422);
         }
@@ -97,26 +92,21 @@ class EditionDivisionPosterController extends Controller
      *     @OA\Parameter(name="editionDivision", in="path", required=true, @OA\Schema(type="integer")),
      *     @OA\Response(response=200, description="Generated poster JSON"),
      *     @OA\Response(response=409, description="Edition is finalized"),
-     *     @OA\Response(response=422, description="Validation error")
+     *     @OA\Response(response=422, description="Missing schedule")
      * )
      */
-    public function ranking(Request $request, EditionDivision $editionDivision): JsonResponse
+    public function ranking(EditionDivision $editionDivision): JsonResponse
     {
-        $editionDivision->loadMissing('edition');
+        $editionDivision->loadMissing(['edition.organizer', 'edition.location.club', 'schedule']);
         if ($editionDivision->edition?->finalized_at !== null) {
             return response()->json(['message' => 'Edition is finalized.'], 409);
         }
 
-        $validated = $request->validate([
-            'organizer' => ['nullable', 'integer', Rule::in(array_keys(config('padeliz_branding.organizers', [])))],
-            'partner' => ['nullable', 'integer', Rule::in(array_keys(config('padeliz_branding.partners', [])))],
-        ]);
+        if ($editionDivision->schedule === null) {
+            return response()->json(['message' => 'Edition division has no schedule.'], 422);
+        }
 
-        $result = $this->posterPdfService->generateRankingForEditionDivision(
-            $editionDivision,
-            (int) ($validated['organizer'] ?? 1),
-            (int) ($validated['partner'] ?? 1),
-        );
+        $result = $this->posterPdfService->generateRankingForEditionDivision($editionDivision);
 
         return response()->json([
             'message' => 'Poster generated.',

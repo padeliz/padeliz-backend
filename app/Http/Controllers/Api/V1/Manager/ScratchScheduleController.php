@@ -9,7 +9,6 @@ use App\Services\Schedule\PlayingWindow;
 use App\Services\Schedule\ScheduleGenerationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
-use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
@@ -93,8 +92,8 @@ class ScratchScheduleController extends \App\Http\Controllers\BaseVersions\V1\V1
                 'title' => ['required', 'string', 'max:64'],
                 'color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
                 'edition_label' => ['nullable', 'string', 'max:25'],
-                'organizer_id' => ['nullable', 'integer', Rule::in(array_keys(config('padeliz_branding.organizers', [])))],
-                'partner_id' => ['nullable', 'integer', Rule::in(array_keys(config('padeliz_branding.partners', [])))],
+                'organizer_id' => ['nullable', 'integer', 'exists:organizers,id_organizer'],
+                'club_id' => ['nullable', 'integer', 'exists:clubs,id_club'],
                 'points_per_match' => ['nullable', 'integer', 'min:0'],
                 'final_points_target' => ['nullable', 'integer', 'min:1'],
                 'include_scores' => ['nullable', 'boolean'],
@@ -109,8 +108,8 @@ class ScratchScheduleController extends \App\Http\Controllers\BaseVersions\V1\V1
 
             $result = $this->posterPdfService->generateMatchesFromScratch([
                 ...$validated,
-                'organizer_id' => (int) ($validated['organizer_id'] ?? 1),
-                'partner_id' => (int) ($validated['partner_id'] ?? 1),
+                'organizer_id' => $validated['organizer_id'] ?? null,
+                'club_id' => $validated['club_id'] ?? null,
                 'final_points_target' => (int) ($validated['final_points_target'] ?? 24),
             ]);
         } catch (ValidationException $e) {
@@ -140,8 +139,8 @@ class ScratchScheduleController extends \App\Http\Controllers\BaseVersions\V1\V1
                 'title' => ['required', 'string', 'max:64'],
                 'color' => ['nullable', 'string', 'regex:/^#[0-9A-Fa-f]{6}$/'],
                 'edition_label' => ['nullable', 'string', 'max:25'],
-                'organizer_id' => ['nullable', 'integer', Rule::in(array_keys(config('padeliz_branding.organizers', [])))],
-                'partner_id' => ['nullable', 'integer', Rule::in(array_keys(config('padeliz_branding.partners', [])))],
+                'organizer_id' => ['nullable', 'integer', 'exists:organizers,id_organizer'],
+                'club_id' => ['nullable', 'integer', 'exists:clubs,id_club'],
                 'points_per_match' => ['nullable', 'integer', 'min:0'],
                 'include_scores' => ['nullable', 'boolean'],
                 'allow_replacements' => ['nullable', 'boolean'],
@@ -151,8 +150,8 @@ class ScratchScheduleController extends \App\Http\Controllers\BaseVersions\V1\V1
 
             $result = $this->posterPdfService->generateRankingFromScratch([
                 ...$validated,
-                'organizer_id' => (int) ($validated['organizer_id'] ?? 1),
-                'partner_id' => (int) ($validated['partner_id'] ?? 1),
+                'organizer_id' => $validated['organizer_id'] ?? null,
+                'club_id' => $validated['club_id'] ?? null,
             ]);
         } catch (ValidationException $e) {
             throw $e;

@@ -103,7 +103,7 @@ final class LotteryPrizeLuckiesAssembler
                 continue;
             }
             $collecting = (bool) ($lucky->drawnParticipation?->is_collecting_points ?? false);
-            $keys[$playerId.':'.($collecting ? '1' : '0')] = [
+            $keys[$playerId . ':' . ($collecting ? '1' : '0')] = [
                 'player_id' => (int) $playerId,
                 'collecting' => $collecting,
             ];
@@ -122,7 +122,7 @@ final class LotteryPrizeLuckiesAssembler
         $byKey = [];
         foreach ($images as $image) {
             $flag = $image->player_is_collecting_points ? '1' : '0';
-            $byKey[$image->player_id.':'.$flag] = $image->url;
+            $byKey[$image->player_id . ':' . $flag] = $image->url;
         }
 
         foreach ($luckies as $lucky) {
@@ -135,7 +135,7 @@ final class LotteryPrizeLuckiesAssembler
             $collecting = (bool) ($lucky->drawnParticipation?->is_collecting_points ?? false);
             $lucky->setAttribute(
                 'pdf_avatar_url',
-                $byKey[$playerId.':'.($collecting ? '1' : '0')] ?? null
+                $byKey[$playerId . ':' . ($collecting ? '1' : '0')] ?? null
             );
         }
     }

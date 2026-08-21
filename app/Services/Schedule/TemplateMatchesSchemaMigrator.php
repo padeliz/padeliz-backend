@@ -44,19 +44,19 @@ final class TemplateMatchesSchemaMigrator
      */
     private function upgradeCurrentSchemaMetrics(array $payload): array
     {
-        if (!isset($payload['metrics']) || !is_array($payload['metrics'])) {
+        if (! isset($payload['metrics']) || ! is_array($payload['metrics'])) {
             return $payload;
         }
 
         $metrics = $payload['metrics'];
         foreach (['pairing', 'matchMaking', 'ordering'] as $phase) {
-            if (!isset($metrics[$phase]) || !is_array($metrics[$phase])) {
+            if (! isset($metrics[$phase]) || ! is_array($metrics[$phase])) {
                 $metrics[$phase] = ['quality' => [], 'stats' => []];
             }
-            if (!isset($metrics[$phase]['quality']) || !is_array($metrics[$phase]['quality'])) {
+            if (! isset($metrics[$phase]['quality']) || ! is_array($metrics[$phase]['quality'])) {
                 $metrics[$phase]['quality'] = [];
             }
-            if (!isset($metrics[$phase]['stats']) || !is_array($metrics[$phase]['stats'])) {
+            if (! isset($metrics[$phase]['stats']) || ! is_array($metrics[$phase]['stats'])) {
                 $metrics[$phase]['stats'] = [];
             }
         }
@@ -68,7 +68,7 @@ final class TemplateMatchesSchemaMigrator
             'partnersCountVariation',
             'pairCount',
         ] as $key) {
-            if (!array_key_exists($key, $metrics['pairing']['quality'])) {
+            if (! array_key_exists($key, $metrics['pairing']['quality'])) {
                 $metrics['pairing']['quality'][$key] = null;
             }
         }
@@ -83,7 +83,7 @@ final class TemplateMatchesSchemaMigrator
             'avgPlayingFairness',
             'maxPlayingFairnessPenalty',
         ] as $key) {
-            if (!array_key_exists($key, $metrics['matchMaking']['quality'])) {
+            if (! array_key_exists($key, $metrics['matchMaking']['quality'])) {
                 $metrics['matchMaking']['quality'][$key] = null;
             }
         }
@@ -99,7 +99,7 @@ final class TemplateMatchesSchemaMigrator
             'courtBalance',
             'roundsCount',
         ] as $key) {
-            if (!array_key_exists($key, $metrics['ordering']['quality'])) {
+            if (! array_key_exists($key, $metrics['ordering']['quality'])) {
                 $metrics['ordering']['quality'][$key] = null;
             }
         }
@@ -118,7 +118,7 @@ final class TemplateMatchesSchemaMigrator
             'candidateIndex',
             'relaxAttempts',
         ] as $key) {
-            if (!array_key_exists($key, $metrics['matchMaking']['stats'])) {
+            if (! array_key_exists($key, $metrics['matchMaking']['stats'])) {
                 $metrics['matchMaking']['stats'][$key] = null;
             }
         }
@@ -133,7 +133,7 @@ final class TemplateMatchesSchemaMigrator
             'time',
             'relaxAttempts',
         ] as $key) {
-            if (!array_key_exists($key, $metrics['ordering']['stats'])) {
+            if (! array_key_exists($key, $metrics['ordering']['stats'])) {
                 $metrics['ordering']['stats'][$key] = null;
             }
         }
@@ -145,7 +145,7 @@ final class TemplateMatchesSchemaMigrator
             'seedIndex',
             'seedsTotal',
         ] as $key) {
-            if (!array_key_exists($key, $metrics['pairing']['stats'])) {
+            if (! array_key_exists($key, $metrics['pairing']['stats'])) {
                 $metrics['pairing']['stats'][$key] = null;
             }
         }
@@ -183,11 +183,11 @@ final class TemplateMatchesSchemaMigrator
         ];
         $out = [];
         foreach ($raw as $entry) {
-            if (!is_array($entry)) {
+            if (! is_array($entry)) {
                 continue;
             }
             foreach ($required as $key) {
-                if (!array_key_exists($key, $entry)) {
+                if (! array_key_exists($key, $entry)) {
                     $entry[$key] = null;
                 }
             }
@@ -212,11 +212,11 @@ final class TemplateMatchesSchemaMigrator
         ];
         $out = [];
         foreach ($raw as $entry) {
-            if (!is_array($entry)) {
+            if (! is_array($entry)) {
                 continue;
             }
             foreach ($required as $key) {
-                if (!array_key_exists($key, $entry)) {
+                if (! array_key_exists($key, $entry)) {
                     $entry[$key] = null;
                 }
             }
@@ -234,7 +234,7 @@ final class TemplateMatchesSchemaMigrator
     {
         if ($this->isLegacyWrapper($decoded)) {
             $payload = $decoded[1];
-            if (!is_array($payload)) {
+            if (! is_array($payload)) {
                 throw new \InvalidArgumentException('Legacy template wrapper payload must be an object.');
             }
 
@@ -270,14 +270,14 @@ final class TemplateMatchesSchemaMigrator
 
     /**
      * @param mixed $matches
-     * @return array<int, array<int, array{0: array{0:int,1:int}, 1: array{0:int,1:int}}>>|null
+     * @return null|array<int, array<int, array{0: array{0:int,1:int}, 1: array{0:int,1:int}}>>
      */
     private function normalizeMatches($matches, int $courts): ?array
     {
         if ($matches === null) {
             return null;
         }
-        if (!is_array($matches)) {
+        if (! is_array($matches)) {
             throw new \InvalidArgumentException('Template matches must be an array or null.');
         }
         if ($matches === []) {
@@ -299,10 +299,11 @@ final class TemplateMatchesSchemaMigrator
     private function looksLikePerCourt(array $matches): bool
     {
         $first = reset($matches);
-        if (!is_array($first) || $first === []) {
+        if (! is_array($first) || $first === []) {
             return false;
         }
         $firstRound = reset($first);
+
         // Per-court: matches[court][round] = [[a,b],[c,d]]
         // Flat: matches[round] = [[a,b],[c,d]]
         return is_array($firstRound)
@@ -314,7 +315,7 @@ final class TemplateMatchesSchemaMigrator
     /**
      * @param array<string, mixed> $payload
      * @param array{players:int,partners:int,repeat:int,courts:int,fixedTeams:bool} $identity
-     * @param array<int, array<int, array{0: array{0:int,1:int}, 1: array{0:int,1:int}}>>|null $matches
+     * @param null|array<int, array<int, array{0: array{0:int,1:int}, 1: array{0:int,1:int}}>> $matches
      */
     private function migrateLegacyPayload(array $payload, array $identity, ?array $matches): TemplateMatches
     {
@@ -438,7 +439,7 @@ final class TemplateMatchesSchemaMigrator
     {
         $out = [];
         foreach ($playersMet as $p => $row) {
-            if (!is_array($row)) {
+            if (! is_array($row)) {
                 continue;
             }
             $out[(int) $p] = [];

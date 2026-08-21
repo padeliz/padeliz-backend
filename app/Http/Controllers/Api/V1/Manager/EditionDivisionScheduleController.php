@@ -5,10 +5,12 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Resources\EditionDivisionResource;
+use App\Http\Resources\EditionDivisionScheduleResource;
 use App\Http\Resources\EditionParticipationResource;
 use App\Http\Resources\GameMatchResource;
 use App\Models\CachedPdfPairImage;
 use App\Models\EditionDivision;
+use App\Models\EditionDivisionSchedule;
 use App\Models\EditionParticipation;
 use App\Models\GameMatch;
 use App\Services\Pdf\EditionDivisionPosterInvalidator;
@@ -21,6 +23,7 @@ use App\Services\Schedule\ScheduleMatchReorderService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\Rule;
 use InvalidArgumentException;
 use Throwable;
 
@@ -70,8 +73,11 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
             'matches.sides.players.participation.player',
         ]);
 
+        $schedule = $editionDivision->schedule()->first();
+
         $payload = [
             'edition_division' => new EditionDivisionResource($editionDivision),
+            'schedule' => $schedule !== null ? new EditionDivisionScheduleResource($schedule) : null,
             'courts' => $editionDivision->courts,
             'participations' => EditionParticipationResource::collection($editionDivision->participations),
             'matches' => GameMatchResource::collection($editionDivision->matches),
@@ -103,8 +109,6 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             @OA\Property(property="playing_start_time", type="string", example="10:00:00"),
-     *             @OA\Property(property="playing_end_time", type="string", example="16:00:00"),
      *             @OA\Property(property="player_opponents_nr", type="integer"),
      *             @OA\Property(property="player_matches_repeat", type="integer"),
      *             @OA\Property(property="include_final", type="boolean"),
@@ -113,6 +117,7 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
      *             @OA\Property(property="allow_replacements", type="boolean"),
      *             @OA\Property(property="points_per_match", type="integer", nullable=true),
      *             @OA\Property(property="final_points_target", type="integer"),
+     *             @OA\Property(property="adjust", type="integer", description="One of -6,-4,-2,0,2,4,6"),
      *             @OA\Property(property="court_ids", type="array", @OA\Items(type="integer")),
      *             @OA\Property(property="participation_ids", type="array", @OA\Items(type="integer")),
      *             @OA\Property(property="is_collecting_points", type="object", additionalProperties={"type":"boolean"})
@@ -120,7 +125,7 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
      *     ),
      *     @OA\Response(response=200, description="Schedule form saved"),
      *     @OA\Response(response=409, description="Edition division is finalized"),
-     *     @OA\Response(response=422, description="Validation error")
+     *     @OA\Response(response=422, description="Validation error or playing times sent")
      * )
      */
     public function updateForm(Request $request, EditionDivision $editionDivision)
@@ -128,6 +133,11 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
         $editionDivision->loadMissing('edition');
         if ($editionDivision->edition?->finalized_at !== null) {
             return $this->errorResponse('Schedule form cannot be updated after finalize.', 409);
+        }
+
+        $rejected = $this->rejectPlayingTimes($request);
+        if ($rejected !== null) {
+            return $rejected;
         }
 
         $validated = $this->validateFormPayload($request);
@@ -140,8 +150,11 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
             return $this->errorResponse('Failed to persist schedule form: ' . $e->getMessage(), 409);
         }
 
+        $schedule = $editionDivision->schedule()->first();
+
         return $this->successResponse([
             'edition_division' => new EditionDivisionResource($editionDivision),
+            'schedule' => $schedule !== null ? new EditionDivisionScheduleResource($schedule) : null,
             'participations' => EditionParticipationResource::collection(
                 $editionDivision->participations()->orderBy('sort_order')->orderBy('id_participation')->with('player')->get()
             ),
@@ -175,14 +188,12 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
      *         @OA\JsonContent(
      *             @OA\Property(property="participation_ids", type="array", @OA\Items(type="integer")),
      *             @OA\Property(property="court_ids", type="array", @OA\Items(type="integer")),
-     *             @OA\Property(property="playing_start_time", type="string"),
-     *             @OA\Property(property="playing_end_time", type="string"),
      *             @OA\Property(property="player_opponents_nr", type="integer"),
      *             @OA\Property(property="player_matches_repeat", type="integer"),
      *             @OA\Property(property="include_final", type="boolean"),
      *             @OA\Property(property="has_demonstrative_match", type="boolean"),
      *             @OA\Property(property="template_version", type="integer", nullable=true),
-     *             @OA\Property(property="adjust", type="integer", description="Optional points_per_match adjustment")
+     *             @OA\Property(property="adjust", type="integer", description="One of -6,-4,-2,0,2,4,6; ignored after finalize")
      *         )
      *     ),
      *     @OA\Response(response=200, description="Preview generated"),
@@ -191,23 +202,40 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
      */
     public function preview(Request $request, EditionDivision $editionDivision)
     {
+        $rejected = $this->rejectPlayingTimes($request);
+        if ($rejected !== null) {
+            return $rejected;
+        }
+
         $validated = $request->validate([
             'participation_ids' => 'nullable|array|min:1',
             'participation_ids.*' => 'integer|exists:edition_participations,id_participation',
             'court_ids' => 'nullable|array|min:1',
             'court_ids.*' => 'integer|exists:courts,id_court',
-            'playing_start_time' => ['nullable', PlayingWindow::clockRegexRule()],
-            'playing_end_time' => ['nullable', PlayingWindow::clockRegexRule()],
             'player_opponents_nr' => 'nullable|integer|min:1',
             'player_matches_repeat' => 'nullable|integer|min:1',
             'include_final' => 'nullable|boolean',
             'has_demonstrative_match' => 'nullable|boolean',
             'template_version' => 'nullable|integer|min:1',
-            'adjust' => 'nullable|integer',
+            'adjust' => ['nullable', 'integer', Rule::in(EditionDivisionSchedule::ADJUST_VALUES)],
         ]);
 
+        $editionDivision->loadMissing('edition');
+        $isFinalized = $editionDivision->edition?->finalized_at !== null;
+
         try {
-            $preview = $this->buildPreview($editionDivision, $validated);
+            if ($isFinalized) {
+                // Finalized editions are frozen: no schedule upsert and no adjust override.
+                $schedule = $editionDivision->requireSchedule();
+            } else {
+                $editionDivision = $this->formService->persist(
+                    $editionDivision,
+                    $this->scheduleKnobs($validated)
+                );
+                $schedule = $editionDivision->requireSchedule();
+            }
+
+            $preview = $this->buildPreview($editionDivision, $validated, $schedule);
         } catch (Throwable $e) {
             return $this->errorResponse($e->getMessage(), 422);
         }
@@ -226,7 +254,7 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
      *         required=false,
      *         @OA\JsonContent(
      *             @OA\Property(property="confirm_replace", type="boolean", description="Required when REGULAR matches already exist"),
-     *             @OA\Property(property="adjust", type="integer", description="Optional points_per_match adjustment after calculator"),
+     *             @OA\Property(property="adjust", type="integer", description="One of -6,-4,-2,0,2,4,6; applied after the calculator"),
      *             @OA\Property(property="template_version", type="integer", nullable=true),
      *             @OA\Property(property="participation_ids", type="array", @OA\Items(type="integer")),
      *             @OA\Property(property="court_ids", type="array", @OA\Items(type="integer"))
@@ -255,7 +283,6 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
         $hasRegular = $this->matchPersister->hasRegularMatches($editionDivision);
         $validated = $request->validate(array_merge($this->formValidationRules(), [
             'confirm_replace' => 'nullable|boolean',
-            'adjust' => 'nullable|integer',
             'template_version' => 'nullable|integer|min:1',
         ]));
 
@@ -274,10 +301,10 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
                 }
 
                 $editionDivision = $this->formService->persist($editionDivision, $validated);
+                $schedule = $editionDivision->requireSchedule();
                 $preview = $this->buildPreview($editionDivision, [
                     'template_version' => $validated['template_version'] ?? null,
-                    'adjust' => $validated['adjust'] ?? null,
-                ]);
+                ], $schedule);
 
                 $participations = EditionParticipation::query()
                     ->where('edition_division_id', $editionDivision->id_edition_division)
@@ -292,7 +319,7 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
 
                 $matches = $this->matchPersister->persistRegularMatches($editionDivision, $preview, $byPlayerId);
 
-                $editionDivision->update([
+                $schedule->update([
                     'points_per_match' => (int) $preview['points_per_match'],
                     'template_version' => (int) $preview['template_version'],
                 ]);
@@ -300,6 +327,7 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
                 $this->posterInvalidator->clearMatchesAndRanking($editionDivision);
 
                 $editionDivision->load([
+                    'schedule',
                     'courts',
                     'participations' => fn ($q) => $q->orderBy('sort_order')->orderBy('id_participation'),
                     'participations.player',
@@ -311,6 +339,7 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
 
                 return [
                     'edition_division' => $editionDivision,
+                    'schedule' => $schedule->fresh(),
                     'preview' => $preview,
                     'matches' => $editionDivision->matches,
                     'created_count' => count($matches),
@@ -324,6 +353,7 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
 
         return $this->successResponse([
             'edition_division' => new EditionDivisionResource($result['edition_division']),
+            'schedule' => new EditionDivisionScheduleResource($result['schedule']),
             'points_per_match' => $result['preview']['points_per_match'],
             'preview' => $result['preview'],
             'matches' => GameMatchResource::collection($result['matches']),
@@ -358,7 +388,8 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
         }
 
         $deleted = $this->matchPersister->deleteRegularMatches($editionDivision);
-        $editionDivision->update(['template_version' => null]);
+        // The schedule row itself survives; only the generated template identity is dropped.
+        $editionDivision->schedule()->first()?->update(['template_version' => null]);
         $this->posterInvalidator->clearMatches($editionDivision);
 
         return $this->successResponse(
@@ -443,13 +474,11 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
     }
 
     /**
-     * @return array<string, string>
+     * @return array<string, mixed>
      */
     private function formValidationRules(): array
     {
         return [
-            'playing_start_time' => ['nullable', PlayingWindow::clockRegexRule()],
-            'playing_end_time' => ['nullable', PlayingWindow::clockRegexRule()],
             'player_opponents_nr' => 'nullable|integer|min:1',
             'player_matches_repeat' => 'nullable|integer|min:1',
             'include_final' => 'nullable|boolean',
@@ -458,6 +487,7 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
             'allow_replacements' => 'nullable|boolean',
             'points_per_match' => 'nullable|integer|min:0',
             'final_points_target' => 'nullable|integer|min:0',
+            'adjust' => ['nullable', 'integer', Rule::in(EditionDivisionSchedule::ADJUST_VALUES)],
             'court_ids' => 'nullable|array',
             'court_ids.*' => 'integer|exists:courts,id_court',
             'participation_ids' => 'nullable|array',
@@ -467,11 +497,46 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
     }
 
     /**
+     * Playing times belong to the edition division and are rejected on schedule endpoints.
+     */
+    private function rejectPlayingTimes(Request $request)
+    {
+        foreach (['playing_start_time', 'playing_end_time'] as $key) {
+            if ($request->has($key)) {
+                return $this->errorResponse(
+                    'playing_start_time and playing_end_time are managed on the edition division, not on the schedule.',
+                    422
+                );
+            }
+        }
+
+        return null;
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return array<string, mixed>
+     */
+    private function scheduleKnobs(array $validated): array
+    {
+        return array_intersect_key($validated, array_flip([
+            'player_opponents_nr',
+            'player_matches_repeat',
+            'include_final',
+            'has_demonstrative_match',
+            'adjust',
+        ]));
+    }
+
+    /**
      * @param  array<string, mixed>  $overrides
      * @return array<string, mixed>
      */
-    private function buildPreview(EditionDivision $editionDivision, array $overrides): array
-    {
+    private function buildPreview(
+        EditionDivision $editionDivision,
+        array $overrides,
+        EditionDivisionSchedule $schedule,
+    ): array {
         $editionDivision->loadMissing(['courts', 'participations']);
 
         if (! empty($overrides['participation_ids'])) {
@@ -519,12 +584,12 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
             throw new InvalidArgumentException('At least one court is required for schedule preview.');
         }
 
-        $timeStart = $this->toHi($overrides['playing_start_time'] ?? $editionDivision->formatted_playing_start_time);
-        $timeEnd = $this->toHi($overrides['playing_end_time'] ?? $editionDivision->formatted_playing_end_time);
-        $opponents = (int) ($overrides['player_opponents_nr'] ?? $editionDivision->player_opponents_nr ?? 0);
-        $repeat = (int) ($overrides['player_matches_repeat'] ?? $editionDivision->player_matches_repeat ?? 1);
-        $includeFinal = (bool) ($overrides['include_final'] ?? $editionDivision->include_final);
-        $hasDemo = (bool) ($overrides['has_demonstrative_match'] ?? $editionDivision->has_demonstrative_match);
+        $timeStart = $this->toHi($editionDivision->formatted_playing_start_time);
+        $timeEnd = $this->toHi($editionDivision->formatted_playing_end_time);
+        $opponents = (int) ($schedule->player_opponents_nr ?? 0);
+        $repeat = (int) ($schedule->player_matches_repeat ?? 1);
+        $includeFinal = (bool) $schedule->include_final;
+        $hasDemo = (bool) $schedule->has_demonstrative_match;
 
         if ($opponents < 1) {
             throw new InvalidArgumentException('player_opponents_nr must be >= 1.');
@@ -542,9 +607,11 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
             isset($overrides['template_version']) ? (int) $overrides['template_version'] : null,
         );
 
-        if (isset($overrides['adjust'])) {
-            $preview['points_per_match'] = max(0, (int) $preview['points_per_match'] + (int) $overrides['adjust']);
+        $adjust = (int) ($schedule->adjust ?? 0);
+        if ($adjust !== 0) {
+            $preview['points_per_match'] = max(0, (int) $preview['points_per_match'] + $adjust);
         }
+        $preview['adjust'] = $adjust;
 
         return $preview;
     }

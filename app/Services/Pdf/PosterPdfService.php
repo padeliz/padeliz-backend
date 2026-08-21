@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Services\Pdf;
 
+use App\Models\Club;
+use App\Models\Edition;
 use App\Models\EditionDivision;
 use App\Models\EditionDivisionCourt;
 use App\Models\EditionDivisionPoster;
 use App\Models\GameMatch;
 use App\Models\MatchPlayer;
+use App\Models\Organizer;
 use App\Models\Player;
 use App\Services\Schedule\PlayingWindow;
 use App\Services\Schedule\ScheduleGenerationService;
@@ -35,18 +38,21 @@ final class PosterPdfService
     public function generateMatchesForEditionDivision(
         EditionDivision $editionDivision,
         EditionDivisionCourt $court,
-        int $organizerId,
-        int $partnerId,
     ): PosterPdfResult {
         $this->ephemeralTemps = [];
 
         try {
             $editionDivision->loadMissing([
-                'edition',
+                'edition.organizer',
+                'edition.location.club',
+                'schedule',
                 'division',
                 'participations.player.profileImages',
                 'editionDivisionCourts.court',
             ]);
+
+            $schedule = $editionDivision->requireSchedule();
+            $branding = $this->editionBranding($editionDivision->edition);
 
             $matches = GameMatch::query()
                 ->with(['sides.players.participation.player.profileImages'])
@@ -81,15 +87,16 @@ final class PosterPdfService
                 title: (string) $editionDivision->division_title,
                 color: (string) ($editionDivision->division?->color ?? '#7ab857'),
                 editionLabel: (string) ($editionDivision->edition?->name ?? ''),
-                organizerId: $organizerId,
-                partnerId: $partnerId,
+                organizerImage: $branding['organizer_image'],
+                clubHostImage: $branding['club_host_image'],
+                showEditionLabel: $branding['show_edition_label'],
                 courtName: (string) ($court->court?->name ?? 'Court'),
-                pointsPerMatch: (int) ($editionDivision->points_per_match ?? 0),
-                includeScores: (bool) $editionDivision->include_scores,
-                includeFinal: (bool) $editionDivision->include_final,
-                hasDemonstrativeMatch: (bool) $editionDivision->has_demonstrative_match,
-                allowReplacements: (bool) $editionDivision->allow_replacements,
-                finalPointsTarget: (int) ($editionDivision->final_points_target ?? 24),
+                pointsPerMatch: (int) ($schedule->points_per_match ?? 0),
+                includeScores: (bool) $schedule->include_scores,
+                includeFinal: (bool) $schedule->include_final,
+                hasDemonstrativeMatch: (bool) $schedule->has_demonstrative_match,
+                allowReplacements: (bool) $schedule->allow_replacements,
+                finalPointsTarget: (int) ($schedule->final_points_target ?? 24),
                 timeEnd: $this->formatTime($editionDivision->playing_end_time),
                 matchRows: $rows,
                 persistCachedPdfImages: true,
@@ -112,15 +119,22 @@ final class PosterPdfService
         }
     }
 
-    public function generateRankingForEditionDivision(
-        EditionDivision $editionDivision,
-        int $organizerId,
-        int $partnerId,
-    ): PosterPdfResult {
+    public function generateRankingForEditionDivision(EditionDivision $editionDivision): PosterPdfResult
+    {
         $this->ephemeralTemps = [];
 
         try {
-            $editionDivision->loadMissing(['edition', 'division', 'participations.player.profileImages', 'editionDivisionCourts.court']);
+            $editionDivision->loadMissing([
+                'edition.organizer',
+                'edition.location.club',
+                'schedule',
+                'division',
+                'participations.player.profileImages',
+                'editionDivisionCourts.court',
+            ]);
+
+            $schedule = $editionDivision->requireSchedule();
+            $branding = $this->editionBranding($editionDivision->edition);
 
             $players = $editionDivision->participations
                 ->filter(fn ($p) => (bool) $p->is_collecting_points)
@@ -129,8 +143,8 @@ final class PosterPdfService
                 ->values()
                 ->all();
 
-            $opponents = (int) ($editionDivision->player_opponents_nr ?? 0);
-            $repeat = (int) ($editionDivision->player_matches_repeat ?? 1);
+            $opponents = (int) ($schedule->player_opponents_nr ?? 0);
+            $repeat = (int) ($schedule->player_matches_repeat ?? 1);
             $playerMatchesCount = max(1, $opponents * max(1, $repeat));
 
             $courtNames = $editionDivision->editionDivisionCourts
@@ -143,13 +157,14 @@ final class PosterPdfService
                 title: (string) $editionDivision->division_title,
                 color: (string) ($editionDivision->division?->color ?? '#7ab857'),
                 editionLabel: (string) ($editionDivision->edition?->name ?? ''),
-                organizerId: $organizerId,
-                partnerId: $partnerId,
+                organizerImage: $branding['organizer_image'],
+                clubHostImage: $branding['club_host_image'],
+                showEditionLabel: $branding['show_edition_label'],
                 courtLabel: implode(' / ', $courtNames) ?: 'Courts',
-                pointsPerMatch: (int) ($editionDivision->points_per_match ?? 0),
-                includeScores: (bool) $editionDivision->include_scores,
-                includeFinal: (bool) $editionDivision->include_final,
-                allowReplacements: (bool) $editionDivision->allow_replacements,
+                pointsPerMatch: (int) ($schedule->points_per_match ?? 0),
+                includeScores: (bool) $schedule->include_scores,
+                includeFinal: (bool) $schedule->include_final,
+                allowReplacements: (bool) $schedule->allow_replacements,
                 players: $players,
                 playerMatchesCount: $playerMatchesCount,
                 persistCachedPdfImages: true,
@@ -191,8 +206,8 @@ final class PosterPdfService
      *     title: string,
      *     color?: string,
      *     edition_label?: string,
-     *     organizer_id: int,
-     *     partner_id: int,
+     *     organizer_id?: null|int,
+     *     club_id?: null|int,
      *     points_per_match?: null|int,
      *     final_points_target?: int,
      *     template_version?: null|int
@@ -203,6 +218,7 @@ final class PosterPdfService
         $playerIds = array_values(array_map('intval', $input['player_ids']));
         $players = $this->loadPlayersByIds($playerIds);
         $collecting = $this->collectingMap($playerIds, $input['collecting_player_ids'] ?? $playerIds);
+        $branding = $this->scratchBranding($input);
 
         $this->ephemeralTemps = [];
 
@@ -233,8 +249,9 @@ final class PosterPdfService
                 title: (string) $input['title'],
                 color: (string) ($input['color'] ?? '#7ab857'),
                 editionLabel: (string) ($input['edition_label'] ?? 'Scratch'),
-                organizerId: (int) $input['organizer_id'],
-                partnerId: (int) $input['partner_id'],
+                organizerImage: $branding['organizer_image'],
+                clubHostImage: $branding['club_host_image'],
+                showEditionLabel: $branding['show_edition_label'],
                 courtName: (string) ($preview['court_names'][$courtIndex] ?? 'Court'),
                 pointsPerMatch: (int) ($input['points_per_match'] ?? $preview['points_per_match']),
                 includeScores: (bool) ($input['include_scores'] ?? true),
@@ -273,8 +290,8 @@ final class PosterPdfService
      *     title: string,
      *     color?: string,
      *     edition_label?: string,
-     *     organizer_id: int,
-     *     partner_id: int,
+     *     organizer_id?: null|int,
+     *     club_id?: null|int,
      *     points_per_match?: null|int,
      *     template_version?: null|int
      * }  $input
@@ -285,6 +302,7 @@ final class PosterPdfService
         $playersById = $this->loadPlayersByIds($playerIds);
         $collectingIds = $input['collecting_player_ids'] ?? $playerIds;
         $collecting = $this->collectingMap($playerIds, $collectingIds);
+        $branding = $this->scratchBranding($input);
 
         $this->ephemeralTemps = [];
 
@@ -302,8 +320,9 @@ final class PosterPdfService
                 title: (string) $input['title'],
                 color: (string) ($input['color'] ?? '#7ab857'),
                 editionLabel: (string) ($input['edition_label'] ?? 'Scratch'),
-                organizerId: (int) $input['organizer_id'],
-                partnerId: (int) $input['partner_id'],
+                organizerImage: $branding['organizer_image'],
+                clubHostImage: $branding['club_host_image'],
+                showEditionLabel: $branding['show_edition_label'],
                 courtLabel: implode(' / ', $preview['court_names']),
                 pointsPerMatch: (int) ($input['points_per_match'] ?? $preview['points_per_match']),
                 includeScores: (bool) ($input['include_scores'] ?? true),
@@ -352,8 +371,9 @@ final class PosterPdfService
         string $title,
         string $color,
         string $editionLabel,
-        int $organizerId,
-        int $partnerId,
+        ?string $organizerImage,
+        ?string $clubHostImage,
+        bool $showEditionLabel,
         string $courtName,
         int $pointsPerMatch,
         bool $includeScores,
@@ -386,10 +406,9 @@ final class PosterPdfService
             'title' => $title,
             'color' => $color,
             'edition_label' => $editionLabel,
-            'organizer_id' => $organizerId,
-            'partner_id' => $partnerId,
-            'organizer_image' => $this->brandingImagePath('organizers', $organizerId),
-            'partner_image' => $this->brandingImagePath('partners', $partnerId),
+            'organizer_image' => $organizerImage,
+            'club_host_image' => $clubHostImage,
+            'show_edition_label' => $showEditionLabel,
             'court_name' => $courtName,
             'points_per_match_print' => PdfHtmlHelper::evenRoundPointsForPrint($pointsPerMatch),
             'include_scores' => $includeScores,
@@ -420,8 +439,9 @@ final class PosterPdfService
         string $title,
         string $color,
         string $editionLabel,
-        int $organizerId,
-        int $partnerId,
+        ?string $organizerImage,
+        ?string $clubHostImage,
+        bool $showEditionLabel,
         string $courtLabel,
         int $pointsPerMatch,
         bool $includeScores,
@@ -455,10 +475,9 @@ final class PosterPdfService
             'title' => $title,
             'color' => $color,
             'edition_label' => $editionLabel,
-            'organizer_id' => $organizerId,
-            'partner_id' => $partnerId,
-            'organizer_image' => $this->brandingImagePath('organizers', $organizerId),
-            'partner_image' => $this->brandingImagePath('partners', $partnerId),
+            'organizer_image' => $organizerImage,
+            'club_host_image' => $clubHostImage,
+            'show_edition_label' => $showEditionLabel,
             'court_label' => $courtLabel,
             'points_per_match_print' => PdfHtmlHelper::evenRoundPointsForPrint($pointsPerMatch),
             'include_scores' => $includeScores,
@@ -701,18 +720,63 @@ final class PosterPdfService
         return $map;
     }
 
-    private function brandingImagePath(string $group, int $id): string
+    /**
+     * Mode A branding: organizer from the edition, club host from the edition location.
+     *
+     * @return array{organizer_image: null|string, club_host_image: null|string, show_edition_label: bool}
+     */
+    private function editionBranding(?Edition $edition): array
     {
-        $relative = config("padeliz_branding.{$group}.{$id}.image");
-        if (! is_string($relative) || $relative === '') {
-            throw new RuntimeException("Unknown branding {$group} id {$id}.");
-        }
-        $path = public_path('media/' . $relative);
-        if (! is_file($path)) {
-            throw new RuntimeException("Branding asset missing: {$path}");
+        $organizer = $edition?->organizer;
+        $club = (bool) ($edition?->include_club_host_on_pdf ?? false)
+            ? $edition?->location?->club
+            : null;
+
+        return $this->brandingPayload($organizer, $club);
+    }
+
+    /**
+     * Mode B branding: explicit organizer/club ids, both optional.
+     *
+     * @param  array<string, mixed>  $input
+     * @return array{organizer_image: null|string, club_host_image: null|string, show_edition_label: bool}
+     */
+    private function scratchBranding(array $input): array
+    {
+        $organizerId = $input['organizer_id'] ?? null;
+        $clubId = $input['club_id'] ?? null;
+
+        return $this->brandingPayload(
+            $organizerId === null ? null : Organizer::query()->find((int) $organizerId),
+            $clubId === null ? null : Club::query()->find((int) $clubId),
+        );
+    }
+
+    /**
+     * @return array{organizer_image: null|string, club_host_image: null|string, show_edition_label: bool}
+     */
+    private function brandingPayload(?Organizer $organizer, ?Club $club): array
+    {
+        return [
+            'organizer_image' => $organizer === null
+                ? null
+                : $this->logoAbsolutePath($organizer->logo_path, $organizer->storageDisk()),
+            'club_host_image' => $club === null
+                ? null
+                : $this->logoAbsolutePath($club->logo_path, $club->storageDisk()),
+            'show_edition_label' => (bool) ($organizer?->show_edition_label ?? false),
+        ];
+    }
+
+    private function logoAbsolutePath(?string $relative, string $disk): ?string
+    {
+        if ($relative === null || $relative === '') {
+            return null;
         }
 
-        return $path;
+        $path = Storage::disk($disk)->path($relative);
+
+        return is_file($path) ? $path : null;
     }
 
     private function matchesFilename(string $title): string

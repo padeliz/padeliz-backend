@@ -7,11 +7,10 @@ namespace Tests\Feature\Console;
 use App\Console\Commands\TemplatesMetricsCommand;
 use App\Services\Schedule\TemplateMatches;
 use App\Services\Schedule\TemplateMatchesRepository;
-use Tests\TestCase;
 use Symfony\Component\Console\Application;
 use Symfony\Component\Console\Tester\CommandTester;
+use Tests\TestCase;
 use Tests\Unit\Services\Schedule\TemplateVersionTestTrait;
-
 
 final class TemplatesMetricsCommandTest extends TestCase
 {
@@ -21,14 +20,14 @@ final class TemplatesMetricsCommandTest extends TestCase
 
     protected function setUp(): void
     {
-        
+
         parent::setUp();
         $this->resetAllocatedVersions();
         $this->tempBaseDir = sys_get_temp_dir()
             . DIRECTORY_SEPARATOR
             . 'padel-stats-test-'
             . bin2hex(random_bytes(4));
-        if (!mkdir($this->tempBaseDir, 0775, true) && !is_dir($this->tempBaseDir)) {
+        if (! mkdir($this->tempBaseDir, 0775, true) && ! is_dir($this->tempBaseDir)) {
             $this->fail("Could not create temp dir: {$this->tempBaseDir}");
         }
     }
@@ -36,7 +35,7 @@ final class TemplatesMetricsCommandTest extends TestCase
     protected function tearDown(): void
     {
         $this->removeDirRecursive($this->tempBaseDir);
-    
+
         parent::tearDown();
     }
 
@@ -265,12 +264,12 @@ final class TemplatesMetricsCommandTest extends TestCase
 
     public function test_unified_table_includes_courts_column_when_courts_vary_across_rows(): void
     {
-        $harness = new class {
+        $harness = new class () {
             use \App\Console\MetricsFormatterTrait;
 
             /**
              * @param list<array{players:int,partners:int,repeat:int,courts:int,fixedTeams:bool}> $combos
-             * @param list<TemplateMatches|null> $templates
+             * @param list<null|TemplateMatches> $templates
              * @return array{includeCourtsColumn: bool, includePartnersVarColumn: bool, includeCourtSwitchesColumn: bool, contextParts: list<string>}
              */
             public function layout(array $combos, array $templates = []): array
@@ -301,12 +300,12 @@ final class TemplatesMetricsCommandTest extends TestCase
 
     public function test_avg_row_column_indices_align_with_ordering_quality_columns(): void
     {
-        $harness = new class {
+        $harness = new class () {
             use \App\Console\MetricsFormatterTrait;
 
             /**
              * @param list<array{players:int,partners:int,repeat:int,courts:int,fixedTeams:bool}> $combos
-             * @param list<TemplateMatches|null> $templates
+             * @param list<null|TemplateMatches> $templates
              */
             public function layout(array $combos, array $templates = [], bool $includeStatsColumns = false): array
             {
@@ -685,7 +684,7 @@ final class TemplatesMetricsCommandTest extends TestCase
         TemplateMatchesRepository $repository,
         array $args = []
     ): void {
-        if (!array_key_exists('--templates-version', $args)) {
+        if (! array_key_exists('--templates-version', $args)) {
             try {
                 $version = $repository->latestVersion();
             } catch (\RuntimeException $e) {
@@ -774,7 +773,7 @@ final class TemplatesMetricsCommandTest extends TestCase
 
     private function removeDirRecursive(string $dir): void
     {
-        if (!is_dir($dir)) {
+        if (! is_dir($dir)) {
             return;
         }
 

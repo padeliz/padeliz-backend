@@ -272,12 +272,17 @@ class EditionDivisionReplacementController extends \App\Http\Controllers\BaseVer
 
     private function blockedResponse(EditionDivision $editionDivision)
     {
-        $editionDivision->loadMissing('edition');
+        $editionDivision->loadMissing(['edition', 'schedule']);
         if ($editionDivision->edition?->finalized_at !== null) {
             return $this->errorResponse('Replacements cannot be created after finalize.', 409);
         }
 
-        if (! $editionDivision->allow_replacements) {
+        $schedule = $editionDivision->schedule;
+        if ($schedule === null) {
+            return $this->errorResponse('Edition division has no schedule.', 422);
+        }
+
+        if (! $schedule->allow_replacements) {
             return $this->errorResponse('Replacements are not allowed for this edition division.', 409);
         }
 

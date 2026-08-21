@@ -150,12 +150,14 @@ final class ScheduleMatchReorderService
                 $roundsTotal = max($roundsTotal, $courtMatches->count());
             }
 
+            $schedule = $editionDivision->requireSchedule();
+
             $slots = RoundClockCalculator::slots(
                 (string) $editionDivision->formatted_playing_start_time,
                 (string) $editionDivision->formatted_playing_end_time,
                 $roundsTotal,
-                (bool) $editionDivision->include_final,
-                (bool) $editionDivision->has_demonstrative_match,
+                (bool) $schedule->include_final,
+                (bool) $schedule->has_demonstrative_match,
             );
 
             $regulars = GameMatch::query()

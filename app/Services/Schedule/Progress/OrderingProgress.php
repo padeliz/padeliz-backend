@@ -21,14 +21,23 @@ namespace App\Services\Schedule\Progress;
 final class OrderingProgress extends GenerationProgress
 {
     private int $iterations;
+
     private ?float $bestMin;
+
     private ?float $bestAvg;
+
     private ?string $stopReason;
+
     private ?int $bestPermutationIndex;
+
     private ?int $bestMinBreak;
+
     private ?int $bestMaxBreak;
+
     private ?int $bestCourtSwitches;
+
     private int $currentSeed;
+
     private int $totalSeeds;
 
     public function __construct(

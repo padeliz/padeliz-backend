@@ -1033,7 +1033,6 @@ final class TemplateMatches
         return $normalized;
     }
 
-
     public static function fromProgress(
         int $players,
         int $partners,

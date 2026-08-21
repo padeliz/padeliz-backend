@@ -10,6 +10,7 @@ use App\Models\Edition;
 use App\Models\EditionDivision;
 use App\Models\EditionDivisionCourt;
 use App\Models\EditionDivisionPoster;
+use App\Models\EditionDivisionSchedule;
 use App\Models\EditionDivisionStanding;
 use App\Models\EditionParticipation;
 use App\Models\GameMatch;
@@ -52,6 +53,10 @@ final class EditionDivisionPosterInvalidationTest extends TestCase
             'players_limit' => 8,
             'playing_start_time' => '14:00:00',
             'playing_end_time' => '17:00:00',
+        ]);
+
+        EditionDivisionSchedule::factory()->create([
+            'edition_division_id' => $this->editionDivision->id_edition_division,
             'player_opponents_nr' => 4,
             'player_matches_repeat' => 1,
             'include_final' => false,
@@ -118,7 +123,7 @@ final class EditionDivisionPosterInvalidationTest extends TestCase
 
         $this->putJson(
             "/api/v1/manager/edition-divisions/{$this->editionDivision->id_edition_division}/schedule/form",
-            ['playing_start_time' => '15:00:00']
+            ['include_scores' => false]
         )->assertOk();
 
         $this->assertGeneratedCleared($matches);
@@ -209,6 +214,39 @@ final class EditionDivisionPosterInvalidationTest extends TestCase
 
         MatchSide::query()->where('match_id', $match->id_match)->where('side', 'LEFT')->update(['score' => 12]);
         MatchSide::query()->where('match_id', $match->id_match)->where('side', 'RIGHT')->update(['score' => 10]);
+
+        $this->assertNotNull($matches->fresh()->generated_path);
+        $this->assertNotNull($ranking->fresh()->generated_path);
+    }
+
+    public function test_playing_window_patch_clears_matches_and_ranking(): void
+    {
+        Sanctum::actingAs($this->manager);
+        [$matches, $ranking] = $this->seedPosters();
+
+        $this->patchJson(
+            "/api/v1/manager/edition-divisions/{$this->editionDivision->id_edition_division}",
+            ['playing_start_time' => '15:00:00']
+        )->assertOk();
+
+        $this->assertGeneratedCleared($matches);
+        $this->assertGeneratedCleared($ranking);
+        $this->assertSame('printed/matches.pdf', $matches->fresh()->printed_path);
+        $this->assertSame('printed/ranking.pdf', $ranking->fresh()->printed_path);
+    }
+
+    public function test_identity_only_patch_does_not_clear_posters(): void
+    {
+        Sanctum::actingAs($this->manager);
+        [$matches, $ranking] = $this->seedPosters();
+
+        $this->patchJson(
+            "/api/v1/manager/edition-divisions/{$this->editionDivision->id_edition_division}",
+            [
+                'division_title' => 'Renamed Division',
+                'playing_start_time' => '14:00:00',
+            ]
+        )->assertOk();
 
         $this->assertNotNull($matches->fresh()->generated_path);
         $this->assertNotNull($ranking->fresh()->generated_path);

@@ -9,6 +9,7 @@ use App\Models\Court;
 use App\Models\Division;
 use App\Models\Edition;
 use App\Models\EditionDivision;
+use App\Models\EditionDivisionSchedule;
 use App\Models\EditionLottery;
 use App\Models\EditionLotteryLucky;
 use App\Models\EditionLotteryPrize;
@@ -18,6 +19,7 @@ use App\Models\Eligibility;
 use App\Models\EligibilityPortraitPhoto;
 use App\Models\EligibilityStudentProof;
 use App\Models\Location;
+use App\Models\Organizer;
 use App\Models\Player;
 use App\Models\PlayerEmail;
 use App\Models\PlayerIdentity;
@@ -82,6 +84,7 @@ class DatabaseSeeder extends Seeder
         Sponsor::truncate();
         Prize::truncate();
         EditionParticipation::truncate();
+        EditionDivisionSchedule::truncate();
         EditionDivision::truncate();
         EligibilityPortraitPhoto::truncate();
         EligibilityStudentProof::truncate();
@@ -92,6 +95,7 @@ class DatabaseSeeder extends Seeder
         PlayerEmail::query()->delete();
         Player::truncate();
         Edition::truncate();
+        Organizer::truncate();
         Court::truncate();
         Location::truncate();
         Division::truncate();
@@ -140,6 +144,21 @@ class DatabaseSeeder extends Seeder
             Club::factory()->create(['name' => 'PadelMania', 'city' => 'Bucharest']),
             Club::factory()->create(['name' => 'Padel One', 'city' => 'Bucharest']),
             Club::factory()->create(['name' => 'Padel World', 'city' => 'Bucharest']),
+        ]);
+
+        $this->command->info('Creating organizers...');
+        $now = time();
+        Organizer::query()->create([
+            'name' => 'ARSH Padel MiniTour',
+            'logo_path' => null,
+            'show_edition_label' => true,
+            'inserted_at' => $now,
+        ]);
+        Organizer::query()->create([
+            'name' => 'Bucharest Padel Tour',
+            'logo_path' => null,
+            'show_edition_label' => false,
+            'inserted_at' => $now,
         ]);
 
         $this->command->info('Creating locations and courts...');
@@ -415,11 +434,17 @@ class DatabaseSeeder extends Seeder
             return collect();
         }
 
+        $organizerId = Organizer::query()
+            ->where('name', 'ARSH Padel MiniTour')
+            ->value('id_organizer');
+
         for ($i = 0; $i < $count; $i++) {
             $arriving_time = Carbon::createFromTime(\rand(12, 19), 30);
 
             $editions[] = Edition::factory()->forLocation($locations->random())->create([
                 'name' => '#' . ($index_nr + $i + 1),
+                'organizer_id' => $organizerId,
+                'include_club_host_on_pdf' => true,
                 'date' => Carbon::parse($startDate)->addDays(\rand(0, (int) Carbon::parse($endDate)->diffInDays($startDate))),
                 'entry_fee' => \rand(45, 55),
                 'students_entry_fee' => \rand(35, 45),
@@ -436,15 +461,21 @@ class DatabaseSeeder extends Seeder
         // Get random divisions for this edition
         $selectedDivisions = Division::inRandomOrder()->take(\rand(2, 3))->get();
 
-        foreach ($selectedDivisions as $division) {
+        foreach ($selectedDivisions->values() as $skillOrder => $division) {
             // Create division for this edition (courts live on courts + pivot, not on edition_divisions)
             $editionDivision = EditionDivision::factory()->create([
                 'edition_id' => $edition->id_edition,
                 'division_id' => $division->id_division,
                 'division_title' => $division->name,
                 'players_limit' => \rand(8, 16),
+                'skill_order' => $skillOrder,
                 'playing_start_time' => Carbon::createFromTime(\rand(12, 19), 30)->format('H:i:s'),
                 'playing_end_time' => Carbon::createFromTime(\rand(16, 21), 30)->format('H:i:s'),
+            ]);
+
+            // Schedule knobs live on their own row, one per edition division.
+            EditionDivisionSchedule::factory()->create([
+                'edition_division_id' => $editionDivision->id_edition_division,
                 'include_scores' => $division->name !== 'Kids',
                 'has_demonstrative_match' => $division->name == 'Students Novice',
                 'allow_replacements' => $division->name !== DivisionSeeder::MINITOUR_COUPLES_NAME
@@ -452,6 +483,7 @@ class DatabaseSeeder extends Seeder
                 'points_per_match' => $division->name === 'Kids' ? null : 1,
                 'final_points_target' => 24,
                 'include_final' => $division->name !== 'Kids',
+                'adjust' => 0,
             ]);
 
             // Create 6-12 participations for this edition division (unique players)

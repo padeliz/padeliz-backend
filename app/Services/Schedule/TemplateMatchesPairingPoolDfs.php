@@ -21,13 +21,13 @@ trait TemplateMatchesPairingPoolDfs
      *     pairs: array<int, array{players: array{0:int,1:int}, used: bool}>,
      *     partnersCount: array<int, int>,
      *     partnersCountVariation: int,
-     *     minPartnersFairness: float|null,
-     *     avgPartnersFairness: float|null,
+     *     minPartnersFairness: null|float,
+     *     avgPartnersFairness: null|float,
      *     pairCount: int,
      *     stopReason: string,
      *     time: float,
      *     nodesExplored: int,
-     *     seedIndex: int|null,
+     *     seedIndex: null|int,
      *     seedsTotal: int
      * }
      */
@@ -62,13 +62,13 @@ trait TemplateMatchesPairingPoolDfs
      *     pairs: array<int, array{players: array{0:int,1:int}, used: bool}>,
      *     partnersCount: array<int, int>,
      *     partnersCountVariation: int,
-     *     minPartnersFairness: float|null,
-     *     avgPartnersFairness: float|null,
+     *     minPartnersFairness: null|float,
+     *     avgPartnersFairness: null|float,
      *     pairCount: int,
      *     stopReason: string,
      *     time: float,
      *     nodesExplored: int,
-     *     seedIndex: int|null,
+     *     seedIndex: null|int,
      *     seedsTotal: int
      * }
      */
@@ -124,6 +124,7 @@ trait TemplateMatchesPairingPoolDfs
 
                 if (count($globalBest['pairs']) === $expectedPairCount && $globalBest['pairs'] !== []) {
                     $foundComplete = true;
+
                     break 2;
                 }
             }
@@ -180,13 +181,13 @@ trait TemplateMatchesPairingPoolDfs
      *     pairs: array<int, array{players: array{0:int,1:int}, used: bool}>,
      *     partnersCount: array<int, int>,
      *     partnersCountVariation: int,
-     *     minPartnersFairness: float|null,
-     *     avgPartnersFairness: float|null,
+     *     minPartnersFairness: null|float,
+     *     avgPartnersFairness: null|float,
      *     pairCount: int,
      *     stopReason: string,
      *     time: float,
      *     nodesExplored: int,
-     *     seedIndex: int|null,
+     *     seedIndex: null|int,
      *     seedsTotal: int
      * }
      */
@@ -261,9 +262,9 @@ trait TemplateMatchesPairingPoolDfs
      * @param array{
      *     pairs: array<int, array{players: array{0:int,1:int}, used: bool}>,
      *     partnersCount: array<int, int>,
-     *     minPartnersFairness: float|null,
-     *     avgPartnersFairness: float|null,
-     *     seedIndex: int|null
+     *     minPartnersFairness: null|float,
+     *     avgPartnersFairness: null|float,
+     *     seedIndex: null|int
      * } $best Mutated by reference.
      * @param list<string> $seedStopReasons
      * @return array{pairCount: int}
@@ -314,9 +315,9 @@ trait TemplateMatchesPairingPoolDfs
      * @param array{
      *     pairs: array<int, array{players: array{0:int,1:int}, used: bool}>,
      *     partnersCount: array<int, int>,
-     *     minPartnersFairness: float|null,
-     *     avgPartnersFairness: float|null,
-     *     seedIndex: int|null
+     *     minPartnersFairness: null|float,
+     *     avgPartnersFairness: null|float,
+     *     seedIndex: null|int
      * } $best Mutated by reference.
      */
     private function runPairingSeedDfs(
@@ -388,9 +389,9 @@ trait TemplateMatchesPairingPoolDfs
      * @param array{
      *     pairs: array<int, array{players: array{0:int,1:int}, used: bool}>,
      *     partnersCount: array<int, int>,
-     *     minPartnersFairness: float|null,
-     *     avgPartnersFairness: float|null,
-     *     seedIndex: int|null
+     *     minPartnersFairness: null|float,
+     *     avgPartnersFairness: null|float,
+     *     seedIndex: null|int
      * } $best
      */
     private function buildPairingByBacktracking(
@@ -432,9 +433,9 @@ trait TemplateMatchesPairingPoolDfs
      * @param array{
      *     pairs: array<int, array{players: array{0:int,1:int}, used: bool}>,
      *     partnersCount: array<int, int>,
-     *     minPartnersFairness: float|null,
-     *     avgPartnersFairness: float|null,
-     *     seedIndex: int|null
+     *     minPartnersFairness: null|float,
+     *     avgPartnersFairness: null|float,
+     *     seedIndex: null|int
      * } $best
      */
     private function pairingDfsExpand(
@@ -471,6 +472,7 @@ trait TemplateMatchesPairingPoolDfs
         for ($p = 0; $p < $playersCount; $p++) {
             if ($remaining[$p] > 0) {
                 $activePlayer = $p;
+
                 break;
             }
         }
@@ -497,7 +499,7 @@ trait TemplateMatchesPairingPoolDfs
 
         $candidates = [];
         for ($q = $activePlayer + 1; $q < $playersCount; $q++) {
-            if ($remaining[$q] > 0 && !isset($edges[$this->pairingEdgeKey($activePlayer, $q)])) {
+            if ($remaining[$q] > 0 && ! isset($edges[$this->pairingEdgeKey($activePlayer, $q)])) {
                 $candidates[] = $q;
             }
         }
@@ -737,13 +739,13 @@ trait TemplateMatchesPairingPoolDfs
      *     pairs: array<int, array{players: array{0:int,1:int}, used: bool}>,
      *     partnersCount: array<int, int>,
      *     partnersCountVariation: int,
-     *     minPartnersFairness: float|null,
-     *     avgPartnersFairness: float|null,
+     *     minPartnersFairness: null|float,
+     *     avgPartnersFairness: null|float,
      *     pairCount: int,
      *     stopReason: string,
      *     time: float,
      *     nodesExplored: int,
-     *     seedIndex: int|null,
+     *     seedIndex: null|int,
      *     seedsTotal: int
      * }
      */
@@ -784,9 +786,9 @@ trait TemplateMatchesPairingPoolDfs
      * @return array{
      *     pairs: array<int, array{players: array{0:int,1:int}, used: bool}>,
      *     partnersCount: array<int, int>,
-     *     minPartnersFairness: float|null,
-     *     avgPartnersFairness: float|null,
-     *     seedIndex: int|null
+     *     minPartnersFairness: null|float,
+     *     avgPartnersFairness: null|float,
+     *     seedIndex: null|int
      * }
      */
     private function emptyPairingBestState(): array

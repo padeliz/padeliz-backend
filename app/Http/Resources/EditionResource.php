@@ -14,6 +14,8 @@ class EditionResource extends JsonResource
         return [
             'id_edition' => $this->id_edition,
             'location_id' => $this->location_id,
+            'organizer_id' => $this->organizer_id,
+            'include_club_host_on_pdf' => (bool) $this->include_club_host_on_pdf,
             'name' => $this->name,
             'date' => $this->formatted_date,
             'entry_fee' => $this->entry_fee,
@@ -25,6 +27,9 @@ class EditionResource extends JsonResource
             'updated_at' => $this->updated_at,
             'location' => $this->whenLoaded('location', function () {
                 return new LocationResource($this->location);
+            }),
+            'organizer' => $this->whenLoaded('organizer', function () {
+                return $this->organizer ? new OrganizerResource($this->organizer) : null;
             }),
             'edition_divisions' => $this->whenLoaded('divisions', function () {
                 return EditionDivisionResource::collection($this->divisions);

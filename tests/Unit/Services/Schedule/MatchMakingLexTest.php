@@ -9,7 +9,6 @@ use App\Services\Schedule\PlayingFairnessScorer;
 use App\Services\Schedule\TemplateMatchesGenerator;
 use PHPUnit\Framework\TestCase;
 
-
 final class MatchMakingLexTest extends TestCase
 {
     private const STUB_MATCHES = [[[0, 1], [2, 3]]];

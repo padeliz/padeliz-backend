@@ -46,7 +46,7 @@ final class StandingsRecalculator
                 ];
             }
 
-            /** @var array<int, list<int|null>> $coveringByOriginal */
+            /** @var array<int, list<null|int>> $coveringByOriginal */
             $coveringByOriginal = [];
             $replacementRows = EditionDivisionReplacement::query()
                 ->where('edition_division_id', $editionDivision->id_edition_division)
@@ -118,7 +118,7 @@ final class StandingsRecalculator
     /**
      * @param  array<int, array{points_total: int, wins: float}>  $totals
      * @param  \Illuminate\Support\Collection<int, EditionParticipation>  $participations
-     * @param  array<int, list<int|null>>  $coveringByOriginal
+     * @param  array<int, list<null|int>>  $coveringByOriginal
      */
     private function applySide(
         array &$totals,
@@ -155,7 +155,7 @@ final class StandingsRecalculator
     }
 
     /**
-     * @param  array<int, list<int|null>>  $coveringByOriginal
+     * @param  array<int, list<null|int>>  $coveringByOriginal
      */
     private function isCovered(array $coveringByOriginal, int $originalParticipationId, int $matchId): bool
     {

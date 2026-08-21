@@ -10,25 +10,38 @@ namespace App\Services\Schedule\Progress;
 final class MatchMakingProgress extends GenerationProgress
 {
     private int $iterations;
+
     private int $templatesGenerated;
+
     private ?float $bestMeetingsVariation;
+
     private int $currentSeed;
+
     private int $totalSeeds;
+
     private ?int $bestPermutationIndex;
+
     private ?int $bestTemplateIndex;
+
     private ?int $matchesCount;
-    /** @var array<int, int>|null */
+
+    /** @var null|array<int, int> */
     private ?array $partnersCount;
-    /** @var array<int, array<int, int>>|null */
+
+    /** @var null|array<int, array<int, int>> */
     private ?array $playersMet;
+
     private ?int $partnersCountVariation;
+
     private ?string $aggregateStopReason;
+
     private int $currentMeetingsVariationLimit;
+
     private int $nodesExplored;
 
     /**
-     * @param array<int, int>|null             $partnersCount
-     * @param array<int, array<int, int>>|null $playersMet
+     * @param null|array<int, int>             $partnersCount
+     * @param null|array<int, array<int, int>> $playersMet
      */
     public function __construct(
         int $players,

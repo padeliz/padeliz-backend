@@ -212,16 +212,23 @@ class TemplateMatchesGenerator
     /** Max time between two consecutive non-final progress emits, in nanoseconds (~4 ticks/s). */
     private const PROGRESS_EMIT_INTERVAL_NS = 250_000_000;
 
-    /** @var callable|null */
+    /** @var null|callable */
     private $clock;
 
     private int $outerWallBudgetNs;
+
     private int $sortWallBudgetNs;
+
     private int $multiSeedCountPairing;
+
     private int $multiSeedCountSort;
+
     private int $multiSeedThresholdPairs;
+
     private int $meetingsVariationLimit;
+
     private int $meetingsVariationLimitMax;
+
     private int $dfsBranchCap;
 
     /**
@@ -253,7 +260,9 @@ class TemplateMatchesGenerator
      * different combos sequentially with each using the right budget.
      */
     private int $effectivePairingBudgetNs;
+
     private int $effectiveMatchMakingBudgetNs;
+
     private int $effectiveOrderingBudgetNs;
 
     /**
@@ -265,10 +274,12 @@ class TemplateMatchesGenerator
 
     /** Live-progress context for the active ordering seed (set per seed inside {@see runOrderingPhase()}). */
     private int $orderingCurrentSeed = 1;
+
     private int $orderingTotalSeeds = 1;
+
     private int $orderingPerSeedBudgetNs = 0;
 
-    /** @var callable|null function(GenerationProgress $event): void */
+    /** @var null|callable function(GenerationProgress): void */
     private $progressCallback = null;
 
     /**
@@ -278,11 +289,13 @@ class TemplateMatchesGenerator
      * for the whole generator lifetime.
      */
     private PlayerDistributionScorer $distributionScorer;
+
     private PartnersFairnessScorer $partnersFairnessScorer;
+
     private PlayingFairnessScorer $playingFairnessScorer;
 
     /**
-     * @param callable|null $clock Optional `fn(): int` returning monotonic nanoseconds. Defaults
+     * @param null|callable $clock Optional `fn(): int` returning monotonic nanoseconds. Defaults
      *                             to `hrtime(true)`. Tests inject a deterministic clock to control
      *                             how budgets elapse without sleeping.
      * @param int $multiSeedCountPairing Number of distant Lehmer seeds the pairing-phase DFS
@@ -410,7 +423,7 @@ class TemplateMatchesGenerator
      * regardless of generation mode or input size, and zero or more interim ticks before it
      * (interim ticks are time-throttled internally so the callback is hit at most ~4 times/second).
      *
-     * @param callable|null $callback function(GenerationProgress $event): void
+     * @param null|callable $callback function(GenerationProgress $event): void
      */
     public function setProgressCallback(?callable $callback): void
     {
@@ -570,6 +583,7 @@ class TemplateMatchesGenerator
                 foreach ($candidates as $candidateIndex => $candidate) {
                     if ($this->monotonicNow() >= $orderingPassStartNs + $orderingPassWallNs) {
                         $orderingPassStopReason = self::STOP_REASON_DEADLINE;
+
                         break;
                     }
 
@@ -1031,7 +1045,7 @@ class TemplateMatchesGenerator
         foreach ($pairs as $i => $pair1) {
             foreach (array_reverse($pairs, true) as $j => $pair2) {
                 if (
-                    $i != $j && !in_array("$i.$j", $combinations, true)
+                    $i != $j && ! in_array("$i.$j", $combinations, true)
                     && $matchesPerPair[$i] < $opponentsPerPlayer
                     && $matchesPerPair[$j] < $opponentsPerPlayer
                 ) {
@@ -1273,7 +1287,7 @@ class TemplateMatchesGenerator
     /**
      * Key of the maximum value in a non-empty array.
      *
-     * @param  array<int|string, int|float>  $values
+     * @param  array<int|string, float|int>  $values
      */
     private static function keyFromBiggest(array $values): int|string|null
     {

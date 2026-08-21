@@ -205,7 +205,7 @@ class PlayerProfileImageImportController extends V1BaseController
     }
 
     /**
-     * @return array<string, mixed>|null
+     * @return null|array<string, mixed>
      */
     private function playerPayload(?Player $player): ?array
     {

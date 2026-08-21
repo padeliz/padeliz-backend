@@ -51,7 +51,11 @@ final class ScheduleMatchPersister
             throw new InvalidArgumentException('Edition division has no assigned courts.');
         }
 
-        $pointsTarget = (int) ($preview['points_per_match'] ?? $editionDivision->points_per_match ?? 0);
+        $schedule = $editionDivision->relationLoaded('schedule')
+            ? $editionDivision->getRelation('schedule')
+            : $editionDivision->schedule()->first();
+
+        $pointsTarget = (int) ($preview['points_per_match'] ?? $schedule?->points_per_match ?? 0);
         $created = [];
 
         foreach ($preview['matches_by_court'] as $courtIndex => $matches) {

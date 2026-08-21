@@ -9,20 +9,25 @@ namespace App\Services\Schedule\Progress;
  */
 final class ProgressReporter
 {
-    /** @var callable|null */
+    /** @var null|callable */
     private $callback;
 
     private int $intervalNs;
+
     private int $lastEmitNs = 0;
 
     private int $players;
+
     private int $partners;
+
     private int $repeat;
+
     private bool $fixedTeams;
+
     private int $phaseStartNs;
 
     /**
-     * @param callable|null $callback function(GenerationProgress $event): void, or null for noop
+     * @param null|callable $callback function(GenerationProgress $event): void, or null for noop
      */
     public function __construct(
         ?callable $callback,
@@ -53,7 +58,7 @@ final class ProgressReporter
     }
 
     /**
-     * @param array<int, int>|null $partnersCount
+     * @param null|array<int, int> $partnersCount
      */
     public function pairing(
         int $nodesExplored,
@@ -73,7 +78,7 @@ final class ProgressReporter
             return;
         }
 
-        if (!$isFinal && ($now - $this->lastEmitNs) < $this->intervalNs) {
+        if (! $isFinal && ($now - $this->lastEmitNs) < $this->intervalNs) {
             return;
         }
 
@@ -98,8 +103,8 @@ final class ProgressReporter
     }
 
     /**
-     * @param array<int, int>|null              $partnersCount
-     * @param array<int, array<int, int>>|null  $playersMet
+     * @param null|array<int, int>              $partnersCount
+     * @param null|array<int, array<int, int>>  $playersMet
      */
     public function matchMaking(
         int $iterations,
@@ -124,7 +129,7 @@ final class ProgressReporter
             return;
         }
 
-        if (!$isFinal && ($now - $this->lastEmitNs) < $this->intervalNs) {
+        if (! $isFinal && ($now - $this->lastEmitNs) < $this->intervalNs) {
             return;
         }
 
@@ -172,7 +177,7 @@ final class ProgressReporter
             return;
         }
 
-        if (!$isFinal && ($now - $this->lastEmitNs) < $this->intervalNs) {
+        if (! $isFinal && ($now - $this->lastEmitNs) < $this->intervalNs) {
             return;
         }
 

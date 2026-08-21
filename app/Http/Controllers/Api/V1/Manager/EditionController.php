@@ -110,7 +110,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      */
     public function index(Request $request)
     {
-        $query = Edition::with(['location', 'divisions']);
+        $query = Edition::with(['location', 'divisions', 'organizer']);
 
         // Apply advanced pagination
         $this->applyAdvancedPagination(
@@ -162,7 +162,7 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      */
     public function show(Edition $edition)
     {
-        $edition->load(['location', 'divisions']);
+        $edition->load(['location', 'divisions', 'organizer']);
 
         return $this->resourceResponse(
             new EditionResource($edition),
@@ -183,6 +183,8 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *             @OA\Property(property="name", type="string", maxLength=25, description="Edition name"),
      *             @OA\Property(property="date", type="string", format="date", description="Edition date"),
      *             @OA\Property(property="location_id", type="integer", description="Location ID"),
+     *             @OA\Property(property="organizer_id", type="integer", nullable=true, description="Organizer branding owner"),
+     *             @OA\Property(property="include_club_host_on_pdf", type="boolean", description="Whether posters show the hosting club logo", default=true),
      *             @OA\Property(property="entry_fee", type="integer", description="Entry fee in RON", default=55),
      *             @OA\Property(property="students_entry_fee", type="integer", description="Students entry fee in RON", default=45),
      *             @OA\Property(property="arriving_time", type="string", format="time", description="Arriving time"),
@@ -229,6 +231,8 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
             'name' => 'required|string|max:25',
             'date' => 'required|date',
             'location_id' => 'required|exists:locations,id_location',
+            'organizer_id' => 'nullable|integer|exists:organizers,id_organizer',
+            'include_club_host_on_pdf' => 'sometimes|boolean',
             'entry_fee' => 'nullable|integer|min:0',
             'students_entry_fee' => 'nullable|integer|min:0',
             'arriving_time' => ['required', PlayingWindow::clockRegexRule()],
@@ -238,8 +242,12 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
         $payload = $request->all();
         $payload['arriving_time'] = PlayingWindow::normalizeStoredTime((string) $payload['arriving_time']);
         $payload['closing_time'] = PlayingWindow::normalizeStoredTime((string) $payload['closing_time']);
+        $payload['include_club_host_on_pdf'] = $request->has('include_club_host_on_pdf')
+            ? $request->boolean('include_club_host_on_pdf')
+            : true;
 
         $edition = Edition::create($payload);
+        $edition->load('organizer');
 
         return $this->resourceResponse(
             new EditionResource($edition),
@@ -266,6 +274,8 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *             @OA\Property(property="name", type="string", maxLength=25, description="Edition name"),
      *             @OA\Property(property="date", type="string", format="date", description="Edition date"),
      *             @OA\Property(property="location_id", type="integer", description="Location ID"),
+     *             @OA\Property(property="organizer_id", type="integer", nullable=true, description="Organizer branding owner"),
+     *             @OA\Property(property="include_club_host_on_pdf", type="boolean", description="Whether posters show the hosting club logo"),
      *             @OA\Property(property="entry_fee", type="integer", description="Entry fee in RON", minimum=0),
      *             @OA\Property(property="students_entry_fee", type="integer", description="Students entry fee in RON", minimum=0),
      *             @OA\Property(property="arriving_time", type="string", format="time", description="Arriving time"),
@@ -317,6 +327,8 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
             'name' => 'required|string|max:25',
             'date' => 'required|date',
             'location_id' => 'required|exists:locations,id_location',
+            'organizer_id' => 'nullable|integer|exists:organizers,id_organizer',
+            'include_club_host_on_pdf' => 'sometimes|boolean',
             'entry_fee' => 'nullable|integer|min:0',
             'students_entry_fee' => 'nullable|integer|min:0',
             'arriving_time' => ['required', PlayingWindow::clockRegexRule()],
@@ -326,8 +338,12 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
         $payload = $request->all();
         $payload['arriving_time'] = PlayingWindow::normalizeStoredTime((string) $payload['arriving_time']);
         $payload['closing_time'] = PlayingWindow::normalizeStoredTime((string) $payload['closing_time']);
+        if ($request->has('include_club_host_on_pdf')) {
+            $payload['include_club_host_on_pdf'] = $request->boolean('include_club_host_on_pdf');
+        }
 
         $edition->update($payload);
+        $edition->load('organizer');
 
         return $this->resourceResponse(
             new EditionResource($edition),
@@ -353,6 +369,8 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *             @OA\Property(property="name", type="string", maxLength=25, description="Edition name"),
      *             @OA\Property(property="date", type="string", format="date", description="Edition date"),
      *             @OA\Property(property="location_id", type="integer", description="Location ID"),
+     *             @OA\Property(property="organizer_id", type="integer", nullable=true, description="Organizer branding owner"),
+     *             @OA\Property(property="include_club_host_on_pdf", type="boolean", description="Whether posters show the hosting club logo"),
      *             @OA\Property(property="entry_fee", type="integer", description="Entry fee in RON", minimum=0),
      *             @OA\Property(property="students_entry_fee", type="integer", description="Students entry fee in RON", minimum=0),
      *             @OA\Property(property="arriving_time", type="string", format="time", description="Arriving time"),
@@ -404,6 +422,8 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
             'name' => 'sometimes|string|max:25',
             'date' => 'sometimes|date',
             'location_id' => 'nullable|exists:locations,id',
+            'organizer_id' => 'nullable|integer|exists:organizers,id_organizer',
+            'include_club_host_on_pdf' => 'sometimes|boolean',
             'entry_fee' => 'nullable|numeric|min:0',
             'students_entry_fee' => 'nullable|numeric|min:0',
             'arriving_time' => ['nullable', PlayingWindow::clockRegexRule()],
@@ -417,8 +437,12 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
         if (array_key_exists('closing_time', $payload) && $payload['closing_time'] !== null && $payload['closing_time'] !== '') {
             $payload['closing_time'] = PlayingWindow::normalizeStoredTime((string) $payload['closing_time']);
         }
+        if ($request->has('include_club_host_on_pdf')) {
+            $payload['include_club_host_on_pdf'] = $request->boolean('include_club_host_on_pdf');
+        }
 
         $edition->update($payload);
+        $edition->load('organizer');
 
         return $this->resourceResponse(
             new EditionResource($edition),

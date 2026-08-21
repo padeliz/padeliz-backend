@@ -676,8 +676,8 @@ class EditionLotteryPrizeControllerTest extends TestCase
     }
 
     /**
-     * @param  list<array<string, mixed>>|null  $data
-     * @return array<string, mixed>|null
+     * @param  null|list<array<string, mixed>>  $data
+     * @return null|array<string, mixed>
      */
     private function lineById(?array $data, int $id): ?array
     {

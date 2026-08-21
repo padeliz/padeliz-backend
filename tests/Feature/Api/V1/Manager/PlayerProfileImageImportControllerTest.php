@@ -9,7 +9,6 @@ use App\Models\PlayerEmail;
 use App\Models\PlayerProfileImage;
 use App\Models\PlayerProfileImageImport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Http\UploadedFile;
 use Laravel\Sanctum\Sanctum;
 use Tests\Helpers\FileUploadTestHelper;
 use Tests\TestCase;

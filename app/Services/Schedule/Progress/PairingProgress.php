@@ -10,18 +10,26 @@ namespace App\Services\Schedule\Progress;
 final class PairingProgress extends GenerationProgress
 {
     private int $nodesExplored;
+
     private ?float $bestMinPartnersFairness;
+
     private ?float $bestAvgPartnersFairness;
+
     private int $currentSeed;
+
     private int $totalSeeds;
-    /** @var array<int, int>|null */
+
+    /** @var null|array<int, int> */
     private ?array $partnersCount;
+
     private ?int $partnersCountVariation;
+
     private ?int $pairCount;
+
     private ?string $aggregateStopReason;
 
     /**
-     * @param array<int, int>|null $partnersCount
+     * @param null|array<int, int> $partnersCount
      */
     public function __construct(
         int $players,

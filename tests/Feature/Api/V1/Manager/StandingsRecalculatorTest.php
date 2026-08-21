@@ -302,4 +302,3 @@ class StandingsRecalculatorTest extends TestCase
         return $match;
     }
 }
-
