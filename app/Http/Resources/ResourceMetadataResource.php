@@ -26,6 +26,7 @@ class ResourceMetadataResource extends JsonResource
             'searchable_fields' => $this['searchable_fields'],
             'filterable_fields' => $this['filterable_fields'],
             'sortable_fields' => $this['sortable_fields'],
+            'list_fields' => $this['list_fields'],
         ];
     }
 }

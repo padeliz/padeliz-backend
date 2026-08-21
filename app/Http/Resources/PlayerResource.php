@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Resources;
 
 use App\Models\PlayerProfileImage;
+use App\Services\PlayerProfileImage\PlayerProfileImageResolver;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
@@ -35,6 +36,7 @@ class PlayerResource extends JsonResource
             'created_via_format' => $this->created_via_format,
             'created_via_import_id' => $this->created_via_import_id,
             'pdf_avatar_url' => $this->pdfAvatarUrl(),
+            'profile_image_url' => $this->profileImageUrl(),
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
             'emails' => $this->whenLoaded('emails', function () {
@@ -75,5 +77,12 @@ class PlayerResource extends JsonResource
             ?? $this->cachedPdfImages->first();
 
         return $preferred?->url;
+    }
+
+    private function profileImageUrl(): ?string
+    {
+        $resolved = app(PlayerProfileImageResolver::class)->resolveForPdf($this->resource);
+
+        return $resolved?->url;
     }
 }

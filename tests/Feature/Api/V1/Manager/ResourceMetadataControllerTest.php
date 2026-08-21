@@ -46,6 +46,7 @@ class ResourceMetadataControllerTest extends TestCase
                     'searchable_fields',
                     'filterable_fields',
                     'sortable_fields',
+                    'list_fields',
                 ],
             ])
             ->assertJson([
@@ -92,6 +93,7 @@ class ResourceMetadataControllerTest extends TestCase
                     'searchable_fields',
                     'filterable_fields',
                     'sortable_fields',
+                    'list_fields',
                 ],
             ])
             ->assertJson([
@@ -148,6 +150,7 @@ class ResourceMetadataControllerTest extends TestCase
                     'searchable_fields',
                     'filterable_fields',
                     'sortable_fields',
+                    'list_fields',
                 ],
             ])
             ->assertJson([
@@ -297,6 +300,7 @@ class ResourceMetadataControllerTest extends TestCase
                     'searchable_fields',
                     'filterable_fields',
                     'sortable_fields',
+                    'list_fields',
                 ],
             ])
             ->assertJson([
@@ -315,6 +319,7 @@ class ResourceMetadataControllerTest extends TestCase
         $this->assertIsArray($response->json('data.searchable_fields'));
         $this->assertIsArray($response->json('data.filterable_fields'));
         $this->assertIsArray($response->json('data.sortable_fields'));
+        $this->assertIsArray($response->json('data.list_fields'));
     }
 
     public static function modelDataProvider(): array

@@ -159,6 +159,20 @@ use Laravel\Sanctum\HasApiTokens;
  *         description="Cached ranking circular avatar URL when present"
  *     ),
  *     @OA\Property(
+ *         property="profile_image_url",
+ *         type="string",
+ *         format="uri",
+ *         nullable=true,
+ *         readOnly=true,
+ *         title="Profile Image",
+ *         description="Primary uploaded profile image URL when present",
+ *         x={
+ *             "padeliz-image": {
+ *                 "role": "list"
+ *             }
+ *         }
+ *     ),
+ *     @OA\Property(
  *         property="inserted_at",
  *         type="integer",
  *         format="timestamp",

@@ -144,11 +144,38 @@ class HasResourceMetadataTest extends TestCase
         $this->assertArrayHasKey('searchable_fields', $metadata);
         $this->assertArrayHasKey('filterable_fields', $metadata);
         $this->assertArrayHasKey('sortable_fields', $metadata);
+        $this->assertArrayHasKey('list_fields', $metadata);
 
         $this->assertEquals('players', $metadata['resource']);
         $this->assertIsArray($metadata['searchable_fields']);
         $this->assertIsArray($metadata['filterable_fields']);
         $this->assertIsArray($metadata['sortable_fields']);
+        $this->assertIsArray($metadata['list_fields']);
+        $this->assertEquals([], $metadata['list_fields']);
+    }
+
+    public function test_get_list_fields_returns_empty_array_when_not_defined(): void
+    {
+        $this->assertEquals([], Player::getListFields());
+
+        $testModel = new class () extends \Illuminate\Database\Eloquent\Model {
+            use HasResourceMetadata;
+        };
+
+        $this->assertEquals([], $testModel::getListFields());
+    }
+
+    public function test_get_list_fields_returns_defined_fields(): void
+    {
+        $this->assertEquals(
+            [
+                'player.profile_image_url',
+                'player_id',
+                'edition_division_id',
+            ],
+            \App\Models\EditionRegistration::getListFields()
+        );
+        $this->assertEquals(['url'], \App\Models\Prize::getListFields());
     }
 
     public function test_get_metadata_returns_correct_values(): void
@@ -159,6 +186,7 @@ class HasResourceMetadataTest extends TestCase
         $this->assertEquals(Player::getSearchableFields(), $metadata['searchable_fields']);
         $this->assertEquals(Player::getFilterableFields(), $metadata['filterable_fields']);
         $this->assertEquals(Player::getSortableFields(), $metadata['sortable_fields']);
+        $this->assertEquals(Player::getListFields(), $metadata['list_fields']);
     }
 
     public function test_get_metadata_works_with_model_without_fields(): void
@@ -174,10 +202,12 @@ class HasResourceMetadataTest extends TestCase
         $this->assertArrayHasKey('searchable_fields', $metadata);
         $this->assertArrayHasKey('filterable_fields', $metadata);
         $this->assertArrayHasKey('sortable_fields', $metadata);
+        $this->assertArrayHasKey('list_fields', $metadata);
 
         $this->assertEquals([], $metadata['searchable_fields']);
         $this->assertEquals([], $metadata['filterable_fields']);
         $this->assertEquals([], $metadata['sortable_fields']);
+        $this->assertEquals([], $metadata['list_fields']);
     }
 
     public function test_club_model_metadata_works_correctly(): void

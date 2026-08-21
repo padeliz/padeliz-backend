@@ -131,14 +131,24 @@ Route::prefix('v1')->group(function () {
         // Edition management
         Route::prefix('editions')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'index']);
-            Route::get('{edition}', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'show']);
+            Route::get('{edition}', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'show'])
+                ->whereNumber('edition');
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'store']);
-            Route::put('{edition}', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'update']);
-            Route::patch('{edition}', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'patch']);
-            Route::post('{edition}/finalize', [\App\Http\Controllers\Api\V1\Manager\EditionFinalizeController::class, 'store']);
-            Route::get('{edition}/replacements', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionReplacementController::class, 'indexForEdition']);
+            Route::put('{edition}', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'update'])
+                ->whereNumber('edition');
+            Route::patch('{edition}', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'patch'])
+                ->whereNumber('edition');
+            Route::post('{edition}/finalize', [\App\Http\Controllers\Api\V1\Manager\EditionFinalizeController::class, 'store'])
+                ->whereNumber('edition');
+            Route::get('{edition}/replacements', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionReplacementController::class, 'indexForEdition'])
+                ->whereNumber('edition');
+            Route::post('{edition}/registrations/import/preview', [\App\Http\Controllers\Api\V1\Manager\EditionRegistrationImportController::class, 'preview'])
+                ->whereNumber('edition');
+            Route::post('{edition}/registrations/import', [\App\Http\Controllers\Api\V1\Manager\EditionRegistrationImportController::class, 'store'])
+                ->whereNumber('edition');
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'bulkDestroy']);
-            Route::delete('{edition}', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'destroy']);
+            Route::delete('{edition}', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'destroy'])
+                ->whereNumber('edition');
         });
 
         // Prize management

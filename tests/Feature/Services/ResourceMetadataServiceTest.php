@@ -68,6 +68,13 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertNotContains('name', $metadata['sortable_fields']);
         $this->assertContains('skill_division', $metadata['sortable_fields']);
 
+        $this->assertArrayHasKey('list_fields', $metadata);
+        $this->assertEquals([], $metadata['list_fields']);
+
+        $profileImage = $metadata['swagger_schema']['properties']['profile_image_url'] ?? null;
+        $this->assertIsArray($profileImage);
+        $this->assertSame('list', $profileImage['x-padeliz-image']['role'] ?? null);
+
         $this->assertEquals(
             'year',
             $metadata['swagger_schema']['properties']['year_of_birth']['format'] ?? null
@@ -237,6 +244,23 @@ class ResourceMetadataServiceTest extends TestCase
 
         $this->assertArrayHasKey('sortable_fields', $metadata);
         $this->assertIsArray($metadata['sortable_fields']);
+
+        $this->assertArrayHasKey('list_fields', $metadata);
+        $this->assertIsArray($metadata['list_fields']);
+        if ($expectedSchemaName === 'EditionRegistration') {
+            $this->assertEquals(
+                [
+                    'player.profile_image_url',
+                    'player_id',
+                    'edition_division_id',
+                ],
+                $metadata['list_fields']
+            );
+        } elseif ($expectedSchemaName === 'Prize') {
+            $this->assertEquals(['url'], $metadata['list_fields']);
+        } else {
+            $this->assertEquals([], $metadata['list_fields']);
+        }
     }
 
     public static function allModelsDataProvider(): array
@@ -394,6 +418,12 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertEquals(
             '^#[0-9A-Fa-f]{6}$',
             $metadata['swagger_schema']['properties']['box_1_bg_color']['pattern'] ?? null
+        );
+        $this->assertArrayHasKey('list_fields', $metadata);
+        $this->assertEquals(['url'], $metadata['list_fields']);
+        $this->assertSame(
+            'list',
+            $metadata['swagger_schema']['properties']['url']['x-padeliz-image']['role'] ?? null
         );
     }
 

@@ -49,6 +49,16 @@ trait HasResourceMetadata
     }
 
     /**
+     * Get preferred list column field keys for this model (order preference).
+     *
+     * @return list<string>
+     */
+    public static function getListFields(): array
+    {
+        return static::$listFields ?? [];
+    }
+
+    /**
      * Check if a field is searchable
      */
     public static function isSearchableField(string $field): bool
@@ -82,6 +92,7 @@ trait HasResourceMetadata
             'searchable_fields' => static::getSearchableFields(),
             'filterable_fields' => static::getFilterableFields(),
             'sortable_fields' => static::getSortableFields(),
+            'list_fields' => static::getListFields(),
         ];
     }
 }

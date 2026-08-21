@@ -147,6 +147,17 @@ class EditionRegistration extends Model
 
     public static ?string $displayField = null;
 
+    /**
+     * Preferred Manager list column order (after PK). Not an allowlist.
+     *
+     * @var list<string>
+     */
+    public static array $listFields = [
+        'player.profile_image_url',
+        'player_id',
+        'edition_division_id',
+    ];
+
     protected $table = 'edition_registrations';
 
     protected $primaryKey = 'id_registration';

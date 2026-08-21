@@ -54,6 +54,9 @@ use Illuminate\Support\Facades\Storage;
  *                 "accept": {"0":"image/jpeg","1":"image/png","2":"image/gif","3":"image/webp","4":"video/mp4","5":"video/webm","6":"video/quicktime"},
  *                 "upload": {"method":"POST","path":"/api/v1/manager/prizes/{id}/media"},
  *                 "delete": {"method":"DELETE","path":"/api/v1/manager/prizes/{id}/media"}
+ *             },
+ *             "padeliz-image": {
+ *                 "role": "list"
  *             }
  *         }
  *     ),
@@ -199,6 +202,15 @@ class Prize extends Model
      * Field that will be used to display the prize in the UI
      */
     public static ?string $displayField = 'name';
+
+    /**
+     * Preferred Manager list column order (after PK). Not an allowlist.
+     *
+     * @var list<string>
+     */
+    public static array $listFields = [
+        'url',
+    ];
 
     protected $table = 'prizes';
 

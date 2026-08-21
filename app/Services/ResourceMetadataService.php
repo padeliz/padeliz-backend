@@ -57,6 +57,7 @@ class ResourceMetadataService
             'searchable_fields' => $this->getSearchableFields($modelClass),
             'filterable_fields' => $this->getFilterableFields($modelClass, $tableName),
             'sortable_fields' => $this->getSortableFields($modelClass),
+            'list_fields' => $this->getListFields($modelClass),
         ];
     }
 
@@ -239,6 +240,20 @@ class ResourceMetadataService
         }
 
         return $modelClass::$sortableFields ?? [];
+    }
+
+    /**
+     * Get preferred list column field keys from model (always an array).
+     *
+     * @return list<string>
+     */
+    private function getListFields(string $modelClass): array
+    {
+        if (! property_exists($modelClass, 'listFields')) {
+            return [];
+        }
+
+        return array_values($modelClass::$listFields ?? []);
     }
 
     /**
