@@ -14,7 +14,7 @@ final class PlayerEditionHistoryService
     /**
      * @param  list<int>  $playerIds
      * @return array<int, array{
-     *     last_played: null|array{division_title: string, rank: null|int, participant_count: int},
+     *     last_played: null|array{division_id: int, division_title: string, rank: null|int, participant_count: int},
      *     participated_count: int,
      *     banned_count: int,
      *     absented_count: int
@@ -101,11 +101,15 @@ final class PlayerEditionHistoryService
                 $latest = $cleanRows[0];
                 $edId = (int) $latest->edition_division_id;
                 $rank = $ranksByParticipationId->get($latest->id_participation);
+                $divisionId = (int) ($latest->editionDivision?->division_id ?? 0);
                 $lastPlayed = [
                     'division_title' => (string) ($latest->editionDivision?->division_title ?? ''),
                     'rank' => $rank !== null ? (int) $rank : null,
                     'participant_count' => (int) ($participantCounts->get($edId) ?? 0),
                 ];
+                if ($divisionId > 0) {
+                    $lastPlayed['division_id'] = $divisionId;
+                }
             }
 
             $result[$playerId] = [

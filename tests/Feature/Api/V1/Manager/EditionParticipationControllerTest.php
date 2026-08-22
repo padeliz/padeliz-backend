@@ -711,4 +711,68 @@ class EditionParticipationControllerTest extends TestCase
         $bulk->assertOk();
         $this->assertArrayNotHasKey('player_history', $bulk->json('data') ?? []);
     }
+
+    public function test_index_with_edition_id_includes_flags_and_edition_summary(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $registered = Player::factory()->create();
+        $unregistered = Player::factory()->create();
+        \App\Models\EditionRegistration::factory()->withoutEditionDivision()->create([
+            'edition_id' => $this->edition->id_edition,
+            'player_id' => $registered->id_player,
+            'is_student' => false,
+            'payment' => 50,
+        ]);
+
+        EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
+            'player_id' => $registered->id_player,
+        ]);
+        EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
+            'player_id' => $unregistered->id_player,
+        ]);
+
+        $response = $this->getJson(
+            '/api/v1/manager/edition-participations?filters[edition_id]=' . $this->edition->id_edition
+        );
+
+        $response->assertOk()
+            ->assertJsonPath('meta.edition_summary.registered_not_participating_count', 0)
+            ->assertJsonPath('meta.edition_summary.participations_locked', false)
+            ->assertJsonPath('meta.current_page', 1);
+
+        $rows = collect($response->json('data'));
+        $this->assertTrue($rows->contains(fn ($row) => in_array('not_registered', $row['flags'] ?? [], true)));
+    }
+
+    public function test_destroy_and_bulk_destroy_blocked_when_lottery_exists(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $participation = EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
+        ]);
+        $other = EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
+        ]);
+
+        \App\Models\EditionLotteryLucky::factory()->create([
+            'drawn_participation_id' => $participation->id_participation,
+        ]);
+
+        $this->deleteJson('/api/v1/manager/edition-participations/' . $participation->id_participation)
+            ->assertStatus(409);
+
+        $bulk = $this->deleteJson('/api/v1/manager/edition-participations/bulk', [
+            'participation_ids' => [$other->id_participation],
+        ]);
+        $bulk->assertStatus(409);
+        $this->assertSame(1, $bulk->json('errors.total_failed'));
+    }
 }

@@ -7,6 +7,8 @@ namespace App\Http\Controllers\Api\V1\Manager;
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
 use App\Http\Resources\EditionParticipationResource;
 use App\Models\{Edition, EditionDivision, EditionParticipation, Player};
+use App\Services\EditionParticipationFlagService;
+use App\Services\EditionParticipationLotteryGuard;
 use App\Services\Pdf\EditionDivisionPosterInvalidator;
 use App\Services\PlayerEditionHistoryService;
 use Illuminate\Http\Request;
@@ -23,6 +25,8 @@ class EditionParticipationController extends V1BaseController
     public function __construct(
         private readonly EditionDivisionPosterInvalidator $posterInvalidator,
         private readonly PlayerEditionHistoryService $playerEditionHistory,
+        private readonly EditionParticipationFlagService $participationFlags,
+        private readonly EditionParticipationLotteryGuard $lotteryGuard,
     ) {
     }
 
@@ -142,6 +146,7 @@ class EditionParticipationController extends V1BaseController
 
         $filters = $request->input('filters', []);
         $editionId = isset($filters['edition_id']) ? (int) $filters['edition_id'] : 0;
+        $editionSummary = null;
         if ($editionId > 0) {
             $edition = Edition::query()->find($editionId);
             if ($edition !== null) {
@@ -149,7 +154,13 @@ class EditionParticipationController extends V1BaseController
                     $editionParticipations->getCollection()->pluck('player_id')->all(),
                     $this->playerEditionHistory->cutoffDateForEdition($edition)
                 );
-                $editionParticipations->getCollection()->transform(function (EditionParticipation $p) use ($histories) {
+                $flagPayload = $this->participationFlags->forEditionParticipations(
+                    $editionId,
+                    $editionParticipations->getCollection()
+                );
+                $editionSummary = $flagPayload['edition_summary'];
+                $flagsById = $flagPayload['flags_by_participation_id'];
+                $editionParticipations->getCollection()->transform(function (EditionParticipation $p) use ($histories, $flagsById) {
                     $p->setAttribute(
                         'player_history',
                         $histories[(int) $p->player_id] ?? [
@@ -159,13 +170,27 @@ class EditionParticipationController extends V1BaseController
                             'absented_count' => 0,
                         ]
                     );
+                    $p->setAttribute(
+                        'flags',
+                        $flagsById[(int) $p->id_participation] ?? []
+                    );
 
                     return $p;
                 });
             }
         }
 
-        return EditionParticipationResource::collection($editionParticipations);
+        $resource = EditionParticipationResource::collection($editionParticipations);
+        if ($editionSummary !== null) {
+            $payload = $resource->response()->getData(true);
+            $payload['meta'] = array_merge($payload['meta'] ?? [], [
+                'edition_summary' => $editionSummary,
+            ]);
+
+            return response()->json($payload);
+        }
+
+        return $resource;
     }
 
     /**
@@ -574,6 +599,13 @@ class EditionParticipationController extends V1BaseController
             return $this->errorResponse('Participations cannot be deleted after finalize.', 409);
         }
 
+        if ($this->lotteryGuard->hasLotteryLuckiesForEdition((int) $editionParticipation->edition_id)) {
+            return $this->errorResponse(
+                'Participations cannot be deleted after lottery draws exist for this edition.',
+                409
+            );
+        }
+
         $editionDivision = $editionParticipation->editionDivision;
 
         $response = $this->deleteResourceWithResponse(
@@ -714,6 +746,16 @@ class EditionParticipationController extends V1BaseController
                     $results['failed'][] = [
                         'id' => $editionParticipationId,
                         'reason' => 'Participations cannot be deleted after finalize.',
+                    ];
+                    $results['total_failed']++;
+
+                    continue;
+                }
+
+                if ($this->lotteryGuard->hasLotteryLuckiesForEdition((int) $editionParticipation->edition_id)) {
+                    $results['failed'][] = [
+                        'id' => $editionParticipationId,
+                        'reason' => 'Participations cannot be deleted after lottery draws exist for this edition.',
                     ];
                     $results['total_failed']++;
 

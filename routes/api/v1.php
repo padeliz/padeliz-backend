@@ -167,6 +167,10 @@ Route::prefix('v1')->group(function () {
                 ->whereNumber('edition');
             Route::post('{edition}/registrations/import', [\App\Http\Controllers\Api\V1\Manager\EditionRegistrationImportController::class, 'store'])
                 ->whereNumber('edition');
+            Route::get('{edition}/participations/map/preview', [\App\Http\Controllers\Api\V1\Manager\EditionParticipationMappingController::class, 'preview'])
+                ->whereNumber('edition');
+            Route::post('{edition}/participations/map', [\App\Http\Controllers\Api\V1\Manager\EditionParticipationMappingController::class, 'map'])
+                ->whereNumber('edition');
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'bulkDestroy']);
             Route::delete('{edition}', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'destroy'])
                 ->whereNumber('edition');

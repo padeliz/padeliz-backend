@@ -1,0 +1,21 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Services\EditionParticipationMapping;
+
+use RuntimeException;
+
+final class EditionParticipationMappingException extends RuntimeException
+{
+    /**
+     * @param  array<string, mixed>  $errors
+     */
+    public function __construct(
+        string $message,
+        public readonly int $status = 409,
+        public readonly array $errors = [],
+    ) {
+        parent::__construct($message);
+    }
+}

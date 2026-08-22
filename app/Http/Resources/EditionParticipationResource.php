@@ -40,6 +40,10 @@ class EditionParticipationResource extends JsonResource
                 array_key_exists('player_history', $this->resource->getAttributes()),
                 fn () => $this->player_history
             ),
+            'flags' => $this->when(
+                array_key_exists('flags', $this->resource->getAttributes()),
+                fn () => $this->flags
+            ),
         ];
     }
 }

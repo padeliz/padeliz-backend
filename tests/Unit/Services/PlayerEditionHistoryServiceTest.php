@@ -159,6 +159,27 @@ final class PlayerEditionHistoryServiceTest extends TestCase
         $this->assertSame(3, $history['participated_count']);
     }
 
+    public function test_last_played_includes_division_id(): void
+    {
+        $player = Player::factory()->create();
+        $past = $this->makeEditionWithDivision('2025-01-01', 'Division ED');
+
+        EditionParticipation::factory()->create([
+            'player_id' => $player->id_player,
+            'edition_id' => $past['edition']->id_edition,
+            'edition_division_id' => $past['ed']->id_edition_division,
+            'absence_reason' => null,
+            'ban_reason' => null,
+        ]);
+
+        $history = $this->service->forPlayers([$player->id_player], '2026-06-15')[$player->id_player];
+
+        $this->assertSame(
+            (int) $past['ed']->division_id,
+            $history['last_played']['division_id']
+        );
+    }
+
     public function test_rank_present_and_missing_and_participant_count_all_rows(): void
     {
         $player = Player::factory()->create();
