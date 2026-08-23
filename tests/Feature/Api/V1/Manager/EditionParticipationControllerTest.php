@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Manager;
 
+use App\Enums\PlayerCustomFieldType;
 use App\Models\Division;
 use App\Models\Edition;
 use App\Models\EditionDivision;
 use App\Models\EditionParticipation;
 use App\Models\Player;
+use App\Models\PlayerCustomField;
+use App\Models\PlayerCustomFieldValue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -774,5 +777,110 @@ class EditionParticipationControllerTest extends TestCase
         ]);
         $bulk->assertStatus(409);
         $this->assertSame(1, $bulk->json('errors.total_failed'));
+    }
+
+    public function test_index_without_custom_field_ids_param_returns_empty_custom_field_values(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'player_id' => $this->player->id_player,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
+        ]);
+
+        $response = $this->getJson(
+            '/api/v1/manager/edition-participations?filters[edition_id]=' . $this->edition->id_edition
+        );
+
+        $response->assertOk();
+        $row = collect($response->json('data'))->firstWhere('player_id', $this->player->id_player);
+        $this->assertNotNull($row);
+        $this->assertArrayHasKey('custom_field_values', $row);
+        $this->assertSame([], $row['custom_field_values']);
+    }
+
+    public function test_index_custom_field_ids_without_edition_filter_are_ignored(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $field = PlayerCustomField::factory()->create(['type' => PlayerCustomFieldType::Text]);
+        PlayerCustomFieldValue::factory()->create([
+            'player_id' => $this->player->id_player,
+            'player_custom_field_id' => $field->id_player_custom_field,
+            'value_text' => 'Should not appear',
+        ]);
+        EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'player_id' => $this->player->id_player,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
+        ]);
+
+        $response = $this->getJson(
+            '/api/v1/manager/edition-participations?custom_field_ids[]=' . $field->id_player_custom_field
+        );
+
+        $response->assertOk();
+        $row = $response->json('data.0');
+        $this->assertArrayNotHasKey('custom_field_values', $row);
+    }
+
+    public function test_index_with_edition_filter_and_custom_field_ids_returns_values(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $field = PlayerCustomField::factory()->create([
+            'label' => 'Club',
+            'type' => PlayerCustomFieldType::Text,
+        ]);
+        PlayerCustomFieldValue::factory()->create([
+            'player_id' => $this->player->id_player,
+            'player_custom_field_id' => $field->id_player_custom_field,
+            'value_text' => 'Padel Club',
+        ]);
+        EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'player_id' => $this->player->id_player,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
+        ]);
+
+        $response = $this->getJson(
+            '/api/v1/manager/edition-participations'
+            . '?filters[edition_id]=' . $this->edition->id_edition
+            . '&custom_field_ids[]=' . $field->id_player_custom_field
+        );
+
+        $response->assertOk();
+        $row = collect($response->json('data'))->firstWhere('player_id', $this->player->id_player);
+        $this->assertNotNull($row);
+        $this->assertSame([
+            [
+                'field_id' => $field->id_player_custom_field,
+                'label' => 'Club',
+                'value' => 'Padel Club',
+            ],
+        ], $row['custom_field_values']);
+    }
+
+    public function test_index_with_unknown_custom_field_ids_returns_empty_values(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'player_id' => $this->player->id_player,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
+        ]);
+
+        $response = $this->getJson(
+            '/api/v1/manager/edition-participations'
+            . '?filters[edition_id]=' . $this->edition->id_edition
+            . '&custom_field_ids[]=99999'
+        );
+
+        $response->assertOk();
+        $row = collect($response->json('data'))->firstWhere('player_id', $this->player->id_player);
+        $this->assertNotNull($row);
+        $this->assertSame([], $row['custom_field_values']);
     }
 }

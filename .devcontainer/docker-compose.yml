@@ -14,6 +14,7 @@ services:
       - ..:/workspaces/padeliz-backend:delegated
       - composer_cache:/root/.composer/cache
     environment:
+      - TZ=Europe/Bucharest
       - DB_HOST=db
       - DB_PORT=3306
     networks:

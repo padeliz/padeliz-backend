@@ -9,7 +9,9 @@ use App\Http\Resources\EditionParticipationResource;
 use App\Models\{Edition, EditionDivision, EditionParticipation, Player};
 use App\Services\EditionParticipationFlagService;
 use App\Services\EditionParticipationLotteryGuard;
+use App\Services\Pdf\AttendancePosterInvalidation;
 use App\Services\Pdf\EditionDivisionPosterInvalidator;
+use App\Services\PlayerCustomField\PlayerCustomFieldParticipationResolver;
 use App\Services\PlayerEditionHistoryService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -24,6 +26,8 @@ class EditionParticipationController extends V1BaseController
 {
     public function __construct(
         private readonly EditionDivisionPosterInvalidator $posterInvalidator,
+        private readonly AttendancePosterInvalidation $attendanceInvalidation,
+        private readonly PlayerCustomFieldParticipationResolver $customFieldResolver,
         private readonly PlayerEditionHistoryService $playerEditionHistory,
         private readonly EditionParticipationFlagService $participationFlags,
         private readonly EditionParticipationLotteryGuard $lotteryGuard,
@@ -160,7 +164,16 @@ class EditionParticipationController extends V1BaseController
                 );
                 $editionSummary = $flagPayload['edition_summary'];
                 $flagsById = $flagPayload['flags_by_participation_id'];
-                $editionParticipations->getCollection()->transform(function (EditionParticipation $p) use ($histories, $flagsById) {
+                $customFieldIds = $this->parseCustomFieldIds($request, $editionId);
+                $customFieldsByPlayer = $customFieldIds !== []
+                    ? $this->customFieldResolver->resolveForPlayers(
+                        $editionId,
+                        $editionParticipations->getCollection()->pluck('player_id')->map(static fn ($id): int => (int) $id)->all(),
+                        $customFieldIds
+                    )
+                    : [];
+
+                $editionParticipations->getCollection()->transform(function (EditionParticipation $p) use ($histories, $flagsById, $customFieldsByPlayer) {
                     $p->setAttribute(
                         'player_history',
                         $histories[(int) $p->player_id] ?? [
@@ -173,6 +186,10 @@ class EditionParticipationController extends V1BaseController
                     $p->setAttribute(
                         'flags',
                         $flagsById[(int) $p->id_participation] ?? []
+                    );
+                    $p->setAttribute(
+                        'custom_field_values',
+                        $customFieldsByPlayer[(int) $p->player_id] ?? []
                     );
 
                     return $p;
@@ -339,6 +356,7 @@ class EditionParticipationController extends V1BaseController
         if ($editionParticipation->editionDivision !== null) {
             $this->posterInvalidator->clearMatchesAndRanking($editionParticipation->editionDivision);
         }
+        $this->posterInvalidator->clearAttendanceForEdition((int) $editionParticipation->edition_id);
 
         return $this->resourceResponse(
             new EditionParticipationResource($editionParticipation),
@@ -437,10 +455,15 @@ class EditionParticipationController extends V1BaseController
         }
 
         $shouldInvalidate = $this->participationUpdateShouldInvalidate($editionParticipation, $validated);
+        $shouldInvalidateAttendance = $this->attendanceInvalidation
+            ->shouldInvalidateForParticipationChange($editionParticipation, $validated);
         $editionParticipation->update($validated);
         $editionParticipation->load(['player', 'editionDivision', 'edition']);
         if ($shouldInvalidate && $editionParticipation->editionDivision !== null) {
             $this->posterInvalidator->clearMatchesAndRanking($editionParticipation->editionDivision);
+        }
+        if ($shouldInvalidateAttendance) {
+            $this->posterInvalidator->clearAttendanceForEdition((int) $editionParticipation->edition_id);
         }
 
         return $this->resourceResponse(
@@ -541,10 +564,15 @@ class EditionParticipationController extends V1BaseController
         }
 
         $shouldInvalidate = $this->participationUpdateShouldInvalidate($editionParticipation, $validated);
+        $shouldInvalidateAttendance = $this->attendanceInvalidation
+            ->shouldInvalidateForParticipationChange($editionParticipation, $validated);
         $editionParticipation->update($validated);
         $editionParticipation->load(['player', 'editionDivision', 'edition']);
         if ($shouldInvalidate && $editionParticipation->editionDivision !== null) {
             $this->posterInvalidator->clearMatchesAndRanking($editionParticipation->editionDivision);
+        }
+        if ($shouldInvalidateAttendance) {
+            $this->posterInvalidator->clearAttendanceForEdition((int) $editionParticipation->edition_id);
         }
 
         return $this->resourceResponse(
@@ -618,6 +646,7 @@ class EditionParticipationController extends V1BaseController
         if ($editionDivision !== null) {
             $this->posterInvalidator->clearMatchesAndRanking($editionDivision);
         }
+        $this->posterInvalidator->clearAttendanceForEdition((int) $editionParticipation->edition_id);
 
         return $response;
     }
@@ -727,6 +756,11 @@ class EditionParticipationController extends V1BaseController
             'total_failed' => 0,
         ];
 
+        /** @var array<int, EditionDivision> $divisionsToClear */
+        $divisionsToClear = [];
+        /** @var array<int, true> $editionsToClearAttendance */
+        $editionsToClearAttendance = [];
+
         foreach ($request->participation_ids as $editionParticipationId) {
             try {
                 $editionParticipation = EditionParticipation::find($editionParticipationId);
@@ -741,7 +775,7 @@ class EditionParticipationController extends V1BaseController
                     continue;
                 }
 
-                $editionParticipation->loadMissing('edition');
+                $editionParticipation->loadMissing(['edition', 'editionDivision']);
                 if ($editionParticipation->edition?->finalized_at !== null) {
                     $results['failed'][] = [
                         'id' => $editionParticipationId,
@@ -762,6 +796,11 @@ class EditionParticipationController extends V1BaseController
                     continue;
                 }
 
+                if ($editionParticipation->editionDivision !== null) {
+                    $divisionsToClear[(int) $editionParticipation->edition_division_id] = $editionParticipation->editionDivision;
+                }
+                $editionsToClearAttendance[(int) $editionParticipation->edition_id] = true;
+
                 $editionParticipation->delete();
 
                 $results['successful'][] = [
@@ -777,6 +816,13 @@ class EditionParticipationController extends V1BaseController
                 ];
                 $results['total_failed']++;
             }
+        }
+
+        foreach ($divisionsToClear as $division) {
+            $this->posterInvalidator->clearMatchesAndRanking($division);
+        }
+        foreach (array_keys($editionsToClearAttendance) as $editionIdToClear) {
+            $this->posterInvalidator->clearAttendanceForEdition((int) $editionIdToClear);
         }
 
         // Determine response based on results
@@ -913,6 +959,8 @@ class EditionParticipationController extends V1BaseController
                 ->get();
         });
 
+        $this->posterInvalidator->clearAttendanceForEdition($editionId);
+
         return $this->successResponse(
             EditionParticipationResource::collection($updated),
             'Participations reordered successfully'
@@ -940,5 +988,32 @@ class EditionParticipationController extends V1BaseController
         }
 
         return false;
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function parseCustomFieldIds(Request $request, int $editionId): array
+    {
+        if ($editionId <= 0 || ! $request->has('custom_field_ids')) {
+            return [];
+        }
+
+        $raw = $request->input('custom_field_ids', []);
+        if (! is_array($raw)) {
+            return [];
+        }
+
+        $ids = [];
+        foreach ($raw as $value) {
+            if (is_numeric($value)) {
+                $id = (int) $value;
+                if ($id > 0) {
+                    $ids[] = $id;
+                }
+            }
+        }
+
+        return array_values(array_unique($ids));
     }
 }

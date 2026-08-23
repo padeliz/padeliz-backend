@@ -171,6 +171,16 @@ Route::prefix('v1')->group(function () {
                 ->whereNumber('edition');
             Route::post('{edition}/participations/map', [\App\Http\Controllers\Api\V1\Manager\EditionParticipationMappingController::class, 'map'])
                 ->whereNumber('edition');
+            Route::get('{edition}/posters', [\App\Http\Controllers\Api\V1\Manager\EditionPosterController::class, 'index'])
+                ->whereNumber('edition');
+            Route::get('{edition}/posters/merged/file', [\App\Http\Controllers\Api\V1\Manager\EditionPosterController::class, 'mergedFile'])
+                ->whereNumber('edition');
+            Route::post('{edition}/posters/attendance', [\App\Http\Controllers\Api\V1\Manager\EditionPosterController::class, 'attendance'])
+                ->whereNumber('edition');
+            Route::get('{edition}/posters/attendance/preview', [\App\Http\Controllers\Api\V1\Manager\EditionPosterController::class, 'attendancePreview'])
+                ->whereNumber('edition');
+            Route::get('{edition}/posters/attendance/file', [\App\Http\Controllers\Api\V1\Manager\EditionPosterController::class, 'attendanceFile'])
+                ->whereNumber('edition');
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'bulkDestroy']);
             Route::delete('{edition}', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'destroy'])
                 ->whereNumber('edition');

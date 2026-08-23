@@ -7,6 +7,7 @@ namespace Tests\Feature\Api\V1\Manager;
 use App\Models\Court;
 use App\Models\Division;
 use App\Models\Edition;
+use App\Services\Pdf\EditionDivisionPosterInvalidator;
 use App\Models\EditionDivision;
 use App\Models\EditionDivisionCourt;
 use App\Models\EditionDivisionPoster;
@@ -27,6 +28,8 @@ final class EditionDivisionPosterInvalidationTest extends TestCase
 
     private Player $manager;
 
+    private Edition $edition;
+
     private EditionDivision $editionDivision;
 
     private EditionDivisionCourt $edCourt;
@@ -44,11 +47,11 @@ final class EditionDivisionPosterInvalidationTest extends TestCase
             'user_types' => ['player', 'manager'],
         ]);
 
-        $edition = Edition::factory()->create();
+        $this->edition = Edition::factory()->create(['date' => '2000-01-01']);
         $division = Division::factory()->create();
 
         $this->editionDivision = EditionDivision::factory()->create([
-            'edition_id' => $edition->id_edition,
+            'edition_id' => $this->edition->id_edition,
             'division_id' => $division->id_division,
             'players_limit' => 8,
             'playing_start_time' => '14:00:00',
@@ -74,7 +77,7 @@ final class EditionDivisionPosterInvalidationTest extends TestCase
 
         for ($i = 0; $i < 8; $i++) {
             $this->participations[] = EditionParticipation::factory()->create([
-                'edition_id' => $edition->id_edition,
+                'edition_id' => $this->edition->id_edition,
                 'edition_division_id' => $this->editionDivision->id_edition_division,
                 'player_id' => Player::factory()->create()->id_player,
                 'sort_order' => $i,
@@ -87,6 +90,7 @@ final class EditionDivisionPosterInvalidationTest extends TestCase
 
     public function test_generate_clears_matches_and_ranking_generated_keeps_printed(): void
     {
+        $this->markSetUpEditionAsLast();
         Sanctum::actingAs($this->manager);
         [$matches, $ranking] = $this->seedPosters();
 
@@ -103,6 +107,7 @@ final class EditionDivisionPosterInvalidationTest extends TestCase
 
     public function test_destroy_schedule_clears_matches_only(): void
     {
+        $this->markSetUpEditionAsLast();
         Sanctum::actingAs($this->manager);
         $edId = $this->editionDivision->id_edition_division;
         $this->postJson("/api/v1/manager/edition-divisions/{$edId}/schedule/generate", [])->assertOk();
@@ -118,6 +123,7 @@ final class EditionDivisionPosterInvalidationTest extends TestCase
 
     public function test_form_pdf_relevant_field_clears_matches_and_ranking(): void
     {
+        $this->markSetUpEditionAsLast();
         Sanctum::actingAs($this->manager);
         [$matches, $ranking] = $this->seedPosters();
 
@@ -133,6 +139,7 @@ final class EditionDivisionPosterInvalidationTest extends TestCase
 
     public function test_form_collecting_map_clears_matches_and_ranking(): void
     {
+        $this->markSetUpEditionAsLast();
         Sanctum::actingAs($this->manager);
         [$matches, $ranking] = $this->seedPosters();
         $p = $this->participations[0];
@@ -171,6 +178,7 @@ final class EditionDivisionPosterInvalidationTest extends TestCase
 
     public function test_participation_create_clears_matches_and_ranking(): void
     {
+        $this->markSetUpEditionAsLast();
         Sanctum::actingAs($this->manager);
         [$matches, $ranking] = $this->seedPosters();
 
@@ -221,6 +229,7 @@ final class EditionDivisionPosterInvalidationTest extends TestCase
 
     public function test_playing_window_patch_clears_matches_and_ranking(): void
     {
+        $this->markSetUpEditionAsLast();
         Sanctum::actingAs($this->manager);
         [$matches, $ranking] = $this->seedPosters();
 
@@ -294,6 +303,7 @@ final class EditionDivisionPosterInvalidationTest extends TestCase
     private function makePoster(string $kind, ?int $courtId, string $filename): EditionDivisionPoster
     {
         $poster = new EditionDivisionPoster();
+        $poster->edition_id = (int) $this->editionDivision->edition_id;
         $poster->edition_division_id = $this->editionDivision->id_edition_division;
         $poster->edition_division_court_id = $courtId;
         $poster->poster_kind = $kind;
@@ -313,5 +323,145 @@ final class EditionDivisionPosterInvalidationTest extends TestCase
             Storage::disk(config('filesystems.user_uploads_disk', 'public'))
                 ->exists('edition-division-posters/' . $poster->id_edition_division_poster . '/generated/' . basename((string) $poster->generated_path))
         );
+    }
+
+    public function test_guard_blocks_clear_generated_for_non_last_edition(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $olderEdition = Edition::factory()->create(['date' => '2100-01-01']);
+        Edition::factory()->create(['date' => '2100-06-01']);
+
+        $olderDivision = EditionDivision::factory()->create([
+            'edition_id' => $olderEdition->id_edition,
+            'division_id' => Division::factory()->create()->id_division,
+        ]);
+
+        [$matches, $ranking] = $this->seedPostersForDivision($olderDivision);
+
+        $cleared = (new EditionDivisionPosterInvalidator())->clearGenerated($olderDivision, ['MATCHES', 'RANKING']);
+
+        $this->assertSame(0, $cleared);
+        $this->assertNotNull($matches->fresh()->generated_path);
+        $this->assertNotNull($ranking->fresh()->generated_path);
+    }
+
+    public function test_clear_generated_clears_posters_for_last_edition(): void
+    {
+        Edition::factory()->create(['date' => '2100-01-01']);
+        $lastEdition = Edition::factory()->create(['date' => '2100-06-01']);
+
+        $lastDivision = EditionDivision::factory()->create([
+            'edition_id' => $lastEdition->id_edition,
+            'division_id' => Division::factory()->create()->id_division,
+        ]);
+
+        [$matches, $ranking] = $this->seedPostersForDivision($lastDivision);
+
+        $cleared = (new EditionDivisionPosterInvalidator())->clearGenerated($lastDivision, ['MATCHES', 'RANKING']);
+
+        $this->assertSame(2, $cleared);
+        $this->assertGeneratedCleared($matches);
+        $this->assertGeneratedCleared($ranking);
+    }
+
+    public function test_guard_blocks_clear_attendance_for_non_last_edition(): void
+    {
+        $olderEdition = Edition::factory()->create(['date' => '2100-01-01']);
+        Edition::factory()->create(['date' => '2100-06-01']);
+
+        $poster = $this->seedAttendancePoster((int) $olderEdition->id_edition);
+
+        $cleared = (new EditionDivisionPosterInvalidator())->clearAttendanceForEdition((int) $olderEdition->id_edition);
+
+        $this->assertSame(0, $cleared);
+        $this->assertNotNull($poster->fresh()->generated_path);
+    }
+
+    public function test_clear_attendance_for_edition_clears_last_edition_poster(): void
+    {
+        Edition::factory()->create(['date' => '2100-01-01']);
+        $lastEdition = Edition::factory()->create(['date' => '2100-06-01']);
+
+        $poster = $this->seedAttendancePoster((int) $lastEdition->id_edition);
+
+        $cleared = (new EditionDivisionPosterInvalidator())->clearAttendanceForEdition((int) $lastEdition->id_edition);
+
+        $this->assertSame(1, $cleared);
+        $this->assertNull($poster->fresh()->generated_path);
+    }
+
+    public function test_participation_create_on_non_last_edition_does_not_clear_posters(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $olderEdition = Edition::factory()->create(['date' => '2100-01-01']);
+        Edition::factory()->create(['date' => '2100-06-01']);
+
+        $olderDivision = EditionDivision::factory()->create([
+            'edition_id' => $olderEdition->id_edition,
+            'division_id' => Division::factory()->create()->id_division,
+            'players_limit' => 8,
+        ]);
+
+        [$matches, $ranking] = $this->seedPostersForDivision($olderDivision);
+
+        $this->postJson('/api/v1/manager/edition-participations', [
+            'edition_id' => $olderEdition->id_edition,
+            'edition_division_id' => $olderDivision->id_edition_division,
+            'player_id' => Player::factory()->create()->id_player,
+            'sort_order' => 0,
+            'is_collecting_points' => true,
+        ])->assertCreated();
+
+        $this->assertNotNull($matches->fresh()->generated_path);
+        $this->assertNotNull($ranking->fresh()->generated_path);
+    }
+
+    /**
+     * @return array{0: EditionDivisionPoster, 1: EditionDivisionPoster}
+     */
+    private function seedPostersForDivision(EditionDivision $editionDivision): array
+    {
+        $court = Court::factory()->create(['name' => 'Court A']);
+        $edCourt = EditionDivisionCourt::factory()->create([
+            'edition_division_id' => $editionDivision->id_edition_division,
+            'court_id' => $court->id_court,
+            'display_order' => 0,
+        ]);
+
+        $previousDivision = $this->editionDivision;
+        $previousCourt = $this->edCourt;
+        $this->editionDivision = $editionDivision;
+        $this->edCourt = $edCourt;
+
+        try {
+            return $this->seedPosters();
+        } finally {
+            $this->editionDivision = $previousDivision;
+            $this->edCourt = $previousCourt;
+        }
+    }
+
+    private function seedAttendancePoster(int $editionId): EditionDivisionPoster
+    {
+        $poster = new EditionDivisionPoster();
+        $poster->edition_id = $editionId;
+        $poster->edition_division_id = null;
+        $poster->poster_kind = 'ATTENDANCE';
+        $poster->inserted_at = time();
+        $poster->save();
+        $poster->generated_path = 'edition-division-posters/' . $poster->id_edition_division_poster . '/generated/attendance.pdf';
+        $poster->save();
+
+        Storage::disk(config('filesystems.user_uploads_disk', 'public'))
+            ->put((string) $poster->generated_path, '%PDF-attendance');
+
+        return $poster;
+    }
+
+    private function markSetUpEditionAsLast(): void
+    {
+        $this->edition->forceFill(['date' => '2100-12-31'])->save();
     }
 }

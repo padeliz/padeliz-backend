@@ -318,6 +318,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
 
         $editionDivision = EditionDivision::create($validated);
         $editionDivision->load(['edition', 'division', 'courts']);
+        $this->posterInvalidator->clearAttendanceForEdition((int) $editionDivision->edition_id);
 
         return $this->resourceResponse(
             new EditionDivisionResource($editionDivision),
@@ -638,6 +639,7 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
         }
 
         $editionDivision->delete();
+        $this->posterInvalidator->clearAttendanceForEdition((int) $editionDivision->edition_id);
 
         return $this->successResponse(null, 'Edition division deleted successfully');
     }
@@ -970,6 +972,8 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
                 ->get();
         });
 
+        $this->posterInvalidator->clearAttendanceForEdition($editionId);
+
         return $this->successResponse(
             EditionDivisionResource::collection($reordered),
             'Edition divisions reordered successfully'
@@ -1017,6 +1021,8 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
     private function applyAndInvalidatePosters(EditionDivision $editionDivision, array $validated): void
     {
         $playingWindowChanged = false;
+        $attendanceChanged = false;
+
         foreach (['playing_start_time', 'playing_end_time'] as $field) {
             if (! array_key_exists($field, $validated)) {
                 continue;
@@ -1028,10 +1034,19 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
             }
         }
 
+        if (array_key_exists('division_title', $validated)
+            && (string) $validated['division_title'] !== (string) $editionDivision->division_title) {
+            $attendanceChanged = true;
+        }
+
         $editionDivision->update($validated);
 
         if ($playingWindowChanged) {
             $this->posterInvalidator->clearMatchesAndRanking($editionDivision);
+        }
+
+        if ($attendanceChanged) {
+            $this->posterInvalidator->clearAttendanceForEdition((int) $editionDivision->edition_id);
         }
     }
 }

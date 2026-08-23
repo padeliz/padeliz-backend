@@ -329,26 +329,21 @@ return new class () extends Migration {
 
         Schema::create('edition_division_posters', function (Blueprint $table) {
             $table->id('id_edition_division_poster');
-            $table->unsignedBigInteger('edition_division_id');
+            $table->unsignedBigInteger('edition_id')->nullable();
+            $table->unsignedBigInteger('edition_division_id')->nullable();
             $table->unsignedBigInteger('edition_division_court_id')->nullable();
-            $table->enum('poster_kind', ['MATCHES', 'RANKING', 'COMBINED', 'BATTLES', 'HOUSE', 'SETUP']);
+            $table->enum('poster_kind', ['MATCHES', 'RANKING', 'COMBINED', 'BATTLES', 'HOUSE', 'SETUP', 'ATTENDANCE']);
             $table->string('generated_path', 512)->nullable();
             $table->string('printed_path', 512)->nullable();
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
             $table->index('edition_division_id', 'ed_posters_edition_division_id_idx');
+            $table->index('edition_id', 'ed_posters_edition_id_idx');
         });
 
-        $prefix = DB::getTablePrefix();
-        DB::statement(
-            "ALTER TABLE `{$prefix}edition_division_posters` " .
-            'ADD COLUMN `court_scope_key` BIGINT UNSIGNED GENERATED ALWAYS AS (IFNULL(`edition_division_court_id`, 0)) STORED'
-        );
-        DB::statement(
-            'CREATE UNIQUE INDEX `uq_ed_poster_scope` ' .
-            "ON `{$prefix}edition_division_posters` (`edition_division_id`, `poster_kind`, `court_scope_key`)"
-        );
         Schema::table('edition_division_posters', function (Blueprint $table) {
+            $table->foreign('edition_id')
+                ->references('id_edition')->on('editions')->cascadeOnDelete();
             $table->foreign('edition_division_id')
                 ->references('id_edition_division')->on('edition_divisions')->cascadeOnDelete();
             $table->foreign('edition_division_court_id', 'fk_poster_ed_court')
@@ -564,6 +559,7 @@ return new class () extends Migration {
                 ->references('id_match')->on('matches');
         });
 
+        $prefix = DB::getTablePrefix();
         DB::statement(
             "ALTER TABLE `{$prefix}edition_division_replacements` " .
             'ADD CONSTRAINT `chk_repl_at_most_one_substitute` ' .

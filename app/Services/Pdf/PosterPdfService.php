@@ -187,6 +187,51 @@ final class PosterPdfService
         }
     }
 
+    public function generateAttendanceForEdition(Edition $edition): PosterPdfResult
+    {
+        $this->ephemeralTemps = [];
+
+        try {
+            $edition->loadMissing(['organizer', 'divisions.division', 'divisions.participations.player.profileImages', 'divisions.editionDivisionCourts.court']);
+
+            $divisions = $edition->divisions
+                ->sortBy(fn (EditionDivision $ed) => [(int) $ed->skill_order, (int) $ed->id_edition_division])
+                ->values()
+                ->all();
+
+            $payload = $this->buildAttendanceViewData($edition, $divisions, false);
+            $bytes = $this->renderAttendancePdf($payload);
+            $filename = $this->attendanceFilename((string) $edition->name);
+            $poster = $this->persistEditionPoster($edition, 'ATTENDANCE', $bytes, $filename);
+
+            return new PosterPdfResult($bytes, $filename, $poster);
+        } finally {
+            $this->imageGenerator->unlinkTemps($this->ephemeralTemps);
+            $this->ephemeralTemps = [];
+        }
+    }
+
+    public function renderAttendanceHtmlForEdition(Edition $edition): string
+    {
+        $this->ephemeralTemps = [];
+
+        try {
+            $edition->loadMissing(['organizer', 'divisions.division', 'divisions.participations.player.profileImages', 'divisions.editionDivisionCourts.court']);
+
+            $divisions = $edition->divisions
+                ->sortBy(fn (EditionDivision $ed) => [(int) $ed->skill_order, (int) $ed->id_edition_division])
+                ->values()
+                ->all();
+
+            $payload = $this->buildAttendanceViewData($edition, $divisions, true);
+
+            return View::make('pdf.attendance', $payload)->render();
+        } finally {
+            $this->imageGenerator->unlinkTemps($this->ephemeralTemps);
+            $this->ephemeralTemps = [];
+        }
+    }
+
     /**
      * Mode B: stream-only MATCHES PDF from scratch schedule knobs (no DB writes).
      *
@@ -603,11 +648,25 @@ final class PosterPdfService
         string $bytes,
         string $filename,
     ): EditionDivisionPoster {
-        $poster = EditionDivisionPoster::query()->firstOrNew([
-            'edition_division_id' => $editionDivision->id_edition_division,
-            'poster_kind' => $kind,
-            'edition_division_court_id' => $courtId,
-        ]);
+        $poster = EditionDivisionPoster::query()
+            ->where('edition_division_id', $editionDivision->id_edition_division)
+            ->where('poster_kind', $kind)
+            ->when(
+                $courtId === null,
+                fn ($query) => $query->whereNull('edition_division_court_id'),
+                fn ($query) => $query->where('edition_division_court_id', $courtId)
+            )
+            ->orderByDesc('id_edition_division_poster')
+            ->first();
+
+        if ($poster === null) {
+            $poster = new EditionDivisionPoster();
+            $poster->edition_division_id = $editionDivision->id_edition_division;
+            $poster->edition_division_court_id = $courtId;
+            $poster->poster_kind = $kind;
+        }
+
+        $poster->edition_id = (int) $editionDivision->edition_id;
         if (! $poster->exists) {
             $poster->save();
         }
@@ -619,6 +678,156 @@ final class PosterPdfService
         $poster->save();
 
         return $poster->fresh();
+    }
+
+    private function persistEditionPoster(
+        Edition $edition,
+        string $kind,
+        string $bytes,
+        string $filename,
+    ): EditionDivisionPoster {
+        $poster = EditionDivisionPoster::query()
+            ->where('edition_id', $edition->id_edition)
+            ->whereNull('edition_division_id')
+            ->where('poster_kind', $kind)
+            ->whereNull('edition_division_court_id')
+            ->orderByDesc('id_edition_division_poster')
+            ->first();
+
+        if ($poster === null) {
+            $poster = new EditionDivisionPoster();
+            $poster->edition_id = (int) $edition->id_edition;
+            $poster->edition_division_id = null;
+            $poster->poster_kind = $kind;
+            $poster->edition_division_court_id = null;
+            $poster->save();
+        }
+
+        $disk = $poster->storageDisk();
+        $relative = 'edition-division-posters/' . $poster->id_edition_division_poster . '/generated/' . $filename;
+        Storage::disk($disk)->put($relative, $bytes, ['visibility' => 'public']);
+        $poster->generated_path = $relative;
+        $poster->save();
+
+        return $poster->fresh();
+    }
+
+    /**
+     * @param  list<EditionDivision>  $divisions
+     * @return array<string, mixed>
+     */
+    private function buildAttendanceViewData(Edition $edition, array $divisions, bool $forBrowserPreview = false): array
+    {
+        $headerLeft = $edition->organizer_id !== null
+            ? trim(((string) ($edition->organizer?->name ?? '')) . ' ' . ((string) $edition->name))
+            : (string) $edition->name;
+
+        $headerDate = AttendancePdfLayout::formatOrdinalHeaderDate((string) $edition->date);
+        $arriving = $this->formatTime($edition->arriving_time);
+        $closing = $this->formatTime($edition->closing_time);
+        $headerTimes = trim($arriving . ' – ' . $closing);
+
+        $pages = [];
+        foreach (AttendancePdfLayout::pageBatches($divisions) as $batch) {
+            $cells = [];
+
+            foreach ($batch as $editionDivision) {
+                $participations = AttendancePdfLayout::sortParticipationsByPlayerName(
+                    $editionDivision->participations ?? collect()
+                );
+
+                $participants = [];
+                foreach ($participations as $participation) {
+                    $player = $participation->player;
+                    if ($player === null) {
+                        continue;
+                    }
+
+                    $collecting = (bool) $participation->is_collecting_points;
+                    if ($forBrowserPreview) {
+                        $avatarSrc = $this->imageGenerator->generatePlayerAvatarUrl($player, $collecting) ?? '';
+                    } else {
+                        $avatarSrc = $this->imageGenerator->generatePlayerAvatar($player, $collecting, true);
+                    }
+
+                    $participants[] = [
+                        'name' => (string) $player->name,
+                        'avatar_src' => $avatarSrc,
+                    ];
+                }
+
+                $courtNames = ($editionDivision->editionDivisionCourts ?? collect())
+                    ->sortBy('display_order')
+                    ->map(fn ($edc) => (string) ($edc->court?->name ?? 'Court'))
+                    ->values()
+                    ->all();
+
+                $cells[] = [
+                    'color' => (string) ($editionDivision->division?->color ?? '#7ab857'),
+                    'division_title' => (string) $editionDivision->division_title,
+                    'courts_label' => implode(', ', $courtNames),
+                    'participants' => $participants,
+                ];
+            }
+
+            $columnCount = AttendancePdfLayout::columnCountForEdCount(count($cells));
+            $rawCellRows = AttendancePdfLayout::rowBatches($cells, $columnCount);
+
+            $cellRows = [];
+            foreach ($rawCellRows as $rowCells) {
+                $cellRows[] = [
+                    'cells' => $rowCells,
+                ];
+            }
+
+            $pages[] = [
+                'header_left' => $headerLeft,
+                'header_date' => $headerDate,
+                'header_times' => $headerTimes,
+                'column_count' => $columnCount,
+                'column_width_percent' => AttendancePdfLayout::columnWidthPercent($columnCount),
+                'cell_rows' => $cellRows,
+            ];
+        }
+
+        return ['pages' => $pages];
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function renderAttendancePdf(array $payload): string
+    {
+        $html = View::make('pdf.attendance', $payload)->render();
+        $mpdf = $this->makeAttendanceMpdf();
+        $mpdf->WriteHTML($html);
+
+        return $mpdf->Output('', Destination::STRING_RETURN);
+    }
+
+    private function makeAttendanceMpdf(): Mpdf
+    {
+        $tempDir = storage_path('app/tmp/mpdf');
+        if (! is_dir($tempDir) && ! mkdir($tempDir, 0777, true) && ! is_dir($tempDir)) {
+            throw new RuntimeException('Failed to create mPDF temp directory.');
+        }
+
+        return new Mpdf([
+            'mode' => 'utf-8',
+            'format' => 'A4-P',
+            'autoPageBreak' => true,
+            'margin_left' => 0,
+            'margin_right' => 0,
+            'margin_top' => 10,
+            'margin_bottom' => 0,
+            'tempDir' => $tempDir,
+            'shrink_tables_to_fit' => 0,
+        ]);
+    }
+
+    private function attendanceFilename(string $editionName): string
+    {
+        return sprintf('A4 Carton Color - %s Attendance.pdf', $editionName);
     }
 
     /**

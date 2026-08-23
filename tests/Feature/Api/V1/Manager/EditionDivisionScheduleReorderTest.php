@@ -29,6 +29,8 @@ final class EditionDivisionScheduleReorderTest extends TestCase
 
     private Player $manager;
 
+    private Edition $edition;
+
     private EditionDivision $editionDivision;
 
     private EditionDivisionCourt $courtA;
@@ -48,11 +50,11 @@ final class EditionDivisionScheduleReorderTest extends TestCase
             'user_types' => ['player', 'manager'],
         ]);
 
-        $edition = Edition::factory()->create();
+        $this->edition = Edition::factory()->create();
         $division = Division::factory()->create();
 
         $this->editionDivision = EditionDivision::factory()->create([
-            'edition_id' => $edition->id_edition,
+            'edition_id' => $this->edition->id_edition,
             'division_id' => $division->id_division,
             'players_limit' => 8,
             'playing_start_time' => '14:00:00',
@@ -84,7 +86,7 @@ final class EditionDivisionScheduleReorderTest extends TestCase
 
         for ($i = 0; $i < 8; $i++) {
             $this->participations[] = EditionParticipation::factory()->create([
-                'edition_id' => $edition->id_edition,
+                'edition_id' => $this->edition->id_edition,
                 'edition_division_id' => $this->editionDivision->id_edition_division,
                 'player_id' => Player::factory()->create()->id_player,
                 'sort_order' => $i,
@@ -97,6 +99,7 @@ final class EditionDivisionScheduleReorderTest extends TestCase
 
     public function test_reorder_syncs_complete_rounds_recomputes_clocks_and_clears_matches_posters(): void
     {
+        $this->edition->forceFill(['date' => '2100-12-31'])->save();
         Sanctum::actingAs($this->manager);
         $edId = $this->editionDivision->id_edition_division;
 

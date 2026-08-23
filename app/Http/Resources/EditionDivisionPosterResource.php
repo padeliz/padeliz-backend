@@ -16,6 +16,7 @@ class EditionDivisionPosterResource extends JsonResource
     {
         return [
             'id_edition_division_poster' => $this->id_edition_division_poster,
+            'edition_id' => $this->edition_id,
             'edition_division_id' => $this->edition_division_id,
             'edition_division_court_id' => $this->edition_division_court_id,
             'poster_kind' => $this->poster_kind,

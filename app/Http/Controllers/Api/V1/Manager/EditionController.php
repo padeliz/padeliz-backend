@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Resources\EditionResource;
 use App\Models\Edition;
+use App\Services\Pdf\EditionDivisionPosterInvalidator;
 use App\Services\Schedule\PlayingWindow;
 use Illuminate\Http\Request;
 
@@ -17,6 +18,11 @@ use Illuminate\Http\Request;
  */
 class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseController
 {
+    public function __construct(
+        private readonly EditionDivisionPosterInvalidator $posterInvalidator,
+    ) {
+    }
+
     /**
      * @OA\Get(
      *     path="/api/v1/manager/editions",
@@ -342,8 +348,12 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
             $payload['include_club_host_on_pdf'] = $request->boolean('include_club_host_on_pdf');
         }
 
+        $shouldClearAttendance = $this->attendanceHeaderChanged($edition, $payload);
         $edition->update($payload);
         $edition->load('organizer');
+        if ($shouldClearAttendance) {
+            $this->posterInvalidator->clearAttendanceForEdition((int) $edition->id_edition);
+        }
 
         return $this->resourceResponse(
             new EditionResource($edition),
@@ -441,8 +451,12 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
             $payload['include_club_host_on_pdf'] = $request->boolean('include_club_host_on_pdf');
         }
 
+        $shouldClearAttendance = $this->attendanceHeaderChanged($edition, $payload);
         $edition->update($payload);
         $edition->load('organizer');
+        if ($shouldClearAttendance) {
+            $this->posterInvalidator->clearAttendanceForEdition((int) $edition->id_edition);
+        }
 
         return $this->resourceResponse(
             new EditionResource($edition),
@@ -609,5 +623,31 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
             'edition',
             'Editions deleted successfully'
         );
+    }
+
+    /**
+     * @param  array<string, mixed>  $payload
+     */
+    private function attendanceHeaderChanged(Edition $edition, array $payload): bool
+    {
+        foreach (['name', 'date', 'arriving_time', 'closing_time', 'organizer_id'] as $field) {
+            if (! array_key_exists($field, $payload)) {
+                continue;
+            }
+
+            $incoming = $payload[$field];
+            $current = $edition->getAttribute($field);
+
+            if ($field === 'arriving_time' || $field === 'closing_time') {
+                $incoming = PlayingWindow::toClockString($incoming);
+                $current = PlayingWindow::toClockString($current);
+            }
+
+            if ((string) $incoming !== (string) $current) {
+                return true;
+            }
+        }
+
+        return false;
     }
 }

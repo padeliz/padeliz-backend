@@ -174,6 +174,8 @@ final class EditionParticipationMappingService
                 }
             }
 
+            $this->posterInvalidator->clearAttendanceForEdition($editionId);
+
             $byEd = [];
             foreach ($countsByEdId as $edId => $count) {
                 if ($count > 0) {

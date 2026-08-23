@@ -12,11 +12,12 @@ use Illuminate\Support\Facades\Storage;
 /**
  * @OA\Schema(
  *     schema="EditionDivisionPoster",
- *     required={"edition_division_id", "poster_kind"},
+ *     required={"poster_kind"},
  *     @OA\Property(property="id_edition_division_poster", type="integer", format="int64", readOnly=true),
- *     @OA\Property(property="edition_division_id", type="integer", format="int64"),
+ *     @OA\Property(property="edition_id", type="integer", format="int64", nullable=true),
+ *     @OA\Property(property="edition_division_id", type="integer", format="int64", nullable=true),
  *     @OA\Property(property="edition_division_court_id", type="integer", format="int64", nullable=true),
- *     @OA\Property(property="poster_kind", type="string", enum={"MATCHES", "RANKING", "COMBINED", "BATTLES", "HOUSE", "SETUP"}),
+ *     @OA\Property(property="poster_kind", type="string", enum={"MATCHES", "RANKING", "COMBINED", "BATTLES", "HOUSE", "SETUP", "ATTENDANCE"}),
  *     @OA\Property(property="generated_path", type="string", maxLength=512, nullable=true),
  *     @OA\Property(property="printed_path", type="string", maxLength=512, nullable=true, readOnly=true),
  *     @OA\Property(property="generated_url", type="string", nullable=true, readOnly=true),
@@ -60,6 +61,7 @@ class EditionDivisionPoster extends Model
     public const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
+        'edition_id',
         'edition_division_id',
         'edition_division_court_id',
         'poster_kind',
@@ -68,6 +70,7 @@ class EditionDivisionPoster extends Model
     ];
 
     protected $casts = [
+        'edition_id' => 'integer',
         'edition_division_id' => 'integer',
         'edition_division_court_id' => 'integer',
         'inserted_at' => 'integer',
@@ -75,6 +78,11 @@ class EditionDivisionPoster extends Model
     ];
 
     protected $appends = ['generated_url', 'printed_url'];
+
+    public function edition(): BelongsTo
+    {
+        return $this->belongsTo(Edition::class, 'edition_id', 'id_edition');
+    }
 
     public function editionDivision(): BelongsTo
     {

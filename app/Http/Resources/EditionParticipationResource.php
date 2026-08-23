@@ -44,6 +44,10 @@ class EditionParticipationResource extends JsonResource
                 array_key_exists('flags', $this->resource->getAttributes()),
                 fn () => $this->flags
             ),
+            'custom_field_values' => $this->when(
+                array_key_exists('custom_field_values', $this->resource->getAttributes()),
+                fn () => $this->custom_field_values
+            ),
         ];
     }
 }
