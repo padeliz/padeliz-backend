@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Resources\LocationResource;
 use App\Models\Location;
+use App\Traits\CachesManagerResourceReads;
 use Illuminate\Http\Request;
 
 /**
@@ -16,6 +17,7 @@ use Illuminate\Http\Request;
  */
 class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseController
 {
+    use CachesManagerResourceReads;
     /**
      * @OA\Get(
      *     path="/api/v1/manager/locations",
@@ -107,30 +109,31 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      */
     public function index(Request $request)
     {
-        $query = Location::with('club');
+        $payload = $this->cachedManagerIndex('locations', $request, [], function () use ($request) {
+            $query = Location::with('club');
 
-        // Apply advanced pagination
-        $this->applyAdvancedPagination(
-            $query,
-            $request,
-            Location::$searchableFields,
-            Location::$filterableFields,
-            Location::$sortableFields
-        );
+            $this->applyAdvancedPagination(
+                $query,
+                $request,
+                Location::$searchableFields,
+                Location::$filterableFields,
+                Location::$sortableFields
+            );
 
-        // Get pagination parameters
-        $paginationParams = $this->getPaginationParams($request);
+            $paginationParams = $this->getPaginationParams($request);
 
-        // Apply default sorting if no sorting is specified
-        if (! $request->has('sort_by')) {
+            if (! $request->has('sort_by')) {
 
-            $query->orderBy('id_location', 'desc');
+                $query->orderBy('id_location', 'desc');
 
-        }
+            }
 
-        $locations = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
+            $locations = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
-        return LocationResource::collection($locations);
+            return LocationResource::collection($locations)->response()->getData(true);
+        });
+
+        return response()->json($payload);
     }
 
     /**
@@ -181,12 +184,13 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      */
     public function show(Location $location)
     {
-        $location->load('club');
+        $data = $this->cachedManagerShow('locations', (int) $location->id_location, function () use ($location) {
+            $location->load('club');
 
-        return $this->resourceResponse(
-            new LocationResource($location),
-            'Location details retrieved successfully'
-        );
+            return (new LocationResource($location))->resolve();
+        });
+
+        return $this->successResponse($data, 'Location details retrieved successfully');
     }
 
     /**

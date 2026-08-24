@@ -13,6 +13,7 @@ use App\Services\Pdf\AttendancePosterInvalidation;
 use App\Services\Pdf\EditionDivisionPosterInvalidator;
 use App\Services\PlayerCustomField\PlayerCustomFieldParticipationResolver;
 use App\Services\PlayerEditionHistoryService;
+use App\Traits\CachesManagerResourceReads;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -24,6 +25,7 @@ use Illuminate\Support\Facades\DB;
  */
 class EditionParticipationController extends V1BaseController
 {
+    use CachesManagerResourceReads;
     public function __construct(
         private readonly EditionDivisionPosterInvalidator $posterInvalidator,
         private readonly AttendancePosterInvalidation $attendanceInvalidation,
@@ -127,87 +129,85 @@ class EditionParticipationController extends V1BaseController
      */
     public function index(Request $request)
     {
-        $query = EditionParticipation::with(['player', 'editionDivision', 'edition']);
+        $payload = $this->cachedManagerIndex('edition-participations', $request, ['edition_id'], function () use ($request) {
+            $query = EditionParticipation::with(['player', 'editionDivision', 'edition']);
 
-        // Apply advanced pagination
-        $this->applyAdvancedPagination(
-            $query,
-            $request,
-            EditionParticipation::$searchableFields,
-            EditionParticipation::$filterableFields,
-            EditionParticipation::$sortableFields
-        );
+            $this->applyAdvancedPagination(
+                $query,
+                $request,
+                EditionParticipation::$searchableFields,
+                EditionParticipation::$filterableFields,
+                EditionParticipation::$sortableFields
+            );
 
-        // Get pagination parameters
-        $paginationParams = $this->getPaginationParams($request);
+            $paginationParams = $this->getPaginationParams($request);
 
-        // Apply default sorting if no sorting is specified
-        if (! $request->has('sort_by')) {
-            $query->orderBy('id_participation', 'desc');
-        }
-
-        $editionParticipations = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
-
-        $filters = $request->input('filters', []);
-        $editionId = isset($filters['edition_id']) ? (int) $filters['edition_id'] : 0;
-        $editionSummary = null;
-        if ($editionId > 0) {
-            $edition = Edition::query()->find($editionId);
-            if ($edition !== null) {
-                $histories = $this->playerEditionHistory->forPlayers(
-                    $editionParticipations->getCollection()->pluck('player_id')->all(),
-                    $this->playerEditionHistory->cutoffDateForEdition($edition)
-                );
-                $flagPayload = $this->participationFlags->forEditionParticipations(
-                    $editionId,
-                    $editionParticipations->getCollection()
-                );
-                $editionSummary = $flagPayload['edition_summary'];
-                $flagsById = $flagPayload['flags_by_participation_id'];
-                $customFieldIds = $this->parseCustomFieldIds($request, $editionId);
-                $customFieldsByPlayer = $customFieldIds !== []
-                    ? $this->customFieldResolver->resolveForPlayers(
-                        $editionId,
-                        $editionParticipations->getCollection()->pluck('player_id')->map(static fn ($id): int => (int) $id)->all(),
-                        $customFieldIds
-                    )
-                    : [];
-
-                $editionParticipations->getCollection()->transform(function (EditionParticipation $p) use ($histories, $flagsById, $customFieldsByPlayer) {
-                    $p->setAttribute(
-                        'player_history',
-                        $histories[(int) $p->player_id] ?? [
-                            'last_played' => null,
-                            'participated_count' => 0,
-                            'banned_count' => 0,
-                            'absented_count' => 0,
-                        ]
-                    );
-                    $p->setAttribute(
-                        'flags',
-                        $flagsById[(int) $p->id_participation] ?? []
-                    );
-                    $p->setAttribute(
-                        'custom_field_values',
-                        $customFieldsByPlayer[(int) $p->player_id] ?? []
-                    );
-
-                    return $p;
-                });
+            if (! $request->has('sort_by')) {
+                $query->orderBy('id_participation', 'desc');
             }
-        }
 
-        $resource = EditionParticipationResource::collection($editionParticipations);
-        if ($editionSummary !== null) {
-            $payload = $resource->response()->getData(true);
-            $payload['meta'] = array_merge($payload['meta'] ?? [], [
-                'edition_summary' => $editionSummary,
-            ]);
+            $editionParticipations = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
-            return response()->json($payload);
-        }
+            $filters = $request->input('filters', []);
+            $editionId = isset($filters['edition_id']) ? (int) $filters['edition_id'] : 0;
+            $editionSummary = null;
+            if ($editionId > 0) {
+                $edition = Edition::query()->find($editionId);
+                if ($edition !== null) {
+                    $histories = $this->playerEditionHistory->forPlayers(
+                        $editionParticipations->getCollection()->pluck('player_id')->all(),
+                        $this->playerEditionHistory->cutoffDateForEdition($edition)
+                    );
+                    $flagPayload = $this->participationFlags->forEditionParticipations(
+                        $editionId,
+                        $editionParticipations->getCollection()
+                    );
+                    $editionSummary = $flagPayload['edition_summary'];
+                    $flagsById = $flagPayload['flags_by_participation_id'];
+                    $customFieldIds = $this->parseCustomFieldIds($request, $editionId);
+                    $customFieldsByPlayer = $customFieldIds !== []
+                        ? $this->customFieldResolver->resolveForPlayers(
+                            $editionId,
+                            $editionParticipations->getCollection()->pluck('player_id')->map(static fn ($id): int => (int) $id)->all(),
+                            $customFieldIds
+                        )
+                        : [];
 
-        return $resource;
+                    $editionParticipations->getCollection()->transform(function (EditionParticipation $p) use ($histories, $flagsById, $customFieldsByPlayer) {
+                        $p->setAttribute(
+                            'player_history',
+                            $histories[(int) $p->player_id] ?? [
+                                'last_played' => null,
+                                'participated_count' => 0,
+                                'banned_count' => 0,
+                                'absented_count' => 0,
+                            ]
+                        );
+                        $p->setAttribute(
+                            'flags',
+                            $flagsById[(int) $p->id_participation] ?? []
+                        );
+                        $p->setAttribute(
+                            'custom_field_values',
+                            $customFieldsByPlayer[(int) $p->player_id] ?? []
+                        );
+
+                        return $p;
+                    });
+                }
+            }
+
+            $payload = EditionParticipationResource::collection($editionParticipations)->response()->getData(true);
+            if ($editionSummary !== null) {
+                $payload['meta'] = array_merge($payload['meta'] ?? [], [
+                    'edition_summary' => $editionSummary,
+                ]);
+            }
+
+            return $payload;
+        });
+
+        return response()->json($payload);
     }
 
     /**

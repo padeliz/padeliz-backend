@@ -34,7 +34,8 @@ Route::prefix('v1')->group(function () {
     // PLAYER PUBLIC ROUTES (no authentication)
     // ========================================
     Route::prefix('app')->group(function () {
-        Route::get('editions', [\App\Http\Controllers\Api\V1\App\EditionController::class, 'index']);
+        Route::get('editions', [\App\Http\Controllers\Api\V1\App\EditionController::class, 'index'])
+            ->middleware('cacheResponse');
     });
 
     // ========================================
@@ -86,7 +87,7 @@ Route::prefix('v1')->group(function () {
     // ========================================
     // MANAGER ROUTES (Requires manager authentication)
     // ========================================
-    Route::middleware(['auth:sanctum', 'user.type:manager'])->prefix('manager')->group(function () {
+    Route::middleware(['auth:sanctum', 'user.type:manager', 'cache.no-store', 'cache.etag'])->prefix('manager')->group(function () {
         // Manager authentication
         Route::prefix('auth')->group(function () {
             Route::post('logout', [\App\Http\Controllers\Api\V1\Manager\ManagerAuthController::class, 'logout']);
@@ -512,8 +513,6 @@ Route::prefix('v1')->group(function () {
         // Resource metadata management
         Route::prefix('metadata')->group(function () {
             Route::get('{schema}', [\App\Http\Controllers\Api\V1\Manager\ResourceMetadataController::class, 'show']);
-            Route::delete('{schema}/cache', [\App\Http\Controllers\Api\V1\Manager\ResourceMetadataController::class, 'clearCache']);
-            Route::delete('cache', [\App\Http\Controllers\Api\V1\Manager\ResourceMetadataController::class, 'clearAllCache']);
         });
     });
 });

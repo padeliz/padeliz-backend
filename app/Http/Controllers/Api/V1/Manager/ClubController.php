@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Resources\ClubResource;
 use App\Models\Club;
+use App\Traits\CachesManagerResourceReads;
 use Illuminate\Http\Request;
 
 /**
@@ -16,6 +17,7 @@ use Illuminate\Http\Request;
  */
 class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseController
 {
+    use CachesManagerResourceReads;
     /**
      * @OA\Get(
      *     path="/api/v1/manager/clubs",
@@ -102,28 +104,29 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      */
     public function index(Request $request)
     {
-        $query = Club::with('locations');
+        $payload = $this->cachedManagerIndex('clubs', $request, [], function () use ($request) {
+            $query = Club::with('locations');
 
-        // Apply advanced pagination
-        $this->applyAdvancedPagination(
-            $query,
-            $request,
-            Club::$searchableFields,
-            Club::$filterableFields,
-            Club::$sortableFields
-        );
+            $this->applyAdvancedPagination(
+                $query,
+                $request,
+                Club::$searchableFields,
+                Club::$filterableFields,
+                Club::$sortableFields
+            );
 
-        // Get pagination parameters
-        $paginationParams = $this->getPaginationParams($request);
+            $paginationParams = $this->getPaginationParams($request);
 
-        // Apply default sorting if no sorting is specified
-        if (! $request->has('sort_by')) {
-            $query->orderBy('id_club', 'desc');
-        }
+            if (! $request->has('sort_by')) {
+                $query->orderBy('id_club', 'desc');
+            }
 
-        $clubs = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
+            $clubs = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
-        return ClubResource::collection($clubs);
+            return ClubResource::collection($clubs)->response()->getData(true);
+        });
+
+        return response()->json($payload);
     }
 
     /**
@@ -160,12 +163,13 @@ class ClubController extends \App\Http\Controllers\BaseVersions\V1\V1BaseControl
      */
     public function show(Club $club)
     {
-        $club->load('locations');
+        $data = $this->cachedManagerShow('clubs', (int) $club->id_club, function () use ($club) {
+            $club->load('locations');
 
-        return $this->resourceResponse(
-            new ClubResource($club),
-            'Club details retrieved successfully'
-        );
+            return (new ClubResource($club))->resolve();
+        });
+
+        return $this->successResponse($data, 'Club details retrieved successfully');
     }
 
     /**

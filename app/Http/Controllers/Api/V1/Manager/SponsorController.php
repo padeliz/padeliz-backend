@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Resources\SponsorResource;
 use App\Models\Sponsor;
+use App\Traits\CachesManagerResourceReads;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -17,6 +18,7 @@ use Illuminate\Validation\Rule;
  */
 class SponsorController extends \App\Http\Controllers\BaseVersions\V1\V1BaseController
 {
+    use CachesManagerResourceReads;
     /**
      * @OA\Get(
      *     path="/api/v1/manager/sponsors",
@@ -28,25 +30,29 @@ class SponsorController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      */
     public function index(Request $request)
     {
-        $query = Sponsor::with(['club', 'players']);
+        $payload = $this->cachedManagerIndex('sponsors', $request, [], function () use ($request) {
+            $query = Sponsor::with(['club', 'players']);
 
-        $this->applyAdvancedPagination(
-            $query,
-            $request,
-            Sponsor::$searchableFields,
-            Sponsor::$filterableFields,
-            Sponsor::$sortableFields
-        );
+            $this->applyAdvancedPagination(
+                $query,
+                $request,
+                Sponsor::$searchableFields,
+                Sponsor::$filterableFields,
+                Sponsor::$sortableFields
+            );
 
-        $paginationParams = $this->getPaginationParams($request);
+            $paginationParams = $this->getPaginationParams($request);
 
-        if (! $request->has('sort_by')) {
-            $query->orderBy('id_sponsor', 'desc');
-        }
+            if (! $request->has('sort_by')) {
+                $query->orderBy('id_sponsor', 'desc');
+            }
 
-        $sponsors = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
+            $sponsors = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
-        return SponsorResource::collection($sponsors);
+            return SponsorResource::collection($sponsors)->response()->getData(true);
+        });
+
+        return response()->json($payload);
     }
 
     /**
@@ -61,12 +67,13 @@ class SponsorController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      */
     public function show(Sponsor $sponsor)
     {
-        $sponsor->load(['club', 'players']);
+        $data = $this->cachedManagerShow('sponsors', (int) $sponsor->id_sponsor, function () use ($sponsor) {
+            $sponsor->load(['club', 'players']);
 
-        return $this->resourceResponse(
-            new SponsorResource($sponsor),
-            'Sponsor details retrieved successfully'
-        );
+            return (new SponsorResource($sponsor))->resolve();
+        });
+
+        return $this->successResponse($data, 'Sponsor details retrieved successfully');
     }
 
     /**

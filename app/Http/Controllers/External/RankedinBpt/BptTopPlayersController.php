@@ -6,8 +6,10 @@ namespace App\Http\Controllers\External\RankedinBpt;
 
 use App\Http\Controllers\Controller;
 use App\Integrations\RankedinBpt\Contracts\BptTopPlayersReportBuilder;
+use App\Services\Cache\PadelizCache;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\Cache;
 use Throwable;
 
 /**
@@ -156,7 +158,21 @@ final class BptTopPlayersController extends Controller
         $debug = $request->query('debug') === '1';
 
         try {
-            return response()->json($builder->build($take, $debug));
+            if ($debug) {
+                return response()->json($builder->build($take, true));
+            }
+
+            $policy = config('cache_policies.bpt_top_players');
+            $payload = Cache::lock('bpt_top_players:'.$take, 120)->block(120, function () use ($builder, $take, $policy) {
+                return app(PadelizCache::class)->remember(
+                    'bpt:top-players:'.$take,
+                    (int) $policy['ttl'],
+                    $policy['tags'],
+                    fn () => $builder->build($take, false),
+                );
+            });
+
+            return response()->json($payload);
         } catch (Throwable $e) {
             return response()->json([
                 'message' => 'RankedIn BPT aggregation failed',

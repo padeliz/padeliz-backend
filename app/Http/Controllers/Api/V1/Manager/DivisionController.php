@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Resources\DivisionResource;
 use App\Models\Division;
+use App\Traits\CachesManagerResourceReads;
 use Illuminate\Http\Request;
 
 /**
@@ -16,6 +17,7 @@ use Illuminate\Http\Request;
  */
 class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseController
 {
+    use CachesManagerResourceReads;
     /**
      * @OA\Get(
      *     path="/api/v1/manager/divisions",
@@ -103,28 +105,29 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      */
     public function index(Request $request)
     {
-        $query = Division::with('itsFirstEdition');
+        $payload = $this->cachedManagerIndex('divisions', $request, [], function () use ($request) {
+            $query = Division::with('itsFirstEdition');
 
-        // Apply advanced pagination
-        $this->applyAdvancedPagination(
-            $query,
-            $request,
-            Division::$searchableFields,
-            Division::$filterableFields,
-            Division::$sortableFields
-        );
+            $this->applyAdvancedPagination(
+                $query,
+                $request,
+                Division::$searchableFields,
+                Division::$filterableFields,
+                Division::$sortableFields
+            );
 
-        // Get pagination parameters
-        $paginationParams = $this->getPaginationParams($request);
+            $paginationParams = $this->getPaginationParams($request);
 
-        // Apply default sorting if no sorting is specified
-        if (! $request->has('sort_by')) {
-            $query->orderBy('id_division', 'desc');
-        }
+            if (! $request->has('sort_by')) {
+                $query->orderBy('id_division', 'desc');
+            }
 
-        $divisions = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
+            $divisions = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
-        return DivisionResource::collection($divisions);
+            return DivisionResource::collection($divisions)->response()->getData(true);
+        });
+
+        return response()->json($payload);
     }
 
     /**
@@ -175,12 +178,13 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      */
     public function show(Division $division)
     {
-        $division->load('itsFirstEdition');
+        $data = $this->cachedManagerShow('divisions', (int) $division->id_division, function () use ($division) {
+            $division->load('itsFirstEdition');
 
-        return $this->resourceResponse(
-            new DivisionResource($division),
-            'Division details retrieved successfully'
-        );
+            return (new DivisionResource($division))->resolve();
+        });
+
+        return $this->successResponse($data, 'Division details retrieved successfully');
     }
 
     /**

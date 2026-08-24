@@ -231,46 +231,19 @@ class ResourceMetadataControllerTest extends TestCase
         $response->assertStatus(403);
     }
 
-    public function test_clear_cache_endpoint(): void
+    public function test_metadata_delete_routes_removed(): void
     {
-        // Create a manager user
         /** @var Player $manager */
         $manager = Player::factory()->create();
         $manager->addUserType('manager');
 
-        $response = $this->actingAs($manager)
-            ->deleteJson('/api/v1/manager/metadata/Player/cache');
+        $this->actingAs($manager)
+            ->deleteJson('/api/v1/manager/metadata/Player/cache')
+            ->assertStatus(404);
 
-        $response->assertStatus(200)
-            ->assertJsonStructure([
-                'success',
-                'message',
-            ])
-            ->assertJson([
-                'success' => true,
-                'message' => 'Resource metadata cache cleared successfully',
-            ]);
-    }
-
-    public function test_clear_all_cache_endpoint(): void
-    {
-        // Create a manager user
-        /** @var Player $manager */
-        $manager = Player::factory()->create();
-        $manager->addUserType('manager');
-
-        $response = $this->actingAs($manager)
-            ->deleteJson('/api/v1/manager/metadata/cache');
-
-        $response->assertStatus(200)
-            ->assertJsonStructure([
-                'success',
-                'message',
-            ])
-            ->assertJson([
-                'success' => true,
-                'message' => 'All resource metadata cache cleared successfully',
-            ]);
+        $this->actingAs($manager)
+            ->deleteJson('/api/v1/manager/metadata/cache')
+            ->assertStatus(405);
     }
 
     /**

@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Schedule;
 
+use App\Services\Cache\PadelizCache;
 use App\Services\Schedule\Exception\TemplateMatchesNotFoundException;
 
 /**
@@ -16,6 +17,7 @@ final class TemplatesToolsService
 {
     public function __construct(
         private readonly TemplateMatchesRepository $repository = new TemplateMatchesRepository(),
+        private readonly ?PadelizCache $padelizCache = null,
     ) {
     }
 
@@ -44,6 +46,36 @@ final class TemplatesToolsService
      * }
      */
     public function catalog(bool $includeFixedTeams, ?int $version = null): array
+    {
+        $cache = $this->padelizCache ?? app(PadelizCache::class);
+        $policy = config('cache_policies.templates_catalog');
+        $key = sprintf('templates:catalog:%d:%d', (int) $includeFixedTeams, (int) ($version ?? 0));
+
+        return $cache->remember($key, (int) $policy['ttl'], $policy['tags'], function () use ($includeFixedTeams, $version) {
+            return $this->buildCatalog($includeFixedTeams, $version);
+        });
+    }
+
+    /**
+     * @return array{
+     *     version: int,
+     *     latest_version: int,
+     *     include_fixed_teams: bool,
+     *     source_directory: string,
+     *     combos: list<array{
+     *         players: int,
+     *         partners: int,
+     *         repeat: int,
+     *         courts: int,
+     *         fixed_teams: bool,
+     *         present: bool,
+     *         in_expected_catalog: bool,
+     *         eligible: null|bool,
+     *         usable: null|bool
+     *     }>
+     * }
+     */
+    private function buildCatalog(bool $includeFixedTeams, ?int $version = null): array
     {
         $latestVersion = $this->repository->latestVersion();
         $version ??= $latestVersion;
@@ -157,6 +189,28 @@ final class TemplatesToolsService
      * }
      */
     public function metrics(bool $includeFixedTeams, ?int $version = null): array
+    {
+        $cache = $this->padelizCache ?? app(PadelizCache::class);
+        $policy = config('cache_policies.templates_metrics');
+        $key = sprintf('templates:metrics:%d:%d', (int) $includeFixedTeams, (int) ($version ?? 0));
+
+        return $cache->remember($key, (int) $policy['ttl'], $policy['tags'], function () use ($includeFixedTeams, $version) {
+            return $this->buildMetrics($includeFixedTeams, $version);
+        });
+    }
+
+    /**
+     * @return array{
+     *     version: int,
+     *     latest_version: int,
+     *     include_fixed_teams: bool,
+     *     source_directory: string,
+     *     combos: list<array<string, mixed>>,
+     *     missing_count: int,
+     *     averages: array<string, null|float>
+     * }
+     */
+    private function buildMetrics(bool $includeFixedTeams, ?int $version = null): array
     {
         $latestVersion = $this->repository->latestVersion();
         $version ??= $latestVersion;

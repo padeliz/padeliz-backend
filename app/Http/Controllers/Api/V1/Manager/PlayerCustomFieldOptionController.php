@@ -8,6 +8,7 @@ use App\Http\Controllers\BaseVersions\V1\V1BaseController;
 use App\Http\Resources\PlayerCustomFieldOptionResource;
 use App\Models\PlayerCustomField;
 use App\Models\PlayerCustomFieldOption;
+use App\Traits\CachesManagerResourceReads;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Str;
@@ -21,6 +22,7 @@ use Illuminate\Validation\ValidationException;
  */
 class PlayerCustomFieldOptionController extends V1BaseController
 {
+    use CachesManagerResourceReads;
     /**
      * @OA\Get(
      *     path="/api/v1/manager/player-custom-fields/{playerCustomField}/options",
@@ -30,13 +32,24 @@ class PlayerCustomFieldOptionController extends V1BaseController
      *     @OA\Response(response=200, description="Successful operation")
      * )
      */
-    public function index(PlayerCustomField $playerCustomField)
+    public function index(Request $request, PlayerCustomField $playerCustomField)
     {
         $this->assertSelectField($playerCustomField);
 
-        $options = $playerCustomField->options()->get();
+        $request->merge([
+            'filters' => array_merge(
+                is_array($request->input('filters')) ? $request->input('filters') : [],
+                ['player_custom_field_id' => $playerCustomField->id_player_custom_field],
+            ),
+        ]);
 
-        return PlayerCustomFieldOptionResource::collection($options);
+        $payload = $this->cachedManagerIndex('player-custom-field-options', $request, ['player_custom_field_id'], function () use ($playerCustomField) {
+            $options = $playerCustomField->options()->get();
+
+            return PlayerCustomFieldOptionResource::collection($options)->response()->getData(true);
+        });
+
+        return response()->json($payload);
     }
 
     /**

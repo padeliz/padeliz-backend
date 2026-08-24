@@ -21,7 +21,8 @@ Route::get('/user', function (Request $request) {
 })->middleware('auth:sanctum');
 
 // API Documentation Index
-Route::get('/documentation', [\App\Http\Controllers\ApiDocumentationController::class, 'index']);
+Route::get('/documentation', [\App\Http\Controllers\ApiDocumentationController::class, 'index'])
+    ->middleware('cacheResponse');
 
 // External integrations (isolated from core Padeliz domain)
 Route::prefix('external/bpt-rankedin')->group(function () {

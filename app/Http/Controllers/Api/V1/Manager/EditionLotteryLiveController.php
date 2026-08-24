@@ -7,6 +7,7 @@ namespace App\Http\Controllers\Api\V1\Manager;
 use App\Http\Controllers\Controller;
 use App\Models\EditionLottery;
 use App\Models\EditionLotteryLucky;
+use App\Services\Cache\ScheduleReadCache;
 use App\Services\Lottery\LotteryDrawService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -22,6 +23,7 @@ class EditionLotteryLiveController extends Controller
 {
     public function __construct(
         private readonly LotteryDrawService $lotteryDrawService,
+        private readonly ScheduleReadCache $scheduleReadCache,
     ) {
     }
 
@@ -181,9 +183,12 @@ class EditionLotteryLiveController extends Controller
      */
     public function prizesBoard(EditionLottery $lottery): JsonResponse
     {
-        return response()->json([
-            'data' => $this->lotteryDrawService->prizesBoard($lottery),
-        ]);
+        $data = $this->scheduleReadCache->rememberPrizesBoard(
+            (int) $lottery->id_lottery,
+            fn () => $this->lotteryDrawService->prizesBoard($lottery),
+        );
+
+        return response()->json(['data' => $data]);
     }
 
     private function findLuckyForLotteryEdition(int $luckyId, EditionLottery $lottery): ?EditionLotteryLucky

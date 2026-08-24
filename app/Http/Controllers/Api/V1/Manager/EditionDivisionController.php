@@ -11,6 +11,7 @@ use App\Models\EditionDivision;
 use App\Models\EditionParticipation;
 use App\Services\Pdf\EditionDivisionPosterInvalidator;
 use App\Services\Schedule\PlayingWindow;
+use App\Traits\CachesManagerResourceReads;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -22,6 +23,7 @@ use Illuminate\Support\Facades\DB;
  */
 class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseController
 {
+    use CachesManagerResourceReads;
     /**
      * Schedule knobs moved to the edition division schedule row and are refused here.
      *
@@ -140,28 +142,29 @@ class EditionDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1
      */
     public function index(Request $request)
     {
-        $query = EditionDivision::with(['edition', 'division', 'courts']);
+        $payload = $this->cachedManagerIndex('edition-divisions', $request, ['edition_id'], function () use ($request) {
+            $query = EditionDivision::with(['edition', 'division', 'courts']);
 
-        // Apply advanced pagination
-        $this->applyAdvancedPagination(
-            $query,
-            $request,
-            EditionDivision::$searchableFields,
-            EditionDivision::$filterableFields,
-            EditionDivision::$sortableFields
-        );
+            $this->applyAdvancedPagination(
+                $query,
+                $request,
+                EditionDivision::$searchableFields,
+                EditionDivision::$filterableFields,
+                EditionDivision::$sortableFields
+            );
 
-        // Get pagination parameters
-        $paginationParams = $this->getPaginationParams($request);
+            $paginationParams = $this->getPaginationParams($request);
 
-        // Apply default sorting if no sorting is specified
-        if (! $request->has('sort_by')) {
-            $query->orderBy('skill_order')->orderBy('id_edition_division');
-        }
+            if (! $request->has('sort_by')) {
+                $query->orderBy('skill_order')->orderBy('id_edition_division');
+            }
 
-        $editionDivisions = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
+            $editionDivisions = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
-        return EditionDivisionResource::collection($editionDivisions);
+            return EditionDivisionResource::collection($editionDivisions)->response()->getData(true);
+        });
+
+        return response()->json($payload);
     }
 
     /**

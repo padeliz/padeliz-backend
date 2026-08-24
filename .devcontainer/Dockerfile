@@ -24,6 +24,10 @@ RUN docker-php-ext-configure gd --with-jpeg --with-freetype --with-webp \
 RUN pecl install xdebug \
     && docker-php-ext-enable xdebug
 
+# Redis extension for tagged cache (must run before USER www)
+RUN pecl install redis \
+    && docker-php-ext-enable redis
+
 # Allow large uploads (defaults are often 2M).
 RUN echo "upload_max_filesize = 32M" > /usr/local/etc/php/conf.d/uploads.ini \
     && echo "post_max_size = 40M" >> /usr/local/etc/php/conf.d/uploads.ini

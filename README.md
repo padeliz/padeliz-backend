@@ -305,6 +305,60 @@ composer test:lint
 ```
 ___
 
+### Caching architecture
+
+Redis is required (`CACHE_DRIVER=redis`, `REDIS_HOST=redis`). All application caching goes through `App\Services\Cache\PadelizCache` with tagged keys.
+
+| Layer | What |
+|-------|------|
+| Service cache | BPT (controller boundary), metadata, templates catalog/metrics, schedule, prizes board |
+| Manager read cache | Reference `show` + picker-safe `index` (clubs, locations, organizers, divisions, prizes, sponsors, players, editions, edition-scoped lists, …) |
+| Spatie response cache | `GET /api/v1/app/editions`, `GET /api/documentation` |
+| HTTP headers | nginx `/storage/`; `Cache-Control: no-store` on authenticated manager API |
+
+TTLs are defined in `config/cache_policies.php`. Normal writes invalidate cache via model observers; TTL is a safety net only.
+
+**Tags.** Writes register each key under the global `padeliz` tag plus domain tags (e.g. `reference:clubs:1`, `mgr-list:clubs`, `metadata:Club`, `edition:5`, `division:9`). `flushTags()` flushes **one tag at a time** — it does not merge `padeliz` into targeted flushes, so saving one Club does not wipe unrelated caches. Model saves flush only the resource/id/list tags for that model (not the broad `reference` tag). Metadata FK consumers are invalidated via `MetadataConsumerRegistry`, not extra tags on cache entries.
+
+**Manager index bypass.** Picker index caching is skipped when the request has `q`, `page > 1`, `per_page > 100`, disallowed filter keys, or a non-default `sort_by`. Those requests set `X-Cache: BYPASS`.
+
+**Diagnostics.** Endpoints that use `PadelizCache` expose `X-Cache: HIT|MISS|BYPASS`. Uncached endpoints omit the header.
+
+**Schedule note.** When `scores=1`, `couple_image_url` values are overlaid after the cache read so pair-image changes do not require schedule cache invalidation.
+
+#### Clearing cache
+
+Use the narrowest option that matches what changed. Run inside the Laravel container:
+
+```bash
+php artisan padeliz:cache:invalidate-metadata --schema=Club
+php artisan padeliz:cache:invalidate-metadata
+php artisan padeliz:cache:invalidate-metadata --scope=application
+php artisan cache:clear
+```
+
+| Situation | Command |
+|-----------|---------|
+| One metadata schema changed (e.g. Club forms) | `padeliz:cache:invalidate-metadata --schema=Club` |
+| Metadata / OpenAPI overhaul | `padeliz:cache:invalidate-metadata` |
+| Caching code changed; reset all app data cache | `padeliz:cache:invalidate-metadata --scope=application` |
+| Key format, tags, or serialization changed; public response cache too | `cache:clear` |
+
+`--scope=application` flushes every entry tagged `padeliz` (metadata, manager reads, BPT, templates, schedules, standings, lottery board, etc.).
+
+`cache:clear` wipes the Redis cache database (DB 1), including Spatie response cache. Use this on dev/stage when you no longer trust any cached data after architecture changes.
+
+Equivalent Redis flush (cache DB only):
+
+```bash
+# outside the laravel dev container
+docker exec padeliz-backend-redis redis-cli -n 1 FLUSHDB
+```
+
+`optimize:clear` clears Laravel bootstrap/config/route/view caches only — not Redis data cache.
+
+___
+
 
 ### 📄 License
 

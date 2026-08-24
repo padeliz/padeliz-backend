@@ -8,6 +8,7 @@ use App\Integrations\RankedinBpt\BptDivisionMapper;
 use App\Integrations\RankedinBpt\BptTopPlayersService;
 use App\Integrations\RankedinBpt\Contracts\BptTopPlayersReportBuilder;
 use App\Integrations\RankedinBpt\RankedinBptClient;
+use App\Services\Cache\PadelizCache;
 use App\Services\PlayerCustomField\Formats\GoogleFormMiniTourWelcomeCsvFormat;
 use App\Services\PlayerCustomField\PlayerCustomFieldValueCsvFormatRegistry;
 use App\Services\PlayerImport\Formats\PlaytomicPlayerCsvFormat;
@@ -29,6 +30,8 @@ class AppServiceProvider extends ServiceProvider
             $client = new RankedinBptClient(
                 (string) $cfg['base_url'],
                 (int) $cfg['http_timeout_seconds'],
+                null,
+                $this->app->make(PadelizCache::class),
             );
 
             return new BptTopPlayersService($client, new BptDivisionMapper(), $cfg);

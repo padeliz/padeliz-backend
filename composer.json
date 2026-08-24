@@ -14,7 +14,8 @@
         "laravel/tinker": "^2.9",
         "mpdf/mpdf": "^8.3",
         "setasign/fpdf": "^1.8",
-        "setasign/fpdi": "^2.6"
+        "setasign/fpdi": "^2.6",
+        "spatie/laravel-responsecache": "*"
     },
     "require-dev": {
         "fakerphp/faker": "^1.9.1",

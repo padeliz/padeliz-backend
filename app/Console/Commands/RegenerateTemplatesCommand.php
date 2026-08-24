@@ -7,6 +7,7 @@ namespace App\Console\Commands;
 use App\Console\MetricsFormatterTrait;
 use App\Console\TemplateComboResolver;
 use App\Console\TemplatesLongRunBootstrap;
+use App\Services\Cache\PadelizCache;
 use App\Services\Schedule\Progress\GenerationProgress;
 use App\Services\Schedule\Progress\MatchMakingProgress;
 use App\Services\Schedule\Progress\OrderingProgress;
@@ -301,6 +302,8 @@ final class RegenerateTemplatesCommand extends Command
             '<comment>Review v%d files and commit.</comment>',
             $writeVersion
         ));
+
+        app(PadelizCache::class)->flushTags(['templates']);
 
         return count($failures);
     }

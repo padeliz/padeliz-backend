@@ -12,8 +12,9 @@ use App\Models\CachedPdfPairImage;
 use App\Models\EditionDivision;
 use App\Models\EditionDivisionSchedule;
 use App\Models\EditionParticipation;
-use App\Models\GameMatch;
 use App\Services\Pdf\EditionDivisionPosterInvalidator;
+use App\Services\Cache\EditionDivisionCacheInvalidator;
+use App\Services\Cache\ScheduleReadCache;
 use App\Services\Schedule\EditionDivisionScheduleFormService;
 use App\Services\Schedule\PlayingWindow;
 use App\Services\Schedule\ScheduleBoardMetricsService;
@@ -21,7 +22,6 @@ use App\Services\Schedule\ScheduleGenerationService;
 use App\Services\Schedule\ScheduleMatchPersister;
 use App\Services\Schedule\ScheduleMatchReorderService;
 use Illuminate\Http\Request;
-use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
 use InvalidArgumentException;
@@ -42,6 +42,8 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
         private readonly ScheduleBoardMetricsService $boardMetricsService,
         private readonly EditionDivisionPosterInvalidator $posterInvalidator,
         private readonly ScheduleMatchReorderService $reorderService,
+        private readonly ScheduleReadCache $scheduleReadCache,
+        private readonly EditionDivisionCacheInvalidator $cacheInvalidator,
     ) {
     }
 
@@ -60,6 +62,28 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
      */
     public function show(EditionDivision $editionDivision)
     {
+        $board = filter_var(request()->query('board'), FILTER_VALIDATE_BOOLEAN);
+        $scores = filter_var(request()->query('scores'), FILTER_VALIDATE_BOOLEAN);
+
+        $payload = $this->scheduleReadCache->rememberScheduleShow(
+            (int) $editionDivision->id_edition_division,
+            $board,
+            $scores,
+            fn () => $this->buildScheduleShowPayload($editionDivision, $board, $scores),
+        );
+
+        if ($scores) {
+            $this->overlayCoupleImageUrlsOnPayload($payload);
+        }
+
+        return $this->successResponse($payload, 'Schedule retrieved successfully');
+    }
+
+    /**
+     * @return array<string, mixed>
+     */
+    private function buildScheduleShowPayload(EditionDivision $editionDivision, bool $board, bool $scores): array
+    {
         $editionDivision->load([
             'edition',
             'division',
@@ -76,11 +100,14 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
         $schedule = $editionDivision->schedule()->first();
 
         $payload = [
-            'edition_division' => new EditionDivisionResource($editionDivision),
-            'schedule' => $schedule !== null ? new EditionDivisionScheduleResource($schedule) : null,
-            'courts' => $editionDivision->courts,
-            'participations' => EditionParticipationResource::collection($editionDivision->participations),
-            'matches' => GameMatchResource::collection($editionDivision->matches),
+            'edition_division' => (new EditionDivisionResource($editionDivision))->resolve(),
+            'schedule' => $schedule !== null ? (new EditionDivisionScheduleResource($schedule))->resolve() : null,
+            'courts' => $editionDivision->courts->toArray(),
+            'participations' => EditionParticipationResource::collection($editionDivision->participations)->resolve(),
+            'matches' => json_decode(
+                GameMatchResource::collection($editionDivision->matches)->toJson(),
+                true
+            ) ?? [],
             'has_regular_matches' => $this->matchPersister->hasRegularMatches($editionDivision),
             'has_scores' => $this->matchPersister->hasAnyScores($editionDivision),
             'has_standings' => $this->matchPersister->hasStandings($editionDivision),
@@ -88,15 +115,11 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
             'board_metrics' => $this->boardMetricsService->buildMetrics($editionDivision),
         ];
 
-        if (filter_var(request()->query('board'), FILTER_VALIDATE_BOOLEAN)) {
+        if ($board) {
             $payload['players_board'] = $this->boardMetricsService->buildPlayersBoard($editionDivision);
         }
 
-        if (filter_var(request()->query('scores'), FILTER_VALIDATE_BOOLEAN)) {
-            $this->attachCoupleImageUrls($editionDivision->matches);
-        }
-
-        return $this->successResponse($payload, 'Schedule retrieved successfully');
+        return $payload;
     }
 
     /**
@@ -325,6 +348,7 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
                 ]);
 
                 $this->posterInvalidator->clearMatchesAndRanking($editionDivision);
+                $this->cacheInvalidator->invalidateSchedule((int) $editionDivision->id_edition_division);
 
                 $editionDivision->load([
                     'schedule',
@@ -391,6 +415,7 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
         // The schedule row itself survives; only the generated template identity is dropped.
         $editionDivision->schedule()->first()?->update(['template_version' => null]);
         $this->posterInvalidator->clearMatches($editionDivision);
+        $this->cacheInvalidator->invalidateSchedule((int) $editionDivision->id_edition_division);
 
         return $this->successResponse(
             ['deleted_regular_matches' => $deleted],
@@ -617,58 +642,86 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
     }
 
     /**
-     * Cache-only couple URLs for Scores (no GD compose).
+     * Attach couple URLs for Scores after schedule cache read (pair images change out-of-band).
      *
-     * @param  Collection<int, GameMatch>  $matches
+     * @param  array<string, mixed>  $payload
      */
-    private function attachCoupleImageUrls(Collection $matches): void
+    private function overlayCoupleImageUrlsOnPayload(array &$payload): void
     {
-        foreach ($matches as $match) {
-            foreach ($match->sides as $side) {
-                $players = $side->relationLoaded('players')
-                    ? $side->players->values()
-                    : collect();
-                if ($players->count() < 2) {
-                    $side->setAttribute('couple_image_url', null);
+        $matches = $payload['matches'] ?? null;
 
-                    continue;
-                }
-
-                $a = $players[0];
-                $b = $players[1];
-                $idA = (int) ($a->player_id ?? $a->player?->id_player ?? 0);
-                $idB = (int) ($b->player_id ?? $b->player?->id_player ?? 0);
-                if ($idA < 1 || $idB < 1) {
-                    $side->setAttribute('couple_image_url', null);
-
-                    continue;
-                }
-
-                $collectA = (bool) ($a->participation?->is_collecting_points ?? true);
-                $collectB = (bool) ($b->participation?->is_collecting_points ?? true);
-
-                if ($idA <= $idB) {
-                    $p1 = $idA;
-                    $p2 = $idB;
-                    $c1 = $collectA;
-                    $c2 = $collectB;
-                } else {
-                    $p1 = $idB;
-                    $p2 = $idA;
-                    $c1 = $collectB;
-                    $c2 = $collectA;
-                }
-
-                $cached = CachedPdfPairImage::query()
-                    ->where('player_1_id', $p1)
-                    ->where('player_2_id', $p2)
-                    ->where('player_1_is_collecting_points', $c1)
-                    ->where('player_2_is_collecting_points', $c2)
-                    ->first();
-
-                $side->setAttribute('couple_image_url', $cached?->url);
-            }
+        if (! is_array($matches)) {
+            return;
         }
+
+        foreach ($matches as &$match) {
+            if (! is_array($match) || ! isset($match['sides']) || ! is_array($match['sides'])) {
+                continue;
+            }
+
+            foreach ($match['sides'] as &$side) {
+                if (! is_array($side)) {
+                    continue;
+                }
+
+                $side['couple_image_url'] = $this->resolveCoupleImageUrlForSide($side);
+            }
+            unset($side);
+        }
+        unset($match);
+
+        $payload['matches'] = $matches;
+    }
+
+    /**
+     * @param  array<string, mixed>  $side
+     */
+    private function resolveCoupleImageUrlForSide(array $side): ?string
+    {
+        $players = $side['players'] ?? null;
+
+        if (! is_array($players) || count($players) < 2) {
+            return null;
+        }
+
+        $players = array_values($players);
+        $a = $players[0];
+        $b = $players[1];
+
+        if (! is_array($a) || ! is_array($b)) {
+            return null;
+        }
+
+        $idA = (int) ($a['player_id'] ?? $a['player']['id_player'] ?? 0);
+        $idB = (int) ($b['player_id'] ?? $b['player']['id_player'] ?? 0);
+
+        if ($idA < 1 || $idB < 1) {
+            return null;
+        }
+
+        $collectA = (bool) ($a['participation']['is_collecting_points'] ?? true);
+        $collectB = (bool) ($b['participation']['is_collecting_points'] ?? true);
+
+        if ($idA <= $idB) {
+            $p1 = $idA;
+            $p2 = $idB;
+            $c1 = $collectA;
+            $c2 = $collectB;
+        } else {
+            $p1 = $idB;
+            $p2 = $idA;
+            $c1 = $collectB;
+            $c2 = $collectA;
+        }
+
+        $cached = CachedPdfPairImage::query()
+            ->where('player_1_id', $p1)
+            ->where('player_2_id', $p2)
+            ->where('player_1_is_collecting_points', $c1)
+            ->where('player_2_is_collecting_points', $c2)
+            ->first();
+
+        return $cached?->url;
     }
 
     private function toHi(?string $time): string

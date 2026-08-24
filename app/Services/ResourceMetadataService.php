@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Services\Cache\PadelizCache;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Cache;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
 use Illuminate\Support\Facades\Schema;
@@ -18,21 +18,29 @@ class ResourceMetadataService
      */
     private const DEFAULT_FILTER_LIMIT = 100;
 
-    /**
-     * Cache TTL in seconds (1 hour)
-     */
-    private const CACHE_TTL = 3600;
+    public function __construct(
+        private readonly PadelizCache $padelizCache,
+    ) {
+    }
 
     /**
      * Get metadata for a specific schema/model
      */
     public function getMetadata(string $schemaName, string $version = 'v1'): array
     {
-        $cacheKey = "resource_metadata_{$version}_{$schemaName}";
+        $policy = config('cache_policies.metadata');
+        $baseTags = array_merge($policy['tags'], ['metadata:'.$schemaName]);
+        $cacheKey = "metadata:v1:{$schemaName}";
+        $ttl = (int) $policy['ttl'];
 
-        return Cache::remember($cacheKey, self::CACHE_TTL, function () use ($schemaName, $version) {
-            return $this->generateMetadata($schemaName, $version);
-        });
+        // Use consistent tags for read/write. Supplier invalidation is handled by
+        // MetadataCacheInvalidator::invalidateSuppliersOf via MetadataConsumerRegistry.
+        return $this->padelizCache->remember(
+            $cacheKey,
+            $ttl,
+            $baseTags,
+            fn () => $this->generateMetadata($schemaName, $version),
+        );
     }
 
     /**
@@ -486,24 +494,5 @@ class ResourceMetadataService
         }
 
         return $values;
-    }
-
-    /**
-     * Clear cache for a specific schema/model
-     */
-    public function clearCache(string $schemaName, string $version = 'v1'): void
-    {
-        $cacheKey = "resource_metadata_{$version}_{$schemaName}";
-        Cache::forget($cacheKey);
-    }
-
-    /**
-     * Clear all metadata cache
-     */
-    public function clearAllCache(): void
-    {
-        // This is a simple implementation - in production you might want to use cache tags
-        // or maintain a list of cached keys
-        Cache::flush();
     }
 }

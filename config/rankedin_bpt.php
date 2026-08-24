@@ -16,4 +16,5 @@ return [
     'organisation_events_page_size' => min(100, max(1, (int) env('RANKEDIN_BPT_ORG_EVENTS_PAGE_SIZE', 50))),
     'rankings_page_size' => min(200, max(1, (int) env('RANKEDIN_BPT_RANKINGS_PAGE_SIZE', 100))),
     'http_timeout_seconds' => max(5, (int) env('RANKEDIN_BPT_HTTP_TIMEOUT', 45)),
+    'cache_ttl_seconds' => max(60, (int) env('RANKEDIN_BPT_CACHE_TTL', 3600)),
 ];

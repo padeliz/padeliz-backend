@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services;
 
+use App\Services\Cache\PadelizCache;
 use App\Services\ResourceMetadataService;
 use Illuminate\Support\Str;
 use PHPUnit\Framework\TestCase;
@@ -16,7 +17,8 @@ class ResourceMetadataServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $this->metadataService = new ResourceMetadataService();
+        $cache = $this->createMock(PadelizCache::class);
+        $this->metadataService = new ResourceMetadataService($cache);
     }
 
     /**

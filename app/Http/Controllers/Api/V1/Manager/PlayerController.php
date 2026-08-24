@@ -9,6 +9,7 @@ use App\Http\Resources\PlayerResource;
 use App\Models\Player;
 use App\Models\PlayerPhone;
 use App\Services\Pdf\PdfCachedImageGenerator;
+use App\Traits\CachesManagerResourceReads;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
@@ -21,6 +22,7 @@ use Illuminate\Validation\Rule;
  */
 class PlayerController extends V1BaseController
 {
+    use CachesManagerResourceReads;
     /**
      * @OA\Get(
      *     path="/api/v1/manager/players",
@@ -111,35 +113,37 @@ class PlayerController extends V1BaseController
      */
     public function index(Request $request)
     {
-        $query = Player::with(['participations']);
+        $payload = $this->cachedManagerIndex('players', $request, [], function () use ($request) {
+            $query = Player::with(['participations']);
 
-        $this->applyAdvancedPagination(
-            $query,
-            $request,
-            Player::$searchableFields,
-            Player::$filterableFields,
-            Player::$sortableFields,
-            function ($q, string $searchTerm): void {
-                $q->orWhereHas('emails', function ($emailQuery) use ($searchTerm) {
-                    $emailQuery->where('email', 'LIKE', "%{$searchTerm}%");
-                });
-                $q->orWhereHas('phones', function ($phoneQuery) use ($searchTerm) {
-                    $phoneQuery->where('phone', 'LIKE', "%{$searchTerm}%");
-                });
+            $this->applyAdvancedPagination(
+                $query,
+                $request,
+                Player::$searchableFields,
+                Player::$filterableFields,
+                Player::$sortableFields,
+                function ($q, string $searchTerm): void {
+                    $q->orWhereHas('emails', function ($emailQuery) use ($searchTerm) {
+                        $emailQuery->where('email', 'LIKE', "%{$searchTerm}%");
+                    });
+                    $q->orWhereHas('phones', function ($phoneQuery) use ($searchTerm) {
+                        $phoneQuery->where('phone', 'LIKE', "%{$searchTerm}%");
+                    });
+                }
+            );
+
+            $paginationParams = $this->getPaginationParams($request);
+
+            if (! $request->has('sort_by')) {
+                $query->orderBy('id_player', 'desc');
             }
-        );
 
-        // Get pagination parameters
-        $paginationParams = $this->getPaginationParams($request);
+            $players = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
-        // Apply default sorting if no sorting is specified
-        if (! $request->has('sort_by')) {
-            $query->orderBy('id_player', 'desc');
-        }
+            return PlayerResource::collection($players)->response()->getData(true);
+        });
 
-        $players = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
-
-        return PlayerResource::collection($players);
+        return response()->json($payload);
     }
 
     /**
@@ -178,12 +182,13 @@ class PlayerController extends V1BaseController
      */
     public function show(Player $player)
     {
-        $player->load(['participations']);
+        $data = $this->cachedManagerShow('players', (int) $player->id_player, function () use ($player) {
+            $player->load(['participations']);
 
-        return $this->resourceResponse(
-            new PlayerResource($player),
-            'Player details retrieved successfully'
-        );
+            return (new PlayerResource($player))->resolve();
+        });
+
+        return $this->successResponse($data, 'Player details retrieved successfully');
     }
 
     /**

@@ -7,6 +7,7 @@ namespace App\Integrations\RankedinBpt;
 use GuzzleHttp\Client;
 use GuzzleHttp\Pool;
 use GuzzleHttp\Psr7\Request;
+use App\Services\Cache\PadelizCache;
 use Illuminate\Support\Facades\Log;
 use Psr\Http\Message\ResponseInterface;
 
@@ -23,6 +24,7 @@ final class RankedinBptClient
         private readonly string $baseUrl,
         private readonly int $timeoutSeconds,
         ?Client $httpClient = null,
+        private readonly ?PadelizCache $padelizCache = null,
     ) {
         $this->http = $httpClient ?? new Client([
             'base_uri' => $this->baseUrl,
@@ -55,11 +57,34 @@ final class RankedinBptClient
     {
         $path = '/' . ltrim($path, '/');
         $cacheKey = $this->cacheKey($path, $query);
+
         if (array_key_exists($cacheKey, $this->memo)) {
             /** @var array<string, mixed>|list<mixed> */
             return $this->memo[$cacheKey];
         }
 
+        if ($this->padelizCache !== null) {
+            $policy = config('cache_policies.rankedin_upstream');
+            $redisKey = 'rankedin:'.md5($cacheKey);
+
+            /** @var array<string, mixed>|list<mixed> */
+            return $this->memo[$cacheKey] = $this->padelizCache->remember(
+                $redisKey,
+                (int) $policy['ttl'],
+                $policy['tags'],
+                fn () => $this->fetchJson($path, $query, $cacheKey),
+            );
+        }
+
+        return $this->fetchJson($path, $query, $cacheKey);
+    }
+
+    /**
+     * @param  array<string, null|bool|float|int|string>  $query
+     * @return array<string, mixed>|list<mixed>
+     */
+    private function fetchJson(string $path, array $query, string $cacheKey): array
+    {
         ++$this->callCount;
         $response = $this->http->get($path, ['query' => $query]);
         $decoded = $this->decodeResponse($response);

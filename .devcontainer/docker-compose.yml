@@ -17,11 +17,15 @@ services:
       - TZ=Europe/Bucharest
       - DB_HOST=db
       - DB_PORT=3306
+      - REDIS_HOST=redis
+      - CACHE_DRIVER=redis
     networks:
       - backend-network
     depends_on:
       db:
         condition: service_healthy
+      redis:
+        condition: service_started
     healthcheck:
       test: ["CMD", "php-fpm", "-t"]
       interval: 30s
@@ -47,6 +51,13 @@ services:
       interval: 30s
       timeout: 10s
       retries: 3
+
+  redis:
+    image: redis:7-alpine
+    container_name: padeliz-backend-redis
+    restart: unless-stopped
+    networks:
+      - backend-network
 
   db:
     image: mysql:8.0

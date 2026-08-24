@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Resources\PrizeResource;
 use App\Models\Prize;
+use App\Traits\CachesManagerResourceReads;
 use Illuminate\Http\Request;
 
 /**
@@ -16,6 +17,7 @@ use Illuminate\Http\Request;
  */
 class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseController
 {
+    use CachesManagerResourceReads;
     /**
      * @OA\Get(
      *     path="/api/v1/manager/prizes",
@@ -104,28 +106,29 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      */
     public function index(Request $request)
     {
-        $query = Prize::with(['sponsorPrizes', 'lotteryPrizes']);
+        $payload = $this->cachedManagerIndex('prizes', $request, [], function () use ($request) {
+            $query = Prize::with(['sponsorPrizes', 'lotteryPrizes']);
 
-        // Apply advanced pagination
-        $this->applyAdvancedPagination(
-            $query,
-            $request,
-            Prize::$searchableFields,
-            Prize::$filterableFields,
-            Prize::$sortableFields
-        );
+            $this->applyAdvancedPagination(
+                $query,
+                $request,
+                Prize::$searchableFields,
+                Prize::$filterableFields,
+                Prize::$sortableFields
+            );
 
-        // Get pagination parameters
-        $paginationParams = $this->getPaginationParams($request);
+            $paginationParams = $this->getPaginationParams($request);
 
-        // Apply default sorting if no sorting is specified
-        if (! $request->has('sort_by')) {
-            $query->orderBy('id_prize', 'desc');
-        }
+            if (! $request->has('sort_by')) {
+                $query->orderBy('id_prize', 'desc');
+            }
 
-        $prizes = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
+            $prizes = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
-        return PrizeResource::collection($prizes);
+            return PrizeResource::collection($prizes)->response()->getData(true);
+        });
+
+        return response()->json($payload);
     }
 
     /**
@@ -176,12 +179,13 @@ class PrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      */
     public function show(Prize $prize)
     {
-        $prize->load(['sponsorPrizes', 'lotteryPrizes']);
+        $data = $this->cachedManagerShow('prizes', (int) $prize->id_prize, function () use ($prize) {
+            $prize->load(['sponsorPrizes', 'lotteryPrizes']);
 
-        return $this->resourceResponse(
-            new PrizeResource($prize),
-            'Prize details retrieved successfully'
-        );
+            return (new PrizeResource($prize))->resolve();
+        });
+
+        return $this->successResponse($data, 'Prize details retrieved successfully');
     }
 
     /**

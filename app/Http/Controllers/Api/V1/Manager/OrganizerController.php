@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Resources\OrganizerResource;
 use App\Models\Organizer;
+use App\Traits\CachesManagerResourceReads;
 use Illuminate\Http\Request;
 
 /**
@@ -16,6 +17,7 @@ use Illuminate\Http\Request;
  */
 class OrganizerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseController
 {
+    use CachesManagerResourceReads;
     /**
      * @OA\Get(
      *     path="/api/v1/manager/organizers",
@@ -102,25 +104,29 @@ class OrganizerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCo
      */
     public function index(Request $request)
     {
-        $query = Organizer::query();
+        $payload = $this->cachedManagerIndex('organizers', $request, [], function () use ($request) {
+            $query = Organizer::query();
 
-        $this->applyAdvancedPagination(
-            $query,
-            $request,
-            Organizer::$searchableFields,
-            Organizer::$filterableFields,
-            Organizer::$sortableFields
-        );
+            $this->applyAdvancedPagination(
+                $query,
+                $request,
+                Organizer::$searchableFields,
+                Organizer::$filterableFields,
+                Organizer::$sortableFields
+            );
 
-        $paginationParams = $this->getPaginationParams($request);
+            $paginationParams = $this->getPaginationParams($request);
 
-        if (! $request->has('sort_by')) {
-            $query->orderBy('id_organizer', 'desc');
-        }
+            if (! $request->has('sort_by')) {
+                $query->orderBy('id_organizer', 'desc');
+            }
 
-        $organizers = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
+            $organizers = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
-        return OrganizerResource::collection($organizers);
+            return OrganizerResource::collection($organizers)->response()->getData(true);
+        });
+
+        return response()->json($payload);
     }
 
     /**
@@ -156,10 +162,11 @@ class OrganizerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCo
      */
     public function show(Organizer $organizer)
     {
-        return $this->resourceResponse(
-            new OrganizerResource($organizer),
-            'Organizer details retrieved successfully'
-        );
+        $data = $this->cachedManagerShow('organizers', (int) $organizer->id_organizer, function () use ($organizer) {
+            return (new OrganizerResource($organizer))->resolve();
+        });
+
+        return $this->successResponse($data, 'Organizer details retrieved successfully');
     }
 
     /**

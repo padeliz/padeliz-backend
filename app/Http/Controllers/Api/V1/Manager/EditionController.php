@@ -8,6 +8,7 @@ use App\Http\Resources\EditionResource;
 use App\Models\Edition;
 use App\Services\Pdf\EditionDivisionPosterInvalidator;
 use App\Services\Schedule\PlayingWindow;
+use App\Traits\CachesManagerResourceReads;
 use Illuminate\Http\Request;
 
 /**
@@ -18,6 +19,7 @@ use Illuminate\Http\Request;
  */
 class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseController
 {
+    use CachesManagerResourceReads;
     public function __construct(
         private readonly EditionDivisionPosterInvalidator $posterInvalidator,
     ) {
@@ -116,28 +118,29 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      */
     public function index(Request $request)
     {
-        $query = Edition::with(['location', 'divisions', 'organizer']);
+        $payload = $this->cachedManagerIndex('editions', $request, [], function () use ($request) {
+            $query = Edition::with(['location', 'divisions', 'organizer']);
 
-        // Apply advanced pagination
-        $this->applyAdvancedPagination(
-            $query,
-            $request,
-            Edition::$searchableFields,
-            Edition::$filterableFields,
-            Edition::$sortableFields
-        );
+            $this->applyAdvancedPagination(
+                $query,
+                $request,
+                Edition::$searchableFields,
+                Edition::$filterableFields,
+                Edition::$sortableFields
+            );
 
-        // Get pagination parameters
-        $paginationParams = $this->getPaginationParams($request);
+            $paginationParams = $this->getPaginationParams($request);
 
-        // Apply default sorting if no sorting is specified
-        if (! $request->has('sort_by')) {
-            $query->orderBy('id_edition', 'desc');
-        }
+            if (! $request->has('sort_by')) {
+                $query->orderBy('id_edition', 'desc');
+            }
 
-        $editions = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
+            $editions = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
-        return EditionResource::collection($editions);
+            return EditionResource::collection($editions)->response()->getData(true);
+        });
+
+        return response()->json($payload);
     }
 
     /**
@@ -168,12 +171,13 @@ class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      */
     public function show(Edition $edition)
     {
-        $edition->load(['location', 'divisions', 'organizer']);
+        $data = $this->cachedManagerShow('editions', (int) $edition->id_edition, function () use ($edition) {
+            $edition->load(['location', 'divisions', 'organizer']);
 
-        return $this->resourceResponse(
-            new EditionResource($edition),
-            'Edition details retrieved successfully'
-        );
+            return (new EditionResource($edition))->resolve();
+        });
+
+        return $this->successResponse($data, 'Edition details retrieved successfully');
     }
 
     /**

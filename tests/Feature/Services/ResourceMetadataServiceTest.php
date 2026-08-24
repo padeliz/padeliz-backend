@@ -179,15 +179,12 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertEquals($metadata1, $metadata2);
     }
 
-    public function test_clear_cache_works(): void
+    public function test_metadata_bust_via_invalidator(): void
     {
-        // Get metadata to populate cache
         $this->metadataService->getMetadata('Player', 'v1');
 
-        // Clear cache
-        $this->metadataService->clearCache('Player', 'v1');
+        app(\App\Services\Cache\MetadataCacheInvalidator::class)->invalidateSchema('Player');
 
-        // Should still work after clearing cache
         $metadata = $this->metadataService->getMetadata('Player', 'v1');
         $this->assertArrayHasKey('schema_name', $metadata);
         $this->assertEquals('Player', $metadata['schema_name']);
@@ -492,19 +489,17 @@ class ResourceMetadataServiceTest extends TestCase
 
     public function test_cache_functionality(): void
     {
-        // Test individual cache clearing
-        $this->metadataService->getMetadata('Player', 'v1');
-        $this->metadataService->clearCache('Player', 'v1');
+        $invalidator = app(\App\Services\Cache\MetadataCacheInvalidator::class);
 
-        // Should still work after clearing cache
+        $this->metadataService->getMetadata('Player', 'v1');
+        $invalidator->invalidateSchema('Player');
+
         $metadata = $this->metadataService->getMetadata('Player', 'v1');
         $this->assertEquals('Player', $metadata['schema_name']);
 
-        // Test clearing all cache
         $this->metadataService->getMetadata('Club', 'v1');
-        $this->metadataService->clearAllCache();
+        $invalidator->invalidateAll();
 
-        // Should still work after clearing all cache
         $metadata = $this->metadataService->getMetadata('Club', 'v1');
         $this->assertEquals('Club', $metadata['schema_name']);
     }

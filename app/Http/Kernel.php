@@ -45,6 +45,7 @@ class Kernel extends HttpKernel
             // \Laravel\Sanctum\Http\Middleware\EnsureFrontendRequestsAreStateful::class,
             'throttle:api',
             \Illuminate\Routing\Middleware\SubstituteBindings::class,
+            \App\Http\Middleware\SetCacheDiagnosticsHeader::class,
         ],
     ];
 
@@ -66,5 +67,8 @@ class Kernel extends HttpKernel
         'throttle' => \Illuminate\Routing\Middleware\ThrottleRequests::class,
         'verified' => \Illuminate\Auth\Middleware\EnsureEmailIsVerified::class,
         'user.type' => \App\Http\Middleware\CheckUserType::class,
+        'cache.no-store' => \App\Http\Middleware\SetAuthenticatedApiNoStore::class,
+        'cache.etag' => \App\Http\Middleware\SetReferenceResourceEtag::class,
+        'cacheResponse' => \Spatie\ResponseCache\Middlewares\CacheResponse::class,
     ];
 }

@@ -8,6 +8,7 @@ use App\Enums\PlayerCustomFieldType;
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
 use App\Http\Resources\PlayerCustomFieldResource;
 use App\Models\PlayerCustomField;
+use App\Traits\CachesManagerResourceReads;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -20,6 +21,7 @@ use Illuminate\Validation\ValidationException;
  */
 class PlayerCustomFieldController extends V1BaseController
 {
+    use CachesManagerResourceReads;
     /**
      * @OA\Get(
      *     path="/api/v1/manager/player-custom-fields",
@@ -32,30 +34,34 @@ class PlayerCustomFieldController extends V1BaseController
      */
     public function index(Request $request)
     {
-        $query = PlayerCustomField::with('options');
+        $payload = $this->cachedManagerIndex('player-custom-fields', $request, [], function () use ($request) {
+            $query = PlayerCustomField::with('options');
 
-        $this->applyAdvancedPagination(
-            $query,
-            $request,
-            PlayerCustomField::$searchableFields,
-            PlayerCustomField::$filterableFields,
-            PlayerCustomField::$sortableFields
-        );
+            $this->applyAdvancedPagination(
+                $query,
+                $request,
+                PlayerCustomField::$searchableFields,
+                PlayerCustomField::$filterableFields,
+                PlayerCustomField::$sortableFields
+            );
 
-        $paginationParams = $this->getPaginationParams($request);
+            $paginationParams = $this->getPaginationParams($request);
 
-        if (! $request->has('sort_by')) {
-            $query->orderBy('sort_order')->orderBy('id_player_custom_field');
-        }
+            if (! $request->has('sort_by')) {
+                $query->orderBy('sort_order')->orderBy('id_player_custom_field');
+            }
 
-        $fields = $query->paginate(
-            $paginationParams['per_page'],
-            ['*'],
-            'page',
-            $paginationParams['page']
-        );
+            $fields = $query->paginate(
+                $paginationParams['per_page'],
+                ['*'],
+                'page',
+                $paginationParams['page']
+            );
 
-        return PlayerCustomFieldResource::collection($fields);
+            return PlayerCustomFieldResource::collection($fields)->response()->getData(true);
+        });
+
+        return response()->json($payload);
     }
 
     /**
@@ -69,12 +75,13 @@ class PlayerCustomFieldController extends V1BaseController
      */
     public function show(PlayerCustomField $playerCustomField): JsonResponse
     {
-        $playerCustomField->load('options');
+        $data = $this->cachedManagerShow('player-custom-fields', (int) $playerCustomField->id_player_custom_field, function () use ($playerCustomField) {
+            $playerCustomField->load('options');
 
-        return $this->resourceResponse(
-            new PlayerCustomFieldResource($playerCustomField),
-            'Player custom field retrieved successfully'
-        );
+            return (new PlayerCustomFieldResource($playerCustomField))->resolve();
+        });
+
+        return $this->successResponse($data, 'Player custom field retrieved successfully');
     }
 
     /**

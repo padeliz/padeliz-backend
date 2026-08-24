@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Resources\SponsorPrizeResource;
 use App\Models\SponsorPrize;
+use App\Traits\CachesManagerResourceReads;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -17,6 +18,7 @@ use Illuminate\Validation\Rule;
  */
 class SponsorPrizeController extends \App\Http\Controllers\BaseVersions\V1\V1BaseController
 {
+    use CachesManagerResourceReads;
     /**
      * @OA\Get(
      *     path="/api/v1/manager/sponsor-prizes",
@@ -28,25 +30,29 @@ class SponsorPrizeController extends \App\Http\Controllers\BaseVersions\V1\V1Bas
      */
     public function index(Request $request)
     {
-        $query = SponsorPrize::with(['sponsor', 'prize']);
+        $payload = $this->cachedManagerIndex('sponsor-prizes', $request, [], function () use ($request) {
+            $query = SponsorPrize::with(['sponsor', 'prize']);
 
-        $this->applyAdvancedPagination(
-            $query,
-            $request,
-            SponsorPrize::$searchableFields,
-            SponsorPrize::$filterableFields,
-            SponsorPrize::$sortableFields
-        );
+            $this->applyAdvancedPagination(
+                $query,
+                $request,
+                SponsorPrize::$searchableFields,
+                SponsorPrize::$filterableFields,
+                SponsorPrize::$sortableFields
+            );
 
-        $paginationParams = $this->getPaginationParams($request);
+            $paginationParams = $this->getPaginationParams($request);
 
-        if (! $request->has('sort_by')) {
-            $query->orderBy('id_sponsor_prize', 'desc');
-        }
+            if (! $request->has('sort_by')) {
+                $query->orderBy('id_sponsor_prize', 'desc');
+            }
 
-        $rows = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
+            $rows = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
-        return SponsorPrizeResource::collection($rows);
+            return SponsorPrizeResource::collection($rows)->response()->getData(true);
+        });
+
+        return response()->json($payload);
     }
 
     /**
@@ -61,12 +67,13 @@ class SponsorPrizeController extends \App\Http\Controllers\BaseVersions\V1\V1Bas
      */
     public function show(SponsorPrize $sponsorPrize)
     {
-        $sponsorPrize->load(['sponsor', 'prize']);
+        $data = $this->cachedManagerShow('sponsor-prizes', (int) $sponsorPrize->id_sponsor_prize, function () use ($sponsorPrize) {
+            $sponsorPrize->load(['sponsor', 'prize']);
 
-        return $this->resourceResponse(
-            new SponsorPrizeResource($sponsorPrize),
-            'Sponsor prize details retrieved successfully'
-        );
+            return (new SponsorPrizeResource($sponsorPrize))->resolve();
+        });
+
+        return $this->successResponse($data, 'Sponsor prize details retrieved successfully');
     }
 
     /**

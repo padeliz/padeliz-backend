@@ -8,6 +8,7 @@ use App\Http\Controllers\BaseVersions\V1\V1BaseController;
 use App\Http\Resources\EditionRegistrationResource;
 use App\Models\Edition;
 use App\Models\EditionRegistration;
+use App\Traits\CachesManagerResourceReads;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -19,6 +20,7 @@ use Illuminate\Validation\Rule;
  */
 class EditionRegistrationController extends V1BaseController
 {
+    use CachesManagerResourceReads;
     /**
      * @OA\Get(
      *     path="/api/v1/manager/edition-registrations",
@@ -76,25 +78,29 @@ class EditionRegistrationController extends V1BaseController
      */
     public function index(Request $request)
     {
-        $query = EditionRegistration::with(['player', 'editionDivision', 'edition']);
+        $payload = $this->cachedManagerIndex('edition-registrations', $request, ['edition_id'], function () use ($request) {
+            $query = EditionRegistration::with(['player', 'editionDivision', 'edition']);
 
-        $this->applyAdvancedPagination(
-            $query,
-            $request,
-            EditionRegistration::$searchableFields,
-            EditionRegistration::$filterableFields,
-            EditionRegistration::$sortableFields
-        );
+            $this->applyAdvancedPagination(
+                $query,
+                $request,
+                EditionRegistration::$searchableFields,
+                EditionRegistration::$filterableFields,
+                EditionRegistration::$sortableFields
+            );
 
-        $paginationParams = $this->getPaginationParams($request);
+            $paginationParams = $this->getPaginationParams($request);
 
-        if (! $request->has('sort_by')) {
-            $query->orderBy('id_registration', 'desc');
-        }
+            if (! $request->has('sort_by')) {
+                $query->orderBy('id_registration', 'desc');
+            }
 
-        $registrations = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
+            $registrations = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
-        return EditionRegistrationResource::collection($registrations);
+            return EditionRegistrationResource::collection($registrations)->response()->getData(true);
+        });
+
+        return response()->json($payload);
     }
 
     /**

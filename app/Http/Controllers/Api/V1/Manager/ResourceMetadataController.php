@@ -82,13 +82,8 @@ class ResourceMetadataController extends V1BaseController
     public function show(Request $request, string $schema): \Illuminate\Http\JsonResponse
     {
         try {
-            // Extract version from the request path
             $version = $this->extractVersionFromRequest($request);
-
-            // Validate schema name
             $this->validateSchemaName($schema);
-
-            // Get metadata from service
             $metadata = $this->metadataService->getMetadata($schema, $version);
 
             return $this->resourceResponse(
@@ -107,150 +102,17 @@ class ResourceMetadataController extends V1BaseController
         }
     }
 
-    /**
-     * @OA\Delete(
-     *     path="/api/v1/manager/metadata/{schema}/cache",
-     *     summary="Clear resource metadata cache",
-     *     description="Clear the cached metadata for a specific schema/model",
-     *     tags={"🐧 Manager: Resource Metadata"},
-     *     security={{"sanctum":{}}},
-     *     @OA\Parameter(
-     *         name="schema",
-     *         in="path",
-     *         required=true,
-     *         description="Schema/Model name to clear cache for",
-     *         @OA\Schema(type="string", example="EditionParticipation")
-     *     ),
-     *     @OA\Response(
-     *         response=200,
-     *         description="Cache cleared successfully",
-     *         @OA\JsonContent(
-     *             allOf={
-     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
-     *                 @OA\Schema(
-     *                     @OA\Property(property="data", type="null", example=null)
-     *                 )
-     *             }
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Unauthorized - Authentication required",
-     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
-     *     ),
-     *     @OA\Response(
-     *         response=403,
-     *         description="Forbidden - Manager access required",
-     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
-     *     ),
-     *     @OA\Response(
-     *         response=404,
-     *         description="Resource not found",
-     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
-     *     ),
-     *     @OA\Response(
-     *         response=422,
-     *         description="Validation error",
-     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
-     *     )
-     * )
-     */
-    public function clearCache(Request $request, string $schema): \Illuminate\Http\JsonResponse
-    {
-        try {
-            // Extract version from the request path
-            $version = $this->extractVersionFromRequest($request);
-
-            // Validate schema name
-            $this->validateSchemaName($schema);
-
-            // Clear cache
-            $this->metadataService->clearCache($schema, $version);
-
-            return $this->successResponse(
-                null,
-                'Resource metadata cache cleared successfully'
-            );
-        } catch (\InvalidArgumentException $e) {
-            return $this->notFoundResponse($e->getMessage());
-        } catch (ValidationException $e) {
-            return $this->validationErrorResponse($e->errors(), 'Invalid schema name');
-        }
-    }
-
-    /**
-     * @OA\Delete(
-     *     path="/api/v1/manager/metadata/cache",
-     *     summary="Clear all resource metadata cache",
-     *     description="Clear all cached metadata for all resources",
-     *     tags={"🐧 Manager: Resource Metadata"},
-     *     security={{"sanctum":{}}},
-     *     @OA\Response(
-     *         response=200,
-     *         description="All cache cleared successfully",
-     *         @OA\JsonContent(
-     *             allOf={
-     *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
-     *                 @OA\Schema(
-     *                     @OA\Property(property="data", type="null", example=null)
-     *                 )
-     *             }
-     *         )
-     *     ),
-     *     @OA\Response(
-     *         response=401,
-     *         description="Unauthorized - Authentication required",
-     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
-     *     ),
-     *     @OA\Response(
-     *         response=403,
-     *         description="Forbidden - Manager access required",
-     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
-     *     ),
-     *     @OA\Response(
-     *         response=500,
-     *         description="Server error",
-     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
-     *     )
-     * )
-     */
-    public function clearAllCache(Request $request): \Illuminate\Http\JsonResponse
-    {
-        try {
-            // Clear all cache
-            $this->metadataService->clearAllCache();
-
-            return $this->successResponse(
-                null,
-                'All resource metadata cache cleared successfully'
-            );
-        } catch (\Exception $e) {
-            return $this->errorResponse(
-                'Failed to clear cache',
-                500
-            );
-        }
-    }
-
-    /**
-     * Extract version from request path
-     */
     private function extractVersionFromRequest(Request $request): string
     {
         $path = $request->path();
 
-        // Extract version from path like /api/v1/manager/metadata/{schema}
         if (preg_match('/\/api\/(v\d+)\//', $path, $matches)) {
             return $matches[1];
         }
 
-        // Default to v1 if no version found
         return 'v1';
     }
 
-    /**
-     * Validate schema name
-     */
     private function validateSchemaName(string $schema): void
     {
         $validator = \Illuminate\Support\Facades\Validator::make(

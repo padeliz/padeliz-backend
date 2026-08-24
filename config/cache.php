@@ -17,7 +17,17 @@ return [
     |
     */
 
-    'default' => env('CACHE_DRIVER', 'file'),
+    'default' => env('CACHE_DRIVER', 'redis'),
+
+    /*
+    |--------------------------------------------------------------------------
+    | Redis tags
+    |--------------------------------------------------------------------------
+    |
+    | PadelizCache requires a tag-capable store (Redis). The application does
+    | not fall back to untagged drivers in production code paths.
+    |
+    */
 
     /*
     |--------------------------------------------------------------------------

@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Resources\CourtResource;
 use App\Models\Court;
+use App\Traits\CachesManagerResourceReads;
 use Illuminate\Http\Request;
 
 /**
@@ -16,6 +17,7 @@ use Illuminate\Http\Request;
  */
 class CourtController extends \App\Http\Controllers\BaseVersions\V1\V1BaseController
 {
+    use CachesManagerResourceReads;
     /**
      * @OA\Get(
      *     path="/api/v1/manager/courts",
@@ -30,25 +32,29 @@ class CourtController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      */
     public function index(Request $request)
     {
-        $query = Court::with('location');
+        $payload = $this->cachedManagerIndex('courts', $request, [], function () use ($request) {
+            $query = Court::with('location');
 
-        $this->applyAdvancedPagination(
-            $query,
-            $request,
-            Court::$searchableFields,
-            Court::$filterableFields,
-            Court::$sortableFields
-        );
+            $this->applyAdvancedPagination(
+                $query,
+                $request,
+                Court::$searchableFields,
+                Court::$filterableFields,
+                Court::$sortableFields
+            );
 
-        $paginationParams = $this->getPaginationParams($request);
+            $paginationParams = $this->getPaginationParams($request);
 
-        if (! $request->has('sort_by')) {
-            $query->orderBy('display_order')->orderBy('id_court', 'desc');
-        }
+            if (! $request->has('sort_by')) {
+                $query->orderBy('display_order')->orderBy('id_court', 'desc');
+            }
 
-        $courts = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
+            $courts = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
-        return CourtResource::collection($courts);
+            return CourtResource::collection($courts)->response()->getData(true);
+        });
+
+        return response()->json($payload);
     }
 
     /**
@@ -63,9 +69,13 @@ class CourtController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      */
     public function show(Court $court)
     {
-        $court->load('location');
+        $data = $this->cachedManagerShow('courts', (int) $court->id_court, function () use ($court) {
+            $court->load('location');
 
-        return $this->resourceResponse(new CourtResource($court), 'Court details retrieved successfully');
+            return (new CourtResource($court))->resolve();
+        });
+
+        return $this->successResponse($data, 'Court details retrieved successfully');
     }
 
     /**
