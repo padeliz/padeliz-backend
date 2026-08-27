@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\OpenApi;
 
+use App\Services\Cache\ModelSchemaCatalog;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 use Illuminate\Support\Str;
@@ -23,13 +24,7 @@ class HasManyThroughOpenApiDumpBanTest extends TestCase
         $violations = [];
         $discoveredArrayRefs = [];
 
-        foreach (glob(app_path('Models/*.php')) ?: [] as $file) {
-            $className = 'App\\Models\\' . basename($file, '.php');
-
-            if (! class_exists($className) || ! is_subclass_of($className, Model::class)) {
-                continue;
-            }
-
+        foreach (app(ModelSchemaCatalog::class)->eloquentClasses() as $className) {
             $reflection = new ReflectionClass($className);
             $docComment = $reflection->getDocComment();
 

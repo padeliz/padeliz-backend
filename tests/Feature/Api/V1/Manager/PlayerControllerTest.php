@@ -8,6 +8,7 @@ use App\Models\Division;
 use App\Models\Edition;
 use App\Models\EditionParticipation;
 use App\Models\Player;
+use App\Services\Cache\PadelizCache;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -28,11 +29,14 @@ class PlayerControllerTest extends TestCase
     {
         parent::setUp();
 
+        app(PadelizCache::class)->flushApplicationTags();
+
         $this->manager = Player::factory()->manager()->create([
             'first_name' => 'Test',
             'middle_name' => null,
             'last_name' => 'Manager',
             'user_types' => ['player', 'manager'],
+            'skill_division' => 2.0,
         ]);
 
         $this->player = Player::factory()->create([
@@ -435,7 +439,9 @@ class PlayerControllerTest extends TestCase
         $response = $this->getJson('/api/v1/manager/players?filters[skill_division]=4.5');
 
         $response->assertStatus(200);
-        $this->assertCount(1, $response->json('data'));
+        $data = $response->json('data');
+        $this->assertCount(1, $data);
+        $this->assertSame($this->player->id_player, $data[0]['id_player']);
     }
 
     public function test_manager_can_sort_players()

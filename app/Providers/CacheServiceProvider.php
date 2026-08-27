@@ -29,6 +29,7 @@ use App\Services\Cache\ManagerResourceReadCache;
 use App\Services\Cache\MetadataCacheInvalidator;
 use App\Services\Cache\MetadataConsumerRegistry;
 use App\Services\Cache\ModelCacheInvalidator;
+use App\Services\Cache\ModelSchemaCatalog;
 use App\Services\Cache\PadelizCache;
 use App\Services\Cache\ScheduleReadCache;
 use Illuminate\Support\ServiceProvider;
@@ -38,6 +39,7 @@ class CacheServiceProvider extends ServiceProvider
     public function register(): void
     {
         $this->app->singleton(PadelizCache::class);
+        $this->app->singleton(ModelSchemaCatalog::class);
         $this->app->singleton(MetadataConsumerRegistry::class);
         $this->app->singleton(MetadataCacheInvalidator::class);
         $this->app->singleton(EditionDivisionCacheInvalidator::class);

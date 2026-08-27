@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services;
 
-use App\Services\Cache\PadelizCache;
+use App\Services\Cache\ModelSchemaCatalog;
 use App\Services\ResourceMetadataService;
 use Illuminate\Support\Str;
-use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use Tests\TestCase;
 
 class ResourceMetadataServiceTest extends TestCase
 {
@@ -17,8 +17,7 @@ class ResourceMetadataServiceTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        $cache = $this->createMock(PadelizCache::class);
-        $this->metadataService = new ResourceMetadataService($cache);
+        $this->metadataService = app(ResourceMetadataService::class);
     }
 
     /**
@@ -50,6 +49,7 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertEquals('edition-lottery-prizes', $method->invoke($this->metadataService, 'EditionLotteryPrize'));
         $this->assertEquals('player-imports', $method->invoke($this->metadataService, 'PlayerImport'));
         $this->assertEquals('player-import-rows', $method->invoke($this->metadataService, 'PlayerImportRow'));
+        $this->assertEquals('challenge-sessions', $method->invoke($this->metadataService, 'ChallengeSession'));
 
         // Test edge cases with multiple hyphens (using existing models)
         $this->assertEquals('edition-divisions', $method->invoke($this->metadataService, 'EditionDivision'));
@@ -262,28 +262,14 @@ class ResourceMetadataServiceTest extends TestCase
     }
 
     /**
-     * Get all model classes from the App\Models namespace
+     * Get all model schema basenames from the recursive Models catalog
      */
     private function getAllModels(): array
     {
-        // Use a hardcoded list for unit tests since we can't access Laravel helpers
-        // This list should be updated when new models are added
-        return [
-            'Club',
-            'Division',
-            'Edition',
-            'EditionDivision',
-            'EditionLottery',
-            'EditionLotteryLucky',
-            'EditionParticipation',
-            'Location',
-            'Player',
-            'Eligibility',
-            'Prize',
-            'Sponsor',
-            'SponsorPrize',
-            'EditionLotteryPrize',
-        ];
+        return array_map(
+            static fn (string $class): string => class_basename($class),
+            app(ModelSchemaCatalog::class)->eloquentClasses()
+        );
     }
 
     /**

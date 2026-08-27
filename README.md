@@ -96,6 +96,12 @@ Once inside the DevContainer, you can use these commands:
 ```bash
 # Commonly useful
 
+# After pulling code or when things feel stale
+php artisan backend:refresh
+
+# Production post-release (run after composer install)
+php artisan backend:refresh --deploy
+
 php artisan migrate # Run migrations
 
 php artisan test # Run tests
@@ -103,9 +109,6 @@ php artisan test # Run tests
 composer format # Format all code
 composer format:check # Check formatting without making changes
 composer format:fix # Fix formatting with verbose output
-
-php artisan cache:clear
-php artisan config:clear
 ```
 
 ```bash
@@ -118,6 +121,8 @@ php artisan db:seed # Repopulate database with dummy data
 
 mysql -u [USER] -p [PASS] # Access MySQL CLI
 
+php artisan cache:clear # Targeted cache clear; see Caching architecture section
+php artisan config:clear
 php artisan route:clear
 php artisan view:clear
 ```
@@ -191,6 +196,7 @@ Regenerate the documentation after:
 - creating a new version
     - *by adding a new version file (e.g., `routes/api/v3.php`)*
 
+`php artisan backend:refresh` already runs `api:docs:generate-all`. Use the commands below when you only need to regenerate docs.
 
 ```bash
 # to generate documentation for all API versions:
@@ -224,9 +230,9 @@ ___
         chmod -R 777 storage/
         ```
 
-    2. Clear Laravel cache:
+    2. Clear stale bootstrap/Redis state and regenerate docs:
         ```bash
-        php artisan cache:clear
+        php artisan backend:refresh
         ```
 
     3. Verify L5-Swagger is properly installed:
@@ -339,6 +345,8 @@ php artisan cache:clear
 
 | Situation | Command |
 |-----------|---------|
+| After pulling code; general dev refresh | `backend:refresh` |
+| Production post-release (after `composer install`) | `backend:refresh --deploy` |
 | One metadata schema changed (e.g. Club forms) | `padeliz:cache:invalidate-metadata --schema=Club` |
 | Metadata / OpenAPI overhaul | `padeliz:cache:invalidate-metadata` |
 | Caching code changed; reset all app data cache | `padeliz:cache:invalidate-metadata --scope=application` |
@@ -346,7 +354,7 @@ php artisan cache:clear
 
 `--scope=application` flushes every entry tagged `padeliz` (metadata, manager reads, BPT, templates, schedules, standings, lottery board, etc.).
 
-`cache:clear` wipes the Redis cache database (DB 1), including Spatie response cache. Use this on dev/stage when you no longer trust any cached data after architecture changes.
+`cache:clear` wipes the Redis cache database (DB 1), including Spatie response cache. It is equivalent to the Redis step inside `optimize:clear`.
 
 Equivalent Redis flush (cache DB only):
 
@@ -354,8 +362,6 @@ Equivalent Redis flush (cache DB only):
 # outside the laravel dev container
 docker exec padeliz-backend-redis redis-cli -n 1 FLUSHDB
 ```
-
-`optimize:clear` clears Laravel bootstrap/config/route/view caches only — not Redis data cache.
 
 ___
 

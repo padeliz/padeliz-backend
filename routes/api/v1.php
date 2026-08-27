@@ -514,5 +514,17 @@ Route::prefix('v1')->group(function () {
         Route::prefix('metadata')->group(function () {
             Route::get('{schema}', [\App\Http\Controllers\Api\V1\Manager\ResourceMetadataController::class, 'show']);
         });
+
+        // Challenges (FE-authored persistence)
+        Route::prefix('challenges')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\ChallengeController::class, 'index']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\ChallengeController::class, 'store']);
+            Route::get('{session}', [\App\Http\Controllers\Api\V1\Manager\ChallengeController::class, 'show'])
+                ->whereNumber('session');
+            Route::get('{session}/state', [\App\Http\Controllers\Api\V1\Manager\ChallengeController::class, 'state'])
+                ->whereNumber('session');
+            Route::post('{id}/sync', [\App\Http\Controllers\Api\V1\Manager\ChallengeController::class, 'sync'])
+                ->whereNumber('id');
+        });
     });
 });

@@ -4,22 +4,26 @@ declare(strict_types=1);
 
 namespace App\Services\Cache;
 
-use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\Relation;
 use Illuminate\Support\Str;
 
 class MetadataConsumerRegistry
 {
-    /** @var array<string, list<string>>|null */
+    /** @var null|array<string, list<string>> */
     private ?array $supplierToConsumers = null;
+
+    public function __construct(
+        private readonly ModelSchemaCatalog $modelSchemaCatalog,
+    ) {
+    }
 
     /**
      * @return list<string> PascalCase consumer schema names
      */
     public function consumersForSupplier(string $supplierSchema): array
     {
-        return $this->map()[ $supplierSchema] ?? [];
+        return $this->map()[$supplierSchema] ?? [];
     }
 
     /**
@@ -60,33 +64,11 @@ class MetadataConsumerRegistry
     }
 
     /**
-     * @return list<class-string<Model&HasResourceMetadata>>
+     * @return list<class-string<Model>>
      */
     private function metadataModelClasses(): array
     {
-        $classes = [];
-
-        foreach (glob(app_path('Models/*.php')) ?: [] as $file) {
-            $class = 'App\\Models\\'.basename($file, '.php');
-
-            if (! class_exists($class)) {
-                continue;
-            }
-
-            if (! in_array(HasResourceMetadata::class, class_uses_recursive($class), true)) {
-                continue;
-            }
-
-            if (! is_subclass_of($class, Model::class)) {
-                continue;
-            }
-
-            $classes[] = $class;
-        }
-
-        sort($classes);
-
-        return $classes;
+        return $this->modelSchemaCatalog->metadataClasses();
     }
 
     /**

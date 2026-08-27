@@ -12,6 +12,7 @@ use App\Models\Eligibility;
 use App\Models\Location;
 use App\Models\Player;
 use App\Models\Prize;
+use App\Services\Cache\ModelSchemaCatalog;
 use App\Services\ResourceMetadataService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -163,9 +164,42 @@ class ResourceMetadataServiceTest extends TestCase
     public function test_invalid_schema_throws_exception(): void
     {
         $this->expectException(\InvalidArgumentException::class);
-        $this->expectExceptionMessage('Model class App\Models\InvalidModel not found');
+        $this->expectExceptionMessage('Model class for schema InvalidModel not found');
 
         $this->metadataService->getMetadata('InvalidModel', 'v1');
+    }
+
+    public function test_get_challenge_session_metadata_from_nested_namespace(): void
+    {
+        $metadata = $this->metadataService->getMetadata('ChallengeSession', 'v1');
+
+        $this->assertSame('ChallengeSession', $metadata['schema_name']);
+        $this->assertSame('challenge-sessions', $metadata['resource_path']);
+        $this->assertSame('title', $metadata['display_field']);
+        $this->assertSame(['title'], $metadata['searchable_fields']);
+        $this->assertArrayHasKey('type', $metadata['filterable_fields']);
+        $this->assertArrayHasKey('status', $metadata['filterable_fields']);
+        $this->assertSame(
+            [
+                'id_challenge_session',
+                'title',
+                'type',
+                'status',
+                'started_at',
+                'completed_at',
+                'inserted_at',
+            ],
+            $metadata['sortable_fields']
+        );
+        $this->assertSame(
+            ['title', 'type', 'status', 'started_at', 'completed_at'],
+            $metadata['list_fields']
+        );
+        $this->assertIsArray($metadata['swagger_schema']);
+        $this->assertIsArray($metadata['swagger_schema']['properties'] ?? null);
+        foreach (['id_challenge_session', 'title', 'type', 'status'] as $property) {
+            $this->assertArrayHasKey($property, $metadata['swagger_schema']['properties']);
+        }
     }
 
     public function test_metadata_is_cached(): void
@@ -652,29 +686,14 @@ class ResourceMetadataServiceTest extends TestCase
     }
 
     /**
-     * Get all model classes from the App\Models namespace
+     * Get all model schema basenames from the recursive Models catalog
      */
     private function getAllModels(): array
     {
-        $modelsPath = base_path('app/Models');
-        $models = [];
-
-        if (is_dir($modelsPath)) {
-            $files = glob($modelsPath . '/*.php');
-
-            foreach ($files as $file) {
-                $filename = basename($file, '.php');
-
-                // Skip abstract classes or interfaces
-                if (str_starts_with($filename, 'Abstract') || str_ends_with($filename, 'Interface')) {
-                    continue;
-                }
-
-                $models[] = $filename;
-            }
-        }
-
-        return $models;
+        return array_map(
+            static fn (string $class): string => class_basename($class),
+            app(ModelSchemaCatalog::class)->eloquentClasses()
+        );
     }
 
     /**

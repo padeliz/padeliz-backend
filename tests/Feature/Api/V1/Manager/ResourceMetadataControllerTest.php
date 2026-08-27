@@ -211,6 +211,66 @@ class ResourceMetadataControllerTest extends TestCase
             ]);
     }
 
+    public function test_dotted_schema_name_returns_422(): void
+    {
+        /** @var Player $manager */
+        $manager = Player::factory()->create();
+        $manager->addUserType('manager');
+
+        $response = $this->actingAs($manager)
+            ->getJson('/api/v1/manager/metadata/Challenge.Session');
+
+        $response->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+            ]);
+    }
+
+    public function test_get_challenge_session_metadata_endpoint(): void
+    {
+        /** @var Player $manager */
+        $manager = Player::factory()->create();
+        $manager->addUserType('manager');
+
+        $response = $this->actingAs($manager)
+            ->getJson('/api/v1/manager/metadata/ChallengeSession');
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'schema_name' => 'ChallengeSession',
+                    'resource_path' => 'challenge-sessions',
+                    'display_field' => 'title',
+                ],
+            ]);
+
+        $this->assertSame(['title'], $response->json('data.searchable_fields'));
+        $this->assertArrayHasKey('type', $response->json('data.filterable_fields'));
+        $this->assertArrayHasKey('status', $response->json('data.filterable_fields'));
+        $this->assertSame(
+            [
+                'id_challenge_session',
+                'title',
+                'type',
+                'status',
+                'started_at',
+                'completed_at',
+                'inserted_at',
+            ],
+            $response->json('data.sortable_fields')
+        );
+        $this->assertSame(
+            ['title', 'type', 'status', 'started_at', 'completed_at'],
+            $response->json('data.list_fields')
+        );
+        $this->assertIsArray($response->json('data.swagger_schema'));
+        $this->assertIsArray($response->json('data.swagger_schema.properties'));
+        foreach (['id_challenge_session', 'title', 'type', 'status'] as $property) {
+            $this->assertArrayHasKey($property, $response->json('data.swagger_schema.properties'));
+        }
+    }
+
     public function test_unauthenticated_request_returns_401(): void
     {
         $response = $this->getJson('/api/v1/manager/metadata/Player');

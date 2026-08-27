@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Services\Cache\ModelSchemaCatalog;
 use App\Services\Cache\PadelizCache;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Support\Facades\DB;
@@ -20,6 +21,7 @@ class ResourceMetadataService
 
     public function __construct(
         private readonly PadelizCache $padelizCache,
+        private readonly ModelSchemaCatalog $modelSchemaCatalog,
     ) {
     }
 
@@ -29,7 +31,7 @@ class ResourceMetadataService
     public function getMetadata(string $schemaName, string $version = 'v1'): array
     {
         $policy = config('cache_policies.metadata');
-        $baseTags = array_merge($policy['tags'], ['metadata:'.$schemaName]);
+        $baseTags = array_merge($policy['tags'], ['metadata:' . $schemaName]);
         $cacheKey = "metadata:v1:{$schemaName}";
         $ttl = (int) $policy['ttl'];
 
@@ -74,18 +76,7 @@ class ResourceMetadataService
      */
     private function getModelClassFromSchema(string $schemaName): string
     {
-        // Schema name is already the model class name (e.g., "EditionParticipation")
-        $modelClass = "App\\Models\\{$schemaName}";
-
-        if (! class_exists($modelClass)) {
-            throw new \InvalidArgumentException("Model class {$modelClass} not found");
-        }
-
-        if (! is_subclass_of($modelClass, Model::class)) {
-            throw new \InvalidArgumentException("Class {$modelClass} is not a valid Eloquent model");
-        }
-
-        return $modelClass;
+        return $this->modelSchemaCatalog->classForSchema($schemaName);
     }
 
     /**

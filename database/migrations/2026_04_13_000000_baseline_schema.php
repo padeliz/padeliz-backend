@@ -821,6 +821,21 @@ return new class () extends Migration {
                 ->restrictOnDelete();
         });
 
+        Schema::create('challenge_sessions', function (Blueprint $table) {
+            $table->id('id_challenge_session');
+            $table->string('type', 32);
+            $table->string('status', 16);
+            $table->string('title', 80);
+            $table->string('bottom_text', 80);
+            $table->integer('started_at');
+            $table->integer('completed_at')->nullable();
+            $table->json('state_json');
+            $table->unsignedInteger('state_sequence')->default(0);
+            $table->integer('inserted_at')->nullable();
+            $table->integer('updated_at')->nullable();
+            $table->index(['type', 'status'], 'idx_challenge_sessions_type_status');
+        });
+
         $now = time();
         $rules = json_encode(['max_length' => 2000], JSON_THROW_ON_ERROR);
         $fields = [
@@ -850,6 +865,7 @@ return new class () extends Migration {
 
     public function down(): void
     {
+        Schema::dropIfExists('challenge_sessions');
         Schema::dropIfExists('player_custom_field_value_options');
         Schema::dropIfExists('player_custom_field_values');
         Schema::dropIfExists('player_custom_field_value_import_rows');
