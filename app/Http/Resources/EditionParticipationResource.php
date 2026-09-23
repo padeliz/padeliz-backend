@@ -27,6 +27,9 @@ class EditionParticipationResource extends JsonResource
             'ban_reason' => $this->ban_reason,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
+            'pdf_avatar_url' => array_key_exists('pdf_avatar_url', $this->resource->getAttributes())
+                ? $this->pdf_avatar_url
+                : null,
             'edition' => $this->whenLoaded('edition', function () {
                 return new EditionResource($this->edition);
             }),

@@ -496,4 +496,57 @@ class EditionDivisionReplacementControllerTest extends TestCase
             'id_replacement' => $id,
         ]);
     }
+
+    public function test_replacement_nested_players_include_collecting_aware_pdf_avatar(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $original = $this->participations[0];
+        $substitute = $this->participations[1];
+        $original->update(['is_collecting_points' => true]);
+        $substitute->update(['is_collecting_points' => false]);
+
+        \App\Models\CachedPdfPlayerImage::query()->create([
+            'player_id' => $original->player_id,
+            'player_is_collecting_points' => true,
+            'picture_path' => 'cached-pdf-player-images/' . $original->player_id . '/true.png',
+        ]);
+        \App\Models\CachedPdfPlayerImage::query()->create([
+            'player_id' => $substitute->player_id,
+            'player_is_collecting_points' => true,
+            'picture_path' => 'cached-pdf-player-images/' . $substitute->player_id . '/true-only.png',
+        ]);
+
+        $edId = $this->editionDivision->id_edition_division;
+        $create = $this->postJson("/api/v1/manager/edition-divisions/{$edId}/replacements", [
+            'original_participation_id' => $original->id_participation,
+            'substitute_participation_id' => $substitute->id_participation,
+        ])->assertStatus(201);
+
+        $data = $create->json('data');
+        $this->assertTrue($data['original_participation']['is_collecting_points']);
+        $this->assertFalse($data['substitute_participation']['is_collecting_points']);
+        $this->assertNotNull($data['original_participation']['player']['pdf_avatar_url']);
+        $this->assertNull($data['substitute_participation']['player']['pdf_avatar_url']);
+    }
+
+    public function test_guest_substitute_player_uses_collecting_true_avatar(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $guest = Player::factory()->create();
+        \App\Models\CachedPdfPlayerImage::query()->create([
+            'player_id' => $guest->id_player,
+            'player_is_collecting_points' => true,
+            'picture_path' => 'cached-pdf-player-images/' . $guest->id_player . '/guest.png',
+        ]);
+
+        $edId = $this->editionDivision->id_edition_division;
+        $create = $this->postJson("/api/v1/manager/edition-divisions/{$edId}/replacements", [
+            'original_participation_id' => $this->participations[0]->id_participation,
+            'substitute_player_id' => $guest->id_player,
+        ])->assertStatus(201);
+
+        $this->assertNotNull($create->json('data.substitute_player.pdf_avatar_url'));
+    }
 }

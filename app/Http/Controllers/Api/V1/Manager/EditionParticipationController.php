@@ -10,6 +10,7 @@ use App\Models\{Edition, EditionDivision, EditionParticipation, Player};
 use App\Services\EditionParticipationFlagService;
 use App\Services\EditionParticipationLotteryGuard;
 use App\Services\Pdf\AttendancePosterInvalidation;
+use App\Services\Pdf\CachedPdfAvatarAttacher;
 use App\Services\Pdf\EditionDivisionPosterInvalidator;
 use App\Services\PlayerCustomField\PlayerCustomFieldParticipationResolver;
 use App\Services\PlayerEditionHistoryService;
@@ -33,6 +34,7 @@ class EditionParticipationController extends V1BaseController
         private readonly PlayerEditionHistoryService $playerEditionHistory,
         private readonly EditionParticipationFlagService $participationFlags,
         private readonly EditionParticipationLotteryGuard $lotteryGuard,
+        private readonly CachedPdfAvatarAttacher $pdfAvatarAttacher,
     ) {
     }
 
@@ -207,6 +209,10 @@ class EditionParticipationController extends V1BaseController
             return $payload;
         });
 
+        if (is_array($payload) && isset($payload['data']) && is_array($payload['data'])) {
+            $this->pdfAvatarAttacher->overlayParticipationsOnArray($payload['data']);
+        }
+
         return response()->json($payload);
     }
 
@@ -259,6 +265,7 @@ class EditionParticipationController extends V1BaseController
     public function show(EditionParticipation $editionParticipation)
     {
         $editionParticipation->load(['player', 'editionDivision', 'edition']);
+        $this->pdfAvatarAttacher->hydrateParticipation($editionParticipation);
 
         return $this->resourceResponse(
             new EditionParticipationResource($editionParticipation),
@@ -357,6 +364,7 @@ class EditionParticipationController extends V1BaseController
             $this->posterInvalidator->clearMatchesAndRanking($editionParticipation->editionDivision);
         }
         $this->posterInvalidator->clearAttendanceForEdition((int) $editionParticipation->edition_id);
+        $this->pdfAvatarAttacher->hydrateParticipation($editionParticipation);
 
         return $this->resourceResponse(
             new EditionParticipationResource($editionParticipation),
@@ -465,6 +473,7 @@ class EditionParticipationController extends V1BaseController
         if ($shouldInvalidateAttendance) {
             $this->posterInvalidator->clearAttendanceForEdition((int) $editionParticipation->edition_id);
         }
+        $this->pdfAvatarAttacher->hydrateParticipation($editionParticipation);
 
         return $this->resourceResponse(
             new EditionParticipationResource($editionParticipation),
@@ -574,6 +583,7 @@ class EditionParticipationController extends V1BaseController
         if ($shouldInvalidateAttendance) {
             $this->posterInvalidator->clearAttendanceForEdition((int) $editionParticipation->edition_id);
         }
+        $this->pdfAvatarAttacher->hydrateParticipation($editionParticipation);
 
         return $this->resourceResponse(
             new EditionParticipationResource($editionParticipation),
@@ -960,6 +970,8 @@ class EditionParticipationController extends V1BaseController
         });
 
         $this->posterInvalidator->clearAttendanceForEdition($editionId);
+
+        $this->pdfAvatarAttacher->hydrateParticipations($updated);
 
         return $this->successResponse(
             EditionParticipationResource::collection($updated),

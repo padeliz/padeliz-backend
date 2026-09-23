@@ -8,6 +8,7 @@ use App\Http\Controllers\BaseVersions\V1\V1BaseController;
 use App\Http\Resources\PlayerResource;
 use App\Models\Player;
 use App\Models\PlayerPhone;
+use App\Services\Pdf\CachedPdfAvatarAttacher;
 use App\Services\Pdf\PdfCachedImageGenerator;
 use App\Traits\CachesManagerResourceReads;
 use Illuminate\Http\JsonResponse;
@@ -23,6 +24,12 @@ use Illuminate\Validation\Rule;
 class PlayerController extends V1BaseController
 {
     use CachesManagerResourceReads;
+
+    public function __construct(
+        private readonly CachedPdfAvatarAttacher $pdfAvatarAttacher,
+    ) {
+    }
+
     /**
      * @OA\Get(
      *     path="/api/v1/manager/players",
@@ -143,6 +150,10 @@ class PlayerController extends V1BaseController
             return PlayerResource::collection($players)->response()->getData(true);
         });
 
+        if (is_array($payload) && isset($payload['data']) && is_array($payload['data'])) {
+            $this->pdfAvatarAttacher->overlayPlayersOnArray($payload['data']);
+        }
+
         return response()->json($payload);
     }
 
@@ -187,6 +198,10 @@ class PlayerController extends V1BaseController
 
             return (new PlayerResource($player))->resolve();
         });
+
+        if (is_array($data)) {
+            $this->pdfAvatarAttacher->overlayPlayerOnArray($data);
+        }
 
         return $this->successResponse($data, 'Player details retrieved successfully');
     }

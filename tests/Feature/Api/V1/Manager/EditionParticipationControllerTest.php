@@ -883,4 +883,93 @@ class EditionParticipationControllerTest extends TestCase
         $this->assertNotNull($row);
         $this->assertSame([], $row['custom_field_values']);
     }
+
+    public function test_index_includes_collecting_aware_pdf_avatar_url(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $participation = EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
+            'player_id' => $this->player->id_player,
+            'is_collecting_points' => true,
+        ]);
+
+        \App\Models\CachedPdfPlayerImage::query()->create([
+            'player_id' => $this->player->id_player,
+            'player_is_collecting_points' => false,
+            'picture_path' => 'cached-pdf-player-images/' . $this->player->id_player . '/false.png',
+        ]);
+
+        $miss = $this->getJson(
+            '/api/v1/manager/edition-participations?filters[edition_id]=' . $this->edition->id_edition
+        );
+        $miss->assertOk();
+        $missRow = collect($miss->json('data'))->firstWhere('id_participation', $participation->id_participation);
+        $this->assertNull($missRow['pdf_avatar_url']);
+
+        \App\Models\CachedPdfPlayerImage::query()->create([
+            'player_id' => $this->player->id_player,
+            'player_is_collecting_points' => true,
+            'picture_path' => 'cached-pdf-player-images/' . $this->player->id_player . '/true.png',
+        ]);
+
+        $response = $this->getJson(
+            '/api/v1/manager/edition-participations?filters[edition_id]=' . $this->edition->id_edition
+        );
+        $response->assertOk();
+        $row = collect($response->json('data'))->firstWhere('id_participation', $participation->id_participation);
+        $this->assertNotNull($row['pdf_avatar_url']);
+    }
+
+    public function test_index_pdf_avatar_fresh_after_cache_warm(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $participation = EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
+            'player_id' => $this->player->id_player,
+            'is_collecting_points' => true,
+        ]);
+
+        $warm = $this->getJson(
+            '/api/v1/manager/edition-participations?filters[edition_id]=' . $this->edition->id_edition
+        )->assertOk();
+        $warmRow = collect($warm->json('data'))->firstWhere('id_participation', $participation->id_participation);
+        $this->assertNull($warmRow['pdf_avatar_url']);
+
+        \App\Models\CachedPdfPlayerImage::query()->create([
+            'player_id' => $this->player->id_player,
+            'player_is_collecting_points' => true,
+            'picture_path' => 'cached-pdf-player-images/' . $this->player->id_player . '/fresh.png',
+        ]);
+
+        $again = $this->getJson(
+            '/api/v1/manager/edition-participations?filters[edition_id]=' . $this->edition->id_edition
+        )->assertOk();
+        $row = collect($again->json('data'))->firstWhere('id_participation', $participation->id_participation);
+        $this->assertNotNull($row['pdf_avatar_url']);
+    }
+
+    public function test_show_hydrates_pdf_avatar_url(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $participation = EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'edition_division_id' => $this->editionDivision->id_edition_division,
+            'player_id' => $this->player->id_player,
+            'is_collecting_points' => true,
+        ]);
+        \App\Models\CachedPdfPlayerImage::query()->create([
+            'player_id' => $this->player->id_player,
+            'player_is_collecting_points' => true,
+            'picture_path' => 'cached-pdf-player-images/' . $this->player->id_player . '/show.png',
+        ]);
+
+        $response = $this->getJson("/api/v1/manager/edition-participations/{$participation->id_participation}")
+            ->assertOk();
+        $this->assertNotNull($response->json('data.pdf_avatar_url'));
+    }
 }

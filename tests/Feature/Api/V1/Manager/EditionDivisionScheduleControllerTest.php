@@ -676,6 +676,94 @@ class EditionDivisionScheduleControllerTest extends TestCase
         $this->assertSame(1, \App\Models\CachedPdfPlayerImage::query()->count());
     }
 
+    public function test_schedule_show_participations_include_collecting_aware_pdf_avatar_url(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $edId = $this->editionDivision->id_edition_division;
+        $playerId = (int) $this->participations[0]->player_id;
+        $this->participations[0]->update(['is_collecting_points' => true]);
+
+        \App\Models\CachedPdfPlayerImage::query()->create([
+            'player_id' => $playerId,
+            'player_is_collecting_points' => false,
+            'picture_path' => 'cached-pdf-player-images/' . $playerId . '/false.png',
+            'inserted_at' => time(),
+        ]);
+
+        $missRows = $this->getJson("/api/v1/manager/edition-divisions/{$edId}/schedule")
+            ->assertOk()
+            ->json('data.participations');
+        $miss = collect($missRows)->firstWhere('player_id', $playerId);
+        $this->assertNull($miss['pdf_avatar_url']);
+
+        \App\Models\CachedPdfPlayerImage::query()->create([
+            'player_id' => $playerId,
+            'player_is_collecting_points' => true,
+            'picture_path' => 'cached-pdf-player-images/' . $playerId . '/true.png',
+            'inserted_at' => time(),
+        ]);
+
+        $rows = $this->getJson("/api/v1/manager/edition-divisions/{$edId}/schedule")
+            ->assertOk()
+            ->json('data.participations');
+        $row = collect($rows)->firstWhere('player_id', $playerId);
+        $this->assertNotNull($row);
+        $this->assertNotNull($row['pdf_avatar_url']);
+    }
+
+    public function test_schedule_show_participation_pdf_avatar_fresh_after_cache_warm(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $edId = $this->editionDivision->id_edition_division;
+        $playerId = (int) $this->participations[0]->player_id;
+        $this->participations[0]->update(['is_collecting_points' => true]);
+
+        $warm = $this->getJson("/api/v1/manager/edition-divisions/{$edId}/schedule")->assertOk();
+        $warmRow = collect($warm->json('data.participations'))->firstWhere('player_id', $playerId);
+        $this->assertNull($warmRow['pdf_avatar_url']);
+
+        \App\Models\CachedPdfPlayerImage::query()->create([
+            'player_id' => $playerId,
+            'player_is_collecting_points' => true,
+            'picture_path' => 'cached-pdf-player-images/' . $playerId . '/fresh.png',
+            'inserted_at' => time(),
+        ]);
+
+        $again = $this->getJson("/api/v1/manager/edition-divisions/{$edId}/schedule")->assertOk();
+        $row = collect($again->json('data.participations'))->firstWhere('player_id', $playerId);
+        $this->assertNotNull($row['pdf_avatar_url']);
+    }
+
+    public function test_schedule_form_save_hydrates_participation_pdf_avatar_url(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $edId = $this->editionDivision->id_edition_division;
+        $playerId = (int) $this->participations[0]->player_id;
+        $this->participations[0]->update(['is_collecting_points' => true]);
+        \App\Models\CachedPdfPlayerImage::query()->create([
+            'player_id' => $playerId,
+            'player_is_collecting_points' => true,
+            'picture_path' => 'cached-pdf-player-images/' . $playerId . '/form.png',
+            'inserted_at' => time(),
+        ]);
+
+        $response = $this->putJson("/api/v1/manager/edition-divisions/{$edId}/schedule/form", [
+            'court_ids' => [$this->court->id_court],
+            'participation_ids' => array_map(
+                static fn (EditionParticipation $p): int => (int) $p->id_participation,
+                $this->participations
+            ),
+        ]);
+
+        $response->assertOk();
+        $row = collect($response->json('data.participations'))->firstWhere('player_id', $playerId);
+        $this->assertNotNull($row);
+        $this->assertNotNull($row['pdf_avatar_url']);
+    }
+
     private function solidPngBytes(): string
     {
         $img = imagecreatetruecolor(40, 40);

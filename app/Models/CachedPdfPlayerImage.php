@@ -76,4 +76,67 @@ class CachedPdfPlayerImage extends Model
 
         return Storage::disk($this->storageDisk())->url($this->picture_path);
     }
+
+    /**
+     * Read-only lookup of an already-cached circular avatar URL.
+     */
+    public static function urlForPlayer(int $playerId, bool $collecting): ?string
+    {
+        $cached = static::query()
+            ->where('player_id', $playerId)
+            ->where('player_is_collecting_points', $collecting)
+            ->first();
+
+        return $cached?->url;
+    }
+
+    /**
+     * Batch lookup keyed by "{playerId}:{0|1}".
+     *
+     * @param  list<array{player_id: int, collecting: bool}>  $pairs
+     * @return array<string, null|string>
+     */
+    public static function urlsByPlayerCollectingPairs(array $pairs): array
+    {
+        if ($pairs === []) {
+            return [];
+        }
+
+        $playerIds = array_values(array_unique(array_map(
+            static fn (array $row): int => (int) $row['player_id'],
+            $pairs
+        )));
+
+        $images = static::query()
+            ->whereIn('player_id', $playerIds)
+            ->get();
+
+        $byKey = [];
+        foreach ($images as $image) {
+            $flag = $image->player_is_collecting_points ? '1' : '0';
+            $byKey[$image->player_id . ':' . $flag] = $image->url;
+        }
+
+        $result = [];
+        foreach ($pairs as $pair) {
+            $playerId = (int) $pair['player_id'];
+            $key = $playerId . ':' . ($pair['collecting'] ? '1' : '0');
+            $result[$key] = $byKey[$key] ?? null;
+        }
+
+        return $result;
+    }
+
+    /**
+     * PlayerResource preference: collecting=true URL if present, else any cached URL.
+     */
+    public static function urlForPlayerPreferCollecting(int $playerId): ?string
+    {
+        $collecting = static::urlForPlayer($playerId, true);
+        if ($collecting !== null) {
+            return $collecting;
+        }
+
+        return static::urlForPlayer($playerId, false);
+    }
 }

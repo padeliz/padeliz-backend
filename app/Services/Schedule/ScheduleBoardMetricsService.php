@@ -117,25 +117,15 @@ final class ScheduleBoardMetricsService
                 'participation_id' => (int) $participation->id_participation,
                 'player_id' => (int) $player->id_player,
                 'short_name' => PdfHtmlHelper::shortenPlayerName($name),
-                'pdf_avatar_url' => $this->resolveAvatarUrl($player, $collecting),
+                'pdf_avatar_url' => CachedPdfPlayerImage::urlForPlayer(
+                    (int) $player->id_player,
+                    $collecting
+                ),
                 'is_collecting_points' => $collecting,
             ];
         }
 
         return $board;
-    }
-
-    /**
-     * Read-only lookup: the board never generates cached PDF images, it only surfaces already-cached ones.
-     */
-    private function resolveAvatarUrl(mixed $player, bool $collecting): ?string
-    {
-        $cached = CachedPdfPlayerImage::query()
-            ->where('player_id', (int) $player->id_player)
-            ->where('player_is_collecting_points', $collecting)
-            ->first();
-
-        return $cached?->url;
     }
 
     /**

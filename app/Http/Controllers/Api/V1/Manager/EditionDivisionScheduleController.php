@@ -12,6 +12,7 @@ use App\Models\CachedPdfPairImage;
 use App\Models\EditionDivision;
 use App\Models\EditionDivisionSchedule;
 use App\Models\EditionParticipation;
+use App\Services\Pdf\CachedPdfAvatarAttacher;
 use App\Services\Pdf\EditionDivisionPosterInvalidator;
 use App\Services\Cache\EditionDivisionCacheInvalidator;
 use App\Services\Cache\ScheduleReadCache;
@@ -44,6 +45,7 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
         private readonly ScheduleMatchReorderService $reorderService,
         private readonly ScheduleReadCache $scheduleReadCache,
         private readonly EditionDivisionCacheInvalidator $cacheInvalidator,
+        private readonly CachedPdfAvatarAttacher $pdfAvatarAttacher,
     ) {
     }
 
@@ -75,6 +77,8 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
         if ($scores) {
             $this->overlayCoupleImageUrlsOnPayload($payload);
         }
+
+        $this->overlayParticipationPdfAvatarsOnSchedulePayload($payload);
 
         return $this->successResponse($payload, 'Schedule retrieved successfully');
     }
@@ -175,12 +179,17 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
 
         $schedule = $editionDivision->schedule()->first();
 
+        $participations = $editionDivision->participations()
+            ->orderBy('sort_order')
+            ->orderBy('id_participation')
+            ->with('player')
+            ->get();
+        $this->pdfAvatarAttacher->hydrateParticipations($participations);
+
         return $this->successResponse([
             'edition_division' => new EditionDivisionResource($editionDivision),
             'schedule' => $schedule !== null ? new EditionDivisionScheduleResource($schedule) : null,
-            'participations' => EditionParticipationResource::collection(
-                $editionDivision->participations()->orderBy('sort_order')->orderBy('id_participation')->with('player')->get()
-            ),
+            'participations' => EditionParticipationResource::collection($participations),
         ], 'Schedule form saved successfully');
     }
 
@@ -639,6 +648,22 @@ class EditionDivisionScheduleController extends \App\Http\Controllers\BaseVersio
         $preview['adjust'] = $adjust;
 
         return $preview;
+    }
+
+    /**
+     * Attach participation PDF avatars after schedule cache read (avatars change out-of-band).
+     *
+     * @param  array<string, mixed>  $payload
+     */
+    private function overlayParticipationPdfAvatarsOnSchedulePayload(array &$payload): void
+    {
+        $participations = $payload['participations'] ?? null;
+        if (! is_array($participations)) {
+            return;
+        }
+
+        $this->pdfAvatarAttacher->overlayParticipationsOnArray($participations);
+        $payload['participations'] = $participations;
     }
 
     /**

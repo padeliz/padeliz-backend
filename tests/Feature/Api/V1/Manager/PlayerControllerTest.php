@@ -478,4 +478,38 @@ class PlayerControllerTest extends TestCase
         $response = $this->getJson("/api/v1/manager/players/{$this->player->id_player}");
         $response->assertStatus(401);
     }
+
+    public function test_player_index_includes_pdf_avatar_url_from_overlay(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        \App\Models\CachedPdfPlayerImage::query()->create([
+            'player_id' => $this->player->id_player,
+            'player_is_collecting_points' => true,
+            'picture_path' => 'cached-pdf-player-images/' . $this->player->id_player . '/index.png',
+        ]);
+
+        $response = $this->getJson('/api/v1/manager/players');
+        $response->assertOk();
+        $row = collect($response->json('data'))->firstWhere('id_player', $this->player->id_player);
+        $this->assertNotNull($row);
+        $this->assertNotNull($row['pdf_avatar_url']);
+    }
+
+    public function test_player_show_pdf_avatar_fresh_after_cache_warm(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $warm = $this->getJson("/api/v1/manager/players/{$this->player->id_player}")->assertOk();
+        $this->assertNull($warm->json('data.pdf_avatar_url'));
+
+        \App\Models\CachedPdfPlayerImage::query()->create([
+            'player_id' => $this->player->id_player,
+            'player_is_collecting_points' => true,
+            'picture_path' => 'cached-pdf-player-images/' . $this->player->id_player . '/fresh.png',
+        ]);
+
+        $again = $this->getJson("/api/v1/manager/players/{$this->player->id_player}")->assertOk();
+        $this->assertNotNull($again->json('data.pdf_avatar_url'));
+    }
 }

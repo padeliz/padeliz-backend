@@ -112,18 +112,7 @@ final class LotteryPrizeLuckiesAssembler
             return;
         }
 
-        $playerIds = array_values(array_unique(array_map(
-            static fn (array $row): int => $row['player_id'],
-            $keys
-        )));
-        $images = CachedPdfPlayerImage::query()
-            ->whereIn('player_id', $playerIds)
-            ->get();
-        $byKey = [];
-        foreach ($images as $image) {
-            $flag = $image->player_is_collecting_points ? '1' : '0';
-            $byKey[$image->player_id . ':' . $flag] = $image->url;
-        }
+        $byKey = CachedPdfPlayerImage::urlsByPlayerCollectingPairs(array_values($keys));
 
         foreach ($luckies as $lucky) {
             $playerId = $lucky->drawnParticipation?->player_id;

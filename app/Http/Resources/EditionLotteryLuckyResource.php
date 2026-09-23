@@ -9,6 +9,7 @@ use App\Services\Pdf\PdfHtmlHelper;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
+
 class EditionLotteryLuckyResource extends JsonResource
 {
     /**
@@ -67,11 +68,6 @@ class EditionLotteryLuckyResource extends JsonResource
             return null;
         }
 
-        $cached = CachedPdfPlayerImage::query()
-            ->where('player_id', (int) $player->id_player)
-            ->where('player_is_collecting_points', $collecting)
-            ->first();
-
-        return $cached?->url;
+        return CachedPdfPlayerImage::urlForPlayer((int) $player->id_player, $collecting);
     }
 }
