@@ -337,12 +337,12 @@ final class ManagerResourceReadCacheTest extends TestCase
         $policyKey = is_array($filters) && isset($filters['edition_id']) && $allowedFilters === ['edition_id']
             ? 'edition_scoped_index'
             : 'reference_index_picker';
-        $policy = config('cache_policies.'.$policyKey);
-        $tags = array_merge($policy['tags'], ['mgr-list:'.$resource]);
+        $policy = config('cache_policies.' . $policyKey);
+        $tags = array_merge($policy['tags'], ['mgr-list:' . $resource]);
         $editionId = data_get($request->input('filters'), 'edition_id');
 
         if ($editionId !== null) {
-            $tags[] = 'edition:'.$editionId;
+            $tags[] = 'edition:' . $editionId;
         }
 
         return $tags;
@@ -350,6 +350,6 @@ final class ManagerResourceReadCacheTest extends TestCase
 
     private function indexKey(string $resource, Request $request): string
     {
-        return 'mgr:index:'.$resource.':'.md5($request->getQueryString() ?? '');
+        return 'mgr:index:' . $resource . ':' . md5($request->getQueryString() ?? '');
     }
 }

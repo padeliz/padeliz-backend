@@ -6,9 +6,12 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Resources\EditionLotteryPrizeCollection;
 use App\Http\Resources\EditionLotteryPrizeResource;
+use App\Models\EditionLottery;
 use App\Models\EditionLotteryPrize;
 use App\Services\Lottery\LotteryPrizeLuckiesAssembler;
+use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @OA\Tag(
@@ -69,7 +72,12 @@ class EditionLotteryPrizeController extends \App\Http\Controllers\BaseVersions\V
      *     allOf={
      *         @OA\Schema(ref="#/components/schemas/EditionLotteryPrize"),
      *         @OA\Schema(
-     *             @OA\Property(property="rule_prize_quantity_total", type="integer", description="Present when include=luckies"),
+     *             @OA\Property(property="rules_count", type="integer", description="Always present"),
+     *             @OA\Property(
+     *                 property="rule_prize_quantity_total",
+     *                 type="integer",
+     *                 description="Always present. Sum of rule_prize_quantity for this line; when include=luckies may be overwritten with a division-scoped sum"
+     *             ),
      *             @OA\Property(property="activity_at", type="integer", nullable=true, description="Present when include=luckies"),
      *             @OA\Property(
      *                 property="luckies",
@@ -83,7 +91,9 @@ class EditionLotteryPrizeController extends \App\Http\Controllers\BaseVersions\V
      */
     public function index(Request $request)
     {
-        $query = EditionLotteryPrize::with(['prize', 'sponsor', 'lottery']);
+        $query = EditionLotteryPrize::with(['prize', 'sponsor', 'lottery'])
+            ->withCount('rules')
+            ->withSum('rules as rule_prize_quantity_total', 'rule_prize_quantity');
 
         $lotteryId = $this->pullJoinFilter($request, 'lottery_id');
         if ($lotteryId !== null) {
@@ -159,10 +169,110 @@ class EditionLotteryPrizeController extends \App\Http\Controllers\BaseVersions\V
     public function show(EditionLotteryPrize $lotteryPrize)
     {
         $lotteryPrize->load(['prize', 'sponsor', 'lottery']);
+        $lotteryPrize->loadCount('rules');
+        $lotteryPrize->loadSum('rules as rule_prize_quantity_total', 'rule_prize_quantity');
 
         return $this->resourceResponse(
             new EditionLotteryPrizeResource($lotteryPrize),
             'Lottery prize details retrieved successfully'
+        );
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/v1/manager/edition-lottery-prizes/reorder",
+     *     summary="Rewrite display_order for every prize line of one lottery",
+     *     tags={"🐧 Manager: Edition Lottery Prizes"},
+     *     security={{"sanctum":{}}},
+     *     @OA\RequestBody(
+     *         required=true,
+     *         @OA\JsonContent(
+     *             required={"lottery_id", "lottery_prize_ids"},
+     *             @OA\Property(property="lottery_id", type="integer"),
+     *             @OA\Property(
+     *                 property="lottery_prize_ids",
+     *                 type="array",
+     *                 description="Must list every prize line of the lottery exactly once, in desired order",
+     *                 @OA\Items(type="integer")
+     *             )
+     *         )
+     *     ),
+     *     @OA\Response(response=200, description="Reordered"),
+     *     @OA\Response(response=409, description="Edition is finalized or lottery has luckies"),
+     *     @OA\Response(response=422, description="Validation error")
+     * )
+     */
+    public function reorder(Request $request)
+    {
+        $validated = $request->validate([
+            'lottery_id' => 'required|integer|exists:edition_lotteries,id_lottery',
+            'lottery_prize_ids' => 'required|array|min:1',
+            'lottery_prize_ids.*' => 'integer|distinct',
+        ]);
+
+        $lotteryId = (int) $validated['lottery_id'];
+        $lottery = EditionLottery::with('edition')->find($lotteryId);
+        if ($lottery?->edition?->finalized_at !== null) {
+            return $this->errorResponse('Edition is finalized.', 409);
+        }
+
+        if ($lottery->lotteryRules()->whereHas('luckies')->exists()) {
+            return $this->errorResponse('Lottery already has luckies.', 409);
+        }
+
+        $existing = EditionLotteryPrize::query()
+            ->where('lottery_id', $lotteryId)
+            ->get()
+            ->keyBy('id_lottery_prize');
+
+        $requestedIds = array_map('intval', $validated['lottery_prize_ids']);
+
+        $missing = $existing->keys()
+            ->map(static fn ($id): int => (int) $id)
+            ->diff($requestedIds)
+            ->values()
+            ->all();
+
+        if ($missing !== []) {
+            return $this->errorResponse(
+                'lottery_prize_ids must include every prize line of this lottery.',
+                422,
+                ['missing_lottery_prize_ids' => $missing]
+            );
+        }
+
+        $unknown = array_values(array_diff(
+            $requestedIds,
+            $existing->keys()->map(static fn ($id): int => (int) $id)->all()
+        ));
+        if ($unknown !== []) {
+            return $this->errorResponse(
+                'One or more lottery prize lines do not belong to this lottery.',
+                422,
+                ['unknown_lottery_prize_ids' => $unknown]
+            );
+        }
+
+        $reordered = DB::transaction(function () use ($requestedIds, $existing, $lotteryId) {
+            foreach ($requestedIds as $index => $prizeId) {
+                $line = $existing->get($prizeId);
+                $line->display_order = $index;
+                $line->save();
+            }
+
+            return EditionLotteryPrize::query()
+                ->with(['prize', 'sponsor', 'lottery'])
+                ->withCount('rules')
+                ->withSum('rules as rule_prize_quantity_total', 'rule_prize_quantity')
+                ->where('lottery_id', $lotteryId)
+                ->orderBy('display_order')
+                ->orderBy('id_lottery_prize')
+                ->get();
+        });
+
+        return $this->successResponse(
+            EditionLotteryPrizeResource::collection($reordered),
+            'Lottery prizes reordered successfully'
         );
     }
 
@@ -183,16 +293,24 @@ class EditionLotteryPrizeController extends \App\Http\Controllers\BaseVersions\V
      *             @OA\Property(property="display_order", type="integer")
      *         )
      *     ),
-     *     @OA\Response(response=201, description="Created")
+     *     @OA\Response(response=201, description="Created"),
+     *     @OA\Response(response=409, description="Edition is finalized")
      * )
      */
     public function store(Request $request)
     {
         $validated = $request->validate($this->lineValidation(true));
+
+        if ($response = $this->refuseIfEditionFinalizedForLotteryId((int) $validated['lottery_id'])) {
+            return $response;
+        }
+
         $validated['display_order'] = $validated['display_order'] ?? 0;
 
         $line = EditionLotteryPrize::create($validated);
         $line->load(['prize', 'sponsor', 'lottery']);
+        $line->loadCount('rules');
+        $line->loadSum('rules as rule_prize_quantity_total', 'rule_prize_quantity');
 
         return $this->resourceResponse(
             new EditionLotteryPrizeResource($line),
@@ -208,14 +326,27 @@ class EditionLotteryPrizeController extends \App\Http\Controllers\BaseVersions\V
      *     tags={"🐧 Manager: Edition Lottery Prizes"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(name="lotteryPrize", in="path", required=true, @OA\Schema(type="integer")),
-     *     @OA\Response(response=200, description="Updated")
+     *     @OA\Response(response=200, description="Updated"),
+     *     @OA\Response(response=409, description="Edition is finalized")
      * )
      */
     public function update(Request $request, EditionLotteryPrize $lotteryPrize)
     {
+        if ($response = $this->refuseIfEditionFinalizedForPrize($lotteryPrize)) {
+            return $response;
+        }
+
         $validated = $request->validate($this->lineValidation(true));
+
+        if (isset($validated['lottery_id'])
+            && ($response = $this->refuseIfEditionFinalizedForLotteryId((int) $validated['lottery_id']))) {
+            return $response;
+        }
+
         $lotteryPrize->update($validated);
         $lotteryPrize->load(['prize', 'sponsor', 'lottery']);
+        $lotteryPrize->loadCount('rules');
+        $lotteryPrize->loadSum('rules as rule_prize_quantity_total', 'rule_prize_quantity');
 
         return $this->resourceResponse(
             new EditionLotteryPrizeResource($lotteryPrize),
@@ -230,14 +361,27 @@ class EditionLotteryPrizeController extends \App\Http\Controllers\BaseVersions\V
      *     tags={"🐧 Manager: Edition Lottery Prizes"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(name="lotteryPrize", in="path", required=true, @OA\Schema(type="integer")),
-     *     @OA\Response(response=200, description="Updated")
+     *     @OA\Response(response=200, description="Updated"),
+     *     @OA\Response(response=409, description="Edition is finalized")
      * )
      */
     public function patch(Request $request, EditionLotteryPrize $lotteryPrize)
     {
+        if ($response = $this->refuseIfEditionFinalizedForPrize($lotteryPrize)) {
+            return $response;
+        }
+
         $validated = $request->validate($this->lineValidation(false));
+
+        if (isset($validated['lottery_id'])
+            && ($response = $this->refuseIfEditionFinalizedForLotteryId((int) $validated['lottery_id']))) {
+            return $response;
+        }
+
         $lotteryPrize->update($validated);
         $lotteryPrize->load(['prize', 'sponsor', 'lottery']);
+        $lotteryPrize->loadCount('rules');
+        $lotteryPrize->loadSum('rules as rule_prize_quantity_total', 'rule_prize_quantity');
 
         return $this->resourceResponse(
             new EditionLotteryPrizeResource($lotteryPrize),
@@ -253,11 +397,15 @@ class EditionLotteryPrizeController extends \App\Http\Controllers\BaseVersions\V
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(name="lotteryPrize", in="path", required=true, @OA\Schema(type="integer")),
      *     @OA\Response(response=200, description="Deleted"),
-     *     @OA\Response(response=409, description="Linked rules")
+     *     @OA\Response(response=409, description="Linked rules or edition finalized")
      * )
      */
     public function destroy(EditionLotteryPrize $lotteryPrize)
     {
+        if ($response = $this->refuseIfEditionFinalizedForPrize($lotteryPrize)) {
+            return $response;
+        }
+
         return $this->deleteResourceWithResponse(
             $lotteryPrize,
             ['rules' => 'rules_count'],
@@ -272,7 +420,8 @@ class EditionLotteryPrizeController extends \App\Http\Controllers\BaseVersions\V
      *     summary="Bulk delete lottery prize lines",
      *     tags={"🐧 Manager: Edition Lottery Prizes"},
      *     security={{"sanctum":{}}},
-     *     @OA\Response(response=200, description="Deleted")
+     *     @OA\Response(response=200, description="Deleted"),
+     *     @OA\Response(response=409, description="Edition is finalized")
      * )
      */
     public function bulkDestroy(Request $request)
@@ -281,6 +430,17 @@ class EditionLotteryPrizeController extends \App\Http\Controllers\BaseVersions\V
             'lottery_prize_ids' => 'required|array|min:1',
             'lottery_prize_ids.*' => 'integer',
         ]);
+
+        $lines = EditionLotteryPrize::query()
+            ->with('lottery.edition')
+            ->whereIn('id_lottery_prize', $request->lottery_prize_ids)
+            ->get();
+
+        foreach ($lines as $line) {
+            if ($line->lottery?->edition?->finalized_at !== null) {
+                return $this->errorResponse('Edition is finalized.', 409);
+            }
+        }
 
         return $this->deleteBulkResourcesWithResponse(
             $request->lottery_prize_ids,
@@ -306,6 +466,26 @@ class EditionLotteryPrizeController extends \App\Http\Controllers\BaseVersions\V
             'display_order' => 'nullable|integer',
             'rules' => 'prohibited',
         ];
+    }
+
+    private function refuseIfEditionFinalizedForLotteryId(int $lotteryId): ?JsonResponse
+    {
+        $lottery = EditionLottery::with('edition')->find($lotteryId);
+        if ($lottery?->edition?->finalized_at !== null) {
+            return $this->errorResponse('Edition is finalized.', 409);
+        }
+
+        return null;
+    }
+
+    private function refuseIfEditionFinalizedForPrize(EditionLotteryPrize $lotteryPrize): ?JsonResponse
+    {
+        $lotteryPrize->loadMissing('lottery.edition');
+        if ($lotteryPrize->lottery?->edition?->finalized_at !== null) {
+            return $this->errorResponse('Edition is finalized.', 409);
+        }
+
+        return null;
     }
 
     private function includeContainsLuckies(Request $request): bool

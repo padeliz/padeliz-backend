@@ -13,21 +13,21 @@ class EditionDivisionCacheInvalidator
 
     public function invalidateSchedule(int $editionDivisionId): void
     {
-        $this->cache->flushTags(['division:'.$editionDivisionId]);
+        $this->cache->flushTags(['division:' . $editionDivisionId]);
     }
 
     public function invalidateStandings(int $editionDivisionId): void
     {
-        $this->cache->flushTags(['division:'.$editionDivisionId]);
+        $this->cache->flushTags(['division:' . $editionDivisionId]);
     }
 
     public function invalidateEdition(int $editionId): void
     {
-        $this->cache->flushTags(['edition:'.$editionId]);
+        $this->cache->flushTags(['edition:' . $editionId]);
     }
 
     public function invalidateLottery(int $lotteryId): void
     {
-        $this->cache->flushTags(['lottery:'.$lotteryId]);
+        $this->cache->flushTags(['lottery:' . $lotteryId]);
     }
 }

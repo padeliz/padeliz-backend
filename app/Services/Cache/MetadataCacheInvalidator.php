@@ -16,7 +16,7 @@ class MetadataCacheInvalidator
 
     public function invalidateSchema(string $schema): void
     {
-        $this->cache->flushTags(['metadata:'.$schema]);
+        $this->cache->flushTags(['metadata:' . $schema]);
     }
 
     public function invalidateAll(): void
@@ -28,7 +28,7 @@ class MetadataCacheInvalidator
     {
         $supplierSchema = class_basename($model);
 
-        $this->cache->flushTags(['metadata-supplier:'.$supplierSchema]);
+        $this->cache->flushTags(['metadata-supplier:' . $supplierSchema]);
 
         foreach ($this->registry->consumersForSupplier($supplierSchema) as $consumerSchema) {
             $this->invalidateSchema($consumerSchema);

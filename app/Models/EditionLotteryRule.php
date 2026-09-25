@@ -43,6 +43,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *         title="Luckies",
  *         description="Array of related lottery luckies",
  *         nullable=true
+ *     ),
+ *     @OA\Property(
+ *         property="luckies_count",
+ *         type="integer",
+ *         title="Luckies Count",
+ *         description="Number of luckies linked to this rule"
  *     )
  * )
  */

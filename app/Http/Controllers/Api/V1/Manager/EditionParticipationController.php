@@ -27,6 +27,7 @@ use Illuminate\Support\Facades\DB;
 class EditionParticipationController extends V1BaseController
 {
     use CachesManagerResourceReads;
+
     public function __construct(
         private readonly EditionDivisionPosterInvalidator $posterInvalidator,
         private readonly AttendancePosterInvalidation $attendanceInvalidation,

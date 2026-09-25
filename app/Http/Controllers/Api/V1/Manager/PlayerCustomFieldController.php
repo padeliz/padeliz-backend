@@ -22,6 +22,7 @@ use Illuminate\Validation\ValidationException;
 class PlayerCustomFieldController extends V1BaseController
 {
     use CachesManagerResourceReads;
+
     /**
      * @OA\Get(
      *     path="/api/v1/manager/player-custom-fields",

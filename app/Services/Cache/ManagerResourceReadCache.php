@@ -22,10 +22,10 @@ class ManagerResourceReadCache
 
         $policy = config('cache_policies.reference_show');
         $baseTags = array_merge($policy['tags'], [
-            'reference:'.$resource,
-            'reference:'.$resource.':'.$id,
+            'reference:' . $resource,
+            'reference:' . $resource . ':' . $id,
         ]);
-        $key = 'mgr:show:'.$resource.':'.$id;
+        $key = 'mgr:show:' . $resource . ':' . $id;
 
         return $this->cache->remember($key, (int) $policy['ttl'], $baseTags, $resolver);
     }
@@ -39,15 +39,15 @@ class ManagerResourceReadCache
         }
 
         $policyKey = $this->indexPolicyKey($request, $allowedFilters);
-        $policy = config('cache_policies.'.$policyKey);
-        $baseTags = array_merge($policy['tags'], ['mgr-list:'.$resource]);
+        $policy = config('cache_policies.' . $policyKey);
+        $baseTags = array_merge($policy['tags'], ['mgr-list:' . $resource]);
         $editionId = data_get($request->input('filters'), 'edition_id');
 
         if ($editionId !== null) {
-            $baseTags[] = 'edition:'.$editionId;
+            $baseTags[] = 'edition:' . $editionId;
         }
 
-        $key = 'mgr:index:'.$resource.':'.md5($request->getQueryString() ?? '');
+        $key = 'mgr:index:' . $resource . ':' . md5($request->getQueryString() ?? '');
 
         return $this->cache->remember($key, (int) $policy['ttl'], $baseTags, $resolver);
     }
@@ -97,8 +97,8 @@ class ManagerResourceReadCache
     private function rememberEditionShow(int $id, Closure $resolver): mixed
     {
         $policy = config('cache_policies.edition_show');
-        $baseTags = array_merge($policy['tags'], ['edition:'.$id]);
-        $key = 'mgr:show:editions:'.$id;
+        $baseTags = array_merge($policy['tags'], ['edition:' . $id]);
+        $key = 'mgr:show:editions:' . $id;
 
         return $this->cache->remember($key, (int) $policy['ttl'], $baseTags, $resolver);
     }

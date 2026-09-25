@@ -163,9 +163,9 @@ final class BptTopPlayersController extends Controller
             }
 
             $policy = config('cache_policies.bpt_top_players');
-            $payload = Cache::lock('bpt_top_players:'.$take, 120)->block(120, function () use ($builder, $take, $policy) {
+            $payload = Cache::lock('bpt_top_players:' . $take, 120)->block(120, function () use ($builder, $take, $policy) {
                 return app(PadelizCache::class)->remember(
-                    'bpt:top-players:'.$take,
+                    'bpt:top-players:' . $take,
                     (int) $policy['ttl'],
                     $policy['tags'],
                     fn () => $builder->build($take, false),

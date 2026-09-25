@@ -38,10 +38,8 @@ class EditionLotteryPrizeResource extends JsonResource
             'luckies' => $this->whenLoaded('luckies', function () {
                 return EditionLotteryLuckyResource::collection($this->luckies);
             }),
-            'rule_prize_quantity_total' => $this->when(
-                array_key_exists('rule_prize_quantity_total', $this->resource->getAttributes()),
-                fn () => $this->rule_prize_quantity_total
-            ),
+            'rules_count' => (int) ($this->rules_count ?? 0),
+            'rule_prize_quantity_total' => (int) ($this->rule_prize_quantity_total ?? 0),
             'activity_at' => $this->when(
                 array_key_exists('activity_at', $this->resource->getAttributes()),
                 fn () => $this->activity_at

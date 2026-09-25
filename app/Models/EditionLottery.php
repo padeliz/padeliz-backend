@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
+use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
 /**
  * @OA\Schema(
@@ -59,6 +60,12 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *         title="Lottery Prizes",
  *         description="Prize lines of this lottery",
  *         nullable=true
+ *     ),
+ *     @OA\Property(
+ *         property="has_luckies",
+ *         type="boolean",
+ *         title="Has Luckies",
+ *         description="True when any rule under this lottery has at least one lucky"
  *     )
  * )
  */
@@ -120,5 +127,17 @@ class EditionLottery extends Model
     public function lotteryPrizes(): HasMany
     {
         return $this->hasMany(EditionLotteryPrize::class, 'lottery_id', 'id_lottery');
+    }
+
+    public function lotteryRules(): HasManyThrough
+    {
+        return $this->hasManyThrough(
+            EditionLotteryRule::class,
+            EditionLotteryPrize::class,
+            'lottery_id',
+            'lottery_prize_id',
+            'id_lottery',
+            'id_lottery_prize'
+        );
     }
 }

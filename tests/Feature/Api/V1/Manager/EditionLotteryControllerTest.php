@@ -5,8 +5,12 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Edition;
+use App\Models\EditionDivision;
 use App\Models\EditionLottery;
+use App\Models\EditionLotteryLucky;
 use App\Models\EditionLotteryPrize;
+use App\Models\EditionLotteryRule;
+use App\Models\EditionParticipation;
 use App\Models\Player;
 use App\Models\Prize;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -256,5 +260,165 @@ class EditionLotteryControllerTest extends TestCase
     {
         $response = $this->getJson('/api/v1/manager/edition-lotteries');
         $response->assertStatus(401);
+    }
+
+    public function test_index_and_show_expose_has_luckies_false_without_luckies(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $lottery = EditionLottery::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'name' => 'No Luckies',
+        ]);
+        $line = EditionLotteryPrize::factory()->create([
+            'lottery_id' => $lottery->id_lottery,
+        ]);
+        EditionLotteryRule::factory()->create([
+            'lottery_prize_id' => $line->id_lottery_prize,
+            'rule_prize_quantity' => 1,
+        ]);
+
+        $index = $this->getJson('/api/v1/manager/edition-lotteries?filters[edition_id]=' . $this->edition->id_edition);
+        $index->assertOk();
+        $row = collect($index->json('data'))->firstWhere('id_lottery', $lottery->id_lottery);
+        $this->assertNotNull($row);
+        $this->assertFalse($row['has_luckies']);
+
+        $show = $this->getJson('/api/v1/manager/edition-lotteries/' . $lottery->id_lottery);
+        $show->assertOk();
+        $this->assertFalse($show->json('data.has_luckies'));
+    }
+
+    public function test_index_and_show_expose_has_luckies_true_with_lucky(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $lottery = EditionLottery::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'name' => 'With Luckies',
+        ]);
+        $line = EditionLotteryPrize::factory()->create([
+            'lottery_id' => $lottery->id_lottery,
+        ]);
+        $rule = EditionLotteryRule::factory()->create([
+            'lottery_prize_id' => $line->id_lottery_prize,
+            'rule_prize_quantity' => 1,
+        ]);
+        $participation = EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+        ]);
+        EditionLotteryLucky::factory()->create([
+            'lottery_rule_id' => $rule->id_lottery_rule,
+            'drawn_participation_id' => $participation->id_participation,
+        ]);
+
+        $index = $this->getJson('/api/v1/manager/edition-lotteries?filters[edition_id]=' . $this->edition->id_edition);
+        $index->assertOk();
+        $row = collect($index->json('data'))->firstWhere('id_lottery', $lottery->id_lottery);
+        $this->assertTrue($row['has_luckies']);
+
+        $show = $this->getJson('/api/v1/manager/edition-lotteries/' . $lottery->id_lottery);
+        $show->assertOk();
+        $this->assertTrue($show->json('data.has_luckies'));
+    }
+
+    public function test_generate_rules_happy_path_wipes_and_inserts(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $lottery = EditionLottery::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'name' => 'Generate Me',
+        ]);
+        EditionDivision::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'skill_order' => 0,
+        ]);
+        EditionDivision::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'skill_order' => 1,
+        ]);
+        $line = EditionLotteryPrize::factory()->create([
+            'lottery_id' => $lottery->id_lottery,
+            'prize_quantity' => 3,
+        ]);
+        $oldRule = EditionLotteryRule::factory()->create([
+            'lottery_prize_id' => $line->id_lottery_prize,
+            'rule_prize_quantity' => 3,
+            'gender' => 'MALE',
+        ]);
+
+        $response = $this->postJson('/api/v1/manager/edition-lotteries/' . $lottery->id_lottery . '/rules/generate');
+        $response->assertOk();
+
+        $this->assertDatabaseMissing('edition_lottery_rules', [
+            'id_lottery_rule' => $oldRule->id_lottery_rule,
+        ]);
+        $this->assertDatabaseCount('edition_lottery_rules', 3);
+
+        $rules = collect($response->json('data'));
+        $this->assertCount(3, $rules);
+        foreach ($rules as $rule) {
+            $this->assertSame(1, $rule['rule_prize_quantity']);
+            $this->assertNotNull($rule['edition_division_id']);
+            $this->assertNull($rule['gender']);
+            $this->assertSame($line->id_lottery_prize, $rule['lottery_prize_id']);
+        }
+
+        $show = $this->getJson('/api/v1/manager/edition-lotteries/' . $lottery->id_lottery);
+        $this->assertFalse($show->json('data.has_luckies'));
+
+        $prizeShow = $this->getJson('/api/v1/manager/edition-lottery-prizes/' . $line->id_lottery_prize);
+        $this->assertSame(3, $prizeShow->json('data.rules_count'));
+        $this->assertSame(3, $prizeShow->json('data.rule_prize_quantity_total'));
+        $this->assertSame(3, $prizeShow->json('data.prize_quantity'));
+    }
+
+    public function test_generate_rules_guards(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $lottery = EditionLottery::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+            'name' => 'Guarded',
+        ]);
+
+        $this->postJson('/api/v1/manager/edition-lotteries/' . $lottery->id_lottery . '/rules/generate')
+            ->assertStatus(409)
+            ->assertJson(['message' => 'Lottery has no prize lines.']);
+
+        EditionLotteryPrize::factory()->create([
+            'lottery_id' => $lottery->id_lottery,
+            'prize_quantity' => 1,
+        ]);
+
+        $this->postJson('/api/v1/manager/edition-lotteries/' . $lottery->id_lottery . '/rules/generate')
+            ->assertStatus(409)
+            ->assertJson(['message' => 'Edition has no divisions.']);
+
+        EditionDivision::factory()->create(['edition_id' => $this->edition->id_edition]);
+
+        $this->edition->update(['finalized_at' => time()]);
+        $this->postJson('/api/v1/manager/edition-lotteries/' . $lottery->id_lottery . '/rules/generate')
+            ->assertStatus(409)
+            ->assertJson(['message' => 'Edition is finalized.']);
+        $this->edition->update(['finalized_at' => null]);
+
+        $line = $lottery->lotteryPrizes()->first();
+        $rule = EditionLotteryRule::factory()->create([
+            'lottery_prize_id' => $line->id_lottery_prize,
+            'rule_prize_quantity' => 1,
+        ]);
+        $participation = EditionParticipation::factory()->create([
+            'edition_id' => $this->edition->id_edition,
+        ]);
+        EditionLotteryLucky::factory()->create([
+            'lottery_rule_id' => $rule->id_lottery_rule,
+            'drawn_participation_id' => $participation->id_participation,
+        ]);
+
+        $this->postJson('/api/v1/manager/edition-lotteries/' . $lottery->id_lottery . '/rules/generate')
+            ->assertStatus(409)
+            ->assertJson(['message' => 'Lottery already has luckies.']);
     }
 }

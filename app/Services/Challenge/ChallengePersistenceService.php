@@ -71,7 +71,7 @@ final class ChallengePersistenceService
                 $completedAt = time();
             }
 
-            /** @var ChallengeSession|null $locked */
+            /** @var null|ChallengeSession $locked */
             $locked = ChallengeSession::query()
                 ->whereKey($sessionId)
                 ->lockForUpdate()

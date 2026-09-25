@@ -18,6 +18,7 @@ use Illuminate\Http\Request;
 class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseController
 {
     use CachesManagerResourceReads;
+
     /**
      * @OA\Get(
      *     path="/api/v1/manager/divisions",

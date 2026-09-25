@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Integrations\RankedinBpt;
 
+use App\Services\Cache\PadelizCache;
 use GuzzleHttp\Client;
 use GuzzleHttp\Pool;
 use GuzzleHttp\Psr7\Request;
-use App\Services\Cache\PadelizCache;
 use Illuminate\Support\Facades\Log;
 use Psr\Http\Message\ResponseInterface;
 
@@ -65,7 +65,7 @@ final class RankedinBptClient
 
         if ($this->padelizCache !== null) {
             $policy = config('cache_policies.rankedin_upstream');
-            $redisKey = 'rankedin:'.md5($cacheKey);
+            $redisKey = 'rankedin:' . md5($cacheKey);
 
             /** @var array<string, mixed>|list<mixed> */
             return $this->memo[$cacheKey] = $this->padelizCache->remember(

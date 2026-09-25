@@ -16,7 +16,7 @@ final class CachedPdfAvatarAttacher
     /**
      * Overlay pdf_avatar_url on schedule/index participation array rows.
      *
-     * @param  list<array<string, mixed>>|array<int, array<string, mixed>>  $participations
+     * @param  array<int, array<string, mixed>>|list<array<string, mixed>>  $participations
      */
     public function overlayParticipationsOnArray(array &$participations): void
     {
@@ -110,7 +110,7 @@ final class CachedPdfAvatarAttacher
     /**
      * Overlay pdf_avatar_url on player index rows (prefer collecting=true).
      *
-     * @param  list<array<string, mixed>>|array<int, array<string, mixed>>  $players
+     * @param  array<int, array<string, mixed>>|list<array<string, mixed>>  $players
      */
     public function overlayPlayersOnArray(array &$players): void
     {

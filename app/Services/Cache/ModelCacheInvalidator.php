@@ -32,9 +32,9 @@ class ModelCacheInvalidator
             // unrelated reference show/index. Targeted tags are enough because
             // entries are registered under resource and id tags on write.
             $this->cache->flushTags([
-                'reference:'.$resource,
-                'reference:'.$resource.':'.$primaryKey,
-                'mgr-list:'.$resource,
+                'reference:' . $resource,
+                'reference:' . $resource . ':' . $primaryKey,
+                'mgr-list:' . $resource,
             ]);
         }
 
@@ -71,7 +71,7 @@ class ModelCacheInvalidator
                 }
 
                 $parentResource = CacheResourceNaming::pathForModel($related);
-                $this->cache->flushTags(['reference:'.$parentResource.':'.$value]);
+                $this->cache->flushTags(['reference:' . $parentResource . ':' . $value]);
             } catch (\Throwable) {
                 continue;
             }

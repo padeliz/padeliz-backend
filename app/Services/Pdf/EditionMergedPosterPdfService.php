@@ -121,7 +121,7 @@ final class EditionMergedPosterPdfService
      * @return list<array{
      *     edition_division_id: int,
      *     poster_kind: string,
-     *     court_id: int|null,
+     *     court_id: null|int,
      *     path: string,
      *     status: string
      * }>

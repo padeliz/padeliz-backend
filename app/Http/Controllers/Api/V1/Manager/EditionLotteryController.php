@@ -5,7 +5,10 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Resources\EditionLotteryResource;
+use App\Http\Resources\EditionLotteryRuleResource;
+use App\Models\EditionDivision;
 use App\Models\EditionLottery;
+use App\Services\Lottery\LotteryRuleGeneratorService;
 use Illuminate\Http\Request;
 use Illuminate\Validation\Rule;
 
@@ -99,7 +102,8 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
      */
     public function index(Request $request)
     {
-        $query = EditionLottery::with(['edition', 'lotteryPrizes.prize', 'lotteryPrizes.sponsor']);
+        $query = EditionLottery::with(['edition', 'lotteryPrizes.prize', 'lotteryPrizes.sponsor'])
+            ->withExists(['lotteryRules as has_luckies' => fn ($q) => $q->whereHas('luckies')]);
 
         // Apply advanced pagination
         $this->applyAdvancedPagination(
@@ -176,10 +180,58 @@ class EditionLotteryController extends \App\Http\Controllers\BaseVersions\V1\V1B
             'lotteryPrizes.prize',
             'lotteryPrizes.sponsor',
         ]);
+        $lottery->loadExists(['lotteryRules as has_luckies' => fn ($q) => $q->whereHas('luckies')]);
 
         return $this->resourceResponse(
             new EditionLotteryResource($lottery),
             'Lottery details retrieved successfully'
+        );
+    }
+
+    /**
+     * @OA\Post(
+     *     path="/api/v1/manager/edition-lotteries/{lottery}/rules/generate",
+     *     summary="Generate or recreate balanced lottery rules",
+     *     tags={"🐧 Manager: Edition Lotteries"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Parameter(name="lottery", in="path", required=true, @OA\Schema(type="integer")),
+     *     @OA\Response(response=200, description="Rules generated"),
+     *     @OA\Response(response=409, description="Blocked: finalized, has luckies, no divisions, or no prize lines")
+     * )
+     */
+    public function generateRules(EditionLottery $lottery, LotteryRuleGeneratorService $generator)
+    {
+        $lottery->loadMissing('edition');
+        if ($lottery->edition?->finalized_at !== null) {
+            return $this->errorResponse('Edition is finalized.', 409);
+        }
+
+        if ($lottery->lotteryRules()->whereHas('luckies')->exists()) {
+            return $this->errorResponse('Lottery already has luckies.', 409);
+        }
+
+        $prizeLines = $lottery->lotteryPrizes()->orderBy('display_order')->orderBy('id_lottery_prize')->get();
+        if ($prizeLines->isEmpty()) {
+            return $this->errorResponse('Lottery has no prize lines.', 409);
+        }
+
+        $divisionIds = EditionDivision::query()
+            ->where('edition_id', $lottery->edition_id)
+            ->orderBy('skill_order')
+            ->orderBy('id_edition_division')
+            ->pluck('id_edition_division')
+            ->map(static fn ($id): int => (int) $id)
+            ->all();
+
+        if ($divisionIds === []) {
+            return $this->errorResponse('Edition has no divisions.', 409);
+        }
+
+        $rules = $generator->regenerate($lottery, $prizeLines, $divisionIds);
+
+        return $this->successResponse(
+            EditionLotteryRuleResource::collection($rules),
+            'Lottery rules generated successfully'
         );
     }
 

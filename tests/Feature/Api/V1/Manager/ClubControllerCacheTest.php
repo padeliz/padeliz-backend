@@ -56,8 +56,8 @@ final class ClubControllerCacheTest extends TestCase
         $club = Club::factory()->create(['name' => 'Cached Club']);
         Location::factory()->count(2)->create(['club_id' => $club->id_club]);
 
-        $first = $this->getJson('/api/v1/manager/clubs/'.$club->id_club);
-        $second = $this->getJson('/api/v1/manager/clubs/'.$club->id_club);
+        $first = $this->getJson('/api/v1/manager/clubs/' . $club->id_club);
+        $second = $this->getJson('/api/v1/manager/clubs/' . $club->id_club);
 
         $first->assertOk()->assertHeader('X-Cache', 'MISS');
         $second->assertOk()->assertHeader('X-Cache', 'HIT');
@@ -69,13 +69,13 @@ final class ClubControllerCacheTest extends TestCase
 
         $club = Club::factory()->create(['name' => 'Before Patch']);
 
-        $this->getJson('/api/v1/manager/clubs/'.$club->id_club)->assertHeader('X-Cache', 'MISS');
+        $this->getJson('/api/v1/manager/clubs/' . $club->id_club)->assertHeader('X-Cache', 'MISS');
 
-        $this->patchJson('/api/v1/manager/clubs/'.$club->id_club, [
+        $this->patchJson('/api/v1/manager/clubs/' . $club->id_club, [
             'name' => 'After Patch',
         ])->assertOk();
 
-        $response = $this->getJson('/api/v1/manager/clubs/'.$club->id_club);
+        $response = $this->getJson('/api/v1/manager/clubs/' . $club->id_club);
 
         $response->assertOk()
             ->assertHeader('X-Cache', 'MISS')

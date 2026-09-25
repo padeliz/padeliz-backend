@@ -33,7 +33,7 @@ class PadelizCache
 
             return $value;
         } catch (\Throwable $e) {
-            Log::error('PadelizCache bypass: '.$e->getMessage(), ['key' => $key]);
+            Log::error('PadelizCache bypass: ' . $e->getMessage(), ['key' => $key]);
             $this->setStatus('BYPASS');
 
             return $callback();

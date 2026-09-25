@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Manager;
 
+use App\Models\Court;
 use App\Models\Division;
 use App\Models\Edition;
 use App\Models\EditionDivision;
@@ -13,7 +14,6 @@ use App\Models\EditionParticipation;
 use App\Models\EditionRegistration;
 use App\Models\GameMatch;
 use App\Models\Player;
-use App\Models\Court;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;

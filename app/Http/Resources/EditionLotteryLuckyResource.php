@@ -9,7 +9,6 @@ use App\Services\Pdf\PdfHtmlHelper;
 use Illuminate\Http\Request;
 use Illuminate\Http\Resources\Json\JsonResource;
 
-
 class EditionLotteryLuckyResource extends JsonResource
 {
     /**

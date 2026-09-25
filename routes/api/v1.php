@@ -231,6 +231,7 @@ Route::prefix('v1')->group(function () {
         // Lottery prize lines
         Route::prefix('edition-lottery-prizes')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryPrizeController::class, 'index']);
+            Route::post('reorder', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryPrizeController::class, 'reorder']);
             Route::get('{lotteryPrize}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryPrizeController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryPrizeController::class, 'store']);
             Route::put('{lotteryPrize}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryPrizeController::class, 'update']);
@@ -248,6 +249,7 @@ Route::prefix('v1')->group(function () {
             Route::post('{lottery}/accept', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryLiveController::class, 'accept']);
             Route::post('{lottery}/reject', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryLiveController::class, 'reject']);
             Route::get('{lottery}/prizes-board', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryLiveController::class, 'prizesBoard']);
+            Route::post('{lottery}/rules/generate', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'generateRules']);
             Route::get('{lottery}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'store']);
             Route::put('{lottery}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'update']);
@@ -281,6 +283,7 @@ Route::prefix('v1')->group(function () {
         // Lottery rules management
         Route::prefix('edition-lottery-rules')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryRuleController::class, 'index']);
+            Route::post('reorder', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryRuleController::class, 'reorder']);
             Route::get('{lotteryRule}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryRuleController::class, 'show']);
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryRuleController::class, 'store']);
             Route::put('{lotteryRule}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryRuleController::class, 'update']);

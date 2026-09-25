@@ -20,6 +20,7 @@ use Illuminate\Http\Request;
 class EditionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseController
 {
     use CachesManagerResourceReads;
+
     public function __construct(
         private readonly EditionDivisionPosterInvalidator $posterInvalidator,
     ) {

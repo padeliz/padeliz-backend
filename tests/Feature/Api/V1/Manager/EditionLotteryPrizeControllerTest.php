@@ -156,6 +156,14 @@ class EditionLotteryPrizeControllerTest extends TestCase
             'lottery_id' => $this->lottery->id_lottery,
             'prize_id' => $this->prize->id_prize,
         ]);
+        EditionLotteryRule::factory()->create([
+            'lottery_prize_id' => $line->id_lottery_prize,
+            'rule_prize_quantity' => 2,
+        ]);
+        EditionLotteryRule::factory()->create([
+            'lottery_prize_id' => $line->id_lottery_prize,
+            'rule_prize_quantity' => 1,
+        ]);
 
         $response = $this->prizesIndex([
             'filters' => ['lottery_id' => $this->lottery->id_lottery],
@@ -164,10 +172,165 @@ class EditionLotteryPrizeControllerTest extends TestCase
         $row = $this->lineById($response->json('data'), $line->id_lottery_prize);
         $this->assertNotNull($row);
         $this->assertArrayNotHasKey('luckies', $row);
-        $this->assertArrayNotHasKey('rule_prize_quantity_total', $row);
         $this->assertArrayNotHasKey('activity_at', $row);
+        $this->assertSame(2, $row['rules_count']);
+        $this->assertSame(3, $row['rule_prize_quantity_total']);
         $this->assertArrayHasKey('current_page', $response->json('meta'));
         $this->assertArrayNotHasKey('has_unresolved_pending', $response->json('meta'));
+    }
+
+    public function test_index_and_show_expose_zero_counts_when_no_rules(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $line = EditionLotteryPrize::factory()->create([
+            'lottery_id' => $this->lottery->id_lottery,
+            'prize_id' => $this->prize->id_prize,
+        ]);
+
+        $index = $this->prizesIndex([
+            'filters' => ['lottery_id' => $this->lottery->id_lottery],
+        ]);
+        $index->assertOk();
+        $row = $this->lineById($index->json('data'), $line->id_lottery_prize);
+        $this->assertSame(0, $row['rules_count']);
+        $this->assertSame(0, $row['rule_prize_quantity_total']);
+
+        $show = $this->getJson('/api/v1/manager/edition-lottery-prizes/' . $line->id_lottery_prize);
+        $show->assertOk();
+        $this->assertSame(0, $show->json('data.rules_count'));
+        $this->assertSame(0, $show->json('data.rule_prize_quantity_total'));
+    }
+
+    public function test_cud_returns_409_when_edition_finalized(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $this->lottery->edition->update(['finalized_at' => time()]);
+
+        $store = $this->postJson('/api/v1/manager/edition-lottery-prizes', [
+            'lottery_id' => $this->lottery->id_lottery,
+            'prize_id' => $this->prize->id_prize,
+            'prize_quantity' => 1,
+        ]);
+        $store->assertStatus(409)->assertJson(['message' => 'Edition is finalized.']);
+
+        $line = EditionLotteryPrize::factory()->create([
+            'lottery_id' => $this->lottery->id_lottery,
+            'prize_id' => $this->prize->id_prize,
+            'prize_quantity' => 1,
+        ]);
+
+        $this->putJson('/api/v1/manager/edition-lottery-prizes/' . $line->id_lottery_prize, [
+            'lottery_id' => $this->lottery->id_lottery,
+            'prize_id' => $this->prize->id_prize,
+            'prize_quantity' => 2,
+        ])->assertStatus(409)->assertJson(['message' => 'Edition is finalized.']);
+
+        $this->patchJson('/api/v1/manager/edition-lottery-prizes/' . $line->id_lottery_prize, [
+            'prize_quantity' => 3,
+        ])->assertStatus(409)->assertJson(['message' => 'Edition is finalized.']);
+
+        $this->deleteJson('/api/v1/manager/edition-lottery-prizes/' . $line->id_lottery_prize)
+            ->assertStatus(409)
+            ->assertJson(['message' => 'Edition is finalized.']);
+
+        $this->deleteJson('/api/v1/manager/edition-lottery-prizes/bulk', [
+            'lottery_prize_ids' => [$line->id_lottery_prize],
+        ])->assertStatus(409)->assertJson(['message' => 'Edition is finalized.']);
+    }
+
+    public function test_reorder_rewrites_display_order(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $a = EditionLotteryPrize::factory()->create([
+            'lottery_id' => $this->lottery->id_lottery,
+            'prize_id' => $this->prize->id_prize,
+            'display_order' => 5,
+        ]);
+        $b = EditionLotteryPrize::factory()->create([
+            'lottery_id' => $this->lottery->id_lottery,
+            'prize_id' => Prize::factory()->create()->id_prize,
+            'display_order' => 1,
+        ]);
+
+        $response = $this->postJson('/api/v1/manager/edition-lottery-prizes/reorder', [
+            'lottery_id' => $this->lottery->id_lottery,
+            'lottery_prize_ids' => [$b->id_lottery_prize, $a->id_lottery_prize],
+        ]);
+        $response->assertOk();
+
+        $this->assertSame(0, $b->fresh()->display_order);
+        $this->assertSame(1, $a->fresh()->display_order);
+        $ids = collect($response->json('data'))->pluck('id_lottery_prize')->all();
+        $this->assertSame([$b->id_lottery_prize, $a->id_lottery_prize], $ids);
+    }
+
+    public function test_reorder_rejects_incomplete_and_extra_ids(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $a = EditionLotteryPrize::factory()->create([
+            'lottery_id' => $this->lottery->id_lottery,
+            'prize_id' => $this->prize->id_prize,
+        ]);
+        $b = EditionLotteryPrize::factory()->create([
+            'lottery_id' => $this->lottery->id_lottery,
+            'prize_id' => Prize::factory()->create()->id_prize,
+        ]);
+        $other = EditionLotteryPrize::factory()->create([
+            'lottery_id' => EditionLottery::factory()->create([
+                'edition_id' => $this->lottery->edition_id,
+                'name' => 'Other Reorder Lottery',
+            ])->id_lottery,
+            'prize_id' => Prize::factory()->create()->id_prize,
+        ]);
+
+        $this->postJson('/api/v1/manager/edition-lottery-prizes/reorder', [
+            'lottery_id' => $this->lottery->id_lottery,
+            'lottery_prize_ids' => [$a->id_lottery_prize],
+        ])->assertStatus(422);
+
+        $this->postJson('/api/v1/manager/edition-lottery-prizes/reorder', [
+            'lottery_id' => $this->lottery->id_lottery,
+            'lottery_prize_ids' => [$a->id_lottery_prize, $b->id_lottery_prize, $other->id_lottery_prize],
+        ])->assertStatus(422);
+    }
+
+    public function test_reorder_returns_409_when_finalized_or_has_luckies(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $line = EditionLotteryPrize::factory()->create([
+            'lottery_id' => $this->lottery->id_lottery,
+            'prize_id' => $this->prize->id_prize,
+        ]);
+
+        $this->lottery->edition->update(['finalized_at' => time()]);
+        $this->postJson('/api/v1/manager/edition-lottery-prizes/reorder', [
+            'lottery_id' => $this->lottery->id_lottery,
+            'lottery_prize_ids' => [$line->id_lottery_prize],
+        ])->assertStatus(409)->assertJson(['message' => 'Edition is finalized.']);
+
+        $this->lottery->edition->update(['finalized_at' => null]);
+
+        $rule = EditionLotteryRule::factory()->create([
+            'lottery_prize_id' => $line->id_lottery_prize,
+            'rule_prize_quantity' => 1,
+        ]);
+        $participation = EditionParticipation::factory()->create([
+            'edition_id' => $this->lottery->edition_id,
+        ]);
+        EditionLotteryLucky::factory()->create([
+            'lottery_rule_id' => $rule->id_lottery_rule,
+            'drawn_participation_id' => $participation->id_participation,
+        ]);
+
+        $this->postJson('/api/v1/manager/edition-lottery-prizes/reorder', [
+            'lottery_id' => $this->lottery->id_lottery,
+            'lottery_prize_ids' => [$line->id_lottery_prize],
+        ])->assertStatus(409)->assertJson(['message' => 'Lottery already has luckies.']);
     }
 
     public function test_index_ignores_top_level_edition_division_id_without_include(): void

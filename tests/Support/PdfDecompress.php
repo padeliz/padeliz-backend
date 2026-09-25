@@ -68,7 +68,7 @@ final class PdfDecompress
             if ($pdfBytes[$contentStart] === "\r" && $pdfBytes[$contentStart + 1] === "\n") {
                 $contentStart += 2;
             } elseif ($pdfBytes[$contentStart] === "\n") {
-                $contentStart += 1;
+                ++$contentStart;
             }
 
             $end = strpos($pdfBytes, 'endstream', $contentStart);

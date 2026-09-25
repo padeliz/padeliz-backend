@@ -31,6 +31,7 @@ class EditionLotteryRuleResource extends JsonResource
             'is_event_first_timer' => $this->is_event_first_timer,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
+            'luckies_count' => (int) ($this->luckies_count ?? 0),
             'edition_division' => $this->whenLoaded('editionDivision', function () {
                 return new EditionDivisionResource($this->editionDivision);
             }),

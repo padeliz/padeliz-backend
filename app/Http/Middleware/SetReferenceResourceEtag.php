@@ -24,7 +24,7 @@ class SetReferenceResourceEtag
             return $response;
         }
 
-        $etag = '"'.hash('sha256', $content).'"';
+        $etag = '"' . hash('sha256', $content) . '"';
         $response->headers->set('ETag', $etag);
 
         $ifNoneMatch = $request->headers->get('If-None-Match');
