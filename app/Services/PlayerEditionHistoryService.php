@@ -14,11 +14,11 @@ final class PlayerEditionHistoryService
     /**
      * @param  list<int>  $playerIds
      * @return array<int, array{
-     *     last_played: null|array{division_id?: int, division_title: string, rank: null|int, participant_count: int},
+     *     last_played: null|array{division_id?: int, division_title: string, division_color: string, rank: null|int, participant_count: int},
      *     participated_count: int,
      *     banned_count: int,
      *     absented_count: int,
-     *     played_recent: list<array{edition_name: string, division_title: string, rank: null|int, participant_count: int, date: string}>,
+     *     played_recent: list<array{edition_name: string, division_title: string, division_color: string, rank: null|int, participant_count: int, date: string}>,
      *     participated_tooltip: array{lines: list<array{type: 'ellipsis'}|array{type: 'entry', edition_name: string, date: string}>},
      *     banned_recent: list<array{edition_name: string, date: string, ban_reason: string}>,
      *     absented_recent: list<array{edition_name: string, date: string, absence_reason: string}>
@@ -40,7 +40,7 @@ final class PlayerEditionHistoryService
 
         /** @var Collection<int, EditionParticipation> $past */
         $past = EditionParticipation::query()
-            ->with(['edition', 'editionDivision'])
+            ->with(['edition', 'editionDivision.division'])
             ->whereIn('player_id', $playerIds)
             ->whereHas('edition', function ($q) use ($cutoffDateYmd) {
                 $q->whereDate('date', '<', $cutoffDateYmd);
@@ -102,6 +102,7 @@ final class PlayerEditionHistoryService
                 $divisionId = (int) ($latest->editionDivision?->division_id ?? 0);
                 $lastPlayed = [
                     'division_title' => (string) ($latest->editionDivision?->division_title ?? ''),
+                    'division_color' => $this->divisionColor($latest),
                     'rank' => $rank !== null ? (int) $rank : null,
                     'participant_count' => (int) ($participantCounts->get($edId) ?? 0),
                 ];
@@ -119,6 +120,7 @@ final class PlayerEditionHistoryService
                 $playedRecentPayload[] = [
                     'edition_name' => $this->editionName($row),
                     'division_title' => (string) ($row->editionDivision?->division_title ?? ''),
+                    'division_color' => $this->divisionColor($row),
                     'rank' => $rank !== null ? (int) $rank : null,
                     'participant_count' => (int) ($participantCounts->get($edId) ?? 0),
                     'date' => $this->editionDateYmd($row),
@@ -321,5 +323,12 @@ final class PlayerEditionHistoryService
     private function editionName(EditionParticipation $row): string
     {
         return (string) ($row->edition?->name ?? '');
+    }
+
+    private function divisionColor(EditionParticipation $row): string
+    {
+        $color = $row->editionDivision?->division?->color;
+
+        return is_string($color) ? $color : '';
     }
 }

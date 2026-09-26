@@ -180,6 +180,44 @@ final class PlayerEditionHistoryServiceTest extends TestCase
         );
     }
 
+    public function test_last_played_and_played_recent_include_division_color(): void
+    {
+        $player = Player::factory()->create();
+        $past = $this->makeEditionWithDivision('2025-01-01', 'Color ED', null, '#ab12cd');
+
+        EditionParticipation::factory()->create([
+            'player_id' => $player->id_player,
+            'edition_id' => $past['edition']->id_edition,
+            'edition_division_id' => $past['ed']->id_edition_division,
+            'absence_reason' => null,
+            'ban_reason' => null,
+        ]);
+
+        $history = $this->service->forPlayers([$player->id_player], '2026-06-15')[$player->id_player];
+
+        $this->assertSame('#ab12cd', $history['last_played']['division_color']);
+        $this->assertSame('#ab12cd', $history['played_recent'][0]['division_color']);
+    }
+
+    public function test_division_color_empty_string_when_division_color_blank(): void
+    {
+        $player = Player::factory()->create();
+        $past = $this->makeEditionWithDivision('2025-01-01', 'Blank Color ED', null, '');
+
+        EditionParticipation::factory()->create([
+            'player_id' => $player->id_player,
+            'edition_id' => $past['edition']->id_edition,
+            'edition_division_id' => $past['ed']->id_edition_division,
+            'absence_reason' => null,
+            'ban_reason' => null,
+        ]);
+
+        $history = $this->service->forPlayers([$player->id_player], '2026-06-15')[$player->id_player];
+
+        $this->assertSame('', $history['last_played']['division_color']);
+        $this->assertSame('', $history['played_recent'][0]['division_color']);
+    }
+
     public function test_rank_present_and_missing_and_participant_count_all_rows(): void
     {
         $player = Player::factory()->create();
@@ -509,13 +547,21 @@ final class PlayerEditionHistoryServiceTest extends TestCase
     /**
      * @return array{edition: Edition, ed: EditionDivision}
      */
-    private function makeEditionWithDivision(string $dateYmd, string $title, ?string $editionName = null): array
-    {
+    private function makeEditionWithDivision(
+        string $dateYmd,
+        string $title,
+        ?string $editionName = null,
+        ?string $divisionColor = null
+    ): array {
         $edition = Edition::factory()->create([
             'date' => $dateYmd,
             'name' => $editionName ?? $title,
         ]);
-        $division = Division::factory()->create();
+        $divisionAttrs = [];
+        if ($divisionColor !== null) {
+            $divisionAttrs['color'] = $divisionColor;
+        }
+        $division = Division::factory()->create($divisionAttrs);
         $ed = EditionDivision::factory()->create([
             'edition_id' => $edition->id_edition,
             'division_id' => $division->id_division,

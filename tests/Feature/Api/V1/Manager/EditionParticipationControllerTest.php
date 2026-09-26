@@ -602,7 +602,7 @@ class EditionParticipationControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $pastEdition = Edition::factory()->create(['date' => '2026-01-01']);
-        $pastDivision = Division::factory()->create();
+        $pastDivision = Division::factory()->create(['color' => '#ff5500']);
         $pastEd = EditionDivision::factory()->create([
             'edition_id' => $pastEdition->id_edition,
             'division_id' => $pastDivision->id_division,
@@ -634,6 +634,7 @@ class EditionParticipationControllerTest extends TestCase
         $this->assertArrayHasKey('player_history', $row);
         $this->assertSame(1, $row['player_history']['participated_count']);
         $this->assertSame('History ED', $row['player_history']['last_played']['division_title']);
+        $this->assertSame('#ff5500', $row['player_history']['last_played']['division_color']);
         $this->assertArrayNotHasKey('winner', $row['player_history']);
         $this->assertArrayHasKey('played_recent', $row['player_history']);
         $this->assertArrayHasKey('participated_tooltip', $row['player_history']);
@@ -641,6 +642,7 @@ class EditionParticipationControllerTest extends TestCase
         $this->assertArrayHasKey('absented_recent', $row['player_history']);
         $this->assertCount(1, $row['player_history']['played_recent']);
         $this->assertSame('History ED', $row['player_history']['played_recent'][0]['division_title']);
+        $this->assertSame('#ff5500', $row['player_history']['played_recent'][0]['division_color']);
         $this->assertSame('entry', $row['player_history']['participated_tooltip']['lines'][0]['type']);
     }
 
