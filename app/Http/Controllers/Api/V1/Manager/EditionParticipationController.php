@@ -172,7 +172,8 @@ class EditionParticipationController extends V1BaseController
                         ? $this->customFieldResolver->resolveForPlayers(
                             $editionId,
                             $editionParticipations->getCollection()->pluck('player_id')->map(static fn ($id): int => (int) $id)->all(),
-                            $customFieldIds
+                            $customFieldIds,
+                            $this->playerEditionHistory->cutoffDateForEdition($edition)
                         )
                         : [];
 
@@ -184,6 +185,10 @@ class EditionParticipationController extends V1BaseController
                                 'participated_count' => 0,
                                 'banned_count' => 0,
                                 'absented_count' => 0,
+                                'played_recent' => [],
+                                'participated_tooltip' => ['lines' => []],
+                                'banned_recent' => [],
+                                'absented_recent' => [],
                             ]
                         );
                         $p->setAttribute(

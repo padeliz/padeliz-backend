@@ -260,12 +260,261 @@ final class PlayerEditionHistoryServiceTest extends TestCase
         }
     }
 
+    public function test_tip_lists_exclude_participations_on_or_after_cutoff(): void
+    {
+        $player = Player::factory()->create();
+        $cutoff = '2026-06-15';
+
+        $past = $this->makeEditionWithDivision('2026-06-14', 'Past ED', 'Past Cup');
+        $same = $this->makeEditionWithDivision('2026-06-15', 'Same ED', 'Same Cup');
+        $future = $this->makeEditionWithDivision('2026-06-16', 'Future ED', 'Future Cup');
+
+        foreach ([$past, $same, $future] as $bundle) {
+            EditionParticipation::factory()->create([
+                'player_id' => $player->id_player,
+                'edition_id' => $bundle['edition']->id_edition,
+                'edition_division_id' => $bundle['ed']->id_edition_division,
+                'absence_reason' => null,
+                'ban_reason' => null,
+            ]);
+        }
+
+        $history = $this->service->forPlayers([$player->id_player], $cutoff)[$player->id_player];
+
+        $this->assertCount(1, $history['played_recent']);
+        $this->assertSame('Past Cup', $history['played_recent'][0]['edition_name']);
+        $this->assertSame(
+            ['Past Cup'],
+            array_map(
+                static fn (array $line): string => $line['edition_name'],
+                array_values(array_filter(
+                    $history['participated_tooltip']['lines'],
+                    static fn (array $line): bool => ($line['type'] ?? '') === 'entry'
+                ))
+            )
+        );
+    }
+
+    public function test_ban_and_absence_excluded_from_played_and_participated_tips(): void
+    {
+        $player = Player::factory()->create();
+        $clean = $this->makeEditionWithDivision('2025-01-01', 'Clean', 'Clean Cup');
+        $banned = $this->makeEditionWithDivision('2025-02-01', 'Banned', 'Ban Cup');
+        $absent = $this->makeEditionWithDivision('2025-03-01', 'Absent', 'Absent Cup');
+
+        EditionParticipation::factory()->create([
+            'player_id' => $player->id_player,
+            'edition_id' => $clean['edition']->id_edition,
+            'edition_division_id' => $clean['ed']->id_edition_division,
+            'absence_reason' => null,
+            'ban_reason' => null,
+        ]);
+        EditionParticipation::factory()->create([
+            'player_id' => $player->id_player,
+            'edition_id' => $banned['edition']->id_edition,
+            'edition_division_id' => $banned['ed']->id_edition_division,
+            'absence_reason' => null,
+            'ban_reason' => 'AGGRESSIVE PLAYER',
+        ]);
+        EditionParticipation::factory()->create([
+            'player_id' => $player->id_player,
+            'edition_id' => $absent['edition']->id_edition,
+            'edition_division_id' => $absent['ed']->id_edition_division,
+            'absence_reason' => 'SICK',
+            'ban_reason' => null,
+        ]);
+
+        $history = $this->service->forPlayers([$player->id_player], '2026-06-15')[$player->id_player];
+
+        $this->assertCount(1, $history['played_recent']);
+        $this->assertSame('Clean Cup', $history['played_recent'][0]['edition_name']);
+        $this->assertCount(1, $history['participated_tooltip']['lines']);
+        $this->assertSame('Clean Cup', $history['participated_tooltip']['lines'][0]['edition_name']);
+        $this->assertCount(1, $history['banned_recent']);
+        $this->assertSame('AGGRESSIVE PLAYER', $history['banned_recent'][0]['ban_reason']);
+        $this->assertCount(1, $history['absented_recent']);
+        $this->assertSame('SICK', $history['absented_recent'][0]['absence_reason']);
+    }
+
+    public function test_played_recent_caps_at_four_asc_and_matches_last_played(): void
+    {
+        $player = Player::factory()->create();
+        $titles = [];
+        for ($i = 1; $i <= 5; $i++) {
+            $bundle = $this->makeEditionWithDivision(
+                sprintf('2025-0%d-01', $i),
+                "Div {$i}",
+                "Cup {$i}"
+            );
+            $titles[] = "Cup {$i}";
+            $p = EditionParticipation::factory()->create([
+                'player_id' => $player->id_player,
+                'edition_id' => $bundle['edition']->id_edition,
+                'edition_division_id' => $bundle['ed']->id_edition_division,
+                'absence_reason' => null,
+                'ban_reason' => null,
+            ]);
+            EditionDivisionStanding::create([
+                'edition_division_id' => $bundle['ed']->id_edition_division,
+                'participation_id' => $p->id_participation,
+                'points_total' => $i,
+                'wins' => 1,
+                'rank' => $i,
+            ]);
+        }
+
+        $history = $this->service->forPlayers([$player->id_player], '2026-06-15')[$player->id_player];
+
+        $this->assertCount(4, $history['played_recent']);
+        $this->assertSame(
+            ['Cup 2', 'Cup 3', 'Cup 4', 'Cup 5'],
+            array_column($history['played_recent'], 'edition_name')
+        );
+        $last = $history['played_recent'][3];
+        $this->assertSame($history['last_played']['division_title'], $last['division_title']);
+        $this->assertSame($history['last_played']['rank'], $last['rank']);
+        $this->assertSame($history['last_played']['participant_count'], $last['participant_count']);
+    }
+
+    public function test_participated_tooltip_truncates_with_ellipsis_when_more_than_six(): void
+    {
+        $player = Player::factory()->create();
+        for ($i = 1; $i <= 7; $i++) {
+            $bundle = $this->makeEditionWithDivision(
+                sprintf('2025-%02d-01', $i),
+                "Div {$i}",
+                "Cup {$i}"
+            );
+            EditionParticipation::factory()->create([
+                'player_id' => $player->id_player,
+                'edition_id' => $bundle['edition']->id_edition,
+                'edition_division_id' => $bundle['ed']->id_edition_division,
+                'absence_reason' => null,
+                'ban_reason' => null,
+            ]);
+        }
+
+        $history = $this->service->forPlayers([$player->id_player], '2026-06-15')[$player->id_player];
+        $lines = $history['participated_tooltip']['lines'];
+
+        $this->assertCount(7, $lines);
+        $this->assertSame('entry', $lines[0]['type']);
+        $this->assertSame('Cup 1', $lines[0]['edition_name']);
+        $this->assertSame('Cup 2', $lines[1]['edition_name']);
+        $this->assertSame('Cup 3', $lines[2]['edition_name']);
+        $this->assertSame(['type' => 'ellipsis'], $lines[3]);
+        $this->assertSame('Cup 5', $lines[4]['edition_name']);
+        $this->assertSame('Cup 6', $lines[5]['edition_name']);
+        $this->assertSame('Cup 7', $lines[6]['edition_name']);
+    }
+
+    public function test_participated_tooltip_lists_all_when_six_or_fewer(): void
+    {
+        $player = Player::factory()->create();
+        for ($i = 1; $i <= 3; $i++) {
+            $bundle = $this->makeEditionWithDivision(
+                sprintf('2025-0%d-01', $i),
+                "Div {$i}",
+                "Cup {$i}"
+            );
+            EditionParticipation::factory()->create([
+                'player_id' => $player->id_player,
+                'edition_id' => $bundle['edition']->id_edition,
+                'edition_division_id' => $bundle['ed']->id_edition_division,
+                'absence_reason' => null,
+                'ban_reason' => null,
+            ]);
+        }
+
+        $history = $this->service->forPlayers([$player->id_player], '2026-06-15')[$player->id_player];
+        $lines = $history['participated_tooltip']['lines'];
+
+        $this->assertCount(3, $lines);
+        $this->assertSame(
+            ['Cup 1', 'Cup 2', 'Cup 3'],
+            array_column($lines, 'edition_name')
+        );
+        foreach ($lines as $line) {
+            $this->assertSame('entry', $line['type']);
+        }
+    }
+
+    public function test_banned_and_absented_recent_cap_at_four_asc_with_reasons(): void
+    {
+        $player = Player::factory()->create();
+        for ($i = 1; $i <= 5; $i++) {
+            $bundle = $this->makeEditionWithDivision(
+                sprintf('2025-0%d-01', $i),
+                "Ban Div {$i}",
+                "Ban Cup {$i}"
+            );
+            EditionParticipation::factory()->create([
+                'player_id' => $player->id_player,
+                'edition_id' => $bundle['edition']->id_edition,
+                'edition_division_id' => $bundle['ed']->id_edition_division,
+                'absence_reason' => null,
+                'ban_reason' => 'LEFT SUDDENLY',
+            ]);
+        }
+        for ($i = 1; $i <= 5; $i++) {
+            $bundle = $this->makeEditionWithDivision(
+                sprintf('2024-0%d-01', $i),
+                "Abs Div {$i}",
+                "Abs Cup {$i}"
+            );
+            EditionParticipation::factory()->create([
+                'player_id' => $player->id_player,
+                'edition_id' => $bundle['edition']->id_edition,
+                'edition_division_id' => $bundle['ed']->id_edition_division,
+                'absence_reason' => 'FORGOT',
+                'ban_reason' => null,
+            ]);
+        }
+
+        $history = $this->service->forPlayers([$player->id_player], '2026-06-15')[$player->id_player];
+
+        $this->assertCount(4, $history['banned_recent']);
+        $this->assertSame(
+            ['Ban Cup 2', 'Ban Cup 3', 'Ban Cup 4', 'Ban Cup 5'],
+            array_column($history['banned_recent'], 'edition_name')
+        );
+        $this->assertSame('LEFT SUDDENLY', $history['banned_recent'][0]['ban_reason']);
+
+        $this->assertCount(4, $history['absented_recent']);
+        $this->assertSame(
+            ['Abs Cup 2', 'Abs Cup 3', 'Abs Cup 4', 'Abs Cup 5'],
+            array_column($history['absented_recent'], 'edition_name')
+        );
+        $this->assertSame('FORGOT', $history['absented_recent'][0]['absence_reason']);
+    }
+
+    public function test_played_recent_null_rank_when_no_standing(): void
+    {
+        $player = Player::factory()->create();
+        $past = $this->makeEditionWithDivision('2025-01-01', 'No Rank', 'No Rank Cup');
+        EditionParticipation::factory()->create([
+            'player_id' => $player->id_player,
+            'edition_id' => $past['edition']->id_edition,
+            'edition_division_id' => $past['ed']->id_edition_division,
+            'absence_reason' => null,
+            'ban_reason' => null,
+        ]);
+
+        $history = $this->service->forPlayers([$player->id_player], '2026-06-15')[$player->id_player];
+
+        $this->assertNull($history['played_recent'][0]['rank']);
+        $this->assertNull($history['last_played']['rank']);
+    }
+
     /**
      * @return array{edition: Edition, ed: EditionDivision}
      */
-    private function makeEditionWithDivision(string $dateYmd, string $title): array
+    private function makeEditionWithDivision(string $dateYmd, string $title, ?string $editionName = null): array
     {
-        $edition = Edition::factory()->create(['date' => $dateYmd]);
+        $edition = Edition::factory()->create([
+            'date' => $dateYmd,
+            'name' => $editionName ?? $title,
+        ]);
         $division = Division::factory()->create();
         $ed = EditionDivision::factory()->create([
             'edition_id' => $edition->id_edition,

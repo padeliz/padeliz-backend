@@ -635,6 +635,13 @@ class EditionParticipationControllerTest extends TestCase
         $this->assertSame(1, $row['player_history']['participated_count']);
         $this->assertSame('History ED', $row['player_history']['last_played']['division_title']);
         $this->assertArrayNotHasKey('winner', $row['player_history']);
+        $this->assertArrayHasKey('played_recent', $row['player_history']);
+        $this->assertArrayHasKey('participated_tooltip', $row['player_history']);
+        $this->assertArrayHasKey('banned_recent', $row['player_history']);
+        $this->assertArrayHasKey('absented_recent', $row['player_history']);
+        $this->assertCount(1, $row['player_history']['played_recent']);
+        $this->assertSame('History ED', $row['player_history']['played_recent'][0]['division_title']);
+        $this->assertSame('entry', $row['player_history']['participated_tooltip']['lines'][0]['type']);
     }
 
     public function test_index_without_edition_id_filter_omits_player_history(): void
@@ -837,6 +844,7 @@ class EditionParticipationControllerTest extends TestCase
             'player_id' => $this->player->id_player,
             'player_custom_field_id' => $field->id_player_custom_field,
             'value_text' => 'Padel Club',
+            'inserted_at' => \Carbon\Carbon::parse('2026-06-01', config('app.timezone'))->timestamp,
         ]);
         EditionParticipation::factory()->create([
             'edition_id' => $this->edition->id_edition,
@@ -853,13 +861,14 @@ class EditionParticipationControllerTest extends TestCase
         $response->assertOk();
         $row = collect($response->json('data'))->firstWhere('player_id', $this->player->id_player);
         $this->assertNotNull($row);
-        $this->assertSame([
-            [
-                'field_id' => $field->id_player_custom_field,
-                'label' => 'Club',
-                'value' => 'Padel Club',
-            ],
-        ], $row['custom_field_values']);
+        $this->assertSame('Club', $row['custom_field_values'][0]['label']);
+        $this->assertSame('Padel Club', $row['custom_field_values'][0]['value']);
+        $this->assertSame($field->id_player_custom_field, $row['custom_field_values'][0]['field_id']);
+        $this->assertArrayHasKey('recent_answers', $row['custom_field_values'][0]);
+        $this->assertNotEmpty($row['custom_field_values'][0]['recent_answers']);
+        $this->assertSame('Padel Club', $row['custom_field_values'][0]['recent_answers'][0]['value']);
+        $this->assertArrayHasKey('inserted_date', $row['custom_field_values'][0]['recent_answers'][0]);
+        $this->assertArrayHasKey('edition_name', $row['custom_field_values'][0]['recent_answers'][0]);
     }
 
     public function test_index_with_unknown_custom_field_ids_returns_empty_values(): void

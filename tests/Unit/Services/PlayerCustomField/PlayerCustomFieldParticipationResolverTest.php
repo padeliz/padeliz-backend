@@ -12,6 +12,7 @@ use App\Models\PlayerCustomFieldOption;
 use App\Models\PlayerCustomFieldValue;
 use App\Models\PlayerCustomFieldValueOption;
 use App\Services\PlayerCustomField\PlayerCustomFieldParticipationResolver;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -55,7 +56,8 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
         $result = $this->resolver->resolveForPlayers(
             (int) $edition->id_edition,
             [(int) $player->id_player],
-            [(int) $field->id_player_custom_field]
+            [(int) $field->id_player_custom_field],
+            $this->cutoffFor($edition)
         );
 
         $this->assertSame('Edition L', $result[(int) $player->id_player][0]['value']);
@@ -84,7 +86,8 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
         $result = $this->resolver->resolveForPlayers(
             (int) $edition->id_edition,
             [(int) $player->id_player],
-            [(int) $field->id_player_custom_field]
+            [(int) $field->id_player_custom_field],
+            $this->cutoffFor($edition)
         );
 
         $this->assertSame('Active Global', $result[(int) $player->id_player][0]['value']);
@@ -114,7 +117,8 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
         $result = $this->resolver->resolveForPlayers(
             (int) $edition->id_edition,
             [(int) $player->id_player],
-            [(int) $field->id_player_custom_field]
+            [(int) $field->id_player_custom_field],
+            $this->cutoffFor($edition)
         );
 
         $this->assertSame('Newer', $result[(int) $player->id_player][0]['value']);
@@ -156,7 +160,8 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
         $result = $this->resolver->resolveForPlayers(
             (int) $edition->id_edition,
             [(int) $player->id_player],
-            [(int) $field->id_player_custom_field]
+            [(int) $field->id_player_custom_field],
+            $this->cutoffFor($edition)
         );
 
         $this->assertSame('Alpha, Beta', $result[(int) $player->id_player][0]['value']);
@@ -197,7 +202,8 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
         $result = $this->resolver->resolveForPlayers(
             (int) $edition->id_edition,
             [(int) $player->id_player],
-            [(int) $fieldA->id_player_custom_field, (int) $fieldB->id_player_custom_field]
+            [(int) $fieldA->id_player_custom_field, (int) $fieldB->id_player_custom_field],
+            $this->cutoffFor($edition)
         );
 
         $entries = $result[(int) $player->id_player];
@@ -237,7 +243,8 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
         $result = $this->resolver->resolveForPlayers(
             (int) $edition->id_edition,
             [(int) $player->id_player],
-            $fieldIds
+            $fieldIds,
+            $this->cutoffFor($edition)
         );
 
         $this->assertCount(3, $result[(int) $player->id_player]);
@@ -245,5 +252,140 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
             ['Field 1', 'Field 2', 'Field 3'],
             array_column($result[(int) $player->id_player], 'label')
         );
+    }
+
+    public function test_recent_answers_include_this_edition_and_cap_at_two_by_inserted_at(): void
+    {
+        $edition = Edition::factory()->create(['date' => '2026-06-15', 'name' => 'Current Cup']);
+        $pastEdition = Edition::factory()->create(['date' => '2026-01-01', 'name' => 'Past Cup']);
+        $olderEdition = Edition::factory()->create(['date' => '2025-01-01', 'name' => 'Older Cup']);
+        $player = Player::factory()->create();
+        $field = PlayerCustomField::factory()->create([
+            'label' => 'Shirt Size',
+            'type' => PlayerCustomFieldType::Text,
+        ]);
+
+        PlayerCustomFieldValue::factory()->create([
+            'player_id' => $player->id_player,
+            'player_custom_field_id' => $field->id_player_custom_field,
+            'edition_id' => $olderEdition->id_edition,
+            'value_text' => 'S',
+            'inserted_at' => 1000,
+        ]);
+        PlayerCustomFieldValue::factory()->create([
+            'player_id' => $player->id_player,
+            'player_custom_field_id' => $field->id_player_custom_field,
+            'edition_id' => $pastEdition->id_edition,
+            'value_text' => 'M',
+            'inserted_at' => 2000,
+        ]);
+        PlayerCustomFieldValue::factory()->create([
+            'player_id' => $player->id_player,
+            'player_custom_field_id' => $field->id_player_custom_field,
+            'edition_id' => $edition->id_edition,
+            'value_text' => 'L',
+            'inserted_at' => 3000,
+        ]);
+
+        $result = $this->resolver->resolveForPlayers(
+            (int) $edition->id_edition,
+            [(int) $player->id_player],
+            [(int) $field->id_player_custom_field],
+            $this->cutoffFor($edition)
+        );
+
+        $recent = $result[(int) $player->id_player][0]['recent_answers'];
+        $this->assertCount(2, $recent);
+        $this->assertSame('M', $recent[0]['value']);
+        $this->assertSame('Past Cup', $recent[0]['edition_name']);
+        $this->assertSame('L', $recent[1]['value']);
+        $this->assertSame('Current Cup', $recent[1]['edition_name']);
+    }
+
+    public function test_recent_answers_exclude_future_edition_and_future_globals(): void
+    {
+        $edition = Edition::factory()->create(['date' => '2026-06-15', 'name' => 'Current Cup']);
+        $futureEdition = Edition::factory()->create(['date' => '2026-07-01', 'name' => 'Future Cup']);
+        $player = Player::factory()->create();
+        $field = PlayerCustomField::factory()->create(['type' => PlayerCustomFieldType::Text]);
+
+        PlayerCustomFieldValue::factory()->create([
+            'player_id' => $player->id_player,
+            'player_custom_field_id' => $field->id_player_custom_field,
+            'edition_id' => $edition->id_edition,
+            'value_text' => 'Now',
+            'inserted_at' => 1000,
+        ]);
+        PlayerCustomFieldValue::factory()->create([
+            'player_id' => $player->id_player,
+            'player_custom_field_id' => $field->id_player_custom_field,
+            'edition_id' => $futureEdition->id_edition,
+            'value_text' => 'Future',
+            'inserted_at' => 2000,
+        ]);
+        PlayerCustomFieldValue::factory()->create([
+            'player_id' => $player->id_player,
+            'player_custom_field_id' => $field->id_player_custom_field,
+            'edition_id' => null,
+            'value_text' => 'Future Global',
+            'inserted_at' => Carbon::parse('2026-06-16', config('app.timezone'))->timestamp,
+        ]);
+
+        $result = $this->resolver->resolveForPlayers(
+            (int) $edition->id_edition,
+            [(int) $player->id_player],
+            [(int) $field->id_player_custom_field],
+            $this->cutoffFor($edition)
+        );
+
+        $recent = $result[(int) $player->id_player][0]['recent_answers'];
+        $this->assertCount(1, $recent);
+        $this->assertSame('Now', $recent[0]['value']);
+    }
+
+    public function test_recent_answers_exclude_invalidated_and_format_global(): void
+    {
+        $edition = Edition::factory()->create(['date' => '2026-06-15']);
+        $player = Player::factory()->create();
+        $field = PlayerCustomField::factory()->create(['type' => PlayerCustomFieldType::Text]);
+        $globalInserted = Carbon::parse('2026-01-10', config('app.timezone'))->timestamp;
+
+        PlayerCustomFieldValue::factory()->create([
+            'player_id' => $player->id_player,
+            'player_custom_field_id' => $field->id_player_custom_field,
+            'edition_id' => null,
+            'value_text' => 'Global',
+            'inserted_at' => $globalInserted,
+        ]);
+        PlayerCustomFieldValue::factory()->create([
+            'player_id' => $player->id_player,
+            'player_custom_field_id' => $field->id_player_custom_field,
+            'edition_id' => $edition->id_edition,
+            'value_text' => 'Stale',
+            'inserted_at' => $globalInserted + 100,
+            'invalidated_at' => time(),
+        ]);
+
+        $result = $this->resolver->resolveForPlayers(
+            (int) $edition->id_edition,
+            [(int) $player->id_player],
+            [(int) $field->id_player_custom_field],
+            $this->cutoffFor($edition)
+        );
+
+        $recent = $result[(int) $player->id_player][0]['recent_answers'];
+        $this->assertCount(1, $recent);
+        $this->assertNull($recent[0]['edition_name']);
+        $this->assertSame('2026-01-10', $recent[0]['inserted_date']);
+        $this->assertSame('Global', $recent[0]['value']);
+    }
+
+    private function cutoffFor(Edition $edition): string
+    {
+        if ($edition->date instanceof \DateTimeInterface) {
+            return $edition->date->format('Y-m-d');
+        }
+
+        return (string) $edition->formatted_date;
     }
 }
