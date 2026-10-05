@@ -88,22 +88,22 @@ class Court extends Model
         return $this->belongsTo(Location::class, 'location_id', 'id_location');
     }
 
-    public function editionDivisionCourts(): HasMany
+    public function eventDivisionCourts(): HasMany
     {
-        return $this->hasMany(EditionDivisionCourt::class, 'court_id', 'id_court');
+        return $this->hasMany(EventDivisionCourt::class, 'court_id', 'id_court');
     }
 
-    public function editionDivisions(): BelongsToMany
+    public function eventDivisions(): BelongsToMany
     {
         return $this->belongsToMany(
-            EditionDivision::class,
-            'edition_division_courts',
+            EventDivision::class,
+            'event_division_courts',
             'court_id',
-            'edition_division_id',
+            'event_division_id',
             'id_court',
-            'id_edition_division'
-        )->using(EditionDivisionCourt::class)
+            'id_event_division'
+        )->using(EventDivisionCourt::class)
             ->withTimestamps('inserted_at', 'updated_at')
-            ->withPivot(['id_edition_division_court', 'display_order']);
+            ->withPivot(['id_event_division_court', 'display_order']);
     }
 }

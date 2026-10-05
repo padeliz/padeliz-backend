@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Division;
-use App\Models\Edition;
-use App\Models\EditionDivision;
-use App\Models\EditionParticipation;
+use App\Models\PadelEvent;
+use App\Models\EventDivision;
+use App\Models\EventParticipation;
 use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -94,12 +94,12 @@ class DivisionControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         // Create an edition first
-        $edition = \App\Models\Edition::factory()->create();
+        $event = \App\Models\PadelEvent::factory()->create();
 
         $divisionData = [
             'name' => 'New Division',
             'color' => '#00FF00',
-            'its_first_edition_id' => $edition->id_edition,
+            'its_first_event_id' => $event->id_event,
         ];
 
         $response = $this->postJson('/api/v1/manager/divisions', $divisionData);
@@ -132,7 +132,7 @@ class DivisionControllerTest extends TestCase
         $updateData = [
             'name' => 'Updated Name',
             'color' => '#0000FF',
-            'its_first_edition_id' => $division->its_first_edition_id,
+            'its_first_event_id' => $division->its_first_event_id,
         ];
 
         $response = $this->putJson("/api/v1/manager/divisions/{$division->id_division}", $updateData);
@@ -238,14 +238,14 @@ class DivisionControllerTest extends TestCase
         ]);
     }
 
-    public function test_manager_cannot_delete_division_with_edition_divisions()
+    public function test_manager_cannot_delete_division_with_event_divisions()
     {
         Sanctum::actingAs($this->manager);
 
         $division = Division::factory()->create();
-        $edition = Edition::factory()->create();
-        EditionDivision::factory()->create([
-            'edition_id' => $edition->id_edition,
+        $event = PadelEvent::factory()->create();
+        EventDivision::factory()->create([
+            'event_id' => $event->id_event,
             'division_id' => $division->id_division,
         ]);
 
@@ -254,7 +254,7 @@ class DivisionControllerTest extends TestCase
         $response->assertStatus(409)
             ->assertJson([
                 'success' => false,
-                'message' => 'Division cannot be deleted because it has linked data. Please remove all associated edition_divisions_count, participations_count first.',
+                'message' => 'Division cannot be deleted because it has linked data. Please remove all associated event_divisions_count, participations_count first.',
             ]);
 
         $this->assertDatabaseHas('divisions', [
@@ -268,15 +268,15 @@ class DivisionControllerTest extends TestCase
 
         $division = Division::factory()->create();
         $player = Player::factory()->create();
-        $edition = Edition::factory()->create();
-        $editionDivision = EditionDivision::factory()->create([
-            'edition_id' => $edition->id_edition,
+        $event = PadelEvent::factory()->create();
+        $eventDivision = EventDivision::factory()->create([
+            'event_id' => $event->id_event,
             'division_id' => $division->id_division,
         ]);
-        EditionParticipation::factory()->create([
-            'edition_id' => $edition->id_edition,
+        EventParticipation::factory()->create([
+            'event_id' => $event->id_event,
             'player_id' => $player->id_player,
-            'edition_division_id' => $editionDivision->id_edition_division,
+            'event_division_id' => $eventDivision->id_event_division,
         ]);
 
         $response = $this->deleteJson("/api/v1/manager/divisions/{$division->id_division}");
@@ -284,7 +284,7 @@ class DivisionControllerTest extends TestCase
         $response->assertStatus(409)
             ->assertJson([
                 'success' => false,
-                'message' => 'Division cannot be deleted because it has linked data. Please remove all associated edition_divisions_count, participations_count first.',
+                'message' => 'Division cannot be deleted because it has linked data. Please remove all associated event_divisions_count, participations_count first.',
             ]);
 
         $this->assertDatabaseHas('divisions', [
@@ -342,9 +342,9 @@ class DivisionControllerTest extends TestCase
         $division3 = Division::factory()->create();
 
         // Create linked edition division for division1
-        $edition = Edition::factory()->create();
-        EditionDivision::factory()->create([
-            'edition_id' => $edition->id_edition,
+        $event = PadelEvent::factory()->create();
+        EventDivision::factory()->create([
+            'event_id' => $event->id_event,
             'division_id' => $division1->id_division,
         ]);
 

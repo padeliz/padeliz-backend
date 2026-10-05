@@ -96,7 +96,7 @@ class Sponsor extends Model
 
     public function lotteryPrizes(): HasMany
     {
-        return $this->hasMany(EditionLotteryPrize::class, 'sponsor_id', 'id_sponsor');
+        return $this->hasMany(EventLotteryPrize::class, 'sponsor_id', 'id_sponsor');
     }
 
     /**

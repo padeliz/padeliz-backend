@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Services\PlayerCustomField;
 
 use App\Enums\PlayerCustomFieldType;
-use App\Models\Edition;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Models\PlayerCustomField;
 use App\Models\PlayerCustomFieldOption;
@@ -30,7 +30,7 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
 
     public function test_edition_scoped_value_overrides_global(): void
     {
-        $edition = Edition::factory()->create();
+        $event = PadelEvent::factory()->create();
         $player = Player::factory()->create();
         $field = PlayerCustomField::factory()->create([
             'label' => 'Shirt Size',
@@ -41,53 +41,53 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
         PlayerCustomFieldValue::factory()->create([
             'player_id' => $player->id_player,
             'player_custom_field_id' => $field->id_player_custom_field,
-            'edition_id' => null,
+            'event_id' => null,
             'value_text' => 'Global M',
             'inserted_at' => time() - 100,
         ]);
         PlayerCustomFieldValue::factory()->create([
             'player_id' => $player->id_player,
             'player_custom_field_id' => $field->id_player_custom_field,
-            'edition_id' => $edition->id_edition,
-            'value_text' => 'Edition L',
+            'event_id' => $event->id_event,
+            'value_text' => 'PadelEvent L',
             'inserted_at' => time(),
         ]);
 
         $result = $this->resolver->resolveForPlayers(
-            (int) $edition->id_edition,
+            (int) $event->id_event,
             [(int) $player->id_player],
             [(int) $field->id_player_custom_field],
-            $this->cutoffFor($edition)
+            $this->cutoffFor($event)
         );
 
-        $this->assertSame('Edition L', $result[(int) $player->id_player][0]['value']);
+        $this->assertSame('PadelEvent L', $result[(int) $player->id_player][0]['value']);
     }
 
     public function test_invalidated_values_are_ignored(): void
     {
-        $edition = Edition::factory()->create();
+        $event = PadelEvent::factory()->create();
         $player = Player::factory()->create();
         $field = PlayerCustomField::factory()->create(['type' => PlayerCustomFieldType::Text]);
 
         PlayerCustomFieldValue::factory()->create([
             'player_id' => $player->id_player,
             'player_custom_field_id' => $field->id_player_custom_field,
-            'edition_id' => $edition->id_edition,
+            'event_id' => $event->id_event,
             'value_text' => 'Stale',
             'invalidated_at' => time(),
         ]);
         PlayerCustomFieldValue::factory()->create([
             'player_id' => $player->id_player,
             'player_custom_field_id' => $field->id_player_custom_field,
-            'edition_id' => null,
+            'event_id' => null,
             'value_text' => 'Active Global',
         ]);
 
         $result = $this->resolver->resolveForPlayers(
-            (int) $edition->id_edition,
+            (int) $event->id_event,
             [(int) $player->id_player],
             [(int) $field->id_player_custom_field],
-            $this->cutoffFor($edition)
+            $this->cutoffFor($event)
         );
 
         $this->assertSame('Active Global', $result[(int) $player->id_player][0]['value']);
@@ -95,30 +95,30 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
 
     public function test_latest_inserted_at_wins_within_same_scope(): void
     {
-        $edition = Edition::factory()->create();
+        $event = PadelEvent::factory()->create();
         $player = Player::factory()->create();
         $field = PlayerCustomField::factory()->create(['type' => PlayerCustomFieldType::Text]);
 
         PlayerCustomFieldValue::factory()->create([
             'player_id' => $player->id_player,
             'player_custom_field_id' => $field->id_player_custom_field,
-            'edition_id' => null,
+            'event_id' => null,
             'value_text' => 'Older',
             'inserted_at' => time() - 500,
         ]);
         PlayerCustomFieldValue::factory()->create([
             'player_id' => $player->id_player,
             'player_custom_field_id' => $field->id_player_custom_field,
-            'edition_id' => null,
+            'event_id' => null,
             'value_text' => 'Newer',
             'inserted_at' => time(),
         ]);
 
         $result = $this->resolver->resolveForPlayers(
-            (int) $edition->id_edition,
+            (int) $event->id_event,
             [(int) $player->id_player],
             [(int) $field->id_player_custom_field],
-            $this->cutoffFor($edition)
+            $this->cutoffFor($event)
         );
 
         $this->assertSame('Newer', $result[(int) $player->id_player][0]['value']);
@@ -126,7 +126,7 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
 
     public function test_multi_select_values_join_as_comma_separated_string(): void
     {
-        $edition = Edition::factory()->create();
+        $event = PadelEvent::factory()->create();
         $player = Player::factory()->create();
         $field = PlayerCustomField::factory()->multiSelect()->create(['label' => 'Tags']);
         $optionA = PlayerCustomFieldOption::factory()->create([
@@ -141,7 +141,7 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
         $value = PlayerCustomFieldValue::factory()->create([
             'player_id' => $player->id_player,
             'player_custom_field_id' => $field->id_player_custom_field,
-            'edition_id' => null,
+            'event_id' => null,
             'value_text' => null,
         ]);
         PlayerCustomFieldValueOption::query()->create([
@@ -158,10 +158,10 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
         ]);
 
         $result = $this->resolver->resolveForPlayers(
-            (int) $edition->id_edition,
+            (int) $event->id_event,
             [(int) $player->id_player],
             [(int) $field->id_player_custom_field],
-            $this->cutoffFor($edition)
+            $this->cutoffFor($event)
         );
 
         $this->assertSame('Alpha, Beta', $result[(int) $player->id_player][0]['value']);
@@ -169,7 +169,7 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
 
     public function test_returns_one_value_per_field(): void
     {
-        $edition = Edition::factory()->create();
+        $event = PadelEvent::factory()->create();
         $player = Player::factory()->create();
         $fieldA = PlayerCustomField::factory()->create([
             'label' => 'Field A',
@@ -200,10 +200,10 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
         ]);
 
         $result = $this->resolver->resolveForPlayers(
-            (int) $edition->id_edition,
+            (int) $event->id_event,
             [(int) $player->id_player],
             [(int) $fieldA->id_player_custom_field, (int) $fieldB->id_player_custom_field],
-            $this->cutoffFor($edition)
+            $this->cutoffFor($event)
         );
 
         $entries = $result[(int) $player->id_player];
@@ -214,7 +214,7 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
 
     public function test_no_requested_field_is_omitted_when_value_exists(): void
     {
-        $edition = Edition::factory()->create();
+        $event = PadelEvent::factory()->create();
         $player = Player::factory()->create();
         $fields = collect(range(1, 3))->map(function (int $order): PlayerCustomField {
             $field = PlayerCustomField::factory()->create([
@@ -241,10 +241,10 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
 
         $fieldIds = $fields->pluck('id_player_custom_field')->map(static fn ($id): int => (int) $id)->all();
         $result = $this->resolver->resolveForPlayers(
-            (int) $edition->id_edition,
+            (int) $event->id_event,
             [(int) $player->id_player],
             $fieldIds,
-            $this->cutoffFor($edition)
+            $this->cutoffFor($event)
         );
 
         $this->assertCount(3, $result[(int) $player->id_player]);
@@ -256,9 +256,9 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
 
     public function test_recent_answers_include_this_edition_and_cap_at_two_by_inserted_at(): void
     {
-        $edition = Edition::factory()->create(['date' => '2026-06-15', 'name' => 'Current Cup']);
-        $pastEdition = Edition::factory()->create(['date' => '2026-01-01', 'name' => 'Past Cup']);
-        $olderEdition = Edition::factory()->create(['date' => '2025-01-01', 'name' => 'Older Cup']);
+        $event = PadelEvent::factory()->create(['date' => '2026-06-15', 'name' => 'Current Cup']);
+        $pastEdition = PadelEvent::factory()->create(['date' => '2026-01-01', 'name' => 'Past Cup']);
+        $olderEdition = PadelEvent::factory()->create(['date' => '2025-01-01', 'name' => 'Older Cup']);
         $player = Player::factory()->create();
         $field = PlayerCustomField::factory()->create([
             'label' => 'Shirt Size',
@@ -268,30 +268,30 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
         PlayerCustomFieldValue::factory()->create([
             'player_id' => $player->id_player,
             'player_custom_field_id' => $field->id_player_custom_field,
-            'edition_id' => $olderEdition->id_edition,
+            'event_id' => $olderEdition->id_event,
             'value_text' => 'S',
             'inserted_at' => 1000,
         ]);
         PlayerCustomFieldValue::factory()->create([
             'player_id' => $player->id_player,
             'player_custom_field_id' => $field->id_player_custom_field,
-            'edition_id' => $pastEdition->id_edition,
+            'event_id' => $pastEdition->id_event,
             'value_text' => 'M',
             'inserted_at' => 2000,
         ]);
         PlayerCustomFieldValue::factory()->create([
             'player_id' => $player->id_player,
             'player_custom_field_id' => $field->id_player_custom_field,
-            'edition_id' => $edition->id_edition,
+            'event_id' => $event->id_event,
             'value_text' => 'L',
             'inserted_at' => 3000,
         ]);
 
         $result = $this->resolver->resolveForPlayers(
-            (int) $edition->id_edition,
+            (int) $event->id_event,
             [(int) $player->id_player],
             [(int) $field->id_player_custom_field],
-            $this->cutoffFor($edition)
+            $this->cutoffFor($event)
         );
 
         $recent = $result[(int) $player->id_player][0]['recent_answers'];
@@ -304,38 +304,38 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
 
     public function test_recent_answers_exclude_future_edition_and_future_globals(): void
     {
-        $edition = Edition::factory()->create(['date' => '2026-06-15', 'name' => 'Current Cup']);
-        $futureEdition = Edition::factory()->create(['date' => '2026-07-01', 'name' => 'Future Cup']);
+        $event = PadelEvent::factory()->create(['date' => '2026-06-15', 'name' => 'Current Cup']);
+        $futureEdition = PadelEvent::factory()->create(['date' => '2026-07-01', 'name' => 'Future Cup']);
         $player = Player::factory()->create();
         $field = PlayerCustomField::factory()->create(['type' => PlayerCustomFieldType::Text]);
 
         PlayerCustomFieldValue::factory()->create([
             'player_id' => $player->id_player,
             'player_custom_field_id' => $field->id_player_custom_field,
-            'edition_id' => $edition->id_edition,
+            'event_id' => $event->id_event,
             'value_text' => 'Now',
             'inserted_at' => 1000,
         ]);
         PlayerCustomFieldValue::factory()->create([
             'player_id' => $player->id_player,
             'player_custom_field_id' => $field->id_player_custom_field,
-            'edition_id' => $futureEdition->id_edition,
+            'event_id' => $futureEdition->id_event,
             'value_text' => 'Future',
             'inserted_at' => 2000,
         ]);
         PlayerCustomFieldValue::factory()->create([
             'player_id' => $player->id_player,
             'player_custom_field_id' => $field->id_player_custom_field,
-            'edition_id' => null,
+            'event_id' => null,
             'value_text' => 'Future Global',
             'inserted_at' => Carbon::parse('2026-06-16', config('app.timezone'))->timestamp,
         ]);
 
         $result = $this->resolver->resolveForPlayers(
-            (int) $edition->id_edition,
+            (int) $event->id_event,
             [(int) $player->id_player],
             [(int) $field->id_player_custom_field],
-            $this->cutoffFor($edition)
+            $this->cutoffFor($event)
         );
 
         $recent = $result[(int) $player->id_player][0]['recent_answers'];
@@ -345,7 +345,7 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
 
     public function test_recent_answers_exclude_invalidated_and_format_global(): void
     {
-        $edition = Edition::factory()->create(['date' => '2026-06-15']);
+        $event = PadelEvent::factory()->create(['date' => '2026-06-15']);
         $player = Player::factory()->create();
         $field = PlayerCustomField::factory()->create(['type' => PlayerCustomFieldType::Text]);
         $globalInserted = Carbon::parse('2026-01-10', config('app.timezone'))->timestamp;
@@ -353,24 +353,24 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
         PlayerCustomFieldValue::factory()->create([
             'player_id' => $player->id_player,
             'player_custom_field_id' => $field->id_player_custom_field,
-            'edition_id' => null,
+            'event_id' => null,
             'value_text' => 'Global',
             'inserted_at' => $globalInserted,
         ]);
         PlayerCustomFieldValue::factory()->create([
             'player_id' => $player->id_player,
             'player_custom_field_id' => $field->id_player_custom_field,
-            'edition_id' => $edition->id_edition,
+            'event_id' => $event->id_event,
             'value_text' => 'Stale',
             'inserted_at' => $globalInserted + 100,
             'invalidated_at' => time(),
         ]);
 
         $result = $this->resolver->resolveForPlayers(
-            (int) $edition->id_edition,
+            (int) $event->id_event,
             [(int) $player->id_player],
             [(int) $field->id_player_custom_field],
-            $this->cutoffFor($edition)
+            $this->cutoffFor($event)
         );
 
         $recent = $result[(int) $player->id_player][0]['recent_answers'];
@@ -380,12 +380,12 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
         $this->assertSame('Global', $recent[0]['value']);
     }
 
-    private function cutoffFor(Edition $edition): string
+    private function cutoffFor(PadelEvent $event): string
     {
-        if ($edition->date instanceof \DateTimeInterface) {
-            return $edition->date->format('Y-m-d');
+        if ($event->date instanceof \DateTimeInterface) {
+            return $event->date->format('Y-m-d');
         }
 
-        return (string) $edition->formatted_date;
+        return (string) $event->formatted_date;
     }
 }

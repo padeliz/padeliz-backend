@@ -21,7 +21,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *         title="ID",
  *         description="Unique Identifier"
  *     ),
- *     @OA\Property(property="edition_ids", type="array", @OA\Items(type="integer"), nullable=true),
+ *     @OA\Property(property="event_ids", type="array", @OA\Items(type="integer"), nullable=true),
  *     @OA\Property(property="media_source", type="array", @OA\Items(type="integer"), nullable=true),
  *     @OA\Property(property="friends_source", type="array", @OA\Items(type="string"), nullable=true),
  *     @OA\Property(property="racket_experience", type="array", @OA\Items(type="string"), nullable=true),
@@ -190,7 +190,7 @@ class Eligibility extends Model
 
     protected $fillable = [
         'player_id',
-        'edition_ids',
+        'event_ids',
         'media_source',
         'friends_source',
         'racket_experience',
@@ -225,7 +225,7 @@ class Eligibility extends Model
         'birth_day' => 'integer',
         'resubmitted_at' => 'integer',
         'ready_for_review' => 'boolean',
-        'edition_ids' => 'array',
+        'event_ids' => 'array',
         'media_source' => 'array',
         'friends_source' => 'array',
         'racket_experience' => 'array',

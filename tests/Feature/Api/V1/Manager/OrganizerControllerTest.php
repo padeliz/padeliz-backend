@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Manager;
 
-use App\Models\Edition;
+use App\Models\PadelEvent;
 use App\Models\Organizer;
 use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -60,7 +60,7 @@ final class OrganizerControllerTest extends TestCase
                         'name',
                         'logo_path',
                         'url',
-                        'show_edition_label',
+                        'show_event_label',
                         'inserted_at',
                         'updated_at',
                     ],
@@ -95,28 +95,28 @@ final class OrganizerControllerTest extends TestCase
 
         $response = $this->postJson('/api/v1/manager/organizers', [
             'name' => 'Padeliz Open Tour',
-            'show_edition_label' => true,
+            'show_event_label' => true,
         ]);
 
         $response->assertStatus(201)
             ->assertJsonPath('data.name', 'Padeliz Open Tour')
-            ->assertJsonPath('data.show_edition_label', true)
+            ->assertJsonPath('data.show_event_label', true)
             ->assertJsonPath('data.logo_path', null)
             ->assertJsonPath('data.url', null);
 
         $this->assertDatabaseHas('organizers', [
             'name' => 'Padeliz Open Tour',
-            'show_edition_label' => 1,
+            'show_event_label' => 1,
         ]);
     }
 
-    public function test_organizer_creation_defaults_show_edition_label_to_false(): void
+    public function test_organizer_creation_defaults_show_event_label_to_false(): void
     {
         Sanctum::actingAs($this->manager);
 
         $this->postJson('/api/v1/manager/organizers', ['name' => 'No Label Tour'])
             ->assertStatus(201)
-            ->assertJsonPath('data.show_edition_label', false);
+            ->assertJsonPath('data.show_event_label', false);
     }
 
     public function test_organizer_creation_validation(): void
@@ -140,23 +140,23 @@ final class OrganizerControllerTest extends TestCase
 
         $organizer = Organizer::factory()->create([
             'name' => 'Old Name',
-            'show_edition_label' => false,
+            'show_event_label' => false,
         ]);
 
         $this->putJson("/api/v1/manager/organizers/{$organizer->id_organizer}", [
             'name' => 'New Name',
-            'show_edition_label' => true,
+            'show_event_label' => true,
         ])
             ->assertStatus(200)
             ->assertJsonPath('data.name', 'New Name')
-            ->assertJsonPath('data.show_edition_label', true);
+            ->assertJsonPath('data.show_event_label', true);
 
         $this->patchJson("/api/v1/manager/organizers/{$organizer->id_organizer}", [
-            'show_edition_label' => false,
+            'show_event_label' => false,
         ])
             ->assertStatus(200)
             ->assertJsonPath('data.name', 'New Name')
-            ->assertJsonPath('data.show_edition_label', false);
+            ->assertJsonPath('data.show_event_label', false);
     }
 
     public function test_manager_can_delete_unused_organizer(): void
@@ -177,12 +177,12 @@ final class OrganizerControllerTest extends TestCase
         ]);
     }
 
-    public function test_organizer_delete_is_restricted_by_editions(): void
+    public function test_organizer_delete_is_restricted_by_events(): void
     {
         Sanctum::actingAs($this->manager);
 
         $organizer = Organizer::factory()->create();
-        Edition::factory()->create(['organizer_id' => $organizer->id_organizer]);
+        PadelEvent::factory()->create(['organizer_id' => $organizer->id_organizer]);
 
         $response = $this->deleteJson("/api/v1/manager/organizers/{$organizer->id_organizer}");
 
@@ -191,7 +191,7 @@ final class OrganizerControllerTest extends TestCase
                 'success' => false,
                 'message' => 'Organizer cannot be deleted because it has linked data. Please remove all associated editions first.',
             ])
-            ->assertJsonPath('errors.linked_data.editions_count', 1);
+            ->assertJsonPath('errors.linked_data.events_count', 1);
 
         $this->assertDatabaseHas('organizers', [
             'id_organizer' => $organizer->id_organizer,

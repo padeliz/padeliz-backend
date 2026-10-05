@@ -13,6 +13,8 @@ use App\Services\PlayerCustomField\Formats\GoogleFormMiniTourWelcomeCsvFormat;
 use App\Services\PlayerCustomField\PlayerCustomFieldValueCsvFormatRegistry;
 use App\Services\PlayerImport\Formats\PlaytomicPlayerCsvFormat;
 use App\Services\PlayerImport\PlayerCsvFormatRegistry;
+use App\Models\PadelEvent;
+use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
 class AppServiceProvider extends ServiceProvider
@@ -57,6 +59,10 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
+        \App\Models\Eligibility::observe(\App\Observers\EligibilityPushObserver::class);
 
+        Route::bind('event', static function (string $value): PadelEvent {
+            return PadelEvent::query()->whereKey($value)->firstOrFail();
+        });
     }
 }

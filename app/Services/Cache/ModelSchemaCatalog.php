@@ -126,6 +126,11 @@ final class ModelSchemaCatalog
             $map[$basename] = $class;
         }
 
+        // OA / HTTP schema is Event; PHP model class is PadelEvent.
+        if (isset($map['PadelEvent'])) {
+            $map['Event'] = $map['PadelEvent'];
+        }
+
         return $this->schemaToClass = $map;
     }
 }

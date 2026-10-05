@@ -34,9 +34,17 @@ Route::prefix('v1')->group(function () {
     // PLAYER PUBLIC ROUTES (no authentication)
     // ========================================
     Route::prefix('app')->group(function () {
-        Route::get('editions', [\App\Http\Controllers\Api\V1\App\EditionController::class, 'index'])
+        Route::get('events', [\App\Http\Controllers\Api\V1\App\EventController::class, 'index'])
+            ->middleware('cacheResponse');
+        Route::get('events/filter-options', [\App\Http\Controllers\Api\V1\App\EventFilterOptionsController::class, 'index'])
+            ->middleware('cacheResponse');
+        Route::get('events/{event}', [\App\Http\Controllers\Api\V1\App\EventController::class, 'show'])
+            ->whereNumber('event')
             ->middleware('cacheResponse');
     });
+
+    Route::post('webhooks/netopia/ipn', [\App\Http\Controllers\Api\V1\Webhooks\NetopiaIpnController::class, 'handle']);
+    Route::get('payments/netopia/return', [\App\Http\Controllers\Api\V1\Webhooks\NetopiaReturnController::class, 'handle']);
 
     // ========================================
     // PLAYER ROUTES (Requires player authentication)
@@ -46,10 +54,14 @@ Route::prefix('v1')->group(function () {
         Route::prefix('auth')->group(function () {
             Route::post('logout', [\App\Http\Controllers\Api\V1\App\PlayerAuthController::class, 'logout']);
             Route::get('me', [\App\Http\Controllers\Api\V1\App\PlayerAuthController::class, 'me']);
+            Route::get('identities', [\App\Http\Controllers\Api\V1\App\PlayerIdentityController::class, 'index']);
+            Route::post('identities/{provider}', [\App\Http\Controllers\Api\V1\App\PlayerIdentityController::class, 'store']);
+            Route::delete('identities/{playerIdentity}', [\App\Http\Controllers\Api\V1\App\PlayerIdentityController::class, 'destroy'])
+                ->whereNumber('playerIdentity');
         });
 
         Route::prefix('my')->group(function () {
-            Route::get('editions', [\App\Http\Controllers\Api\V1\App\MyEditionController::class, 'index']);
+            Route::get('event-history', [\App\Http\Controllers\Api\V1\App\EventHistoryController::class, 'index']);
         });
 
         // Player management
@@ -63,11 +75,44 @@ Route::prefix('v1')->group(function () {
         });
 
         // Player participation
-        Route::prefix('edition-registrations')->group(function () {
-            Route::post('/', [\App\Http\Controllers\Api\V1\App\EditionRegistrationController::class, 'store']);
-            Route::delete('{editionRegistration}', [\App\Http\Controllers\Api\V1\App\EditionRegistrationController::class, 'destroy'])
-                ->whereNumber('editionRegistration');
+        Route::get('my/event-registrations', [\App\Http\Controllers\Api\V1\App\EventRegistrationController::class, 'index']);
+        Route::prefix('event-registrations')->group(function () {
+            Route::post('/', [\App\Http\Controllers\Api\V1\App\EventRegistrationController::class, 'store']);
+            Route::post('{eventRegistration}/payments/netopia/start', [\App\Http\Controllers\Api\V1\App\RegistrationPaymentController::class, 'startNetopia'])
+                ->whereNumber('eventRegistration');
+            Route::post('{eventRegistration}/payments/bank-proofs', [\App\Http\Controllers\Api\V1\App\RegistrationPaymentController::class, 'uploadBankProof'])
+                ->whereNumber('eventRegistration');
+            Route::delete('{eventRegistration}', [\App\Http\Controllers\Api\V1\App\EventRegistrationController::class, 'destroy'])
+                ->whereNumber('eventRegistration');
         });
+        Route::prefix('registration-checkouts')->group(function () {
+            Route::get('{checkout}', [\App\Http\Controllers\Api\V1\App\RegistrationPaymentController::class, 'show'])
+                ->whereNumber('checkout');
+            Route::get('{checkout}/quote', [\App\Http\Controllers\Api\V1\App\CheckoutPricingController::class, 'quote'])
+                ->whereNumber('checkout');
+            Route::patch('{checkout}/benefit-selections', [\App\Http\Controllers\Api\V1\App\CheckoutPricingController::class, 'commitSelections'])
+                ->whereNumber('checkout');
+            Route::post('{checkout}/payments/netopia/start', [\App\Http\Controllers\Api\V1\App\RegistrationPaymentController::class, 'startNetopiaForCheckout'])
+                ->whereNumber('checkout');
+            Route::post('{checkout}/payments/bank-proofs', [\App\Http\Controllers\Api\V1\App\RegistrationPaymentController::class, 'uploadBankProofForCheckout'])
+                ->whereNumber('checkout');
+            Route::post('{checkout}/payments/reset', [\App\Http\Controllers\Api\V1\App\RegistrationPaymentController::class, 'resetCheckout'])
+                ->whereNumber('checkout');
+            Route::post('{checkout}/exclude', [\App\Http\Controllers\Api\V1\App\RegistrationPaymentController::class, 'excludeFromCheckout'])
+                ->whereNumber('checkout');
+        });
+        Route::get('events/{event}/registration-checkouts', [\App\Http\Controllers\Api\V1\App\RegistrationPaymentController::class, 'indexForEvent'])
+            ->whereNumber('event');
+        Route::post('referral-touchpoints', [\App\Http\Controllers\Api\V1\App\ReferralTouchpointController::class, 'store']);
+        Route::get('events/{event}/referral-codes', [\App\Http\Controllers\Api\V1\App\ReferralCodeController::class, 'index'])
+            ->whereNumber('event');
+        Route::post('events/{event}/referral-codes', [\App\Http\Controllers\Api\V1\App\ReferralCodeController::class, 'store'])
+            ->whereNumber('event');
+        Route::post('referral-codes/{referralCode}/revoke', [\App\Http\Controllers\Api\V1\App\ReferralCodeController::class, 'revoke'])
+            ->whereNumber('referralCode');
+        Route::get('bank-transfer-settings', [\App\Http\Controllers\Api\V1\App\BankTransferSettingsController::class, 'show']);
+        Route::post('device-tokens', [\App\Http\Controllers\Api\V1\App\DeviceTokenController::class, 'store']);
+        Route::delete('device-tokens', [\App\Http\Controllers\Api\V1\App\DeviceTokenController::class, 'destroy']);
 
         Route::prefix('my/eligibility')->group(function () {
             Route::get('status', [\App\Http\Controllers\Api\V1\App\MyEligibilityController::class, 'status']);
@@ -150,41 +195,43 @@ Route::prefix('v1')->group(function () {
             Route::delete('{division}', [\App\Http\Controllers\Api\V1\Manager\DivisionController::class, 'destroy']);
         });
 
-        // Edition management
-        Route::prefix('editions')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'index']);
-            Route::get('{edition}', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'show'])
-                ->whereNumber('edition');
-            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'store']);
-            Route::put('{edition}', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'update'])
-                ->whereNumber('edition');
-            Route::patch('{edition}', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'patch'])
-                ->whereNumber('edition');
-            Route::post('{edition}/finalize', [\App\Http\Controllers\Api\V1\Manager\EditionFinalizeController::class, 'store'])
-                ->whereNumber('edition');
-            Route::get('{edition}/replacements', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionReplacementController::class, 'indexForEdition'])
-                ->whereNumber('edition');
-            Route::post('{edition}/registrations/import/preview', [\App\Http\Controllers\Api\V1\Manager\EditionRegistrationImportController::class, 'preview'])
-                ->whereNumber('edition');
-            Route::post('{edition}/registrations/import', [\App\Http\Controllers\Api\V1\Manager\EditionRegistrationImportController::class, 'store'])
-                ->whereNumber('edition');
-            Route::get('{edition}/participations/map/preview', [\App\Http\Controllers\Api\V1\Manager\EditionParticipationMappingController::class, 'preview'])
-                ->whereNumber('edition');
-            Route::post('{edition}/participations/map', [\App\Http\Controllers\Api\V1\Manager\EditionParticipationMappingController::class, 'map'])
-                ->whereNumber('edition');
-            Route::get('{edition}/posters', [\App\Http\Controllers\Api\V1\Manager\EditionPosterController::class, 'index'])
-                ->whereNumber('edition');
-            Route::get('{edition}/posters/merged/file', [\App\Http\Controllers\Api\V1\Manager\EditionPosterController::class, 'mergedFile'])
-                ->whereNumber('edition');
-            Route::post('{edition}/posters/attendance', [\App\Http\Controllers\Api\V1\Manager\EditionPosterController::class, 'attendance'])
-                ->whereNumber('edition');
-            Route::get('{edition}/posters/attendance/preview', [\App\Http\Controllers\Api\V1\Manager\EditionPosterController::class, 'attendancePreview'])
-                ->whereNumber('edition');
-            Route::get('{edition}/posters/attendance/file', [\App\Http\Controllers\Api\V1\Manager\EditionPosterController::class, 'attendanceFile'])
-                ->whereNumber('edition');
-            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'bulkDestroy']);
-            Route::delete('{edition}', [\App\Http\Controllers\Api\V1\Manager\EditionController::class, 'destroy'])
-                ->whereNumber('edition');
+        // PadelEvent management
+        Route::prefix('events')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EventController::class, 'index']);
+            Route::get('{event}', [\App\Http\Controllers\Api\V1\Manager\EventController::class, 'show'])
+                ->whereNumber('event');
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EventController::class, 'store']);
+            Route::put('{event}', [\App\Http\Controllers\Api\V1\Manager\EventController::class, 'update'])
+                ->whereNumber('event');
+            Route::patch('{event}', [\App\Http\Controllers\Api\V1\Manager\EventController::class, 'patch'])
+                ->whereNumber('event');
+            Route::post('{event}/cover', [\App\Http\Controllers\Api\V1\Manager\EventCoverController::class, 'store'])
+                ->whereNumber('event');
+            Route::post('{event}/finalize', [\App\Http\Controllers\Api\V1\Manager\EventFinalizeController::class, 'store'])
+                ->whereNumber('event');
+            Route::get('{event}/replacements', [\App\Http\Controllers\Api\V1\Manager\EventDivisionReplacementController::class, 'indexForEvent'])
+                ->whereNumber('event');
+            Route::post('{event}/registrations/import/preview', [\App\Http\Controllers\Api\V1\Manager\EventRegistrationImportController::class, 'preview'])
+                ->whereNumber('event');
+            Route::post('{event}/registrations/import', [\App\Http\Controllers\Api\V1\Manager\EventRegistrationImportController::class, 'store'])
+                ->whereNumber('event');
+            Route::get('{event}/participations/map/preview', [\App\Http\Controllers\Api\V1\Manager\EventParticipationMappingController::class, 'preview'])
+                ->whereNumber('event');
+            Route::post('{event}/participations/map', [\App\Http\Controllers\Api\V1\Manager\EventParticipationMappingController::class, 'map'])
+                ->whereNumber('event');
+            Route::get('{event}/posters', [\App\Http\Controllers\Api\V1\Manager\EventPosterController::class, 'index'])
+                ->whereNumber('event');
+            Route::get('{event}/posters/merged/file', [\App\Http\Controllers\Api\V1\Manager\EventPosterController::class, 'mergedFile'])
+                ->whereNumber('event');
+            Route::post('{event}/posters/attendance', [\App\Http\Controllers\Api\V1\Manager\EventPosterController::class, 'attendance'])
+                ->whereNumber('event');
+            Route::get('{event}/posters/attendance/preview', [\App\Http\Controllers\Api\V1\Manager\EventPosterController::class, 'attendancePreview'])
+                ->whereNumber('event');
+            Route::get('{event}/posters/attendance/file', [\App\Http\Controllers\Api\V1\Manager\EventPosterController::class, 'attendanceFile'])
+                ->whereNumber('event');
+            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EventController::class, 'bulkDestroy']);
+            Route::delete('{event}', [\App\Http\Controllers\Api\V1\Manager\EventController::class, 'destroy'])
+                ->whereNumber('event');
         });
 
         // Prize management
@@ -229,44 +276,44 @@ Route::prefix('v1')->group(function () {
         });
 
         // Lottery prize lines
-        Route::prefix('edition-lottery-prizes')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryPrizeController::class, 'index']);
-            Route::post('reorder', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryPrizeController::class, 'reorder']);
-            Route::get('{lotteryPrize}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryPrizeController::class, 'show']);
-            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryPrizeController::class, 'store']);
-            Route::put('{lotteryPrize}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryPrizeController::class, 'update']);
-            Route::patch('{lotteryPrize}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryPrizeController::class, 'patch']);
-            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryPrizeController::class, 'bulkDestroy']);
-            Route::delete('{lotteryPrize}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryPrizeController::class, 'destroy']);
+        Route::prefix('event-lottery-prizes')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EventLotteryPrizeController::class, 'index']);
+            Route::post('reorder', [\App\Http\Controllers\Api\V1\Manager\EventLotteryPrizeController::class, 'reorder']);
+            Route::get('{lotteryPrize}', [\App\Http\Controllers\Api\V1\Manager\EventLotteryPrizeController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EventLotteryPrizeController::class, 'store']);
+            Route::put('{lotteryPrize}', [\App\Http\Controllers\Api\V1\Manager\EventLotteryPrizeController::class, 'update']);
+            Route::patch('{lotteryPrize}', [\App\Http\Controllers\Api\V1\Manager\EventLotteryPrizeController::class, 'patch']);
+            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EventLotteryPrizeController::class, 'bulkDestroy']);
+            Route::delete('{lotteryPrize}', [\App\Http\Controllers\Api\V1\Manager\EventLotteryPrizeController::class, 'destroy']);
         });
 
         // Lottery management
-        Route::prefix('edition-lotteries')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'index']);
-            Route::get('{lottery}/live', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryLiveController::class, 'live']);
-            Route::post('{lottery}/draw', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryLiveController::class, 'draw']);
-            Route::post('{lottery}/announce', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryLiveController::class, 'announce']);
-            Route::post('{lottery}/accept', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryLiveController::class, 'accept']);
-            Route::post('{lottery}/reject', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryLiveController::class, 'reject']);
-            Route::get('{lottery}/prizes-board', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryLiveController::class, 'prizesBoard']);
-            Route::post('{lottery}/rules/generate', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'generateRules']);
-            Route::get('{lottery}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'show']);
-            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'store']);
-            Route::put('{lottery}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'update']);
-            Route::patch('{lottery}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'patch']);
-            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'bulkDestroy']);
-            Route::delete('{lottery}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryController::class, 'destroy']);
+        Route::prefix('event-lotteries')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EventLotteryController::class, 'index']);
+            Route::get('{lottery}/live', [\App\Http\Controllers\Api\V1\Manager\EventLotteryLiveController::class, 'live']);
+            Route::post('{lottery}/draw', [\App\Http\Controllers\Api\V1\Manager\EventLotteryLiveController::class, 'draw']);
+            Route::post('{lottery}/announce', [\App\Http\Controllers\Api\V1\Manager\EventLotteryLiveController::class, 'announce']);
+            Route::post('{lottery}/accept', [\App\Http\Controllers\Api\V1\Manager\EventLotteryLiveController::class, 'accept']);
+            Route::post('{lottery}/reject', [\App\Http\Controllers\Api\V1\Manager\EventLotteryLiveController::class, 'reject']);
+            Route::get('{lottery}/prizes-board', [\App\Http\Controllers\Api\V1\Manager\EventLotteryLiveController::class, 'prizesBoard']);
+            Route::post('{lottery}/rules/generate', [\App\Http\Controllers\Api\V1\Manager\EventLotteryController::class, 'generateRules']);
+            Route::get('{lottery}', [\App\Http\Controllers\Api\V1\Manager\EventLotteryController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EventLotteryController::class, 'store']);
+            Route::put('{lottery}', [\App\Http\Controllers\Api\V1\Manager\EventLotteryController::class, 'update']);
+            Route::patch('{lottery}', [\App\Http\Controllers\Api\V1\Manager\EventLotteryController::class, 'patch']);
+            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EventLotteryController::class, 'bulkDestroy']);
+            Route::delete('{lottery}', [\App\Http\Controllers\Api\V1\Manager\EventLotteryController::class, 'destroy']);
         });
 
         // Lottery luckies management
-        Route::prefix('edition-lottery-luckies')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryLuckyController::class, 'index']);
-            Route::get('{lucky}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryLuckyController::class, 'show']);
-            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryLuckyController::class, 'store']);
-            Route::put('{lucky}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryLuckyController::class, 'update']);
-            Route::patch('{lucky}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryLuckyController::class, 'patch']);
-            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryLuckyController::class, 'bulkDestroy']);
-            Route::delete('{lucky}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryLuckyController::class, 'destroy']);
+        Route::prefix('event-lottery-luckies')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EventLotteryLuckyController::class, 'index']);
+            Route::get('{lucky}', [\App\Http\Controllers\Api\V1\Manager\EventLotteryLuckyController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EventLotteryLuckyController::class, 'store']);
+            Route::put('{lucky}', [\App\Http\Controllers\Api\V1\Manager\EventLotteryLuckyController::class, 'update']);
+            Route::patch('{lucky}', [\App\Http\Controllers\Api\V1\Manager\EventLotteryLuckyController::class, 'patch']);
+            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EventLotteryLuckyController::class, 'bulkDestroy']);
+            Route::delete('{lucky}', [\App\Http\Controllers\Api\V1\Manager\EventLotteryLuckyController::class, 'destroy']);
         });
 
         // Courts management
@@ -281,15 +328,15 @@ Route::prefix('v1')->group(function () {
         });
 
         // Lottery rules management
-        Route::prefix('edition-lottery-rules')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryRuleController::class, 'index']);
-            Route::post('reorder', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryRuleController::class, 'reorder']);
-            Route::get('{lotteryRule}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryRuleController::class, 'show']);
-            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryRuleController::class, 'store']);
-            Route::put('{lotteryRule}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryRuleController::class, 'update']);
-            Route::patch('{lotteryRule}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryRuleController::class, 'patch']);
-            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryRuleController::class, 'bulkDestroy']);
-            Route::delete('{lotteryRule}', [\App\Http\Controllers\Api\V1\Manager\EditionLotteryRuleController::class, 'destroy']);
+        Route::prefix('event-lottery-rules')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EventLotteryRuleController::class, 'index']);
+            Route::post('reorder', [\App\Http\Controllers\Api\V1\Manager\EventLotteryRuleController::class, 'reorder']);
+            Route::get('{lotteryRule}', [\App\Http\Controllers\Api\V1\Manager\EventLotteryRuleController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EventLotteryRuleController::class, 'store']);
+            Route::put('{lotteryRule}', [\App\Http\Controllers\Api\V1\Manager\EventLotteryRuleController::class, 'update']);
+            Route::patch('{lotteryRule}', [\App\Http\Controllers\Api\V1\Manager\EventLotteryRuleController::class, 'patch']);
+            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EventLotteryRuleController::class, 'bulkDestroy']);
+            Route::delete('{lotteryRule}', [\App\Http\Controllers\Api\V1\Manager\EventLotteryRuleController::class, 'destroy']);
         });
 
         // Scratch schedule tools (Mode B — no DB writes)
@@ -314,51 +361,51 @@ Route::prefix('v1')->group(function () {
         Route::patch('matches/{match}/scores', [\App\Http\Controllers\Api\V1\Manager\MatchScoreController::class, 'update']);
 
         // Standings manual edit
-        Route::prefix('edition-division-standings')->group(function () {
-            Route::put('{standing}', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionStandingController::class, 'update']);
-            Route::patch('{standing}', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionStandingController::class, 'patch']);
+        Route::prefix('event-division-standings')->group(function () {
+            Route::put('{standing}', [\App\Http\Controllers\Api\V1\Manager\EventDivisionStandingController::class, 'update']);
+            Route::patch('{standing}', [\App\Http\Controllers\Api\V1\Manager\EventDivisionStandingController::class, 'patch']);
         });
 
         // Replacements destroy / patch (by id)
-        Route::delete('edition-division-replacements/{replacement}', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionReplacementController::class, 'destroy']);
-        Route::patch('edition-division-replacements/{replacement}', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionReplacementController::class, 'patch']);
+        Route::delete('event-division-replacements/{replacement}', [\App\Http\Controllers\Api\V1\Manager\EventDivisionReplacementController::class, 'destroy']);
+        Route::patch('event-division-replacements/{replacement}', [\App\Http\Controllers\Api\V1\Manager\EventDivisionReplacementController::class, 'patch']);
 
-        // Edition divisions management
-        Route::prefix('edition-divisions')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'index']);
-            Route::patch('reorder', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'reorder']);
-            Route::get('{editionDivision}', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'show']);
-            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'store']);
-            Route::put('{editionDivision}', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'update']);
-            Route::patch('{editionDivision}', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'patch']);
-            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'bulkDestroy']);
-            Route::delete('{editionDivision}', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionController::class, 'destroy']);
+        // PadelEvent divisions management
+        Route::prefix('event-divisions')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EventDivisionController::class, 'index']);
+            Route::patch('reorder', [\App\Http\Controllers\Api\V1\Manager\EventDivisionController::class, 'reorder']);
+            Route::get('{eventDivision}', [\App\Http\Controllers\Api\V1\Manager\EventDivisionController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EventDivisionController::class, 'store']);
+            Route::put('{eventDivision}', [\App\Http\Controllers\Api\V1\Manager\EventDivisionController::class, 'update']);
+            Route::patch('{eventDivision}', [\App\Http\Controllers\Api\V1\Manager\EventDivisionController::class, 'patch']);
+            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EventDivisionController::class, 'bulkDestroy']);
+            Route::delete('{eventDivision}', [\App\Http\Controllers\Api\V1\Manager\EventDivisionController::class, 'destroy']);
 
             // Mode A schedule
-            Route::get('{editionDivision}/schedule', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionScheduleController::class, 'show']);
-            Route::put('{editionDivision}/schedule/form', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionScheduleController::class, 'updateForm']);
-            Route::patch('{editionDivision}/schedule/form', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionScheduleController::class, 'patchForm']);
-            Route::post('{editionDivision}/schedule/preview', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionScheduleController::class, 'preview']);
-            Route::post('{editionDivision}/schedule/generate', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionScheduleController::class, 'generate']);
-            Route::post('{editionDivision}/schedule/matches/reorder', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionScheduleController::class, 'reorderMatches']);
-            Route::delete('{editionDivision}/schedule', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionScheduleController::class, 'destroy']);
+            Route::get('{eventDivision}/schedule', [\App\Http\Controllers\Api\V1\Manager\EventDivisionScheduleController::class, 'show']);
+            Route::put('{eventDivision}/schedule/form', [\App\Http\Controllers\Api\V1\Manager\EventDivisionScheduleController::class, 'updateForm']);
+            Route::patch('{eventDivision}/schedule/form', [\App\Http\Controllers\Api\V1\Manager\EventDivisionScheduleController::class, 'patchForm']);
+            Route::post('{eventDivision}/schedule/preview', [\App\Http\Controllers\Api\V1\Manager\EventDivisionScheduleController::class, 'preview']);
+            Route::post('{eventDivision}/schedule/generate', [\App\Http\Controllers\Api\V1\Manager\EventDivisionScheduleController::class, 'generate']);
+            Route::post('{eventDivision}/schedule/matches/reorder', [\App\Http\Controllers\Api\V1\Manager\EventDivisionScheduleController::class, 'reorderMatches']);
+            Route::delete('{eventDivision}/schedule', [\App\Http\Controllers\Api\V1\Manager\EventDivisionScheduleController::class, 'destroy']);
 
             // Mode A posters
-            Route::get('{editionDivision}/posters', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionPosterController::class, 'index']);
-            Route::post('{editionDivision}/posters/matches', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionPosterController::class, 'matches']);
-            Route::get('{editionDivision}/posters/matches/file', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionPosterController::class, 'matchesFile']);
-            Route::post('{editionDivision}/posters/ranking', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionPosterController::class, 'ranking']);
-            Route::get('{editionDivision}/posters/ranking/file', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionPosterController::class, 'rankingFile']);
-            Route::post('{editionDivision}/posters/{poster}/printed', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionPosterController::class, 'uploadPrinted'])
+            Route::get('{eventDivision}/posters', [\App\Http\Controllers\Api\V1\Manager\EventDivisionPosterController::class, 'index']);
+            Route::post('{eventDivision}/posters/matches', [\App\Http\Controllers\Api\V1\Manager\EventDivisionPosterController::class, 'matches']);
+            Route::get('{eventDivision}/posters/matches/file', [\App\Http\Controllers\Api\V1\Manager\EventDivisionPosterController::class, 'matchesFile']);
+            Route::post('{eventDivision}/posters/ranking', [\App\Http\Controllers\Api\V1\Manager\EventDivisionPosterController::class, 'ranking']);
+            Route::get('{eventDivision}/posters/ranking/file', [\App\Http\Controllers\Api\V1\Manager\EventDivisionPosterController::class, 'rankingFile']);
+            Route::post('{eventDivision}/posters/{poster}/printed', [\App\Http\Controllers\Api\V1\Manager\EventDivisionPosterController::class, 'uploadPrinted'])
                 ->whereNumber('poster');
-            Route::get('{editionDivision}/posters/{poster}/printed/file', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionPosterController::class, 'printedFile'])
+            Route::get('{eventDivision}/posters/{poster}/printed/file', [\App\Http\Controllers\Api\V1\Manager\EventDivisionPosterController::class, 'printedFile'])
                 ->whereNumber('poster');
 
             // Standings / replacements
-            Route::get('{editionDivision}/standings', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionStandingController::class, 'index']);
-            Route::post('{editionDivision}/standings/recalculate', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionStandingController::class, 'recalculate']);
-            Route::get('{editionDivision}/replacements', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionReplacementController::class, 'index']);
-            Route::post('{editionDivision}/replacements', [\App\Http\Controllers\Api\V1\Manager\EditionDivisionReplacementController::class, 'store']);
+            Route::get('{eventDivision}/standings', [\App\Http\Controllers\Api\V1\Manager\EventDivisionStandingController::class, 'index']);
+            Route::post('{eventDivision}/standings/recalculate', [\App\Http\Controllers\Api\V1\Manager\EventDivisionStandingController::class, 'recalculate']);
+            Route::get('{eventDivision}/replacements', [\App\Http\Controllers\Api\V1\Manager\EventDivisionReplacementController::class, 'index']);
+            Route::post('{eventDivision}/replacements', [\App\Http\Controllers\Api\V1\Manager\EventDivisionReplacementController::class, 'store']);
         });
 
         // Player custom fields catalog
@@ -469,27 +516,85 @@ Route::prefix('v1')->group(function () {
             Route::delete('{playerInvite}', [\App\Http\Controllers\Api\V1\Manager\PlayerInviteController::class, 'revoke']);
         });
 
-        // Edition registration management
-        Route::prefix('edition-registrations')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EditionRegistrationController::class, 'index']);
-            Route::get('{editionRegistration}', [\App\Http\Controllers\Api\V1\Manager\EditionRegistrationController::class, 'show']);
-            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionRegistrationController::class, 'store']);
-            Route::put('{editionRegistration}', [\App\Http\Controllers\Api\V1\Manager\EditionRegistrationController::class, 'update']);
-            Route::patch('{editionRegistration}', [\App\Http\Controllers\Api\V1\Manager\EditionRegistrationController::class, 'patch']);
-            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EditionRegistrationController::class, 'bulkDestroy']);
-            Route::delete('{editionRegistration}', [\App\Http\Controllers\Api\V1\Manager\EditionRegistrationController::class, 'destroy']);
+        // PadelEvent registration management
+        Route::prefix('event-registrations')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EventRegistrationController::class, 'index']);
+            Route::get('{eventRegistration}', [\App\Http\Controllers\Api\V1\Manager\EventRegistrationController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EventRegistrationController::class, 'store']);
+            Route::put('{eventRegistration}', [\App\Http\Controllers\Api\V1\Manager\EventRegistrationController::class, 'update']);
+            Route::patch('{eventRegistration}', [\App\Http\Controllers\Api\V1\Manager\EventRegistrationController::class, 'patch']);
+            Route::post('{eventRegistration}/manual-adjustment', [\App\Http\Controllers\Api\V1\Manager\EventRegistrationController::class, 'manualAdjustment'])
+                ->whereNumber('eventRegistration');
+            Route::patch('{eventRegistration}/manual-adjustment', [\App\Http\Controllers\Api\V1\Manager\EventRegistrationController::class, 'manualAdjustment'])
+                ->whereNumber('eventRegistration');
+            Route::post('{eventRegistration}/cancel', [\App\Http\Controllers\Api\V1\Manager\EventRegistrationController::class, 'cancel'])
+                ->whereNumber('eventRegistration');
+            Route::post('{eventRegistration}/decline', [\App\Http\Controllers\Api\V1\Manager\EventRegistrationController::class, 'decline'])
+                ->whereNumber('eventRegistration');
+            Route::post('{eventRegistration}/mark-refunded', [\App\Http\Controllers\Api\V1\Manager\EventRegistrationController::class, 'markRefunded'])
+                ->whereNumber('eventRegistration');
+            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EventRegistrationController::class, 'bulkDestroy']);
+            Route::delete('{eventRegistration}', [\App\Http\Controllers\Api\V1\Manager\EventRegistrationController::class, 'destroy']);
         });
 
-        // Edition participation management
-        Route::prefix('edition-participations')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EditionParticipationController::class, 'index']);
-            Route::patch('reorder', [\App\Http\Controllers\Api\V1\Manager\EditionParticipationController::class, 'reorder']);
-            Route::get('{editionParticipation}', [\App\Http\Controllers\Api\V1\Manager\EditionParticipationController::class, 'show']);
-            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EditionParticipationController::class, 'store']);
-            Route::put('{editionParticipation}', [\App\Http\Controllers\Api\V1\Manager\EditionParticipationController::class, 'update']);
-            Route::patch('{editionParticipation}', [\App\Http\Controllers\Api\V1\Manager\EditionParticipationController::class, 'patch']);
-            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EditionParticipationController::class, 'bulkDestroy']);
-            Route::delete('{editionParticipation}', [\App\Http\Controllers\Api\V1\Manager\EditionParticipationController::class, 'destroy']);
+        Route::prefix('benefit-definitions')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\BenefitDefinitionController::class, 'index']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\BenefitDefinitionController::class, 'store']);
+            Route::get('{benefitDefinition}', [\App\Http\Controllers\Api\V1\Manager\BenefitDefinitionController::class, 'show'])
+                ->whereNumber('benefitDefinition');
+            Route::put('{benefitDefinition}', [\App\Http\Controllers\Api\V1\Manager\BenefitDefinitionController::class, 'update'])
+                ->whereNumber('benefitDefinition');
+            Route::patch('{benefitDefinition}', [\App\Http\Controllers\Api\V1\Manager\BenefitDefinitionController::class, 'patch'])
+                ->whereNumber('benefitDefinition');
+            Route::post('{benefitDefinition}/activate', [\App\Http\Controllers\Api\V1\Manager\BenefitDefinitionController::class, 'activate'])
+                ->whereNumber('benefitDefinition');
+            Route::post('{benefitDefinition}/deactivate', [\App\Http\Controllers\Api\V1\Manager\BenefitDefinitionController::class, 'deactivate'])
+                ->whereNumber('benefitDefinition');
+            Route::delete('{benefitDefinition}', [\App\Http\Controllers\Api\V1\Manager\BenefitDefinitionController::class, 'destroy'])
+                ->whereNumber('benefitDefinition');
+        });
+
+        Route::prefix('benefit-entitlements')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\BenefitEntitlementController::class, 'index']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\BenefitEntitlementController::class, 'store']);
+            Route::get('{benefitEntitlement}', [\App\Http\Controllers\Api\V1\Manager\BenefitEntitlementController::class, 'show'])
+                ->whereNumber('benefitEntitlement');
+            Route::post('{benefitEntitlement}/revoke', [\App\Http\Controllers\Api\V1\Manager\BenefitEntitlementController::class, 'revoke'])
+                ->whereNumber('benefitEntitlement');
+            Route::patch('{benefitEntitlement}/extend', [\App\Http\Controllers\Api\V1\Manager\BenefitEntitlementController::class, 'extend'])
+                ->whereNumber('benefitEntitlement');
+        });
+
+        Route::get('events/{event}/referral-settings', [\App\Http\Controllers\Api\V1\Manager\EventReferralSettingController::class, 'show'])
+            ->whereNumber('event');
+        Route::put('events/{event}/referral-settings', [\App\Http\Controllers\Api\V1\Manager\EventReferralSettingController::class, 'upsert'])
+            ->whereNumber('event');
+        Route::get('referral-analytics/touchpoints', [\App\Http\Controllers\Api\V1\Manager\ReferralAnalyticsController::class, 'touchpoints']);
+        Route::get('referral-analytics/attributions', [\App\Http\Controllers\Api\V1\Manager\ReferralAnalyticsController::class, 'attributions']);
+        Route::post('pricing/preview', [\App\Http\Controllers\Api\V1\Manager\PricingPreviewController::class, 'preview']);
+
+        Route::prefix('payment-proofs')->group(function () {
+            Route::post('{paymentProof}/approve', [\App\Http\Controllers\Api\V1\Manager\RegistrationPaymentProofController::class, 'approve'])
+                ->whereNumber('paymentProof');
+            Route::post('{paymentProof}/reject', [\App\Http\Controllers\Api\V1\Manager\RegistrationPaymentProofController::class, 'reject'])
+                ->whereNumber('paymentProof');
+        });
+
+        Route::get('bank-transfer-settings', [\App\Http\Controllers\Api\V1\Manager\BankTransferSettingsController::class, 'show']);
+        Route::put('bank-transfer-settings', [\App\Http\Controllers\Api\V1\Manager\BankTransferSettingsController::class, 'update']);
+        Route::get('registration-checkouts', [\App\Http\Controllers\Api\V1\Manager\RegistrationCheckoutController::class, 'index']);
+        Route::get('registration-queue-counts', \App\Http\Controllers\Api\V1\Manager\RegistrationQueueCountsController::class);
+
+        // PadelEvent participation management
+        Route::prefix('event-participations')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EventParticipationController::class, 'index']);
+            Route::patch('reorder', [\App\Http\Controllers\Api\V1\Manager\EventParticipationController::class, 'reorder']);
+            Route::get('{eventParticipation}', [\App\Http\Controllers\Api\V1\Manager\EventParticipationController::class, 'show']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EventParticipationController::class, 'store']);
+            Route::put('{eventParticipation}', [\App\Http\Controllers\Api\V1\Manager\EventParticipationController::class, 'update']);
+            Route::patch('{eventParticipation}', [\App\Http\Controllers\Api\V1\Manager\EventParticipationController::class, 'patch']);
+            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EventParticipationController::class, 'bulkDestroy']);
+            Route::delete('{eventParticipation}', [\App\Http\Controllers\Api\V1\Manager\EventParticipationController::class, 'destroy']);
         });
 
         // Eligibility management

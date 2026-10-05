@@ -105,7 +105,7 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
      */
     public function show(Player $player)
     {
-        $player->load(['participations.edition', 'participations.editionDivision']);
+        $player->load(['participations.event', 'participations.eventDivision']);
 
         return $this->resourceResponse(
             new PlayerResource($player),

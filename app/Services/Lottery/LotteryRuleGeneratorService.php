@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Lottery;
 
-use App\Models\EditionLottery;
-use App\Models\EditionLotteryRule;
+use App\Models\EventLottery;
+use App\Models\EventLotteryRule;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Random\Engine\Mt19937;
@@ -29,22 +29,22 @@ final class LotteryRuleGeneratorService
     /**
      * Delete all rules for the lottery's prize lines and insert a balanced generated set.
      *
-     * @return Collection<int, EditionLotteryRule>
+     * @return Collection<int, EventLotteryRule>
      */
-    public function regenerate(EditionLottery $lottery, Collection $prizeLines, array $editionDivisionIds): Collection
+    public function regenerate(EventLottery $lottery, Collection $prizeLines, array $eventDivisionIds): Collection
     {
-        $rows = $this->buildRules($prizeLines, $editionDivisionIds);
+        $rows = $this->buildRules($prizeLines, $eventDivisionIds);
         $prizeIds = $prizeLines->pluck('id_lottery_prize')->map(static fn ($id): int => (int) $id)->all();
 
         return DB::transaction(function () use ($prizeIds, $rows, $lottery) {
             if ($prizeIds !== []) {
-                EditionLotteryRule::query()->whereIn('lottery_prize_id', $prizeIds)->delete();
+                EventLotteryRule::query()->whereIn('lottery_prize_id', $prizeIds)->delete();
             }
 
             foreach ($rows as $row) {
-                EditionLotteryRule::create([
+                EventLotteryRule::create([
                     'lottery_prize_id' => $row['lottery_prize_id'],
-                    'edition_division_id' => $row['edition_division_id'],
+                    'event_division_id' => $row['event_division_id'],
                     'rule_prize_quantity' => 1,
                     'orderliness' => $row['orderliness'],
                     'gender' => null,
@@ -59,8 +59,8 @@ final class LotteryRuleGeneratorService
                 ]);
             }
 
-            return EditionLotteryRule::query()
-                ->with(['lotteryPrize.prize', 'lotteryPrize.sponsor', 'lotteryPrize.lottery', 'editionDivision'])
+            return EventLotteryRule::query()
+                ->with(['lotteryPrize.prize', 'lotteryPrize.sponsor', 'lotteryPrize.lottery', 'eventDivision'])
                 ->withCount('luckies')
                 ->whereHas('lotteryPrize', static fn ($q) => $q->where('lottery_id', $lottery->id_lottery))
                 ->orderBy('orderliness')
@@ -72,14 +72,14 @@ final class LotteryRuleGeneratorService
     /**
      * Build generated rule rows (not persisted).
      *
-     * @param  Collection<int, EditionLotteryPrize>|list<array{id_lottery_prize: int, prize_quantity: int}>  $prizeLines
-     * @param  list<int>  $editionDivisionIds
-     * @return list<array{lottery_prize_id: int, edition_division_id: int, rule_prize_quantity: int, orderliness: int}>
+     * @param  Collection<int, EventLotteryPrize>|list<array{id_lottery_prize: int, prize_quantity: int}>  $prizeLines
+     * @param  list<int>  $eventDivisionIds
+     * @return list<array{lottery_prize_id: int, event_division_id: int, rule_prize_quantity: int, orderliness: int}>
      */
-    public function buildRules(Collection|array $prizeLines, array $editionDivisionIds): array
+    public function buildRules(Collection|array $prizeLines, array $eventDivisionIds): array
     {
         $lines = $prizeLines instanceof Collection ? $prizeLines->values()->all() : array_values($prizeLines);
-        $divisionIds = array_values(array_map('intval', $editionDivisionIds));
+        $divisionIds = array_values(array_map('intval', $eventDivisionIds));
 
         if ($lines === [] || $divisionIds === []) {
             return [];
@@ -97,9 +97,9 @@ final class LotteryRuleGeneratorService
      * ceil(Q/|D|) per division), then transfer units between columns until column
      * totals also differ by at most 1 — without breaking per-prize balance.
      *
-     * @param  list<array{id_lottery_prize: int, prize_quantity: int}|EditionLotteryPrize>  $prizeLines
+     * @param  list<array{id_lottery_prize: int, prize_quantity: int}|EventLotteryPrize>  $prizeLines
      * @param  list<int>  $divisionIds
-     * @return list<array{lottery_prize_id: int, edition_division_id: int}>
+     * @return list<array{lottery_prize_id: int, event_division_id: int}>
      */
     public function assignDivisions(array $prizeLines, array $divisionIds): array
     {
@@ -209,7 +209,7 @@ final class LotteryRuleGeneratorService
                 for ($i = 0; $i < $count; $i++) {
                     $assignments[] = [
                         'lottery_prize_id' => (int) $prizeId,
-                        'edition_division_id' => (int) $divId,
+                        'event_division_id' => (int) $divId,
                     ];
                 }
             }
@@ -223,8 +223,8 @@ final class LotteryRuleGeneratorService
     /**
      * Greedy sequence maximizing (prize≠prev)+(division≠prev); randomize among best.
      *
-     * @param  list<array{lottery_prize_id: int, edition_division_id: int}>  $assignments
-     * @return list<array{lottery_prize_id: int, edition_division_id: int, rule_prize_quantity: int, orderliness: int}>
+     * @param  list<array{lottery_prize_id: int, event_division_id: int}>  $assignments
+     * @return list<array{lottery_prize_id: int, event_division_id: int, rule_prize_quantity: int, orderliness: int}>
      */
     public function sequenceAssignments(array $assignments): array
     {
@@ -243,7 +243,7 @@ final class LotteryRuleGeneratorService
                     if ((int) $pair['lottery_prize_id'] !== $prevPrize) {
                         $score++;
                     }
-                    if ((int) $pair['edition_division_id'] !== $prevDiv) {
+                    if ((int) $pair['event_division_id'] !== $prevDiv) {
                         $score++;
                     }
                 }
@@ -262,12 +262,12 @@ final class LotteryRuleGeneratorService
 
             $result[] = [
                 'lottery_prize_id' => (int) $picked['lottery_prize_id'],
-                'edition_division_id' => (int) $picked['edition_division_id'],
+                'event_division_id' => (int) $picked['event_division_id'],
                 'rule_prize_quantity' => 1,
                 'orderliness' => count($result),
             ];
             $prevPrize = (int) $picked['lottery_prize_id'];
-            $prevDiv = (int) $picked['edition_division_id'];
+            $prevDiv = (int) $picked['event_division_id'];
         }
 
         return $result;

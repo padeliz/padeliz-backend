@@ -6,8 +6,10 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Resources\OrganizerResource;
 use App\Models\Organizer;
+use App\Services\EventSlug\EventSlugSync;
 use App\Traits\CachesManagerResourceReads;
 use Illuminate\Http\Request;
+use Illuminate\Support\Facades\DB;
 
 /**
  * @OA\Tag(
@@ -18,6 +20,11 @@ use Illuminate\Http\Request;
 class OrganizerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseController
 {
     use CachesManagerResourceReads;
+
+    public function __construct(
+        private readonly EventSlugSync $eventSlugSync,
+    ) {
+    }
 
     /**
      * @OA\Get(
@@ -50,7 +57,7 @@ class OrganizerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCo
      *         @OA\Schema(
      *             type="object",
      *             additionalProperties=false,
-     *             @OA\Property(property="show_edition_label", type="string", description="Filter by show edition label")
+     *             @OA\Property(property="show_event_label", type="string", description="Filter by show edition label")
      *         )
      *     ),
      *     @OA\Parameter(
@@ -65,7 +72,7 @@ class OrganizerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCo
      *             additionalProperties=false,
      *             @OA\Property(property="id_organizer", type="string", enum={"asc", "desc"}, description="Sort by organizer ID"),
      *             @OA\Property(property="name", type="string", enum={"asc", "desc"}, description="Sort by name"),
-     *             @OA\Property(property="show_edition_label", type="string", enum={"asc", "desc"}, description="Sort by show edition label"),
+     *             @OA\Property(property="show_event_label", type="string", enum={"asc", "desc"}, description="Sort by show edition label"),
      *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}, description="Sort by creation date"),
      *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"}, description="Sort by update date")
      *         )
@@ -181,7 +188,7 @@ class OrganizerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCo
      *         @OA\JsonContent(
      *             required={"name"},
      *             @OA\Property(property="name", type="string", maxLength=60, description="Organizer name"),
-     *             @OA\Property(property="show_edition_label", type="boolean", description="Whether posters show the edition label next to the organizer logo", default=false)
+     *             @OA\Property(property="show_event_label", type="boolean", description="Whether posters show the edition label next to the organizer logo", default=false)
      *         )
      *     ),
      *     @OA\Response(
@@ -222,10 +229,10 @@ class OrganizerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCo
     {
         $validated = $request->validate([
             'name' => 'required|string|max:60|unique:organizers,name',
-            'show_edition_label' => 'sometimes|boolean',
+            'show_event_label' => 'sometimes|boolean',
         ]);
 
-        $validated['show_edition_label'] = (bool) ($validated['show_edition_label'] ?? false);
+        $validated['show_event_label'] = (bool) ($validated['show_event_label'] ?? false);
 
         $organizer = Organizer::create($validated);
 
@@ -253,7 +260,7 @@ class OrganizerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCo
      *         @OA\JsonContent(
      *             required={"name"},
      *             @OA\Property(property="name", type="string", maxLength=60),
-     *             @OA\Property(property="show_edition_label", type="boolean")
+     *             @OA\Property(property="show_event_label", type="boolean")
      *         )
      *     ),
      *     @OA\Response(
@@ -284,13 +291,20 @@ class OrganizerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCo
     {
         $validated = $request->validate([
             'name' => 'required|string|max:60|unique:organizers,name,' . $organizer->id_organizer . ',id_organizer',
-            'show_edition_label' => 'sometimes|boolean',
+            'show_event_label' => 'sometimes|boolean',
         ]);
 
-        $organizer->update($validated);
+        DB::transaction(function () use ($organizer, $validated): void {
+            $nameChanged = array_key_exists('name', $validated)
+                && (string) $validated['name'] !== (string) $organizer->name;
+            $organizer->update($validated);
+            if ($nameChanged) {
+                $this->eventSlugSync->syncForOrganizer($organizer->fresh() ?? $organizer);
+            }
+        });
 
         return $this->resourceResponse(
-            new OrganizerResource($organizer),
+            new OrganizerResource($organizer->refresh()),
             'Organizer updated successfully'
         );
     }
@@ -311,7 +325,7 @@ class OrganizerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCo
      *         required=true,
      *         @OA\JsonContent(
      *             @OA\Property(property="name", type="string", maxLength=60),
-     *             @OA\Property(property="show_edition_label", type="boolean")
+     *             @OA\Property(property="show_event_label", type="boolean")
      *         )
      *     ),
      *     @OA\Response(
@@ -342,13 +356,20 @@ class OrganizerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCo
     {
         $validated = $request->validate([
             'name' => 'sometimes|required|string|max:60|unique:organizers,name,' . $organizer->id_organizer . ',id_organizer',
-            'show_edition_label' => 'sometimes|boolean',
+            'show_event_label' => 'sometimes|boolean',
         ]);
 
-        $organizer->update($validated);
+        DB::transaction(function () use ($organizer, $validated): void {
+            $nameChanged = array_key_exists('name', $validated)
+                && (string) $validated['name'] !== (string) $organizer->name;
+            $organizer->update($validated);
+            if ($nameChanged) {
+                $this->eventSlugSync->syncForOrganizer($organizer->fresh() ?? $organizer);
+            }
+        });
 
         return $this->resourceResponse(
-            new OrganizerResource($organizer),
+            new OrganizerResource($organizer->refresh()),
             'Organizer partially updated successfully'
         );
     }
@@ -385,7 +406,7 @@ class OrganizerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCo
      *                     @OA\Property(
      *                         property="linked_data",
      *                         type="object",
-     *                         @OA\Property(property="editions_count", type="integer", example=2)
+     *                         @OA\Property(property="events_count", type="integer", example=2)
      *                     )
      *                 )
      *             }
@@ -395,19 +416,19 @@ class OrganizerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCo
      */
     public function destroy(Organizer $organizer)
     {
-        $editionsCount = $organizer->editions()->count();
+        $editionsCount = $organizer->events()->count();
 
         if ($editionsCount > 0) {
             return $this->errorResponse(
                 'Organizer cannot be deleted because it has linked data. Please remove all associated editions first.',
                 409,
-                ['linked_data' => ['editions_count' => $editionsCount]]
+                ['linked_data' => ['events_count' => $editionsCount]]
             );
         }
 
         return $this->deleteResourceWithResponse(
             $organizer,
-            ['editions' => 'editions_count'],
+            ['events' => 'events_count'],
             'organizer',
             'Organizer deleted successfully'
         );
@@ -463,7 +484,7 @@ class OrganizerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCo
         return $this->deleteBulkResourcesWithResponse(
             $request->organizer_ids,
             Organizer::class,
-            ['editions' => 'editions_count'],
+            ['events' => 'events_count'],
             'organizer',
             'Organizers deleted successfully'
         );

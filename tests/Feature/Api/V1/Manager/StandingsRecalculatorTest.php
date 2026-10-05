@@ -6,12 +6,12 @@ namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Court;
 use App\Models\Division;
-use App\Models\Edition;
-use App\Models\EditionDivision;
-use App\Models\EditionDivisionCourt;
-use App\Models\EditionDivisionReplacement;
-use App\Models\EditionDivisionStanding;
-use App\Models\EditionParticipation;
+use App\Models\PadelEvent;
+use App\Models\EventDivision;
+use App\Models\EventDivisionCourt;
+use App\Models\EventDivisionReplacement;
+use App\Models\EventDivisionStanding;
+use App\Models\EventParticipation;
 use App\Models\GameMatch;
 use App\Models\MatchPlayer;
 use App\Models\MatchSide;
@@ -27,14 +27,14 @@ class StandingsRecalculatorTest extends TestCase
 
     private Player $manager;
 
-    private EditionDivision $editionDivision;
+    private EventDivision $eventDivision;
 
-    /** @var list<EditionParticipation> */
+    /** @var list<EventParticipation> */
     private array $participations = [];
 
     private GameMatch $match;
 
-    private EditionDivisionCourt $edCourt;
+    private EventDivisionCourt $edCourt;
 
     protected function setUp(): void
     {
@@ -44,25 +44,25 @@ class StandingsRecalculatorTest extends TestCase
             'user_types' => ['player', 'manager'],
         ]);
 
-        $edition = Edition::factory()->create();
+        $event = PadelEvent::factory()->create();
         $division = Division::factory()->create();
 
-        $this->editionDivision = EditionDivision::factory()->create([
-            'edition_id' => $edition->id_edition,
+        $this->eventDivision = EventDivision::factory()->create([
+            'event_id' => $event->id_event,
             'division_id' => $division->id_division,
         ]);
 
         $court = Court::factory()->create();
-        $this->edCourt = EditionDivisionCourt::factory()->create([
-            'edition_division_id' => $this->editionDivision->id_edition_division,
+        $this->edCourt = EventDivisionCourt::factory()->create([
+            'event_division_id' => $this->eventDivision->id_event_division,
             'court_id' => $court->id_court,
             'display_order' => 0,
         ]);
 
         for ($i = 0; $i < 4; $i++) {
-            $this->participations[] = EditionParticipation::factory()->create([
-                'edition_id' => $edition->id_edition,
-                'edition_division_id' => $this->editionDivision->id_edition_division,
+            $this->participations[] = EventParticipation::factory()->create([
+                'event_id' => $event->id_event,
+                'event_division_id' => $this->eventDivision->id_event_division,
                 'player_id' => Player::factory()->create()->id_player,
                 'sort_order' => $i,
                 'is_collecting_points' => true,
@@ -72,8 +72,8 @@ class StandingsRecalculatorTest extends TestCase
         }
 
         $this->match = GameMatch::create([
-            'edition_division_id' => $this->editionDivision->id_edition_division,
-            'edition_division_court_id' => $this->edCourt->id_edition_division_court,
+            'event_division_id' => $this->eventDivision->id_event_division,
+            'event_division_court_id' => $this->edCourt->id_event_division_court,
             'match_kind' => 'REGULAR',
             'sequence_no' => 1,
             'scheduled_start' => '14:00:00',
@@ -112,14 +112,14 @@ class StandingsRecalculatorTest extends TestCase
 
     public function test_recalculator_applies_wins_points_and_skips_replaced(): void
     {
-        EditionDivisionReplacement::query()->create([
-            'edition_division_id' => $this->editionDivision->id_edition_division,
+        EventDivisionReplacement::query()->create([
+            'event_division_id' => $this->eventDivision->id_event_division,
             'original_participation_id' => $this->participations[3]->id_participation,
             'substitute_participation_id' => $this->participations[0]->id_participation,
             'match_id' => $this->match->id_match,
         ]);
 
-        $standings = (new StandingsRecalculator())->recalculate($this->editionDivision);
+        $standings = (new StandingsRecalculator())->recalculate($this->eventDivision);
         $byParticipation = collect($standings)->keyBy('participation_id');
 
         $this->assertSame(1.0, (float) $byParticipation[$this->participations[0]->id_participation]->wins);
@@ -142,7 +142,7 @@ class StandingsRecalculatorTest extends TestCase
     {
         $this->participations[0]->update(['is_collecting_points' => false]);
 
-        $standings = (new StandingsRecalculator())->recalculate($this->editionDivision);
+        $standings = (new StandingsRecalculator())->recalculate($this->eventDivision);
         $byParticipation = collect($standings)->keyBy('participation_id');
 
         $this->assertSame(0.0, (float) $byParticipation[$this->participations[0]->id_participation]->wins);
@@ -155,20 +155,20 @@ class StandingsRecalculatorTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $this->postJson(
-            "/api/v1/manager/edition-divisions/{$this->editionDivision->id_edition_division}/standings/recalculate"
+            "/api/v1/manager/event-divisions/{$this->eventDivision->id_event_division}/standings/recalculate"
         )->assertStatus(200)
             ->assertJsonPath('success', true);
 
-        $this->assertGreaterThan(0, EditionDivisionStanding::query()
-            ->where('edition_division_id', $this->editionDivision->id_edition_division)
+        $this->assertGreaterThan(0, EventDivisionStanding::query()
+            ->where('event_division_id', $this->eventDivision->id_event_division)
             ->count());
 
         $this->postJson(
-            "/api/v1/manager/editions/{$this->editionDivision->edition_id}/finalize"
+            "/api/v1/manager/events/{$this->eventDivision->event_id}/finalize"
         )->assertStatus(200);
 
         $this->postJson(
-            "/api/v1/manager/edition-divisions/{$this->editionDivision->id_edition_division}/standings/recalculate"
+            "/api/v1/manager/event-divisions/{$this->eventDivision->id_event_division}/standings/recalculate"
         )->assertStatus(409);
 
         $this->patchJson(
@@ -182,7 +182,7 @@ class StandingsRecalculatorTest extends TestCase
         MatchSide::query()->where('match_id', $this->match->id_match)->where('side', 'LEFT')->update(['score' => 18]);
         MatchSide::query()->where('match_id', $this->match->id_match)->where('side', 'RIGHT')->update(['score' => 18]);
 
-        $standings = (new StandingsRecalculator())->recalculate($this->editionDivision);
+        $standings = (new StandingsRecalculator())->recalculate($this->eventDivision);
         $byParticipation = collect($standings)->keyBy('participation_id');
 
         $this->assertSame(0.5, (float) $byParticipation[$this->participations[0]->id_participation]->wins);
@@ -194,13 +194,13 @@ class StandingsRecalculatorTest extends TestCase
     {
         $this->createSecondRegularMatch(10, 20);
 
-        EditionDivisionReplacement::query()->create([
-            'edition_division_id' => $this->editionDivision->id_edition_division,
+        EventDivisionReplacement::query()->create([
+            'event_division_id' => $this->eventDivision->id_event_division,
             'original_participation_id' => $this->participations[3]->id_participation,
             'match_id' => $this->match->id_match,
         ]);
 
-        $standings = (new StandingsRecalculator())->recalculate($this->editionDivision);
+        $standings = (new StandingsRecalculator())->recalculate($this->eventDivision);
         $byParticipation = collect($standings)->keyBy('participation_id');
 
         $this->assertSame(1.0, (float) $byParticipation[$this->participations[3]->id_participation]->wins);
@@ -213,13 +213,13 @@ class StandingsRecalculatorTest extends TestCase
     {
         $this->createSecondRegularMatch(10, 20);
 
-        EditionDivisionReplacement::query()->create([
-            'edition_division_id' => $this->editionDivision->id_edition_division,
+        EventDivisionReplacement::query()->create([
+            'event_division_id' => $this->eventDivision->id_event_division,
             'original_participation_id' => $this->participations[3]->id_participation,
             'match_id' => null,
         ]);
 
-        $standings = (new StandingsRecalculator())->recalculate($this->editionDivision);
+        $standings = (new StandingsRecalculator())->recalculate($this->eventDivision);
         $byParticipation = collect($standings)->keyBy('participation_id');
 
         $this->assertSame(0.0, (float) $byParticipation[$this->participations[3]->id_participation]->wins);
@@ -228,15 +228,15 @@ class StandingsRecalculatorTest extends TestCase
 
     public function test_unknown_substitute_still_skips_original(): void
     {
-        EditionDivisionReplacement::query()->create([
-            'edition_division_id' => $this->editionDivision->id_edition_division,
+        EventDivisionReplacement::query()->create([
+            'event_division_id' => $this->eventDivision->id_event_division,
             'original_participation_id' => $this->participations[3]->id_participation,
             'substitute_participation_id' => null,
             'substitute_player_id' => null,
             'match_id' => $this->match->id_match,
         ]);
 
-        $standings = (new StandingsRecalculator())->recalculate($this->editionDivision);
+        $standings = (new StandingsRecalculator())->recalculate($this->eventDivision);
         $byParticipation = collect($standings)->keyBy('participation_id');
 
         $this->assertSame(0.0, (float) $byParticipation[$this->participations[3]->id_participation]->wins);
@@ -245,14 +245,14 @@ class StandingsRecalculatorTest extends TestCase
 
     public function test_in_division_substitute_is_not_credited_for_replaced_slot(): void
     {
-        EditionDivisionReplacement::query()->create([
-            'edition_division_id' => $this->editionDivision->id_edition_division,
+        EventDivisionReplacement::query()->create([
+            'event_division_id' => $this->eventDivision->id_event_division,
             'original_participation_id' => $this->participations[3]->id_participation,
             'substitute_participation_id' => $this->participations[1]->id_participation,
             'match_id' => $this->match->id_match,
         ]);
 
-        $standings = (new StandingsRecalculator())->recalculate($this->editionDivision);
+        $standings = (new StandingsRecalculator())->recalculate($this->eventDivision);
         $byParticipation = collect($standings)->keyBy('participation_id');
 
         $this->assertSame(1.0, (float) $byParticipation[$this->participations[1]->id_participation]->wins);
@@ -264,8 +264,8 @@ class StandingsRecalculatorTest extends TestCase
     private function createSecondRegularMatch(int $leftScore, int $rightScore): GameMatch
     {
         $match = GameMatch::create([
-            'edition_division_id' => $this->editionDivision->id_edition_division,
-            'edition_division_court_id' => $this->edCourt->id_edition_division_court,
+            'event_division_id' => $this->eventDivision->id_event_division,
+            'event_division_court_id' => $this->edCourt->id_event_division_court,
             'match_kind' => 'REGULAR',
             'sequence_no' => 2,
             'scheduled_start' => '14:30:00',

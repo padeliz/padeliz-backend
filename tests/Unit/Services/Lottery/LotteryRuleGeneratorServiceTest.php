@@ -29,10 +29,10 @@ final class LotteryRuleGeneratorServiceTest extends TestCase
         foreach ($rules as $index => $rule) {
             $this->assertSame(1, $rule['rule_prize_quantity']);
             $this->assertSame($index, $rule['orderliness']);
-            $this->assertContains($rule['edition_division_id'], $divisionIds);
-            $columnTotals[$rule['edition_division_id']]++;
-            $perPrize[$rule['lottery_prize_id']][$rule['edition_division_id']] =
-                ($perPrize[$rule['lottery_prize_id']][$rule['edition_division_id']] ?? 0) + 1;
+            $this->assertContains($rule['event_division_id'], $divisionIds);
+            $columnTotals[$rule['event_division_id']]++;
+            $perPrize[$rule['lottery_prize_id']][$rule['event_division_id']] =
+                ($perPrize[$rule['lottery_prize_id']][$rule['event_division_id']] ?? 0) + 1;
         }
 
         $colValues = array_values($columnTotals);
@@ -57,10 +57,10 @@ final class LotteryRuleGeneratorServiceTest extends TestCase
         $service = new LotteryRuleGeneratorService(7);
 
         $assignments = [
-            ['lottery_prize_id' => 1, 'edition_division_id' => 10],
-            ['lottery_prize_id' => 1, 'edition_division_id' => 20],
-            ['lottery_prize_id' => 2, 'edition_division_id' => 10],
-            ['lottery_prize_id' => 2, 'edition_division_id' => 20],
+            ['lottery_prize_id' => 1, 'event_division_id' => 10],
+            ['lottery_prize_id' => 1, 'event_division_id' => 20],
+            ['lottery_prize_id' => 2, 'event_division_id' => 10],
+            ['lottery_prize_id' => 2, 'event_division_id' => 20],
         ];
 
         $sequenced = $service->sequenceAssignments($assignments);
@@ -77,7 +77,7 @@ final class LotteryRuleGeneratorServiceTest extends TestCase
                     if ((int) $candidate['lottery_prize_id'] !== $prevPrize) {
                         $score++;
                     }
-                    if ((int) $candidate['edition_division_id'] !== $prevDiv) {
+                    if ((int) $candidate['event_division_id'] !== $prevDiv) {
                         $score++;
                     }
                 }
@@ -89,7 +89,7 @@ final class LotteryRuleGeneratorServiceTest extends TestCase
                 if ((int) $picked['lottery_prize_id'] !== $prevPrize) {
                     $pickedScore++;
                 }
-                if ((int) $picked['edition_division_id'] !== $prevDiv) {
+                if ((int) $picked['event_division_id'] !== $prevDiv) {
                     $pickedScore++;
                 }
             }
@@ -98,7 +98,7 @@ final class LotteryRuleGeneratorServiceTest extends TestCase
             $removed = false;
             foreach ($remaining as $i => $candidate) {
                 if ((int) $candidate['lottery_prize_id'] === (int) $picked['lottery_prize_id']
-                    && (int) $candidate['edition_division_id'] === (int) $picked['edition_division_id']) {
+                    && (int) $candidate['event_division_id'] === (int) $picked['event_division_id']) {
                     array_splice($remaining, $i, 1);
                     $removed = true;
 
@@ -108,7 +108,7 @@ final class LotteryRuleGeneratorServiceTest extends TestCase
             $this->assertTrue($removed);
 
             $prevPrize = (int) $picked['lottery_prize_id'];
-            $prevDiv = (int) $picked['edition_division_id'];
+            $prevDiv = (int) $picked['event_division_id'];
         }
     }
 

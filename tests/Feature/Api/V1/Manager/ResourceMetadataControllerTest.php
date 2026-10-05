@@ -6,8 +6,8 @@ namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Club;
 use App\Models\Division;
-use App\Models\Edition;
-use App\Models\EditionParticipation;
+use App\Models\PadelEvent;
+use App\Models\EventParticipation;
 use App\Models\Eligibility;
 use App\Models\Location;
 use App\Models\Player;
@@ -360,12 +360,12 @@ class ResourceMetadataControllerTest extends TestCase
         return [
             'Club' => ['Club', 'Club'],
             'Division' => ['Division', 'Division'],
-            'Edition' => ['Edition', 'Edition'],
-            'EditionDivision' => ['EditionDivision', 'EditionDivision'],
-            'EditionLottery' => ['EditionLottery', 'EditionLottery'],
-            'EditionLotteryLucky' => ['EditionLotteryLucky', 'EditionLotteryLucky'],
-            'EditionParticipation' => ['EditionParticipation', 'EditionParticipation'],
-            'EditionRegistration' => ['EditionRegistration', 'EditionRegistration'],
+            'Event' => ['Event', 'Event'],
+            'EventDivision' => ['EventDivision', 'EventDivision'],
+            'EventLottery' => ['EventLottery', 'EventLottery'],
+            'EventLotteryLucky' => ['EventLotteryLucky', 'EventLotteryLucky'],
+            'EventParticipation' => ['EventParticipation', 'EventParticipation'],
+            'EventRegistration' => ['EventRegistration', 'EventRegistration'],
             'Location' => ['Location', 'Location'],
             'Player' => ['Player', 'Player'],
             'Eligibility' => ['Eligibility', 'Eligibility'],
@@ -398,7 +398,7 @@ class ResourceMetadataControllerTest extends TestCase
 
         $this->assertContains('name', $response->json('data.searchable_fields'));
         $this->assertArrayNotHasKey('is_students_only', $response->json('data.filterable_fields'));
-        $this->assertArrayHasKey('its_first_edition_id', $response->json('data.filterable_fields'));
+        $this->assertArrayHasKey('its_first_event_id', $response->json('data.filterable_fields'));
         $this->assertIsArray($response->json('data.request_body'));
     }
 
@@ -410,18 +410,18 @@ class ResourceMetadataControllerTest extends TestCase
         $manager->addUserType('manager');
 
         // Create test data
-        Edition::factory()->create(['name' => 'Summer 2024', 'date' => '2024-06-01']);
-        Edition::factory()->create(['name' => 'Winter 2024', 'date' => '2024-12-01']);
+        PadelEvent::factory()->create(['name' => 'Summer 2024', 'date' => '2024-06-01']);
+        PadelEvent::factory()->create(['name' => 'Winter 2024', 'date' => '2024-12-01']);
 
         $response = $this->actingAs($manager)
-            ->getJson('/api/v1/manager/metadata/Edition');
+            ->getJson('/api/v1/manager/metadata/Event');
 
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
                 'data' => [
                     'version' => 'v1',
-                    'schema_name' => 'Edition',
+                    'schema_name' => 'Event',
                 ],
             ]);
 
@@ -439,37 +439,37 @@ class ResourceMetadataControllerTest extends TestCase
 
         // Create test data with relationships
         $player = Player::factory()->create();
-        $edition = Edition::factory()->create();
+        $event = PadelEvent::factory()->create();
         $division = Division::factory()->create();
 
-        $editionDivision = \App\Models\EditionDivision::factory()->create([
-            'edition_id' => $edition->id_edition,
+        $eventDivision = \App\Models\EventDivision::factory()->create([
+            'event_id' => $event->id_event,
             'division_id' => $division->id_division,
             'division_title' => $division->name,
         ]);
 
-        EditionParticipation::factory()->create([
+        EventParticipation::factory()->create([
             'player_id' => $player->id_player,
-            'edition_id' => $edition->id_edition,
-            'edition_division_id' => $editionDivision->id_edition_division,
+            'event_id' => $event->id_event,
+            'event_division_id' => $eventDivision->id_event_division,
         ]);
 
         $response = $this->actingAs($manager)
-            ->getJson('/api/v1/manager/metadata/EditionParticipation');
+            ->getJson('/api/v1/manager/metadata/EventParticipation');
 
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
                 'data' => [
                     'version' => 'v1',
-                    'schema_name' => 'EditionParticipation',
+                    'schema_name' => 'EventParticipation',
                 ],
             ]);
 
         $filterableFields = $response->json('data.filterable_fields');
         $this->assertArrayHasKey('player_id', $filterableFields);
-        $this->assertArrayHasKey('edition_id', $filterableFields);
-        $this->assertArrayHasKey('edition_division_id', $filterableFields);
+        $this->assertArrayHasKey('event_id', $filterableFields);
+        $this->assertArrayHasKey('event_division_id', $filterableFields);
 
         // Test foreign key relationships
         if (isset($filterableFields['player_id']['type']) && $filterableFields['player_id']['type'] === 'foreign_key') {
@@ -494,24 +494,54 @@ class ResourceMetadataControllerTest extends TestCase
         $manager->addUserType('manager');
 
         $response = $this->actingAs($manager)
-            ->getJson('/api/v1/manager/metadata/EditionRegistration');
+            ->getJson('/api/v1/manager/metadata/EventRegistration');
 
         $response->assertStatus(200)
-            ->assertJsonPath('data.schema_name', 'EditionRegistration');
+            ->assertJsonPath('data.schema_name', 'EventRegistration');
 
         $filterableFields = $response->json('data.filterable_fields');
         $this->assertArrayHasKey('player_id', $filterableFields);
-        $this->assertArrayHasKey('edition_id', $filterableFields);
-        $this->assertArrayHasKey('edition_division_id', $filterableFields);
+        $this->assertArrayHasKey('event_id', $filterableFields);
+        $this->assertArrayHasKey('event_division_id', $filterableFields);
         $this->assertArrayHasKey('is_minor', $filterableFields);
         $this->assertArrayHasKey('payment', $filterableFields);
 
         $swagger = $response->json('data.swagger_schema');
         $this->assertArrayHasKey('is_minor', $swagger['properties']);
-        $this->assertTrue($swagger['properties']['edition_division_id']['nullable'] ?? false);
-        $this->assertNotContains('edition_division_id', $swagger['required'] ?? []);
-        $this->assertContains('edition_id', $swagger['required'] ?? []);
+        $this->assertTrue($swagger['properties']['event_division_id']['nullable'] ?? false);
+        $this->assertNotContains('event_division_id', $swagger['required'] ?? []);
+        $this->assertContains('event_id', $swagger['required'] ?? []);
         $this->assertContains('payment', $swagger['required'] ?? []);
+    }
+
+    public function test_edition_registration_checkout_metadata_endpoint(): void
+    {
+        $manager = Player::factory()->create();
+        $manager->addUserType('manager');
+
+        $response = $this->actingAs($manager)
+            ->getJson('/api/v1/manager/metadata/EventRegistrationCheckout');
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.schema_name', 'EventRegistrationCheckout');
+
+        $filterableFields = $response->json('data.filterable_fields');
+        $this->assertArrayHasKey('player_id', $filterableFields);
+        $this->assertArrayHasKey('event_id', $filterableFields);
+        $this->assertArrayHasKey('status', $filterableFields);
+        $this->assertArrayHasKey('total_amount', $filterableFields);
+        $this->assertArrayHasKey('payment_method', $filterableFields);
+
+        $swagger = $response->json('data.swagger_schema');
+        $this->assertIsArray($swagger);
+        $this->assertArrayHasKey('properties', $swagger);
+        $this->assertArrayHasKey('id_checkout', $swagger['properties']);
+        $this->assertArrayHasKey('status', $swagger['properties']);
+        $this->assertArrayHasKey('total_amount', $swagger['properties']);
+        $this->assertContains('event_id', $swagger['required'] ?? []);
+        $this->assertContains('player_id', $swagger['required'] ?? []);
+        $this->assertContains('status', $swagger['required'] ?? []);
+        $this->assertContains('total_amount', $swagger['required'] ?? []);
     }
 
     public function test_eligibility_metadata_endpoint(): void
@@ -634,10 +664,10 @@ class ResourceMetadataControllerTest extends TestCase
             'Player' => 'name',
             'Location' => 'name',
             'Division' => 'name',
-            'Edition' => 'name',
-            'EditionDivision' => 'division_title',
+            'Event' => 'name',
+            'EventDivision' => 'division_title',
             'Prize' => 'name',
-            'EditionLottery' => 'name',
+            'EventLottery' => 'name',
             'Sponsor' => 'name',
         ];
 
@@ -655,10 +685,10 @@ class ResourceMetadataControllerTest extends TestCase
 
         // Test models with display_field set to null (no searchable fields)
         $modelsWithNullDisplayField = [
-            'EditionLotteryLucky',
-            'EditionLotteryPrize',
-            'EditionParticipation',
-            'EditionRegistration',
+            'EventLotteryLucky',
+            'EventLotteryPrize',
+            'EventParticipation',
+            'EventRegistration',
             'SponsorPrize',
             'Eligibility',
         ];

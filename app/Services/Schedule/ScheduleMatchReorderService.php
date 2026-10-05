@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Schedule;
 
-use App\Models\EditionDivision;
-use App\Models\EditionDivisionCourt;
+use App\Models\EventDivision;
+use App\Models\EventDivisionCourt;
 use App\Models\GameMatch;
-use App\Services\Pdf\EditionDivisionPosterInvalidator;
+use App\Services\Pdf\EventDivisionPosterInvalidator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -18,7 +18,7 @@ use InvalidArgumentException;
 final class ScheduleMatchReorderService
 {
     public function __construct(
-        private readonly EditionDivisionPosterInvalidator $posterInvalidator = new EditionDivisionPosterInvalidator(),
+        private readonly EventDivisionPosterInvalidator $posterInvalidator = new EventDivisionPosterInvalidator(),
     ) {
     }
 
@@ -27,32 +27,32 @@ final class ScheduleMatchReorderService
      * @return array{matches: Collection<int, GameMatch>}
      */
     public function reorder(
-        EditionDivision $editionDivision,
-        int $editionDivisionCourtId,
+        EventDivision $eventDivision,
+        int $eventDivisionCourtId,
         array $matchIds,
     ): array {
-        return DB::transaction(function () use ($editionDivision, $editionDivisionCourtId, $matchIds): array {
-            $courts = EditionDivisionCourt::query()
-                ->where('edition_division_id', $editionDivision->id_edition_division)
+        return DB::transaction(function () use ($eventDivision, $eventDivisionCourtId, $matchIds): array {
+            $courts = EventDivisionCourt::query()
+                ->where('event_division_id', $eventDivision->id_event_division)
                 ->orderBy('display_order')
-                ->orderBy('id_edition_division_court')
+                ->orderBy('id_event_division_court')
                 ->get()
                 ->values();
 
             if ($courts->isEmpty()) {
-                throw new InvalidArgumentException('Edition division has no assigned courts.');
+                throw new InvalidArgumentException('PadelEvent division has no assigned courts.');
             }
 
-            $referenceCourt = $courts->firstWhere('id_edition_division_court', $editionDivisionCourtId);
+            $referenceCourt = $courts->firstWhere('id_event_division_court', $eventDivisionCourtId);
             if ($referenceCourt === null) {
                 throw new InvalidArgumentException('Court does not belong to this edition division.');
             }
 
             $byCourt = [];
             foreach ($courts as $court) {
-                $byCourt[(int) $court->id_edition_division_court] = GameMatch::query()
-                    ->where('edition_division_id', $editionDivision->id_edition_division)
-                    ->where('edition_division_court_id', $court->id_edition_division_court)
+                $byCourt[(int) $court->id_event_division_court] = GameMatch::query()
+                    ->where('event_division_id', $eventDivision->id_event_division)
+                    ->where('event_division_court_id', $court->id_event_division_court)
                     ->where('match_kind', 'REGULAR')
                     ->orderBy('sequence_no')
                     ->get()
@@ -64,7 +64,7 @@ final class ScheduleMatchReorderService
                 throw new InvalidArgumentException('No complete rounds available to reorder.');
             }
 
-            $refId = (int) $referenceCourt->id_edition_division_court;
+            $refId = (int) $referenceCourt->id_event_division_court;
             $refComplete = $byCourt[$refId]->filter(
                 static fn (GameMatch $m): bool => (int) $m->sequence_no >= 1 && (int) $m->sequence_no <= $completeCount
             )->values();
@@ -100,7 +100,7 @@ final class ScheduleMatchReorderService
             }
 
             $allMatches = GameMatch::query()
-                ->where('edition_division_id', $editionDivision->id_edition_division)
+                ->where('event_division_id', $eventDivision->id_event_division)
                 ->where('match_kind', 'REGULAR')
                 ->get();
 
@@ -111,7 +111,7 @@ final class ScheduleMatchReorderService
             }
 
             foreach ($courts as $court) {
-                $courtId = (int) $court->id_edition_division_court;
+                $courtId = (int) $court->id_event_division_court;
                 $courtMatches = $byCourt[$courtId];
                 $complete = $courtMatches->filter(
                     static fn (GameMatch $m): bool => (int) $m->sequence_no >= 1 && (int) $m->sequence_no <= $completeCount
@@ -150,18 +150,18 @@ final class ScheduleMatchReorderService
                 $roundsTotal = max($roundsTotal, $courtMatches->count());
             }
 
-            $schedule = $editionDivision->requireSchedule();
+            $schedule = $eventDivision->requireSchedule();
 
             $slots = RoundClockCalculator::slots(
-                (string) $editionDivision->formatted_playing_start_time,
-                (string) $editionDivision->formatted_playing_end_time,
+                (string) $eventDivision->formatted_playing_start_time,
+                (string) $eventDivision->formatted_playing_end_time,
                 $roundsTotal,
                 (bool) $schedule->include_final,
                 (bool) $schedule->has_demonstrative_match,
             );
 
             $regulars = GameMatch::query()
-                ->where('edition_division_id', $editionDivision->id_edition_division)
+                ->where('event_division_id', $eventDivision->id_event_division)
                 ->where('match_kind', 'REGULAR')
                 ->orderBy('sequence_no')
                 ->get();
@@ -177,14 +177,14 @@ final class ScheduleMatchReorderService
                 $match->save();
             }
 
-            $this->posterInvalidator->clearMatches($editionDivision);
+            $this->posterInvalidator->clearMatches($eventDivision);
 
             $matches = GameMatch::query()
-                ->where('edition_division_id', $editionDivision->id_edition_division)
+                ->where('event_division_id', $eventDivision->id_event_division)
                 ->where('match_kind', 'REGULAR')
                 ->orderBy('sequence_no')
                 ->with([
-                    'editionDivisionCourt.court',
+                    'eventDivisionCourt.court',
                     'sides.players.player',
                     'sides.players.participation.player',
                 ])

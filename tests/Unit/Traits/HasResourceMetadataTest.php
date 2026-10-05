@@ -171,9 +171,9 @@ class HasResourceMetadataTest extends TestCase
             [
                 'player.profile_image_url',
                 'player_id',
-                'edition_division_id',
+                'event_division_id',
             ],
-            \App\Models\EditionRegistration::getListFields()
+            \App\Models\EventRegistration::getListFields()
         );
         $this->assertEquals(['url'], \App\Models\Prize::getListFields());
     }
@@ -240,15 +240,15 @@ class HasResourceMetadataTest extends TestCase
         $expectedSearchableFields = ['name'];
         $this->assertEquals($expectedSearchableFields, \App\Models\Division::getSearchableFields());
 
-        $expectedFilterableFields = ['its_first_edition_id'];
+        $expectedFilterableFields = ['its_first_event_id'];
         $this->assertEquals($expectedFilterableFields, \App\Models\Division::getFilterableFields());
 
-        $expectedSortableFields = ['id_division', 'name', 'color', 'its_first_edition_id', 'inserted_at', 'updated_at'];
+        $expectedSortableFields = ['id_division', 'name', 'color', 'its_first_event_id', 'inserted_at', 'updated_at'];
         $this->assertEquals($expectedSortableFields, \App\Models\Division::getSortableFields());
 
         // Test field checking
         $this->assertTrue(\App\Models\Division::isSearchableField('name'));
-        $this->assertTrue(\App\Models\Division::isFilterableField('its_first_edition_id'));
+        $this->assertTrue(\App\Models\Division::isFilterableField('its_first_event_id'));
         $this->assertTrue(\App\Models\Division::isSortableField('name'));
 
         $this->assertFalse(\App\Models\Division::isSearchableField('invalid_field'));

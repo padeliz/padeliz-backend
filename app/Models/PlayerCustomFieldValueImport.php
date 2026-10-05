@@ -18,13 +18,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *     @OA\Property(property="imported_by_player_id", type="integer", format="int64", nullable=true, readOnly=true, title="Imported By"),
  *     @OA\Property(property="format", type="string", maxLength=64, readOnly=true, title="Format"),
  *     @OA\Property(property="original_filename", type="string", maxLength=255, readOnly=true, title="Filename"),
- *     @OA\Property(property="edition_id", type="integer", format="int64", nullable=true, title="Edition"),
+ *     @OA\Property(property="event_id", type="integer", format="int64", nullable=true, title="PadelEvent"),
  *     @OA\Property(property="included_count", type="integer", readOnly=true, title="Included"),
  *     @OA\Property(property="values_new_count", type="integer", readOnly=true, title="Values New"),
  *     @OA\Property(property="values_replaced_count", type="integer", readOnly=true, title="Values Replaced"),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true, title="Created At"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true, title="Updated At"),
- *     @OA\Property(property="edition", ref="#/components/schemas/Edition", nullable=true),
+ *     @OA\Property(property="event", ref="#/components/schemas/Event", nullable=true),
  *     @OA\Property(
  *         property="rows",
  *         type="array",
@@ -45,7 +45,7 @@ class PlayerCustomFieldValueImport extends Model
     public static array $filterableFields = [
         'format',
         'imported_by_player_id',
-        'edition_id',
+        'event_id',
     ];
 
     public static array $sortableFields = [
@@ -76,7 +76,7 @@ class PlayerCustomFieldValueImport extends Model
         'imported_by_player_id',
         'format',
         'original_filename',
-        'edition_id',
+        'event_id',
         'included_count',
         'values_new_count',
         'values_replaced_count',
@@ -84,7 +84,7 @@ class PlayerCustomFieldValueImport extends Model
 
     protected $casts = [
         'imported_by_player_id' => 'integer',
-        'edition_id' => 'integer',
+        'event_id' => 'integer',
         'included_count' => 'integer',
         'values_new_count' => 'integer',
         'values_replaced_count' => 'integer',
@@ -97,9 +97,9 @@ class PlayerCustomFieldValueImport extends Model
         return $this->belongsTo(Player::class, 'imported_by_player_id', 'id_player');
     }
 
-    public function edition(): BelongsTo
+    public function event(): BelongsTo
     {
-        return $this->belongsTo(Edition::class, 'edition_id', 'id_edition');
+        return $this->belongsTo(PadelEvent::class, 'event_id', 'id_event');
     }
 
     public function rows(): HasMany

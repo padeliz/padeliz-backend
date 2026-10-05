@@ -15,10 +15,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *
  * @OA\Schema(
  *     schema="GameMatch",
- *     required={"edition_division_id", "edition_division_court_id", "match_kind", "sequence_no"},
+ *     required={"event_division_id", "event_division_court_id", "match_kind", "sequence_no"},
  *     @OA\Property(property="id_match", type="integer", format="int64", readOnly=true),
- *     @OA\Property(property="edition_division_id", type="integer", format="int64"),
- *     @OA\Property(property="edition_division_court_id", type="integer", format="int64"),
+ *     @OA\Property(property="event_division_id", type="integer", format="int64"),
+ *     @OA\Property(property="event_division_court_id", type="integer", format="int64"),
  *     @OA\Property(property="match_kind", type="string", enum={"REGULAR", "FINAL", "DEMONSTRATIVE"}),
  *     @OA\Property(property="sequence_no", type="integer"),
  *     @OA\Property(property="scheduled_start", type="string", format="time", nullable=true),
@@ -44,8 +44,8 @@ class GameMatch extends Model
     public const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
-        'edition_division_id',
-        'edition_division_court_id',
+        'event_division_id',
+        'event_division_court_id',
         'match_kind',
         'sequence_no',
         'scheduled_start',
@@ -62,14 +62,14 @@ class GameMatch extends Model
         'updated_at' => 'integer',
     ];
 
-    public function editionDivision(): BelongsTo
+    public function eventDivision(): BelongsTo
     {
-        return $this->belongsTo(EditionDivision::class, 'edition_division_id', 'id_edition_division');
+        return $this->belongsTo(EventDivision::class, 'event_division_id', 'id_event_division');
     }
 
-    public function editionDivisionCourt(): BelongsTo
+    public function eventDivisionCourt(): BelongsTo
     {
-        return $this->belongsTo(EditionDivisionCourt::class, 'edition_division_court_id', 'id_edition_division_court');
+        return $this->belongsTo(EventDivisionCourt::class, 'event_division_court_id', 'id_event_division_court');
     }
 
     public function sides(): HasMany

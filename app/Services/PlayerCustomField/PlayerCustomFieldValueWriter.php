@@ -39,7 +39,7 @@ final class PlayerCustomFieldValueWriter
             $existing = PlayerCustomFieldValue::query()
                 ->where('player_id', $playerId)
                 ->where('player_custom_field_id', $field->id_player_custom_field)
-                ->where('edition_id', $editionId)
+                ->where('event_id', $editionId)
                 ->first();
 
             if ($existing !== null) {
@@ -51,7 +51,7 @@ final class PlayerCustomFieldValueWriter
         $value = PlayerCustomFieldValue::create([
             'player_id' => $playerId,
             'player_custom_field_id' => $field->id_player_custom_field,
-            'edition_id' => $editionId,
+            'event_id' => $editionId,
             'value_text' => $normalized['value_text'],
             'value_integer' => $normalized['value_integer'],
             'value_boolean' => $normalized['value_boolean'],

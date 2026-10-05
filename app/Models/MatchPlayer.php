@@ -56,7 +56,7 @@ class MatchPlayer extends Model
 
     public function participation(): BelongsTo
     {
-        return $this->belongsTo(EditionParticipation::class, 'participation_id', 'id_participation');
+        return $this->belongsTo(EventParticipation::class, 'participation_id', 'id_participation');
     }
 
     public function player(): BelongsTo

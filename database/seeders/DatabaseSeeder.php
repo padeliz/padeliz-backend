@@ -7,14 +7,14 @@ namespace Database\Seeders;
 use App\Models\Club;
 use App\Models\Court;
 use App\Models\Division;
-use App\Models\Edition;
-use App\Models\EditionDivision;
-use App\Models\EditionDivisionSchedule;
-use App\Models\EditionLottery;
-use App\Models\EditionLotteryLucky;
-use App\Models\EditionLotteryPrize;
-use App\Models\EditionLotteryRule;
-use App\Models\EditionParticipation;
+use App\Models\PadelEvent;
+use App\Models\EventDivision;
+use App\Models\EventDivisionSchedule;
+use App\Models\EventLottery;
+use App\Models\EventLotteryLucky;
+use App\Models\EventLotteryPrize;
+use App\Models\EventLotteryRule;
+use App\Models\EventParticipation;
 use App\Models\Eligibility;
 use App\Models\EligibilityPortraitPhoto;
 use App\Models\EligibilityStudentProof;
@@ -38,7 +38,7 @@ use Illuminate\Support\Facades\Storage;
 use Illuminate\Support\Str;
 
 /**
- * Dev database seeding: truncates core tables, rebuilds synthetic clubs/editions/players/eligibilities, etc.
+ * Dev database seeding: truncates core tables, rebuilds synthetic clubs/events/players/eligibilities, etc.
  *
  * Upload-related behaviour:
  * - Player profile images: {@see PlayerFactory} afterCreating writes files under `players/{id}/profile/`
@@ -75,17 +75,17 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Clearing existing data...');
         DB::statement('SET FOREIGN_KEY_CHECKS=0');
 
-        EditionLotteryLucky::truncate();
-        EditionLotteryRule::truncate();
-        EditionLotteryPrize::truncate();
-        EditionLottery::truncate();
+        EventLotteryLucky::truncate();
+        EventLotteryRule::truncate();
+        EventLotteryPrize::truncate();
+        EventLottery::truncate();
         SponsorPrize::truncate();
         DB::table('sponsor_players')->truncate();
         Sponsor::truncate();
         Prize::truncate();
-        EditionParticipation::truncate();
-        EditionDivisionSchedule::truncate();
-        EditionDivision::truncate();
+        EventParticipation::truncate();
+        EventDivisionSchedule::truncate();
+        EventDivision::truncate();
         EligibilityPortraitPhoto::truncate();
         EligibilityStudentProof::truncate();
         Eligibility::truncate();
@@ -94,7 +94,7 @@ class DatabaseSeeder extends Seeder
         PlayerPhone::query()->delete();
         PlayerEmail::query()->delete();
         Player::truncate();
-        Edition::truncate();
+        PadelEvent::truncate();
         Organizer::truncate();
         Court::truncate();
         Location::truncate();
@@ -151,13 +151,13 @@ class DatabaseSeeder extends Seeder
         Organizer::query()->create([
             'name' => 'ARSH Padel MiniTour',
             'logo_path' => null,
-            'show_edition_label' => true,
+            'show_event_label' => true,
             'inserted_at' => $now,
         ]);
         Organizer::query()->create([
             'name' => 'Bucharest Padel Tour',
             'logo_path' => null,
-            'show_edition_label' => false,
+            'show_event_label' => false,
             'inserted_at' => $now,
         ]);
 
@@ -228,7 +228,7 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Setting first editions for divisions...');
         $allEditions = $pastEditions->merge($ongoingEditions)->merge($futureEditions);
         foreach ($divisions as $division) {
-            $division->update(['its_first_edition_id' => $allEditions->random()->id_edition]);
+            $division->update(['its_first_event_id' => $allEditions->random()->id_event]);
         }
 
         $this->command->info('Creating prizes and sponsors...');
@@ -258,8 +258,8 @@ class DatabaseSeeder extends Seeder
         ]);
 
         $this->command->info('Creating edition divisions and participations...');
-        foreach ($pastEditions->merge($futureEditions) as $edition) {
-            $this->createEditionDivisionsAndParticipations($edition, $players);
+        foreach ($pastEditions->merge($futureEditions) as $event) {
+            $this->createEventDivisionsAndParticipations($event, $players);
         }
 
         $this->command->info('Creating lotteries, prize lines, rules and luckies...');
@@ -441,13 +441,11 @@ class DatabaseSeeder extends Seeder
         for ($i = 0; $i < $count; $i++) {
             $arriving_time = Carbon::createFromTime(\rand(12, 19), 30);
 
-            $editions[] = Edition::factory()->forLocation($locations->random())->create([
+            $editions[] = PadelEvent::factory()->forLocation($locations->random())->create([
                 'name' => '#' . ($index_nr + $i + 1),
                 'organizer_id' => $organizerId,
                 'include_club_host_on_pdf' => true,
                 'date' => Carbon::parse($startDate)->addDays(\rand(0, (int) Carbon::parse($endDate)->diffInDays($startDate))),
-                'entry_fee' => \rand(45, 55),
-                'students_entry_fee' => \rand(35, 45),
                 'arriving_time' => $arriving_time->format('H:i:s'),
                 'closing_time' => $arriving_time->addHours(\rand(2, 4))->format('H:i:s'),
             ]);
@@ -456,15 +454,15 @@ class DatabaseSeeder extends Seeder
         return collect($editions);
     }
 
-    private function createEditionDivisionsAndParticipations($edition, $players)
+    private function createEventDivisionsAndParticipations($event, $players)
     {
         // Get random divisions for this edition
         $selectedDivisions = Division::inRandomOrder()->take(\rand(2, 3))->get();
 
         foreach ($selectedDivisions->values() as $skillOrder => $division) {
-            // Create division for this edition (courts live on courts + pivot, not on edition_divisions)
-            $editionDivision = EditionDivision::factory()->create([
-                'edition_id' => $edition->id_edition,
+            // Create division for this edition (courts live on courts + pivot, not on event_divisions)
+            $eventDivision = EventDivision::factory()->create([
+                'event_id' => $event->id_event,
                 'division_id' => $division->id_division,
                 'division_title' => $division->name,
                 'players_limit' => \rand(8, 16),
@@ -474,8 +472,8 @@ class DatabaseSeeder extends Seeder
             ]);
 
             // Schedule knobs live on their own row, one per edition division.
-            EditionDivisionSchedule::factory()->create([
-                'edition_division_id' => $editionDivision->id_edition_division,
+            EventDivisionSchedule::factory()->create([
+                'event_division_id' => $eventDivision->id_event_division,
                 'include_scores' => $division->name !== 'Kids',
                 'has_demonstrative_match' => $division->name == 'Students Novice',
                 'allow_replacements' => $division->name !== DivisionSeeder::MINITOUR_COUPLES_NAME
@@ -490,9 +488,9 @@ class DatabaseSeeder extends Seeder
             $participationCount = \min(\rand(6, 12), $players->count());
             $selectedPlayers = $players->random($participationCount);
             foreach ($selectedPlayers->values() as $i => $player) {
-                EditionParticipation::factory()->create([
-                    'edition_id' => $edition->id_edition,
-                    'edition_division_id' => $editionDivision->id_edition_division,
+                EventParticipation::factory()->create([
+                    'event_id' => $event->id_event,
+                    'event_division_id' => $eventDivision->id_event_division,
                     'player_id' => $player->id_player,
                     'sort_order' => $i,
                     'is_collecting_points' => true,
@@ -503,23 +501,23 @@ class DatabaseSeeder extends Seeder
 
     private function createLotteriesAndLuckies($editions, $prizes, $sponsors, $faker)
     {
-        foreach ($editions as $edition) {
+        foreach ($editions as $event) {
             $lotteryCount = \rand(1, 2);
             $lotteries = collect();
             for ($i = 0; $i < $lotteryCount; $i++) {
-                $lotteries->push(EditionLottery::factory()->create([
-                    'edition_id' => $edition->id_edition,
+                $lotteries->push(EventLottery::factory()->create([
+                    'event_id' => $event->id_event,
                     'name' => $i === 0 ? 'Main draw' : 'Kids raffle',
                     'display_order' => $i,
                 ]));
             }
 
-            $editionDivisions = EditionDivision::where('edition_id', $edition->id_edition)->get();
+            $eventDivisions = EventDivision::where('event_id', $event->id_event)->get();
 
             foreach ($lotteries as $lotteryIndex => $lottery) {
                 $prize = $prizes->random();
                 $useSponsor = $lotteryIndex === 0 && $sponsors->isNotEmpty() && $faker->boolean(50);
-                $line = EditionLotteryPrize::factory()->create([
+                $line = EventLotteryPrize::factory()->create([
                     'lottery_id' => $lottery->id_lottery,
                     'prize_id' => $prize->id_prize,
                     'prize_quantity' => \rand(1, 5),
@@ -531,34 +529,34 @@ class DatabaseSeeder extends Seeder
                 $remaining = (int) $line->prize_quantity;
 
                 $openQty = max(1, (int) ceil($remaining / 2));
-                $rules->push(EditionLotteryRule::factory()->create([
+                $rules->push(EventLotteryRule::factory()->create([
                     'lottery_prize_id' => $line->id_lottery_prize,
                     'rule_prize_quantity' => $openQty,
                     'orderliness' => 0,
-                    'edition_division_id' => null,
+                    'event_division_id' => null,
                     'has_social_status' => null,
                 ]));
                 $remaining -= $openQty;
 
                 if ($remaining > 0) {
-                    $rules->push(EditionLotteryRule::factory()->create([
+                    $rules->push(EventLotteryRule::factory()->create([
                         'lottery_prize_id' => $line->id_lottery_prize,
                         'rule_prize_quantity' => $remaining,
                         'orderliness' => 1,
-                        'edition_division_id' => $editionDivisions->isNotEmpty()
-                            ? $faker->optional()->randomElement($editionDivisions->pluck('id_edition_division')->all())
+                        'event_division_id' => $eventDivisions->isNotEmpty()
+                            ? $faker->optional()->randomElement($eventDivisions->pluck('id_event_division')->all())
                             : null,
                         'has_social_status' => $faker->optional()->randomElement(['STUDENT', 'ADULT']),
                     ]));
                 }
 
-                $participants = EditionParticipation::where('edition_id', $edition->id_edition)->get();
+                $participants = EventParticipation::where('event_id', $event->id_event)->get();
                 if ($participants->isEmpty()) {
                     continue;
                 }
 
                 foreach ($rules as $rule) {
-                    EditionLotteryLucky::factory()
+                    EventLotteryLucky::factory()
                         ->count(\rand(1, min(3, (int) $rule->rule_prize_quantity)))
                         ->create([
                             'lottery_rule_id' => $rule->id_lottery_rule,
@@ -584,7 +582,7 @@ class DatabaseSeeder extends Seeder
 
                 $eligibility = new Eligibility();
                 $eligibility->player_id = $player->id_player;
-                $eligibility->edition_ids = $faker->boolean(70) ? [$editions->random()->id_edition] : null;
+                $eligibility->event_ids = $faker->boolean(70) ? [$editions->random()->id_event] : null;
 
                 // Sources (required: media_source OR friends_source)
                 if ($faker->boolean(60)) {
@@ -627,7 +625,7 @@ class DatabaseSeeder extends Seeder
             if ($faker->boolean(25)) {
                 $pending = new Eligibility();
                 $pending->player_id = $player->id_player;
-                $pending->edition_ids = $faker->boolean(40) ? [$editions->random()->id_edition] : null;
+                $pending->event_ids = $faker->boolean(40) ? [$editions->random()->id_event] : null;
                 $pending->submitted_at = $now - $faker->numberBetween(60, 3600);
                 $pending->review_status = 'pending';
                 $pending->inserted_at = $pending->submitted_at;

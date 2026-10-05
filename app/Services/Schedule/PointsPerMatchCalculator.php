@@ -36,4 +36,29 @@ final class PointsPerMatchCalculator
 
         return (int) floor(ceil(110 * $hours - 1 + (20 / 60)) / $rounds);
     }
+
+    /** Even-round for print only; does not mutate stored points. */
+    public static function evenRoundForPrint(int $points): int
+    {
+        return $points % 2 === 0 ? $points : $points + 1;
+    }
+
+    public static function applyAdjust(int $points, int $adjust): int
+    {
+        return max(0, $points + $adjust);
+    }
+
+    /**
+     * @param  array<string, mixed>  $preview
+     * @return array<string, mixed>
+     */
+    public static function finalizePreviewPoints(array $preview, int $adjust = 0): array
+    {
+        $points = self::applyAdjust((int) ($preview['points_per_match'] ?? 0), $adjust);
+        $preview['points_per_match'] = $points;
+        $preview['adjust'] = $adjust;
+        $preview['points_per_match_print'] = self::evenRoundForPrint($points);
+
+        return $preview;
+    }
 }

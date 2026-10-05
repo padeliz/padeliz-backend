@@ -19,7 +19,7 @@ class PlayerCustomFieldValueImportResource extends JsonResource
             'imported_by_player_id' => $this->imported_by_player_id,
             'format' => $this->format,
             'original_filename' => $this->original_filename,
-            'edition_id' => $this->edition_id,
+            'event_id' => $this->event_id,
             'included_count' => $this->included_count,
             'values_new_count' => $this->values_new_count,
             'values_replaced_count' => $this->values_replaced_count,
@@ -30,8 +30,8 @@ class PlayerCustomFieldValueImportResource extends JsonResource
                     ? new PlayerResource($this->importedByPlayer)
                     : null;
             }),
-            'edition' => $this->whenLoaded('edition', function () {
-                return $this->edition ? new EditionResource($this->edition) : null;
+            'event' => $this->whenLoaded('event', function () {
+                return $this->event ? new EventResource($this->event) : null;
             }),
             'rows' => $this->whenLoaded('rows', function () {
                 return PlayerCustomFieldValueImportRowResource::collection($this->rows);

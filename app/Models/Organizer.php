@@ -35,7 +35,7 @@ use Illuminate\Support\Facades\Storage;
  *             "padeliz-image": {"role": "list"}
  *         }
  *     ),
- *     @OA\Property(property="show_edition_label", type="boolean"),
+ *     @OA\Property(property="show_event_label", type="boolean"),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true)
  * )
@@ -52,13 +52,13 @@ class Organizer extends Model
     ];
 
     public static array $filterableFields = [
-        'show_edition_label',
+        'show_event_label',
     ];
 
     public static array $sortableFields = [
         'id_organizer',
         'name',
-        'show_edition_label',
+        'show_event_label',
         'inserted_at',
         'updated_at',
     ];
@@ -83,20 +83,20 @@ class Organizer extends Model
     protected $fillable = [
         'name',
         'logo_path',
-        'show_edition_label',
+        'show_event_label',
     ];
 
     protected $casts = [
         'inserted_at' => 'integer',
         'updated_at' => 'integer',
-        'show_edition_label' => 'boolean',
+        'show_event_label' => 'boolean',
     ];
 
     protected $appends = ['url'];
 
-    public function editions(): HasMany
+    public function events(): HasMany
     {
-        return $this->hasMany(Edition::class, 'organizer_id', 'id_organizer');
+        return $this->hasMany(PadelEvent::class, 'organizer_id', 'id_organizer');
     }
 
     public function storageDisk(): string

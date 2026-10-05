@@ -229,7 +229,7 @@ use Laravel\Sanctum\HasApiTokens;
  *     @OA\Property(
  *         property="participations",
  *         type="array",
- *         @OA\Items(ref="#/components/schemas/EditionParticipation"),
+ *         @OA\Items(ref="#/components/schemas/EventParticipation"),
  *         title="Participations",
  *         description="Array of edition participations"
  *     )
@@ -379,12 +379,12 @@ class Player extends Authenticatable
 
     public function participations(): HasMany
     {
-        return $this->hasMany(EditionParticipation::class, 'player_id');
+        return $this->hasMany(EventParticipation::class, 'player_id');
     }
 
     public function registrations(): HasMany
     {
-        return $this->hasMany(EditionRegistration::class, 'player_id');
+        return $this->hasMany(EventRegistration::class, 'player_id');
     }
 
     public function sponsors(): BelongsToMany

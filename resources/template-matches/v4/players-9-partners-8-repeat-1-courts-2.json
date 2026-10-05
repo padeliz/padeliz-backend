@@ -1,0 +1,138 @@
+{
+    "players": 9,
+    "partners": 8,
+    "repeat": 1,
+    "courts": 2,
+    "fixedTeams": false,
+    "matches": null,
+    "metrics": {
+        "pairing": {
+            "quality": {
+                "minPartnersFairness": 1,
+                "avgPartnersFairness": 1,
+                "partnersCount": [
+                    8,
+                    8,
+                    8,
+                    8,
+                    8,
+                    8,
+                    8,
+                    8,
+                    8
+                ],
+                "partnersCountVariation": 0,
+                "pairCount": 36
+            },
+            "stats": {
+                "stopReason": "DEADLINE",
+                "time": 345.237153178,
+                "nodesExplored": 269802,
+                "seedIndex": 1,
+                "seedsTotal": 256
+            }
+        },
+        "matchMaking": {
+            "quality": {
+                "meetingsVariation": null,
+                "minOpponentsMet": null,
+                "maxOpponentsMet": null,
+                "playersMet": null,
+                "matchesCount": null,
+                "minPlayingFairness": null,
+                "avgPlayingFairness": null,
+                "maxPlayingFairnessPenalty": null
+            },
+            "stats": {
+                "permutationsIterated": 256,
+                "permutationIndex": 15,
+                "templatesGenerated": 451550,
+                "templateIndex": 25268,
+                "nodesExplored": 451550,
+                "stopReason": "FACTORIAL_COMPLETE",
+                "time": 287.190119553,
+                "meetingsVariationLimit": 3,
+                "candidatesCollected": 451550,
+                "candidatesDeduped": 512,
+                "candidateIndex": null,
+                "relaxAttempts": [
+                    {
+                        "meetingsVariationLimit": 1,
+                        "permutationsIterated": 256,
+                        "templatesGenerated": 157820,
+                        "nodesExplored": 157820,
+                        "time": 219.798735531,
+                        "candidatesCollected": 157820,
+                        "candidatesDeduped": 512,
+                        "stopReason": "FACTORIAL_COMPLETE"
+                    },
+                    {
+                        "meetingsVariationLimit": 2,
+                        "permutationsIterated": 256,
+                        "templatesGenerated": 147463,
+                        "nodesExplored": 147463,
+                        "time": 199.248400611,
+                        "candidatesCollected": 147463,
+                        "candidatesDeduped": 512,
+                        "stopReason": "FACTORIAL_COMPLETE"
+                    },
+                    {
+                        "meetingsVariationLimit": 3,
+                        "permutationsIterated": 256,
+                        "templatesGenerated": 451550,
+                        "nodesExplored": 451550,
+                        "time": 287.190119553,
+                        "candidatesCollected": 451550,
+                        "candidatesDeduped": 512,
+                        "stopReason": "FACTORIAL_COMPLETE"
+                    }
+                ]
+            }
+        },
+        "ordering": {
+            "quality": {
+                "minDistribution": null,
+                "avgDistribution": null,
+                "minBreak": null,
+                "maxBreak": null,
+                "consecutiveMinBreaks": null,
+                "consecutiveMaxBreaks": null,
+                "courtSwitches": null,
+                "courtBalance": null,
+                "roundsCount": null
+            },
+            "stats": {
+                "stopReason": "DEADLINE",
+                "permutationsIterated": 0,
+                "permutationIndex": null,
+                "nodesExplored": 0,
+                "seedIndex": null,
+                "seedsTotal": null,
+                "time": 2353.166379889,
+                "relaxAttempts": [
+                    {
+                        "meetingsVariationLimit": 1,
+                        "candidatesTried": 512,
+                        "eligible": false,
+                        "time": 1336.899125701,
+                        "stopReason": "PRUNE_INFEASIBLE"
+                    },
+                    {
+                        "meetingsVariationLimit": 2,
+                        "candidatesTried": 133,
+                        "eligible": false,
+                        "time": 2443.787988973,
+                        "stopReason": "DEADLINE"
+                    },
+                    {
+                        "meetingsVariationLimit": 3,
+                        "candidatesTried": 43,
+                        "eligible": false,
+                        "time": 2353.166379889,
+                        "stopReason": "DEADLINE"
+                    }
+                ]
+            }
+        }
+    }
+}

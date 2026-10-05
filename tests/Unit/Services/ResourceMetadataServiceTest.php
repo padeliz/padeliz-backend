@@ -34,25 +34,25 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertEquals('players', $method->invoke($this->metadataService, 'Player'));
         $this->assertEquals('clubs', $method->invoke($this->metadataService, 'Club'));
         $this->assertEquals('divisions', $method->invoke($this->metadataService, 'Division'));
-        $this->assertEquals('editions', $method->invoke($this->metadataService, 'Edition'));
+        $this->assertEquals('events', $method->invoke($this->metadataService, 'Event'));
         $this->assertEquals('locations', $method->invoke($this->metadataService, 'Location'));
         $this->assertEquals('prizes', $method->invoke($this->metadataService, 'Prize'));
 
         // Test hyphenated models (only last word should be pluralized)
-        $this->assertEquals('edition-lotteries', $method->invoke($this->metadataService, 'EditionLottery'));
-        $this->assertEquals('edition-participations', $method->invoke($this->metadataService, 'EditionParticipation'));
-        $this->assertEquals('edition-divisions', $method->invoke($this->metadataService, 'EditionDivision'));
-        $this->assertEquals('edition-lottery-luckies', $method->invoke($this->metadataService, 'EditionLotteryLucky'));
+        $this->assertEquals('event-lotteries', $method->invoke($this->metadataService, 'EventLottery'));
+        $this->assertEquals('event-participations', $method->invoke($this->metadataService, 'EventParticipation'));
+        $this->assertEquals('event-divisions', $method->invoke($this->metadataService, 'EventDivision'));
+        $this->assertEquals('event-lottery-luckies', $method->invoke($this->metadataService, 'EventLotteryLucky'));
         $this->assertEquals('eligibilities', $method->invoke($this->metadataService, 'Eligibility'));
         $this->assertEquals('sponsors', $method->invoke($this->metadataService, 'Sponsor'));
         $this->assertEquals('sponsor-prizes', $method->invoke($this->metadataService, 'SponsorPrize'));
-        $this->assertEquals('edition-lottery-prizes', $method->invoke($this->metadataService, 'EditionLotteryPrize'));
+        $this->assertEquals('event-lottery-prizes', $method->invoke($this->metadataService, 'EventLotteryPrize'));
         $this->assertEquals('player-imports', $method->invoke($this->metadataService, 'PlayerImport'));
         $this->assertEquals('player-import-rows', $method->invoke($this->metadataService, 'PlayerImportRow'));
         $this->assertEquals('challenge-sessions', $method->invoke($this->metadataService, 'ChallengeSession'));
 
         // Test edge cases with multiple hyphens (using existing models)
-        $this->assertEquals('edition-divisions', $method->invoke($this->metadataService, 'EditionDivision'));
+        $this->assertEquals('event-divisions', $method->invoke($this->metadataService, 'EventDivision'));
     }
 
     /**
@@ -66,11 +66,11 @@ class ResourceMetadataServiceTest extends TestCase
 
         // Test with already kebab-case input (should still work)
         $this->assertEquals('players', $method->invoke($this->metadataService, 'player'));
-        $this->assertEquals('edition-lotteries', $method->invoke($this->metadataService, 'edition-lottery'));
+        $this->assertEquals('event-lotteries', $method->invoke($this->metadataService, 'event-lottery'));
 
         // Test with mixed case
         $this->assertEquals('p-l-a-y-e-rs', $method->invoke($this->metadataService, 'PLAYER'));
-        $this->assertEquals('e-d-i-t-i-o-n_-l-o-t-t-e-r-ys', $method->invoke($this->metadataService, 'EDITION_LOTTERY'));
+        $this->assertEquals('e-v-e-n-t_-l-o-t-t-e-r-ys', $method->invoke($this->metadataService, 'EVENT_LOTTERY'));
 
         // Test with numbers in names
         $this->assertEquals('test-model1s', $method->invoke($this->metadataService, 'TestModel1'));
@@ -94,7 +94,7 @@ class ResourceMetadataServiceTest extends TestCase
 
         // Test hyphenated with irregular plurals
         $this->assertEquals('test-children', $method->invoke($this->metadataService, 'TestChild'));
-        $this->assertEquals('edition-people', $method->invoke($this->metadataService, 'EditionPerson'));
+        $this->assertEquals('event-people', $method->invoke($this->metadataService, 'EventPerson'));
     }
 
     /**
@@ -129,12 +129,12 @@ class ResourceMetadataServiceTest extends TestCase
         $testCases = [
             'Player',
             'Club',
-            'EditionLottery',
-            'EditionParticipation',
+            'EventLottery',
+            'EventParticipation',
             'Eligibility',
             'Sponsor',
             'SponsorPrize',
-            'EditionLotteryPrize',
+            'EventLotteryPrize',
         ];
 
         foreach ($testCases as $modelName) {
@@ -173,7 +173,9 @@ class ResourceMetadataServiceTest extends TestCase
             $result = $method->invoke($this->metadataService, $modelName);
             $kebabCase = Str::kebab($modelName);
 
-            if (str_contains($kebabCase, '-')) {
+            if ($modelName === 'PadelEvent' || $modelName === 'Event') {
+                $expected = 'events';
+            } elseif (str_contains($kebabCase, '-')) {
                 // For hyphenated strings, only the last word should be pluralized
                 $parts = explode('-', $kebabCase);
                 $lastPart = array_pop($parts);

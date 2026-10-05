@@ -50,7 +50,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *         @OA\Schema(
      *             type="object",
      *             additionalProperties=false,
-     *             @OA\Property(property="its_first_edition_id", type="string", description="Filter by first edition ID")
+     *             @OA\Property(property="its_first_event_id", type="string", description="Filter by first edition ID")
      *         )
      *     ),
      *     @OA\Parameter(
@@ -66,7 +66,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *             @OA\Property(property="id_division", type="string", enum={"asc", "desc"}, description="Sort by division ID"),
      *             @OA\Property(property="name", type="string", enum={"asc", "desc"}, description="Sort by name"),
      *             @OA\Property(property="color", type="string", enum={"asc", "desc"}, description="Sort by color"),
-     *             @OA\Property(property="its_first_edition_id", type="string", enum={"asc", "desc"}, description="Sort by first edition ID"),
+     *             @OA\Property(property="its_first_event_id", type="string", enum={"asc", "desc"}, description="Sort by first edition ID"),
      *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}, description="Sort by creation date"),
      *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"}, description="Sort by update date")
      *         )
@@ -107,7 +107,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
     public function index(Request $request)
     {
         $payload = $this->cachedManagerIndex('divisions', $request, [], function () use ($request) {
-            $query = Division::with('itsFirstEdition');
+            $query = Division::with('itsFirstEvent');
 
             $this->applyAdvancedPagination(
                 $query,
@@ -180,7 +180,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
     public function show(Division $division)
     {
         $data = $this->cachedManagerShow('divisions', (int) $division->id_division, function () use ($division) {
-            $division->load('itsFirstEdition');
+            $division->load('itsFirstEvent');
 
             return (new DivisionResource($division))->resolve();
         });
@@ -197,10 +197,10 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"name", "color", "its_first_edition_id"},
+     *             required={"name", "color", "its_first_event_id"},
      *             @OA\Property(property="name", type="string", maxLength=25, description="Division name"),
      *             @OA\Property(property="color", type="string", format="color", maxLength=7, pattern="^#[0-9A-Fa-f]{6}$", description="Division color (hex)"),
-     *             @OA\Property(property="its_first_edition_id", type="integer", description="First edition ID for this division")
+     *             @OA\Property(property="its_first_event_id", type="integer", description="First edition ID for this division")
      *         )
      *     ),
      *     @OA\Response(
@@ -242,11 +242,11 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
         $validated = $request->validate([
             'name' => 'required|string|max:25',
             'color' => 'required|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/',
-            'its_first_edition_id' => 'required|integer|exists:editions,id_edition',
+            'its_first_event_id' => 'required|integer|exists:events,id_event',
         ]);
 
         $division = Division::create($validated);
-        $division->load('itsFirstEdition');
+        $division->load('itsFirstEvent');
 
         return $this->resourceResponse(
             new DivisionResource($division),
@@ -272,7 +272,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *         @OA\JsonContent(
      *             @OA\Property(property="name", type="string", maxLength=25, description="Division name"),
      *             @OA\Property(property="color", type="string", maxLength=7, description="Division color (hex)"),
-     *             @OA\Property(property="its_first_edition_id", type="integer", description="First edition ID for this division")
+     *             @OA\Property(property="its_first_event_id", type="integer", description="First edition ID for this division")
      *         )
      *     ),
      *     @OA\Response(
@@ -319,11 +319,11 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
         $validated = $request->validate([
             'name' => 'required|string|max:25',
             'color' => 'required|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/',
-            'its_first_edition_id' => 'required|integer|exists:editions,id_edition',
+            'its_first_event_id' => 'required|integer|exists:events,id_event',
         ]);
 
         $division->update($validated);
-        $division->load('itsFirstEdition');
+        $division->load('itsFirstEvent');
 
         return $this->resourceResponse(
             new DivisionResource($division),
@@ -348,7 +348,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *         @OA\JsonContent(
      *             @OA\Property(property="name", type="string", maxLength=25, description="Division name"),
      *             @OA\Property(property="color", type="string", maxLength=7, description="Division color (hex)"),
-     *             @OA\Property(property="its_first_edition_id", type="integer", description="First edition ID for this division")
+     *             @OA\Property(property="its_first_event_id", type="integer", description="First edition ID for this division")
      *         )
      *     ),
      *     @OA\Response(
@@ -395,11 +395,11 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
         $validated = $request->validate([
             'name' => 'sometimes|string|max:25',
             'color' => 'sometimes|string|max:7|regex:/^#[0-9A-F]{6}$/i',
-            'its_first_edition_id' => 'sometimes|required|integer|exists:editions,id_edition',
+            'its_first_event_id' => 'sometimes|required|integer|exists:events,id_event',
         ]);
 
         $division->update($validated);
-        $division->load('itsFirstEdition');
+        $division->load('itsFirstEvent');
 
         return $this->resourceResponse(
             new DivisionResource($division),
@@ -450,7 +450,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *                         property="linked_data",
      *                         type="object",
      *                         description="Information about linked data preventing deletion",
-     *                         @OA\Property(property="edition_divisions_count", type="integer", example=2),
+     *                         @OA\Property(property="event_divisions_count", type="integer", example=2),
      *                         @OA\Property(property="participations_count", type="integer", example=5)
      *                     )
      *                 )
@@ -467,7 +467,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
     public function destroy(Division $division)
     {
         $linkedDataRelations = [
-            'editionDivisions' => 'edition_divisions_count',
+            'eventDivisions' => 'event_divisions_count',
             'participations' => 'participations_count',
         ];
 
@@ -592,7 +592,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
         ]);
 
         $linkedDataRelations = [
-            'editionDivisions' => 'edition_divisions_count',
+            'eventDivisions' => 'event_divisions_count',
             'participations' => 'participations_count',
         ];
 

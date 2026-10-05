@@ -40,7 +40,7 @@ class PlayerCustomFieldValueController extends V1BaseController
     {
         $query = PlayerCustomFieldValue::query()
             ->where('player_id', $player->id_player)
-            ->with(['field', 'edition', 'selectedOptions']);
+            ->with(['field', 'event', 'selectedOptions']);
 
         $this->applyAdvancedPagination(
             $query,
@@ -79,21 +79,21 @@ class PlayerCustomFieldValueController extends V1BaseController
     {
         $validated = $request->validate([
             'player_custom_field_id' => 'required|integer|exists:player_custom_fields,id_player_custom_field',
-            'edition_id' => 'nullable|integer|exists:editions,id_edition',
+            'event_id' => 'nullable|integer|exists:events,id_event',
             'value' => 'nullable',
             'option_id' => 'nullable|integer',
             'option_ids' => 'nullable|array',
             'option_ids.*' => 'integer',
         ]);
 
-        if ($request->has('edition_division_id')) {
+        if ($request->has('event_division_id')) {
             throw ValidationException::withMessages([
-                'edition_division_id' => ['This field is not supported.'],
+                'event_division_id' => ['This field is not supported.'],
             ]);
         }
 
         $field = PlayerCustomField::query()->findOrFail((int) $validated['player_custom_field_id']);
-        $editionId = $validated['edition_id'] ?? null;
+        $editionId = $validated['event_id'] ?? null;
 
         $this->writer->write(
             (int) $player->id_player,
@@ -109,10 +109,10 @@ class PlayerCustomFieldValueController extends V1BaseController
             ->where('player_custom_field_id', $field->id_player_custom_field)
             ->when(
                 $editionId !== null,
-                static fn ($query) => $query->where('edition_id', $editionId),
+                static fn ($query) => $query->where('event_id', $editionId),
                 static fn ($query) => $query->orderByDesc('id_player_custom_field_value')
             )
-            ->with(['field', 'edition', 'selectedOptions'])
+            ->with(['field', 'event', 'selectedOptions'])
             ->firstOrFail();
 
         return $this->resourceResponse(
@@ -136,7 +136,7 @@ class PlayerCustomFieldValueController extends V1BaseController
         PlayerCustomFieldValue $playerCustomFieldValue,
     ): JsonResponse {
         $this->assertValueBelongsToPlayer($player, $playerCustomFieldValue);
-        $playerCustomFieldValue->load(['field', 'edition', 'selectedOptions']);
+        $playerCustomFieldValue->load(['field', 'event', 'selectedOptions']);
 
         return $this->resourceResponse(
             new PlayerCustomFieldValueResource($playerCustomFieldValue),
@@ -176,7 +176,7 @@ class PlayerCustomFieldValueController extends V1BaseController
             'invalidation_reason' => $validated['invalidation_reason'] ?? null,
         ]);
 
-        $playerCustomFieldValue->load(['field', 'edition', 'selectedOptions']);
+        $playerCustomFieldValue->load(['field', 'event', 'selectedOptions']);
 
         return $this->resourceResponse(
             new PlayerCustomFieldValueResource($playerCustomFieldValue),

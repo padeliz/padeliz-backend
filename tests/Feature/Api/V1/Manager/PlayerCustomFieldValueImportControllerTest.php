@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Manager;
 
-use App\Models\Edition;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Models\PlayerCustomFieldValue;
 use App\Models\PlayerCustomFieldValueImport;
@@ -130,12 +130,12 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $player = Player::factory()->create();
-        $edition = Edition::factory()->create();
+        $event = PadelEvent::factory()->create();
 
         $payload = [
             'format' => 'google_form_minitour_welcome',
             'filename' => 'sample.csv',
-            'edition_id' => $edition->id_edition,
+            'event_id' => $event->id_event,
             'rows' => [[
                 'index' => 0,
                 'full_name' => 'Ana Demo',

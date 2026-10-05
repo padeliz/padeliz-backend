@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services\Pdf;
 
-use App\Models\EditionParticipation;
+use App\Models\EventParticipation;
 use App\Models\Player;
 use App\Services\Pdf\AttendancePdfLayout;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -122,9 +122,9 @@ final class AttendancePdfLayoutTest extends TestCase
         ]);
 
         $participations = [
-            EditionParticipation::factory()->make(['player_id' => $zebra->id_player]),
-            EditionParticipation::factory()->make(['player_id' => $alpha->id_player]),
-            EditionParticipation::factory()->make(['player_id' => $bravo->id_player]),
+            EventParticipation::factory()->make(['player_id' => $zebra->id_player]),
+            EventParticipation::factory()->make(['player_id' => $alpha->id_player]),
+            EventParticipation::factory()->make(['player_id' => $bravo->id_player]),
         ];
         $participations[0]->setRelation('player', $zebra);
         $participations[1]->setRelation('player', $alpha);
@@ -134,7 +134,7 @@ final class AttendancePdfLayoutTest extends TestCase
 
         $this->assertSame(
             [$alpha->id_player, $bravo->id_player, $zebra->id_player],
-            array_map(static fn (EditionParticipation $p): int => (int) $p->player_id, $sorted)
+            array_map(static fn (EventParticipation $p): int => (int) $p->player_id, $sorted)
         );
     }
 

@@ -10,6 +10,8 @@ use Illuminate\Support\Facades\Schema;
 return new class () extends Migration {
     public function up(): void
     {
+        $prefix = DB::getTablePrefix();
+
         Schema::create('clubs', function (Blueprint $table) {
             $table->id('id_club');
             $table->string('name', 30)->unique();
@@ -23,7 +25,7 @@ return new class () extends Migration {
             $table->id('id_organizer');
             $table->string('name', 60)->unique();
             $table->string('logo_path', 512)->nullable();
-            $table->boolean('show_edition_label')->default(false);
+            $table->boolean('show_event_label')->default(false);
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
         });
@@ -32,8 +34,8 @@ return new class () extends Migration {
             $table->id('id_division');
             $table->string('name', 25)->unique('uq_divisions_name');
             $table->string('color', 7);
-            // FK added after editions table exists (see below)
-            $table->unsignedBigInteger('its_first_edition_id');
+            // FK added after events table exists (see below)
+            $table->unsignedBigInteger('its_first_event_id');
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
         });
@@ -60,9 +62,12 @@ return new class () extends Migration {
             $table->unique(['location_id', 'name'], 'uq_court_location_name');
         });
 
-        Schema::create('editions', function (Blueprint $table) {
-            $table->id('id_edition');
+        Schema::create('events', function (Blueprint $table) {
+            $table->id('id_event');
             $table->string('name', 25);
+            $table->string('slug')->nullable();
+            $table->text('description');
+            $table->string('cover_path', 512)->nullable();
             $table->date('date');
             $table->foreignId('location_id')->constrained('locations', 'id_location');
             $table->foreignId('organizer_id')
@@ -70,19 +75,19 @@ return new class () extends Migration {
                 ->constrained('organizers', 'id_organizer')
                 ->restrictOnDelete();
             $table->boolean('include_club_host_on_pdf')->default(true);
-            $table->integer('entry_fee')->default(55)->comment('ron');
-            $table->integer('students_entry_fee')->default(45)->comment('ron');
             $table->time('arriving_time');
             $table->time('closing_time');
             $table->integer('finalized_at')->nullable();
+            $table->integer('registration_allowed_until');
+            $table->integer('cancellation_allowed_until');
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
         });
 
         Schema::table('divisions', function (Blueprint $table) {
-            $table->foreign('its_first_edition_id', 'fk_divisions_its_first_edition')
-                ->references('id_edition')
-                ->on('editions');
+            $table->foreign('its_first_event_id', 'fk_divisions_its_first_event')
+                ->references('id_event')
+                ->on('events');
         });
 
         Schema::create('players', function (Blueprint $table) {
@@ -283,25 +288,36 @@ return new class () extends Migration {
             $table->integer('updated_at')->nullable();
         });
 
-        Schema::create('edition_divisions', function (Blueprint $table) {
-            $table->id('id_edition_division');
-            $table->foreignId('edition_id')->constrained('editions', 'id_edition');
+        Schema::create('player_device_tokens', function (Blueprint $table) {
+            $table->id('id_player_device_token');
+            $table->foreignId('player_id')->constrained('players', 'id_player')->cascadeOnDelete();
+            $table->string('token', 512)->unique();
+            $table->string('platform', 32)->nullable();
+            $table->integer('inserted_at')->nullable();
+            $table->integer('updated_at')->nullable();
+            $table->index('player_id', 'player_device_tokens_player_id_idx');
+        });
+
+        Schema::create('event_divisions', function (Blueprint $table) {
+            $table->id('id_event_division');
+            $table->foreignId('event_id')->constrained('events', 'id_event');
             $table->foreignId('division_id')->constrained('divisions', 'id_division');
             $table->string('division_title', 64);
             $table->integer('players_limit');
+            $table->integer('entry_fee')->default(55)->comment('ron');
             $table->unsignedInteger('skill_order')->default(0);
             $table->time('playing_start_time');
             $table->time('playing_end_time');
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
-            $table->index(['edition_id', 'skill_order'], 'edition_divisions_edition_skill_order_idx');
+            $table->index(['event_id', 'skill_order'], 'event_divisions_event_skill_order_idx');
         });
 
-        Schema::create('edition_division_schedules', function (Blueprint $table) {
-            $table->id('id_edition_division_schedule');
-            $table->foreignId('edition_division_id')
+        Schema::create('event_division_schedules', function (Blueprint $table) {
+            $table->id('id_event_division_schedule');
+            $table->foreignId('event_division_id')
                 ->unique()
-                ->constrained('edition_divisions', 'id_edition_division')
+                ->constrained('event_divisions', 'id_event_division')
                 ->cascadeOnDelete();
             $table->integer('player_opponents_nr')->nullable();
             $table->integer('player_matches_repeat')->nullable()->default(1);
@@ -317,67 +333,208 @@ return new class () extends Migration {
             $table->integer('updated_at')->nullable();
         });
 
-        Schema::create('edition_division_courts', function (Blueprint $table) {
-            $table->id('id_edition_division_court');
-            $table->foreignId('edition_division_id')->constrained('edition_divisions', 'id_edition_division')->cascadeOnDelete();
+        Schema::create('event_division_courts', function (Blueprint $table) {
+            $table->id('id_event_division_court');
+            $table->foreignId('event_division_id')->constrained('event_divisions', 'id_event_division')->cascadeOnDelete();
             $table->foreignId('court_id')->constrained('courts', 'id_court');
             $table->smallInteger('display_order')->default(0);
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
-            $table->unique(['edition_division_id', 'court_id'], 'uq_ed_court');
+            $table->unique(['event_division_id', 'court_id'], 'uq_ed_court');
         });
 
-        Schema::create('edition_division_posters', function (Blueprint $table) {
-            $table->id('id_edition_division_poster');
-            $table->unsignedBigInteger('edition_id')->nullable();
-            $table->unsignedBigInteger('edition_division_id')->nullable();
-            $table->unsignedBigInteger('edition_division_court_id')->nullable();
+        Schema::create('event_division_posters', function (Blueprint $table) {
+            $table->id('id_event_division_poster');
+            $table->unsignedBigInteger('event_id')->nullable();
+            $table->unsignedBigInteger('event_division_id')->nullable();
+            $table->unsignedBigInteger('event_division_court_id')->nullable();
             $table->enum('poster_kind', ['MATCHES', 'RANKING', 'COMBINED', 'BATTLES', 'HOUSE', 'SETUP', 'ATTENDANCE']);
             $table->string('generated_path', 512)->nullable();
             $table->string('printed_path', 512)->nullable();
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
-            $table->index('edition_division_id', 'ed_posters_edition_division_id_idx');
-            $table->index('edition_id', 'ed_posters_edition_id_idx');
+            $table->index('event_division_id', 'ed_posters_event_division_id_idx');
+            $table->index('event_id', 'ed_posters_event_id_idx');
         });
 
-        Schema::table('edition_division_posters', function (Blueprint $table) {
-            $table->foreign('edition_id')
-                ->references('id_edition')->on('editions')->cascadeOnDelete();
-            $table->foreign('edition_division_id')
-                ->references('id_edition_division')->on('edition_divisions')->cascadeOnDelete();
-            $table->foreign('edition_division_court_id', 'fk_poster_ed_court')
-                ->references('id_edition_division_court')->on('edition_division_courts');
+        Schema::table('event_division_posters', function (Blueprint $table) {
+            $table->foreign('event_id')
+                ->references('id_event')->on('events')->cascadeOnDelete();
+            $table->foreign('event_division_id')
+                ->references('id_event_division')->on('event_divisions')->cascadeOnDelete();
+            $table->foreign('event_division_court_id', 'fk_poster_ed_court')
+                ->references('id_event_division_court')->on('event_division_courts');
         });
 
-        Schema::create('edition_participations', function (Blueprint $table) {
+        Schema::create('event_participations', function (Blueprint $table) {
             $table->id('id_participation');
-            $table->foreignId('edition_id')->constrained('editions', 'id_edition');
+            $table->foreignId('event_id')->constrained('events', 'id_event');
             $table->foreignId('player_id')->constrained('players', 'id_player');
-            $table->foreignId('edition_division_id')->constrained('edition_divisions', 'id_edition_division');
+            $table->foreignId('event_division_id')->constrained('event_divisions', 'id_event_division');
             $table->unsignedSmallInteger('sort_order')->default(0);
             $table->boolean('is_collecting_points')->default(true);
             $table->enum('absence_reason', ['SICK', 'FORGOT', 'EXAMS', 'RECONSIDERED'])->nullable();
             $table->enum('ban_reason', ['LEFT SUDDENLY', 'AGGRESSIVE PLAYER', 'LIBIDINOUS', ''])->nullable();
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
-            $table->unique(['edition_division_id', 'player_id'], 'uq_participation_ed_player');
+            $table->unique(['event_division_id', 'player_id'], 'uq_participation_ed_player');
         });
 
-        Schema::create('edition_registrations', function (Blueprint $table) {
+        Schema::create('event_registrations', function (Blueprint $table) {
             $table->id('id_registration');
-            $table->foreignId('edition_id')->constrained('editions', 'id_edition');
+            $table->foreignId('event_id')->constrained('events', 'id_event');
             $table->foreignId('player_id')->constrained('players', 'id_player');
-            $table->foreignId('edition_division_id')
-                ->nullable()
-                ->constrained('edition_divisions', 'id_edition_division');
+            $table->foreignId('event_division_id')
+                ->constrained('event_divisions', 'id_event_division');
             $table->boolean('is_minor')->default(false);
             $table->boolean('is_student');
-            $table->integer('discount')->nullable()->comment('ron');
             $table->integer('payment')->comment('ron');
+            $table->string('lifecycle_status', 32)->default('active');
+            $table->string('payment_status', 32)->default('unpaid');
+            $table->string('payment_method', 32)->nullable();
+            $table->integer('paid_at')->nullable();
+            $table->integer('payment_due_at')->nullable();
+            $table->integer('cancelled_at')->nullable();
+            $table->integer('declined_at')->nullable();
+            $table->string('cancel_reason', 64)->nullable();
+            $table->string('decline_reason', 64)->nullable();
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
-            $table->unique(['edition_division_id', 'player_id'], 'uq_registration_ed_player');
+        });
+
+        DB::statement(
+            "ALTER TABLE `{$prefix}event_registrations` " .
+            'ADD COLUMN `active_player_for_division` BIGINT UNSIGNED ' .
+            "GENERATED ALWAYS AS (CASE WHEN `lifecycle_status` = 'active' AND `event_division_id` IS NOT NULL THEN `player_id` ELSE NULL END) STORED"
+        );
+        DB::statement(
+            'CREATE UNIQUE INDEX `event_registrations_one_active_per_division_player` ' .
+            "ON `{$prefix}event_registrations` (`event_division_id`, `active_player_for_division`)"
+        );
+        DB::statement(
+            "ALTER TABLE `{$prefix}event_registrations` " .
+            'ADD COLUMN `active_player_for_event` BIGINT UNSIGNED ' .
+            "GENERATED ALWAYS AS (CASE WHEN `lifecycle_status` = 'active' AND `event_division_id` IS NULL THEN `player_id` ELSE NULL END) STORED"
+        );
+        DB::statement(
+            'CREATE UNIQUE INDEX `event_registrations_one_active_event_wide` ' .
+            "ON `{$prefix}event_registrations` (`event_id`, `active_player_for_event`)"
+        );
+
+        Schema::create('event_registration_checkouts', function (Blueprint $table) {
+            $table->id('id_checkout');
+            $table->foreignId('event_id')
+                ->constrained('events', 'id_event')
+                ->cascadeOnDelete();
+            $table->foreignId('player_id')
+                ->constrained('players', 'id_player')
+                ->cascadeOnDelete();
+            $table->string('status', 32);
+            $table->integer('total_amount')->default(0)->comment('ron payable total');
+            $table->string('payment_method', 32)->nullable();
+            $table->integer('paid_at')->nullable();
+            $table->integer('inserted_at')->nullable();
+            $table->integer('updated_at')->nullable();
+            $table->index(['player_id', 'event_id', 'status'], 'checkouts_player_event_status_idx');
+        });
+
+        Schema::create('event_registration_checkout_items', function (Blueprint $table) {
+            $table->id('id_checkout_item');
+            $table->foreignId('checkout_id')
+                ->constrained('event_registration_checkouts', 'id_checkout')
+                ->cascadeOnDelete();
+            $table->foreignId('registration_id')
+                ->constrained('event_registrations', 'id_registration')
+                ->cascadeOnDelete();
+            $table->integer('base_amount_ron')->nullable()->comment('ron base fee snapshot');
+            $table->integer('amount')->comment('ron snapshotted fee');
+            $table->string('item_status', 32)->default('active');
+            $table->integer('inserted_at')->nullable();
+            $table->integer('updated_at')->nullable();
+            $table->unique(['checkout_id', 'registration_id'], 'checkout_items_checkout_registration_uq');
+            $table->index('registration_id', 'checkout_items_registration_id_idx');
+        });
+
+        Schema::create('event_registration_payment_attempts', function (Blueprint $table) {
+            $table->id('id_payment_attempt');
+            $table->foreignId('checkout_id')
+                ->constrained('event_registration_checkouts', 'id_checkout')
+                ->cascadeOnDelete();
+            $table->integer('amount')->comment('ron');
+            $table->string('currency', 3)->default('RON');
+            $table->string('status', 32);
+            $table->string('ntp_id', 64)->nullable();
+            $table->string('order_id', 128)->unique();
+            $table->string('redirect_url', 1024)->nullable();
+            $table->json('provider_payload')->nullable();
+            $table->text('error_message')->nullable();
+            $table->json('coverage')->nullable();
+            $table->integer('inserted_at')->nullable();
+            $table->integer('updated_at')->nullable();
+            $table->index('checkout_id', 'payment_attempts_checkout_id_idx');
+            $table->index('ntp_id', 'payment_attempts_ntp_id_idx');
+        });
+
+        Schema::create('event_registration_payment_proofs', function (Blueprint $table) {
+            $table->id('id_payment_proof');
+            $table->foreignId('checkout_id')
+                ->constrained('event_registration_checkouts', 'id_checkout')
+                ->cascadeOnDelete();
+            $table->string('proof_path', 512);
+            $table->string('review_status', 32)->default('pending');
+            $table->string('review_message', 1000)->nullable();
+            $table->foreignId('reviewed_by')
+                ->nullable()
+                ->constrained('players', 'id_player')
+                ->nullOnDelete();
+            $table->integer('reviewed_at')->nullable();
+            $table->json('coverage')->nullable();
+            $table->integer('inserted_at')->nullable();
+            $table->integer('updated_at')->nullable();
+            $table->index('checkout_id', 'payment_proofs_checkout_id_idx');
+        });
+
+        Schema::create('event_registration_payment_refunds', function (Blueprint $table) {
+            $table->id('id_refund');
+            $table->unsignedBigInteger('checkout_id');
+            $table->unsignedBigInteger('checkout_item_id')->nullable();
+            $table->unsignedBigInteger('payment_attempt_id')->nullable();
+            $table->integer('amount')->comment('ron');
+            $table->string('currency', 3)->default('RON');
+            $table->string('status', 32);
+            $table->string('provider_refund_id', 128)->nullable();
+            $table->json('provider_payload')->nullable();
+            $table->text('error_message')->nullable();
+            $table->integer('inserted_at')->nullable();
+            $table->integer('updated_at')->nullable();
+            $table->index(['checkout_id', 'status'], 'pay_refunds_checkout_status_idx');
+            $table->index(
+                ['checkout_id', 'checkout_item_id', 'payment_attempt_id'],
+                'pay_refunds_lookup_idx'
+            );
+            $table->foreign('checkout_id', 'pay_refunds_checkout_fk')
+                ->references('id_checkout')
+                ->on('event_registration_checkouts')
+                ->cascadeOnDelete();
+            $table->foreign('checkout_item_id', 'pay_refunds_item_fk')
+                ->references('id_checkout_item')
+                ->on('event_registration_checkout_items')
+                ->nullOnDelete();
+            $table->foreign('payment_attempt_id', 'pay_refunds_attempt_fk')
+                ->references('id_payment_attempt')
+                ->on('event_registration_payment_attempts')
+                ->nullOnDelete();
+        });
+
+        Schema::create('bank_transfer_settings', function (Blueprint $table) {
+            $table->id('id_bank_transfer_settings');
+            $table->string('iban', 64);
+            $table->string('beneficiary_name', 255);
+            $table->string('bank_name', 255)->nullable();
+            $table->string('payment_reference_template', 255)->default('PAD-{checkout_id}');
+            $table->text('extra_instructions')->nullable();
+            $table->integer('inserted_at')->nullable();
+            $table->integer('updated_at')->nullable();
         });
 
         Schema::create('prizes', function (Blueprint $table) {
@@ -429,21 +586,21 @@ return new class () extends Migration {
             $table->unique(['sponsor_id', 'prize_id']);
         });
 
-        Schema::create('edition_lotteries', function (Blueprint $table) {
+        Schema::create('event_lotteries', function (Blueprint $table) {
             $table->id('id_lottery');
-            $table->unsignedBigInteger('edition_id');
+            $table->unsignedBigInteger('event_id');
             $table->string('name', 60);
             $table->smallInteger('display_order')->default(0);
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
-            $table->index('edition_id', 'pm_edition_lotteries_edition_id_foreign');
-            $table->unique(['edition_id', 'name']);
-            $table->foreign('edition_id')->references('id_edition')->on('editions');
+            $table->index('event_id', 'pm_event_lotteries_event_id_foreign');
+            $table->unique(['event_id', 'name']);
+            $table->foreign('event_id')->references('id_event')->on('events');
         });
 
-        Schema::create('edition_lottery_prizes', function (Blueprint $table) {
+        Schema::create('event_lottery_prizes', function (Blueprint $table) {
             $table->id('id_lottery_prize');
-            $table->foreignId('lottery_id')->constrained('edition_lotteries', 'id_lottery');
+            $table->foreignId('lottery_id')->constrained('event_lotteries', 'id_lottery');
             $table->foreignId('prize_id')->constrained('prizes', 'id_prize');
             $table->tinyInteger('prize_quantity');
             $table->foreignId('sponsor_id')->nullable()->constrained('sponsors', 'id_sponsor');
@@ -452,12 +609,12 @@ return new class () extends Migration {
             $table->integer('updated_at')->nullable();
         });
 
-        Schema::create('edition_lottery_rules', function (Blueprint $table) {
+        Schema::create('event_lottery_rules', function (Blueprint $table) {
             $table->id('id_lottery_rule');
-            $table->foreignId('lottery_prize_id')->constrained('edition_lottery_prizes', 'id_lottery_prize');
+            $table->foreignId('lottery_prize_id')->constrained('event_lottery_prizes', 'id_lottery_prize');
             $table->tinyInteger('rule_prize_quantity');
             $table->tinyInteger('orderliness')->default(0);
-            $table->foreignId('edition_division_id')->nullable()->constrained('edition_divisions', 'id_edition_division');
+            $table->foreignId('event_division_id')->nullable()->constrained('event_divisions', 'id_event_division');
             $table->enum('gender', ['MALE', 'FEMALE'])->nullable();
             $table->enum('has_social_status', ['STUDENT', 'ADULT'])->nullable();
             $table->enum('legal_age', ['MINOR', 'MAJOR'])->nullable();
@@ -471,10 +628,10 @@ return new class () extends Migration {
             $table->integer('updated_at')->nullable();
         });
 
-        Schema::create('edition_lottery_luckies', function (Blueprint $table) {
+        Schema::create('event_lottery_luckies', function (Blueprint $table) {
             $table->id('id_lucky');
-            $table->foreignId('lottery_rule_id')->nullable()->constrained('edition_lottery_rules', 'id_lottery_rule');
-            $table->foreignId('drawn_participation_id')->constrained('edition_participations', 'id_participation');
+            $table->foreignId('lottery_rule_id')->nullable()->constrained('event_lottery_rules', 'id_lottery_rule');
+            $table->foreignId('drawn_participation_id')->constrained('event_participations', 'id_participation');
             $table->integer('drawn_at');
             $table->integer('available_at');
             $table->integer('announced_at')->nullable();
@@ -486,8 +643,8 @@ return new class () extends Migration {
 
         Schema::create('matches', function (Blueprint $table) {
             $table->id('id_match');
-            $table->foreignId('edition_division_id')->constrained('edition_divisions', 'id_edition_division');
-            $table->foreignId('edition_division_court_id')->constrained('edition_division_courts', 'id_edition_division_court');
+            $table->foreignId('event_division_id')->constrained('event_divisions', 'id_event_division');
+            $table->foreignId('event_division_court_id')->constrained('event_division_courts', 'id_event_division_court');
             $table->enum('match_kind', ['REGULAR', 'FINAL', 'DEMONSTRATIVE']);
             $table->smallInteger('sequence_no');
             $table->time('scheduled_start')->nullable();
@@ -496,7 +653,7 @@ return new class () extends Migration {
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
             $table->unique(
-                ['edition_division_id', 'match_kind', 'edition_division_court_id', 'sequence_no'],
+                ['event_division_id', 'match_kind', 'event_division_court_id', 'sequence_no'],
                 'uq_match_sequence'
             );
         });
@@ -515,53 +672,52 @@ return new class () extends Migration {
             $table->id('id_match_player');
             $table->foreignId('match_side_id')->constrained('match_sides', 'id_match_side')->cascadeOnDelete();
             $table->tinyInteger('slot');
-            $table->foreignId('participation_id')->nullable()->constrained('edition_participations', 'id_participation');
+            $table->foreignId('participation_id')->nullable()->constrained('event_participations', 'id_participation');
             $table->foreignId('player_id')->nullable()->constrained('players', 'id_player');
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
             $table->unique(['match_side_id', 'slot'], 'uq_match_side_slot');
         });
 
-        Schema::create('edition_division_standings', function (Blueprint $table) {
+        Schema::create('event_division_standings', function (Blueprint $table) {
             $table->id('id_standing');
-            $table->foreignId('edition_division_id')->constrained('edition_divisions', 'id_edition_division');
-            $table->foreignId('participation_id')->constrained('edition_participations', 'id_participation');
+            $table->foreignId('event_division_id')->constrained('event_divisions', 'id_event_division');
+            $table->foreignId('participation_id')->constrained('event_participations', 'id_participation');
             $table->integer('points_total')->nullable();
             $table->decimal('wins', 4, 1)->nullable();
             $table->smallInteger('rank')->nullable();
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
-            $table->unique(['edition_division_id', 'participation_id'], 'uq_standing_participation');
+            $table->unique(['event_division_id', 'participation_id'], 'uq_standing_participation');
         });
 
-        Schema::create('edition_division_replacements', function (Blueprint $table) {
+        Schema::create('event_division_replacements', function (Blueprint $table) {
             $table->id('id_replacement');
-            $table->unsignedBigInteger('edition_division_id');
+            $table->unsignedBigInteger('event_division_id');
             $table->unsignedBigInteger('original_participation_id');
             $table->unsignedBigInteger('substitute_participation_id')->nullable();
             $table->unsignedBigInteger('substitute_player_id')->nullable();
             $table->unsignedBigInteger('match_id')->nullable();
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
-            $table->index('edition_division_id', 'idx_repl_edition_division');
+            $table->index('event_division_id', 'idx_repl_event_division');
         });
 
-        Schema::table('edition_division_replacements', function (Blueprint $table) {
-            $table->foreign('edition_division_id', 'fk_repl_ed')
-                ->references('id_edition_division')->on('edition_divisions');
+        Schema::table('event_division_replacements', function (Blueprint $table) {
+            $table->foreign('event_division_id', 'fk_repl_ed')
+                ->references('id_event_division')->on('event_divisions');
             $table->foreign('original_participation_id', 'fk_repl_orig')
-                ->references('id_participation')->on('edition_participations');
+                ->references('id_participation')->on('event_participations');
             $table->foreign('substitute_participation_id', 'fk_repl_sub_part')
-                ->references('id_participation')->on('edition_participations');
+                ->references('id_participation')->on('event_participations');
             $table->foreign('substitute_player_id', 'fk_repl_sub_player')
                 ->references('id_player')->on('players');
             $table->foreign('match_id', 'fk_repl_match')
                 ->references('id_match')->on('matches');
         });
 
-        $prefix = DB::getTablePrefix();
         DB::statement(
-            "ALTER TABLE `{$prefix}edition_division_replacements` " .
+            "ALTER TABLE `{$prefix}event_division_replacements` " .
             'ADD CONSTRAINT `chk_repl_at_most_one_substitute` ' .
             'CHECK (`substitute_participation_id` IS NULL OR `substitute_player_id` IS NULL)'
         );
@@ -623,7 +779,7 @@ return new class () extends Migration {
         Schema::create('eligibilities', function (Blueprint $table) {
             $table->id('id_eligibility');
             $table->foreignId('player_id')->constrained('players', 'id_player')->index();
-            $table->json('edition_ids')->nullable();
+            $table->json('event_ids')->nullable();
             $table->json('media_source')->nullable();
             $table->json('friends_source')->nullable();
             $table->json('racket_experience')->nullable();
@@ -715,7 +871,7 @@ return new class () extends Migration {
             $table->unsignedBigInteger('imported_by_player_id')->nullable();
             $table->string('format', 64);
             $table->string('original_filename', 255);
-            $table->unsignedBigInteger('edition_id')->nullable();
+            $table->unsignedBigInteger('event_id')->nullable();
             $table->unsignedInteger('included_count')->default(0);
             $table->unsignedInteger('values_new_count')->default(0);
             $table->unsignedInteger('values_replaced_count')->default(0);
@@ -725,9 +881,9 @@ return new class () extends Migration {
                 ->references('id_player')
                 ->on('players')
                 ->nullOnDelete();
-            $table->foreign('edition_id', 'fk_pcfvi_edition')
-                ->references('id_edition')
-                ->on('editions')
+            $table->foreign('event_id', 'fk_pcfvi_event')
+                ->references('id_event')
+                ->on('events')
                 ->nullOnDelete();
         });
 
@@ -758,7 +914,7 @@ return new class () extends Migration {
             $table->id('id_player_custom_field_value');
             $table->unsignedBigInteger('player_id');
             $table->unsignedBigInteger('player_custom_field_id');
-            $table->unsignedBigInteger('edition_id')->nullable();
+            $table->unsignedBigInteger('event_id')->nullable();
             $table->text('value_text')->nullable();
             $table->integer('value_integer')->nullable();
             $table->boolean('value_boolean')->nullable();
@@ -772,12 +928,12 @@ return new class () extends Migration {
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
             $table->unique(
-                ['player_id', 'player_custom_field_id', 'edition_id'],
-                'uq_pcfv_player_field_edition'
+                ['player_id', 'player_custom_field_id', 'event_id'],
+                'uq_pcfv_player_field_event'
             );
             $table->index(['player_id', 'player_custom_field_id'], 'pcfv_player_field_idx');
             $table->index('player_custom_field_id', 'pcfv_field_idx');
-            $table->index('edition_id', 'pcfv_edition_idx');
+            $table->index('event_id', 'pcfv_event_idx');
             $table->foreign('player_id', 'fk_pcfv_player')
                 ->references('id_player')
                 ->on('players')
@@ -786,9 +942,9 @@ return new class () extends Migration {
                 ->references('id_player_custom_field')
                 ->on('player_custom_fields')
                 ->restrictOnDelete();
-            $table->foreign('edition_id', 'fk_pcfv_edition')
-                ->references('id_edition')
-                ->on('editions')
+            $table->foreign('event_id', 'fk_pcfv_event')
+                ->references('id_event')
+                ->on('events')
                 ->nullOnDelete();
             $table->foreign('submitted_by_player_id', 'fk_pcfv_submitted_by')
                 ->references('id_player')
@@ -836,6 +992,197 @@ return new class () extends Migration {
             $table->index(['type', 'status'], 'idx_challenge_sessions_type_status');
         });
 
+        Schema::create('benefit_definitions', function (Blueprint $table) {
+            $table->id('id_benefit');
+            $table->string('slug', 64)->unique();
+            $table->string('name', 128);
+            $table->text('description')->nullable();
+            $table->boolean('is_active')->default(false);
+            $table->boolean('is_system')->default(false);
+            $table->string('amount_type', 16);
+            $table->integer('amount_value')->default(0);
+            $table->integer('max_discount_ron')->nullable();
+            $table->string('scope_type', 32);
+            $table->foreignId('club_id')->nullable()->constrained('clubs', 'id_club')->nullOnDelete();
+            $table->integer('valid_from')->nullable();
+            $table->integer('valid_until')->nullable();
+            $table->boolean('player_optional')->default(false);
+            $table->string('stack_group', 64)->nullable();
+            $table->string('exclusivity', 32)->default('stackable');
+            $table->integer('priority')->default(100);
+            $table->unsignedInteger('max_redemptions_per_player')->nullable();
+            $table->unsignedInteger('max_redemptions_global')->nullable();
+            $table->unsignedInteger('max_redemptions_per_event')->nullable();
+            $table->integer('inserted_at')->nullable();
+            $table->integer('updated_at')->nullable();
+        });
+
+        Schema::create('benefit_conditions', function (Blueprint $table) {
+            $table->id('id_benefit_condition');
+            $table->foreignId('benefit_definition_id')
+                ->constrained('benefit_definitions', 'id_benefit')
+                ->cascadeOnDelete();
+            $table->string('condition_type', 64);
+            $table->json('parameters')->nullable();
+            $table->integer('inserted_at')->nullable();
+            $table->integer('updated_at')->nullable();
+            $table->index(['benefit_definition_id', 'condition_type'], 'benefit_conditions_def_type_idx');
+        });
+
+        Schema::create('benefit_events', function (Blueprint $table) {
+            $table->id('id_benefit_event');
+            $table->foreignId('benefit_definition_id')
+                ->constrained('benefit_definitions', 'id_benefit')
+                ->cascadeOnDelete();
+            $table->foreignId('event_id')
+                ->constrained('events', 'id_event')
+                ->cascadeOnDelete();
+            $table->integer('inserted_at')->nullable();
+            $table->integer('updated_at')->nullable();
+            $table->unique(['benefit_definition_id', 'event_id'], 'benefit_events_uq');
+        });
+
+        Schema::create('benefit_entitlements', function (Blueprint $table) {
+            $table->id('id_entitlement');
+            $table->foreignId('benefit_definition_id')
+                ->constrained('benefit_definitions', 'id_benefit')
+                ->cascadeOnDelete();
+            $table->foreignId('player_id')
+                ->constrained('players', 'id_player')
+                ->cascadeOnDelete();
+            $table->unsignedInteger('remaining_uses')->nullable();
+            $table->integer('valid_from')->nullable();
+            $table->integer('valid_until')->nullable();
+            $table->string('source_type', 32);
+            $table->unsignedBigInteger('source_id')->nullable();
+            $table->string('status', 16)->default('active');
+            $table->integer('inserted_at')->nullable();
+            $table->integer('updated_at')->nullable();
+            $table->index(['player_id', 'status'], 'benefit_entitlements_player_status_idx');
+            $table->index(['benefit_definition_id', 'player_id'], 'benefit_entitlements_benefit_player_idx');
+        });
+
+        Schema::create('event_referral_settings', function (Blueprint $table) {
+            $table->id('id_event_referral_setting');
+            $table->foreignId('event_id')
+                ->unique()
+                ->constrained('events', 'id_event')
+                ->cascadeOnDelete();
+            $table->unsignedInteger('code_ttl_hours');
+            $table->integer('inserted_at')->nullable();
+            $table->integer('updated_at')->nullable();
+        });
+
+        Schema::create('event_referral_codes', function (Blueprint $table) {
+            $table->id('id_referral_code');
+            $table->foreignId('event_id')
+                ->constrained('events', 'id_event')
+                ->cascadeOnDelete();
+            $table->foreignId('referrer_player_id')
+                ->constrained('players', 'id_player')
+                ->cascadeOnDelete();
+            $table->string('code', 32);
+            $table->integer('expires_at');
+            $table->integer('revoked_at')->nullable();
+            $table->integer('inserted_at')->nullable();
+            $table->integer('updated_at')->nullable();
+            $table->unique(['event_id', 'code'], 'event_referral_codes_event_code_uq');
+            $table->index(['referrer_player_id', 'event_id'], 'event_referral_codes_referrer_event_idx');
+        });
+
+        Schema::create('event_referral_code_invitees', function (Blueprint $table) {
+            $table->id('id_referral_code_invitee');
+            $table->foreignId('referral_code_id')
+                ->constrained('event_referral_codes', 'id_referral_code')
+                ->cascadeOnDelete();
+            $table->string('email', 255)->nullable();
+            $table->string('phone', 30)->nullable();
+            $table->foreignId('player_id')
+                ->nullable()
+                ->constrained('players', 'id_player')
+                ->nullOnDelete();
+            $table->integer('inserted_at')->nullable();
+            $table->integer('updated_at')->nullable();
+            $table->index(['referral_code_id'], 'referral_code_invitees_code_idx');
+        });
+
+        Schema::create('referral_touchpoints', function (Blueprint $table) {
+            $table->id('id_touchpoint');
+            $table->foreignId('event_id')
+                ->constrained('events', 'id_event')
+                ->cascadeOnDelete();
+            $table->foreignId('referred_player_id')
+                ->constrained('players', 'id_player')
+                ->cascadeOnDelete();
+            $table->foreignId('referrer_player_id')
+                ->constrained('players', 'id_player')
+                ->cascadeOnDelete();
+            $table->foreignId('referral_code_id')
+                ->constrained('event_referral_codes', 'id_referral_code')
+                ->cascadeOnDelete();
+            $table->boolean('discount_eligible')->default(false);
+            $table->integer('touched_at');
+            $table->json('client_metadata')->nullable();
+            $table->integer('inserted_at')->nullable();
+            $table->integer('updated_at')->nullable();
+            $table->index(
+                ['event_id', 'referred_player_id', 'discount_eligible'],
+                'referral_touchpoints_event_referred_eligible_idx'
+            );
+        });
+
+        Schema::create('event_referral_attributions', function (Blueprint $table) {
+            $table->id('id_attribution');
+            $table->foreignId('event_id')
+                ->constrained('events', 'id_event')
+                ->cascadeOnDelete();
+            $table->foreignId('referred_player_id')
+                ->constrained('players', 'id_player')
+                ->cascadeOnDelete();
+            $table->foreignId('referrer_player_id')
+                ->constrained('players', 'id_player')
+                ->cascadeOnDelete();
+            $table->foreignId('referral_code_id')
+                ->nullable()
+                ->constrained('event_referral_codes', 'id_referral_code')
+                ->nullOnDelete();
+            $table->foreignId('checkout_id')
+                ->nullable()
+                ->constrained('event_registration_checkouts', 'id_checkout')
+                ->nullOnDelete();
+            $table->string('status', 16);
+            $table->integer('inserted_at')->nullable();
+            $table->integer('updated_at')->nullable();
+            $table->unique(['event_id', 'referred_player_id'], 'event_referral_attributions_event_referred_uq');
+            $table->index(['referrer_player_id', 'event_id', 'status'], 'event_referral_attributions_referrer_status_idx');
+        });
+
+        Schema::create('benefit_redemptions', function (Blueprint $table) {
+            $table->id('id_redemption');
+            $table->foreignId('checkout_item_id')
+                ->constrained('event_registration_checkout_items', 'id_checkout_item')
+                ->cascadeOnDelete();
+            $table->foreignId('benefit_definition_id')
+                ->constrained('benefit_definitions', 'id_benefit')
+                ->cascadeOnDelete();
+            $table->foreignId('entitlement_id')
+                ->nullable()
+                ->constrained('benefit_entitlements', 'id_entitlement')
+                ->nullOnDelete();
+            $table->foreignId('referral_attribution_id')
+                ->nullable()
+                ->constrained('event_referral_attributions', 'id_attribution')
+                ->nullOnDelete();
+            $table->integer('amount_ron');
+            $table->string('benefit_name', 128);
+            $table->string('benefit_snapshot_hash', 64)->nullable();
+            $table->string('selection_source', 16);
+            $table->text('reason')->nullable();
+            $table->integer('inserted_at')->nullable();
+            $table->integer('updated_at')->nullable();
+            $table->index(['checkout_item_id'], 'benefit_redemptions_item_idx');
+        });
+
         $now = time();
         $rules = json_encode(['max_length' => 2000], JSON_THROW_ON_ERROR);
         $fields = [
@@ -861,10 +1208,133 @@ return new class () extends Migration {
                 'updated_at' => null,
             ]);
         }
+
+        $this->seedSystemBenefits($now);
+    }
+
+    private function seedSystemBenefits(int $now): void
+    {
+        $templates = [
+            [
+                'slug' => 'student',
+                'name' => 'Student',
+                'description' => 'Discount for players with student eligibility.',
+                'is_active' => false,
+                'is_system' => false,
+                'amount_type' => 'fixed_ron',
+                'amount_value' => 0,
+                'scope_type' => 'lifetime',
+                'player_optional' => false,
+                'exclusivity' => 'stackable',
+                'priority' => 10,
+                'conditions' => [
+                    ['condition_type' => 'eligibility_flag', 'parameters' => json_encode(['flag' => 'being_student'])],
+                ],
+            ],
+            [
+                'slug' => 'referred',
+                'name' => 'Referred player',
+                'description' => 'Discount for newcomers attributed to a referrer on first join.',
+                'is_active' => false,
+                'is_system' => false,
+                'amount_type' => 'fixed_ron',
+                'amount_value' => 0,
+                'scope_type' => 'lifetime',
+                'player_optional' => false,
+                'exclusivity' => 'stackable',
+                'priority' => 20,
+                'conditions' => [
+                    ['condition_type' => 'referrer_selected', 'parameters' => json_encode((object) [])],
+                    ['condition_type' => 'no_prior_paid_registration_in_edition', 'parameters' => json_encode((object) [])],
+                ],
+            ],
+            [
+                'slug' => 'referrer',
+                'name' => 'Referrer reward',
+                'description' => 'Reward entitlement granted after a referred player’s first paid registration.',
+                'is_active' => false,
+                'is_system' => false,
+                'amount_type' => 'fixed_ron',
+                'amount_value' => 0,
+                'scope_type' => 'lifetime',
+                'player_optional' => true,
+                'exclusivity' => 'stackable',
+                'priority' => 30,
+                'conditions' => [],
+            ],
+            [
+                'slug' => 'early_bird',
+                'name' => 'Early bird',
+                'description' => 'Discount for joining with enough days before the edition date.',
+                'is_active' => false,
+                'is_system' => false,
+                'amount_type' => 'fixed_ron',
+                'amount_value' => 0,
+                'scope_type' => 'lifetime',
+                'player_optional' => false,
+                'exclusivity' => 'stackable',
+                'priority' => 40,
+                'conditions' => [
+                    ['condition_type' => 'days_before_edition_date', 'parameters' => json_encode(['min_days' => 7])],
+                ],
+            ],
+            [
+                'slug' => 'manual_adjustment',
+                'name' => 'Manual adjustment',
+                'description' => 'Manager-only fixed RON reduction with required reason.',
+                'is_active' => true,
+                'is_system' => true,
+                'amount_type' => 'fixed_ron',
+                'amount_value' => 0,
+                'scope_type' => 'lifetime',
+                'player_optional' => false,
+                'exclusivity' => 'stackable',
+                'priority' => 1000,
+                'conditions' => [],
+            ],
+        ];
+
+        foreach ($templates as $template) {
+            $conditions = $template['conditions'];
+            unset($template['conditions']);
+
+            $id = DB::table('benefit_definitions')->insertGetId(array_merge($template, [
+                'max_discount_ron' => null,
+                'club_id' => null,
+                'valid_from' => null,
+                'valid_until' => null,
+                'stack_group' => null,
+                'max_redemptions_per_player' => null,
+                'max_redemptions_global' => null,
+                'max_redemptions_per_event' => null,
+                'inserted_at' => $now,
+                'updated_at' => $now,
+            ]), 'id_benefit');
+
+            foreach ($conditions as $condition) {
+                DB::table('benefit_conditions')->insert([
+                    'benefit_definition_id' => $id,
+                    'condition_type' => $condition['condition_type'],
+                    'parameters' => $condition['parameters'],
+                    'inserted_at' => $now,
+                    'updated_at' => $now,
+                ]);
+            }
+        }
     }
 
     public function down(): void
     {
+        Schema::dropIfExists('benefit_redemptions');
+        Schema::dropIfExists('event_referral_attributions');
+        Schema::dropIfExists('referral_touchpoints');
+        Schema::dropIfExists('event_referral_code_invitees');
+        Schema::dropIfExists('event_referral_codes');
+        Schema::dropIfExists('event_referral_settings');
+        Schema::dropIfExists('benefit_entitlements');
+        Schema::dropIfExists('benefit_events');
+        Schema::dropIfExists('benefit_conditions');
+        Schema::dropIfExists('benefit_definitions');
         Schema::dropIfExists('challenge_sessions');
         Schema::dropIfExists('player_custom_field_value_options');
         Schema::dropIfExists('player_custom_field_values');
@@ -878,25 +1348,32 @@ return new class () extends Migration {
         Schema::dropIfExists('validations_site');
         Schema::dropIfExists('cached_pdf_player_images');
         Schema::dropIfExists('cached_pdf_pair_images');
-        Schema::dropIfExists('edition_division_replacements');
-        Schema::dropIfExists('edition_division_standings');
+        Schema::dropIfExists('event_division_replacements');
+        Schema::dropIfExists('event_division_standings');
         Schema::dropIfExists('match_players');
         Schema::dropIfExists('match_sides');
         Schema::dropIfExists('matches');
-        Schema::dropIfExists('edition_lottery_luckies');
-        Schema::dropIfExists('edition_lottery_rules');
-        Schema::dropIfExists('edition_lottery_prizes');
-        Schema::dropIfExists('edition_lotteries');
+        Schema::dropIfExists('event_lottery_luckies');
+        Schema::dropIfExists('event_lottery_rules');
+        Schema::dropIfExists('event_lottery_prizes');
+        Schema::dropIfExists('event_lotteries');
         Schema::dropIfExists('sponsor_prizes');
         Schema::dropIfExists('sponsor_players');
         Schema::dropIfExists('sponsors');
         Schema::dropIfExists('prizes');
-        Schema::dropIfExists('edition_registrations');
-        Schema::dropIfExists('edition_participations');
-        Schema::dropIfExists('edition_division_posters');
-        Schema::dropIfExists('edition_division_courts');
-        Schema::dropIfExists('edition_division_schedules');
-        Schema::dropIfExists('edition_divisions');
+        Schema::dropIfExists('bank_transfer_settings');
+        Schema::dropIfExists('event_registration_payment_refunds');
+        Schema::dropIfExists('event_registration_payment_proofs');
+        Schema::dropIfExists('event_registration_payment_attempts');
+        Schema::dropIfExists('event_registration_checkout_items');
+        Schema::dropIfExists('event_registration_checkouts');
+        Schema::dropIfExists('event_registrations');
+        Schema::dropIfExists('event_participations');
+        Schema::dropIfExists('event_division_posters');
+        Schema::dropIfExists('event_division_courts');
+        Schema::dropIfExists('event_division_schedules');
+        Schema::dropIfExists('event_divisions');
+        Schema::dropIfExists('player_device_tokens');
         Schema::dropIfExists('player_profile_image_import_rows');
         if (Schema::getConnection()->getDriverName() === 'mysql') {
             $table = Schema::getConnection()->getTablePrefix() . 'player_profile_images';
@@ -916,9 +1393,9 @@ return new class () extends Migration {
         Schema::dropIfExists('player_imports');
         Schema::dropIfExists('players');
         Schema::table('divisions', function (Blueprint $table) {
-            $table->dropForeign('fk_divisions_its_first_edition');
+            $table->dropForeign('fk_divisions_its_first_event');
         });
-        Schema::dropIfExists('editions');
+        Schema::dropIfExists('events');
         Schema::dropIfExists('courts');
         Schema::dropIfExists('locations');
         Schema::dropIfExists('divisions');

@@ -16,7 +16,7 @@ class DivisionFactory extends Factory
         return [
             'name' => substr($this->faker->unique()->words(2, true), 0, 25),
             'color' => $this->faker->hexColor(),
-            'its_first_edition_id' => \App\Models\Edition::factory()->create()->id_edition,
+            'its_first_event_id' => \App\Models\PadelEvent::factory()->create()->id_event,
             'inserted_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
         ];
     }

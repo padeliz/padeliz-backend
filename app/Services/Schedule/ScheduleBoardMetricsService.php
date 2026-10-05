@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace App\Services\Schedule;
 
 use App\Models\CachedPdfPlayerImage;
-use App\Models\EditionDivision;
+use App\Models\EventDivision;
 use App\Models\GameMatch;
 use App\Models\MatchPlayer;
 use App\Services\Pdf\PdfHtmlHelper;
+use App\Services\Schedule\PointsPerMatchCalculator;
 use Illuminate\Support\Collection;
 
 /**
@@ -24,15 +25,15 @@ final class ScheduleBoardMetricsService
     /**
      * @return null|array<string, mixed>
      */
-    public function buildMetrics(EditionDivision $editionDivision): ?array
+    public function buildMetrics(EventDivision $eventDivision): ?array
     {
-        $matches = $this->regularMatches($editionDivision);
+        $matches = $this->regularMatches($eventDivision);
         if ($matches->isEmpty()) {
             return null;
         }
 
-        $participations = $editionDivision->participations
-            ?? $editionDivision->participations()->orderBy('sort_order')->orderBy('id_participation')->get();
+        $participations = $eventDivision->participations
+            ?? $eventDivision->participations()->orderBy('sort_order')->orderBy('id_participation')->get();
 
         $matchesByCourt = $this->matchesByCourtStructure($matches);
         $partnersCount = $this->partnersCountFromMatches($matchesByCourt);
@@ -67,18 +68,21 @@ final class ScheduleBoardMetricsService
             'css_class' => $avgGrade['css_class'],
         ];
 
-        $courtsCount = $editionDivision->relationLoaded('courts')
-            ? $editionDivision->courts->count()
-            : $editionDivision->courts()->count();
+        $courtsCount = $eventDivision->relationLoaded('courts')
+            ? $eventDivision->courts->count()
+            : $eventDivision->courts()->count();
 
-        $schedule = $editionDivision->relationLoaded('schedule')
-            ? $editionDivision->getRelation('schedule')
-            : $editionDivision->schedule()->first();
+        $schedule = $eventDivision->relationLoaded('schedule')
+            ? $eventDivision->getRelation('schedule')
+            : $eventDivision->schedule()->first();
 
         return [
             'players_count' => $participations->count(),
             'matches_count' => $matches->count(),
             'points_per_match' => $schedule?->points_per_match,
+            'points_per_match_print' => $schedule?->points_per_match === null
+                ? null
+                : PointsPerMatchCalculator::evenRoundForPrint((int) $schedule->points_per_match),
             'partners_count' => $partnersCount,
             'partners_count_variation' => $variation,
             'players_met' => $playersMet,
@@ -98,10 +102,10 @@ final class ScheduleBoardMetricsService
     /**
      * @return list<array{participation_id: int, player_id: int, short_name: string, pdf_avatar_url: null|string, is_collecting_points: bool}>
      */
-    public function buildPlayersBoard(EditionDivision $editionDivision): array
+    public function buildPlayersBoard(EventDivision $eventDivision): array
     {
-        $participations = $editionDivision->participations
-            ?? $editionDivision->participations()->orderBy('sort_order')->orderBy('id_participation')->get();
+        $participations = $eventDivision->participations
+            ?? $eventDivision->participations()->orderBy('sort_order')->orderBy('id_participation')->get();
 
         $participations->loadMissing('player');
 
@@ -131,16 +135,16 @@ final class ScheduleBoardMetricsService
     /**
      * @return Collection<int, GameMatch>
      */
-    private function regularMatches(EditionDivision $editionDivision): Collection
+    private function regularMatches(EventDivision $eventDivision): Collection
     {
-        if ($editionDivision->relationLoaded('matches')) {
-            return $editionDivision->matches
+        if ($eventDivision->relationLoaded('matches')) {
+            return $eventDivision->matches
                 ->where('match_kind', 'REGULAR')
                 ->sortBy('sequence_no')
                 ->values();
         }
 
-        return $editionDivision->matches()
+        return $eventDivision->matches()
             ->where('match_kind', 'REGULAR')
             ->orderBy('sequence_no')
             ->with(['sides.players.participation'])
@@ -155,7 +159,7 @@ final class ScheduleBoardMetricsService
     {
         $byCourt = [];
         foreach ($matches as $match) {
-            $courtKey = (int) $match->edition_division_court_id;
+            $courtKey = (int) $match->event_division_court_id;
             $seq = (int) $match->sequence_no;
             if ($seq < 1) {
                 continue;

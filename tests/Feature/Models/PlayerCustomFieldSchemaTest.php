@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Models;
 
-use App\Models\Edition;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Models\PlayerCustomField;
 use App\Models\PlayerCustomFieldValue;
@@ -43,13 +43,13 @@ final class PlayerCustomFieldSchemaTest extends TestCase
         PlayerCustomFieldValue::factory()->create([
             'player_id' => $player->id_player,
             'player_custom_field_id' => $field->id_player_custom_field,
-            'edition_id' => null,
+            'event_id' => null,
             'value_text' => 'one',
         ]);
         PlayerCustomFieldValue::factory()->create([
             'player_id' => $player->id_player,
             'player_custom_field_id' => $field->id_player_custom_field,
-            'edition_id' => null,
+            'event_id' => null,
             'value_text' => 'two',
         ]);
 
@@ -58,7 +58,7 @@ final class PlayerCustomFieldSchemaTest extends TestCase
             PlayerCustomFieldValue::query()
                 ->where('player_id', $player->id_player)
                 ->where('player_custom_field_id', $field->id_player_custom_field)
-                ->whereNull('edition_id')
+                ->whereNull('event_id')
                 ->count()
         );
     }
@@ -67,12 +67,12 @@ final class PlayerCustomFieldSchemaTest extends TestCase
     {
         $player = Player::factory()->create();
         $field = PlayerCustomField::factory()->create();
-        $edition = Edition::factory()->create();
+        $event = PadelEvent::factory()->create();
 
         PlayerCustomFieldValue::factory()->create([
             'player_id' => $player->id_player,
             'player_custom_field_id' => $field->id_player_custom_field,
-            'edition_id' => $edition->id_edition,
+            'event_id' => $event->id_event,
             'value_text' => 'one',
         ]);
 
@@ -81,7 +81,7 @@ final class PlayerCustomFieldSchemaTest extends TestCase
         PlayerCustomFieldValue::factory()->create([
             'player_id' => $player->id_player,
             'player_custom_field_id' => $field->id_player_custom_field,
-            'edition_id' => $edition->id_edition,
+            'event_id' => $event->id_event,
             'value_text' => 'two',
         ]);
     }

@@ -82,17 +82,17 @@ final class ManagerResourceReadCacheTest extends TestCase
     public function test_remember_index_edition_scoped_policy(): void
     {
         $request = Request::create('/api/v1/manager/players', 'GET', [
-            'filters' => ['edition_id' => 5],
+            'filters' => ['event_id' => 5],
             'per_page' => 15,
             'page' => 1,
         ]);
-        $allowedFilters = ['edition_id'];
+        $allowedFilters = ['event_id'];
         $calls = 0;
 
         $this->readCache->rememberIndex('players', $request, $allowedFilters, function () use (&$calls) {
             ++$calls;
 
-            return ['data' => [['id_player' => 1, 'edition_id' => 5]]];
+            return ['data' => [['id_player' => 1, 'event_id' => 5]]];
         });
         $this->readCache->rememberIndex('players', $request, $allowedFilters, function () use (&$calls) {
             ++$calls;
@@ -134,21 +134,21 @@ final class ManagerResourceReadCacheTest extends TestCase
     public function test_remember_show_edition_path(): void
     {
         $calls = 0;
-        $tags = array_merge(config('cache_policies.edition_show')['tags'], ['edition:7']);
+        $tags = array_merge(config('cache_policies.event_show')['tags'], ['event:7']);
 
-        $this->readCache->rememberShow('editions', 7, function () use (&$calls) {
+        $this->readCache->rememberShow('events', 7, function () use (&$calls) {
             ++$calls;
 
-            return ['id_edition' => 7, 'name' => 'Edition'];
+            return ['id_event' => 7, 'name' => 'PadelEvent'];
         });
-        $this->readCache->rememberShow('editions', 7, function () use (&$calls) {
+        $this->readCache->rememberShow('events', 7, function () use (&$calls) {
             ++$calls;
 
-            return ['id_edition' => 7, 'name' => 'Other'];
+            return ['id_event' => 7, 'name' => 'Other'];
         });
 
         $this->assertSame(1, $calls);
-        $this->assertTrue($this->cache->has('mgr:show:editions:7', $tags));
+        $this->assertTrue($this->cache->has('mgr:show:events:7', $tags));
     }
 
     public function test_index_bypasses_when_search_query_present(): void
@@ -215,7 +215,7 @@ final class ManagerResourceReadCacheTest extends TestCase
             'filters' => ['city' => 'Bucharest'],
         ]);
 
-        $this->assertFalse($this->readCache->isIndexCacheable($request, ['edition_id']));
+        $this->assertFalse($this->readCache->isIndexCacheable($request, ['event_id']));
     }
 
     public function test_is_index_cacheable_rejects_non_default_sort(): void
@@ -297,14 +297,14 @@ final class ManagerResourceReadCacheTest extends TestCase
         $this->assertSame(2, $calls);
     }
 
-    public function test_flush_edition_tag_invalidates_edition_scoped_index(): void
+    public function test_flush_edition_tag_invalidates_event_scoped_index(): void
     {
         $request = Request::create('/api/v1/manager/players', 'GET', [
-            'filters' => ['edition_id' => 5],
+            'filters' => ['event_id' => 5],
             'per_page' => 15,
             'page' => 1,
         ]);
-        $allowedFilters = ['edition_id'];
+        $allowedFilters = ['event_id'];
         $key = $this->indexKey('players', $request);
         $tags = $this->indexTags('players', $request, $allowedFilters);
         $calls = 0;
@@ -316,7 +316,7 @@ final class ManagerResourceReadCacheTest extends TestCase
         });
         $this->assertTrue($this->cache->has($key, $tags));
 
-        $this->cache->flushTags(['edition:5']);
+        $this->cache->flushTags(['event:5']);
 
         $this->readCache->rememberIndex('players', $request, $allowedFilters, function () use (&$calls) {
             ++$calls;
@@ -334,15 +334,15 @@ final class ManagerResourceReadCacheTest extends TestCase
     private function indexTags(string $resource, Request $request, array $allowedFilters): array
     {
         $filters = $request->input('filters', []);
-        $policyKey = is_array($filters) && isset($filters['edition_id']) && $allowedFilters === ['edition_id']
-            ? 'edition_scoped_index'
+        $policyKey = is_array($filters) && isset($filters['event_id']) && $allowedFilters === ['event_id']
+            ? 'event_scoped_index'
             : 'reference_index_picker';
         $policy = config('cache_policies.' . $policyKey);
         $tags = array_merge($policy['tags'], ['mgr-list:' . $resource]);
-        $editionId = data_get($request->input('filters'), 'edition_id');
+        $editionId = data_get($request->input('filters'), 'event_id');
 
         if ($editionId !== null) {
-            $tags[] = 'edition:' . $editionId;
+            $tags[] = 'event:' . $editionId;
         }
 
         return $tags;

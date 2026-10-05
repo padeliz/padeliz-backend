@@ -145,7 +145,7 @@ use Illuminate\Support\Facades\Storage;
  *     @OA\Property(
  *         property="lotteryPrizes",
  *         type="array",
- *         @OA\Items(ref="#/components/schemas/EditionLotteryPrize"),
+ *         @OA\Items(ref="#/components/schemas/EventLotteryPrize"),
  *         title="Lottery Prizes",
  *         description="Array of related lottery prize lines",
  *         nullable=true
@@ -249,7 +249,7 @@ class Prize extends Model
 
     public function lotteryPrizes(): HasMany
     {
-        return $this->hasMany(EditionLotteryPrize::class, 'prize_id', 'id_prize');
+        return $this->hasMany(EventLotteryPrize::class, 'prize_id', 'id_prize');
     }
 
     public function sponsorPrizes(): HasMany

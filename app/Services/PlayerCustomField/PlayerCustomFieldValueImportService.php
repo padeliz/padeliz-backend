@@ -112,7 +112,7 @@ final class PlayerCustomFieldValueImportService
     }
 
     /**
-     * @param  array{format: string, filename: string, edition_id?: null|int, rows: list<array<string, mixed>>}  $payload
+     * @param  array{format: string, filename: string, event_id?: null|int, rows: list<array<string, mixed>>}  $payload
      */
     public function save(array $payload, int $importedByPlayerId): PlayerCustomFieldValueImport
     {
@@ -134,14 +134,14 @@ final class PlayerCustomFieldValueImportService
             );
         }
 
-        $editionId = $payload['edition_id'] ?? null;
+        $editionId = $payload['event_id'] ?? null;
         if ($editionId === '' || $editionId === false) {
             $editionId = null;
         }
         if ($editionId !== null) {
             $editionId = (int) $editionId;
-            $validator = Validator::make(['edition_id' => $editionId], [
-                'edition_id' => ['integer', 'exists:editions,id_edition'],
+            $validator = Validator::make(['event_id' => $editionId], [
+                'event_id' => ['integer', 'exists:events,id_event'],
             ]);
             if ($validator->fails()) {
                 throw new ValidationException($validator);
@@ -179,7 +179,7 @@ final class PlayerCustomFieldValueImportService
                 'imported_by_player_id' => $importedByPlayerId,
                 'format' => $formatKey,
                 'original_filename' => $filename,
-                'edition_id' => $editionId,
+                'event_id' => $editionId,
                 'included_count' => 0,
                 'values_new_count' => 0,
                 'values_replaced_count' => 0,
@@ -235,7 +235,7 @@ final class PlayerCustomFieldValueImportService
                 'values_replaced_count' => $valuesReplaced,
             ]);
 
-            return $import->fresh(['rows', 'importedByPlayer', 'edition']) ?? $import;
+            return $import->fresh(['rows', 'importedByPlayer', 'event']) ?? $import;
         });
     }
 

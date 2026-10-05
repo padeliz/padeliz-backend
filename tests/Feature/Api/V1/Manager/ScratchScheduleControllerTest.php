@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Manager;
 
-use App\Models\EditionDivisionStanding;
+use App\Models\EventDivisionStanding;
 use App\Models\GameMatch;
 use App\Models\MatchPlayer;
 use App\Models\MatchSide;
@@ -42,7 +42,7 @@ class ScratchScheduleControllerTest extends TestCase
         $matchesBefore = GameMatch::query()->count();
         $sidesBefore = MatchSide::query()->count();
         $playersBefore = MatchPlayer::query()->count();
-        $standingsBefore = EditionDivisionStanding::query()->count();
+        $standingsBefore = EventDivisionStanding::query()->count();
 
         $response = $this->postJson('/api/v1/manager/tools/schedule/preview', [
             'player_ids' => $this->playerIds,
@@ -66,6 +66,9 @@ class ScratchScheduleControllerTest extends TestCase
                     'matches_by_court',
                     'points_per_match',
                     'matches_count',
+                    'template_file',
+                    'template_version',
+                    'average_playing_time_minutes',
                 ],
             ]);
 
@@ -73,11 +76,89 @@ class ScratchScheduleControllerTest extends TestCase
         $this->assertSame(4, (int) $response->json('data.opponents_per_player'));
         $this->assertGreaterThan(0, (int) $response->json('data.matches_count'));
         $this->assertNotEmpty($response->json('data.matches_by_court'));
+        $this->assertIsString($response->json('data.template_file'));
+        $this->assertNotSame('', $response->json('data.template_file'));
+        $this->assertIsNumeric($response->json('data.average_playing_time_minutes'));
+        $this->assertArrayHasKey('points_per_match_print', $response->json('data'));
+        $this->assertSame(
+            \App\Services\Schedule\PointsPerMatchCalculator::evenRoundForPrint(
+                (int) $response->json('data.points_per_match')
+            ),
+            (int) $response->json('data.points_per_match_print')
+        );
 
         $this->assertSame($matchesBefore, GameMatch::query()->count());
         $this->assertSame($sidesBefore, MatchSide::query()->count());
         $this->assertSame($playersBefore, MatchPlayer::query()->count());
-        $this->assertSame($standingsBefore, EditionDivisionStanding::query()->count());
+        $this->assertSame($standingsBefore, EventDivisionStanding::query()->count());
+    }
+
+    public function test_preview_applies_allowlisted_adjust_and_print(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $base = $this->postJson('/api/v1/manager/tools/schedule/preview', [
+            'player_ids' => $this->playerIds,
+            'court_names' => ['Court A'],
+            'opponents_per_player' => 4,
+            'repeat_partners' => 1,
+            'time_start' => '14:00',
+            'time_end' => '17:00',
+            'adjust' => 0,
+        ])->assertOk();
+
+        $basePpm = (int) $base->json('data.points_per_match');
+
+        $adjusted = $this->postJson('/api/v1/manager/tools/schedule/preview', [
+            'player_ids' => $this->playerIds,
+            'court_names' => ['Court A'],
+            'opponents_per_player' => 4,
+            'repeat_partners' => 1,
+            'time_start' => '14:00',
+            'time_end' => '17:00',
+            'adjust' => 2,
+        ])->assertOk();
+
+        $ppm = (int) $adjusted->json('data.points_per_match');
+        $this->assertSame($basePpm + 2, $ppm);
+        $this->assertSame(2, (int) $adjusted->json('data.adjust'));
+        $this->assertSame(
+            \App\Services\Schedule\PointsPerMatchCalculator::evenRoundForPrint($ppm),
+            (int) $adjusted->json('data.points_per_match_print')
+        );
+    }
+
+    public function test_preview_omitting_adjust_still_returns_print(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->postJson('/api/v1/manager/tools/schedule/preview', [
+            'player_ids' => $this->playerIds,
+            'court_names' => ['Court A'],
+            'opponents_per_player' => 4,
+            'repeat_partners' => 1,
+            'time_start' => '14:00',
+            'time_end' => '17:00',
+        ])->assertOk();
+
+        $this->assertSame(0, (int) $response->json('data.adjust'));
+        $this->assertArrayHasKey('points_per_match_print', $response->json('data'));
+    }
+
+    public function test_preview_rejects_non_allowlisted_adjust(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $this->postJson('/api/v1/manager/tools/schedule/preview', [
+            'player_ids' => $this->playerIds,
+            'court_names' => ['Court A'],
+            'opponents_per_player' => 4,
+            'repeat_partners' => 1,
+            'time_start' => '14:00',
+            'time_end' => '17:00',
+            'adjust' => 3,
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['adjust']);
     }
 
     public function test_preview_accepts_mode_b_alias_fields(): void

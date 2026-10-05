@@ -203,13 +203,13 @@ class MyEligibilityControllerTest extends TestCase
             ->assertJsonPath('data.review_status', 'pending');
     }
 
-    public function test_pending_validates_edition_ids_exist(): void
+    public function test_pending_validates_event_ids_exist(): void
     {
         $player = Player::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
 
         $this->patchJson('/api/v1/app/my/eligibility/pending', [
-            'edition_ids' => [999999],
+            'event_ids' => [999999],
         ])->assertStatus(422);
     }
 

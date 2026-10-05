@@ -53,15 +53,15 @@ class HasManyThroughOpenApiDumpBanTest extends TestCase
         );
 
         $this->assertContains(
-            'App\\Models\\Edition.participations',
+            'App\\Models\\PadelEvent.participations',
             $discoveredArrayRefs,
-            'HasMany Edition.participations must remain discoverable as an OA array $ref'
+            'HasMany PadelEvent.participations must remain discoverable as an OA array $ref'
         );
 
         $this->assertContains(
-            'App\\Models\\EditionLotteryRule.luckies',
+            'App\\Models\\EventLotteryRule.luckies',
             $discoveredArrayRefs,
-            'HasMany EditionLotteryRule.luckies must remain discoverable as an OA array $ref'
+            'HasMany EventLotteryRule.luckies must remain discoverable as an OA array $ref'
         );
 
         $this->assertNotContains(

@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Division;
-use App\Models\Edition;
-use App\Models\EditionParticipation;
+use App\Models\PadelEvent;
+use App\Models\EventParticipation;
 use App\Models\Player;
 use App\Services\Cache\PadelizCache;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -21,7 +21,7 @@ class PlayerControllerTest extends TestCase
 
     private $player;
 
-    private $edition;
+    private $event;
 
     private $division;
 
@@ -49,7 +49,7 @@ class PlayerControllerTest extends TestCase
             'being_student' => false,
         ]);
 
-        $this->edition = Edition::factory()->create();
+        $this->event = PadelEvent::factory()->create();
         $this->division = Division::factory()->create();
     }
 
@@ -103,8 +103,8 @@ class PlayerControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         // Create a participation for the player
-        EditionParticipation::factory()->create([
-            'edition_id' => $this->edition->id_edition,
+        EventParticipation::factory()->create([
+            'event_id' => $this->event->id_event,
             'player_id' => $this->player->id_player,
         ]);
 

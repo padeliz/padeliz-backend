@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Club;
-use App\Models\Edition;
+use App\Models\PadelEvent;
 use App\Models\Location;
 use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -248,19 +248,19 @@ class LocationControllerTest extends TestCase
         ]);
     }
 
-    public function test_manager_cannot_delete_location_with_editions()
+    public function test_manager_cannot_delete_location_with_events()
     {
         Sanctum::actingAs($this->manager);
 
         $location = Location::factory()->create();
-        Edition::factory()->create(['location_id' => $location->id_location]);
+        PadelEvent::factory()->create(['location_id' => $location->id_location]);
 
         $response = $this->deleteJson("/api/v1/manager/locations/{$location->id_location}");
 
         $response->assertStatus(409)
             ->assertJson([
                 'success' => false,
-                'message' => 'Location cannot be deleted because it has linked data. Please remove all associated editions_count first.',
+                'message' => 'Location cannot be deleted because it has linked data. Please remove all associated events_count first.',
             ]);
 
         $this->assertDatabaseHas('locations', [
@@ -318,7 +318,7 @@ class LocationControllerTest extends TestCase
         $location3 = Location::factory()->create();
 
         // Create linked editions for location1
-        Edition::factory()->create(['location_id' => $location1->id_location]);
+        PadelEvent::factory()->create(['location_id' => $location1->id_location]);
 
         $response = $this->deleteJson('/api/v1/manager/locations/bulk', [
             'location_ids' => [$location1->id_location, $location2->id_location, $location3->id_location],

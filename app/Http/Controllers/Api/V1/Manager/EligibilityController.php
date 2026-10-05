@@ -48,7 +48,7 @@ class EligibilityController extends V1BaseController
      *         @OA\Schema(
      *             type="object",
      *             additionalProperties=false,
-     *             @OA\Property(property="edition_id", type="string", description="Filter by edition ID"),
+     *             @OA\Property(property="event_id", type="string", description="Filter by edition ID"),
      *             @OA\Property(property="player_id", type="string", description="Filter by player ID"),
      *             @OA\Property(property="skill_division", type="string", description="Filter by skill division"),
      *             @OA\Property(property="year_of_birth", type="string", description="Filter by year of birth"),
@@ -67,7 +67,7 @@ class EligibilityController extends V1BaseController
      *             type="object",
      *             additionalProperties=false,
      *             @OA\Property(property="id_eligibility", type="string", enum={"asc", "desc"}, description="Sort by eligibility ID"),
-     *             @OA\Property(property="edition_id", type="string", enum={"asc", "desc"}, description="Sort by edition ID"),
+     *             @OA\Property(property="event_id", type="string", enum={"asc", "desc"}, description="Sort by edition ID"),
      *             @OA\Property(property="player_id", type="string", enum={"asc", "desc"}, description="Sort by player ID"),
      *             @OA\Property(property="name", type="string", enum={"asc", "desc"}, description="Sort by name"),
      *             @OA\Property(property="first_name", type="string", enum={"asc", "desc"}, description="Sort by first name"),
@@ -208,7 +208,7 @@ class EligibilityController extends V1BaseController
      *         @OA\JsonContent(
      *             required={"player_id", "review_status"},
      *             @OA\Property(property="player_id", type="integer", description="Player ID"),
-     *             @OA\Property(property="edition_ids", type="array", @OA\Items(type="integer"), nullable=true, description="Edition IDs"),
+     *             @OA\Property(property="event_ids", type="array", @OA\Items(type="integer"), nullable=true, description="PadelEvent IDs"),
      *             @OA\Property(property="review_status", type="string", enum={"approved", "rejected", "pending", "discarded"}, description="Eligibility review status"),
      *             @OA\Property(property="review_message", type="string", description="Review message")
      *         )

@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Services\Pdf;
 
 use App\Services\Pdf\PdfHtmlHelper;
+use App\Services\Schedule\PointsPerMatchCalculator;
 use PHPUnit\Framework\TestCase;
 
 final class PdfHtmlHelperTest extends TestCase
@@ -15,6 +16,10 @@ final class PdfHtmlHelperTest extends TestCase
         $this->assertSame(24, PdfHtmlHelper::evenRoundPointsForPrint(23));
         $this->assertSame(2, PdfHtmlHelper::evenRoundPointsForPrint(1));
         $this->assertSame(0, PdfHtmlHelper::evenRoundPointsForPrint(0));
+        $this->assertSame(
+            PointsPerMatchCalculator::evenRoundForPrint(23),
+            PdfHtmlHelper::evenRoundPointsForPrint(23)
+        );
     }
 
     public function test_split_match_ranking_rows(): void

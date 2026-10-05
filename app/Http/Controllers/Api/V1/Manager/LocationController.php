@@ -468,7 +468,7 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
      *                         property="linked_data",
      *                         type="object",
      *                         description="Information about linked data preventing deletion",
-     *                         @OA\Property(property="editions_count", type="integer", example=3)
+     *                         @OA\Property(property="events_count", type="integer", example=3)
      *                     )
      *                 )
      *             }
@@ -484,7 +484,7 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
     public function destroy(Location $location)
     {
         $linkedDataRelations = [
-            'editions' => 'editions_count',
+            'events' => 'events_count',
         ];
 
         return $this->deleteResourceWithResponse(
@@ -608,7 +608,7 @@ class LocationController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
         ]);
 
         $linkedDataRelations = [
-            'editions' => 'editions_count',
+            'events' => 'events_count',
         ];
 
         return $this->deleteBulkResourcesWithResponse(

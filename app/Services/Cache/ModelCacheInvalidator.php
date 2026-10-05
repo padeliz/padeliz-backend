@@ -13,7 +13,7 @@ class ModelCacheInvalidator
     public function __construct(
         private readonly PadelizCache $cache,
         private readonly MetadataCacheInvalidator $metadataInvalidator,
-        private readonly EditionDivisionCacheInvalidator $editionDivisionInvalidator,
+        private readonly EventDivisionCacheInvalidator $eventDivisionInvalidator,
     ) {
     }
 
@@ -83,7 +83,7 @@ class ModelCacheInvalidator
         $editionId = $this->resolveEditionId($model);
 
         if ($editionId !== null) {
-            $this->editionDivisionInvalidator->invalidateEdition($editionId);
+            $this->eventDivisionInvalidator->invalidateEdition($editionId);
         }
     }
 
@@ -91,20 +91,20 @@ class ModelCacheInvalidator
     {
         $class = class_basename($model);
 
-        if (in_array($class, ['EditionDivision', 'EditionDivisionSchedule'], true)) {
-            $divisionId = $model->getAttribute('id_edition_division');
+        if (in_array($class, ['EventDivision', 'EventDivisionSchedule'], true)) {
+            $divisionId = $model->getAttribute('id_event_division');
 
             if ($divisionId !== null) {
-                $this->editionDivisionInvalidator->invalidateSchedule((int) $divisionId);
-                $this->editionDivisionInvalidator->invalidateStandings((int) $divisionId);
+                $this->eventDivisionInvalidator->invalidateSchedule((int) $divisionId);
+                $this->eventDivisionInvalidator->invalidateStandings((int) $divisionId);
             }
         }
 
-        if (str_starts_with($class, 'EditionLottery')) {
-            $lotteryId = $model->getAttribute('id_edition_lottery');
+        if (str_starts_with($class, 'EventLottery')) {
+            $lotteryId = $model->getAttribute('id_event_lottery');
 
             if ($lotteryId !== null) {
-                $this->editionDivisionInvalidator->invalidateLottery((int) $lotteryId);
+                $this->eventDivisionInvalidator->invalidateLottery((int) $lotteryId);
             }
         }
     }
@@ -113,14 +113,14 @@ class ModelCacheInvalidator
     {
         $class = class_basename($model);
 
-        if (in_array($class, ['Edition', 'EditionDivision', 'EditionRegistration', 'EditionParticipation'], true)) {
+        if (in_array($class, ['PadelEvent', 'EventDivision', 'EventRegistration', 'EventParticipation'], true)) {
             $this->cache->flushTags(['response-cache']);
         }
     }
 
     private function resolveEditionId(Model $model): ?int
     {
-        foreach (['id_edition', 'edition_id'] as $key) {
+        foreach (['id_event', 'event_id'] as $key) {
             $value = $model->getAttribute($key);
 
             if ($value !== null) {
@@ -128,14 +128,14 @@ class ModelCacheInvalidator
             }
         }
 
-        if (method_exists($model, 'edition')) {
+        if (method_exists($model, 'event')) {
             try {
-                $edition = $model->relationLoaded('edition')
-                    ? $model->getRelation('edition')
-                    : $model->edition()->first();
+                $event = $model->relationLoaded('event')
+                    ? $model->getRelation('event')
+                    : $model->event()->first();
 
-                if ($edition instanceof Model && $edition->getKey() !== null) {
-                    return (int) $edition->getKey();
+                if ($event instanceof Model && $event->getKey() !== null) {
+                    return (int) $event->getKey();
                 }
             } catch (\Throwable) {
                 // ignore

@@ -15,14 +15,14 @@ class DivisionResource extends JsonResource
             'id_division' => $this->id_division,
             'name' => $this->name,
             'color' => $this->color,
-            'its_first_edition_id' => $this->its_first_edition_id,
+            'its_first_event_id' => $this->its_first_event_id,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
-            'its_first_edition' => $this->whenLoaded('itsFirstEdition', function () {
-                return new EditionResource($this->itsFirstEdition);
+            'its_first_event' => $this->whenLoaded('itsFirstEvent', function () {
+                return new EventResource($this->itsFirstEvent);
             }),
-            'edition_divisions' => $this->whenLoaded('editionDivisions', function () {
-                return EditionDivisionResource::collection($this->editionDivisions);
+            'event_divisions' => $this->whenLoaded('eventDivisions', function () {
+                return EventDivisionResource::collection($this->eventDivisions);
             }),
         ];
     }

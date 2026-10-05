@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace App\Services\Lottery;
 
 use App\Models\CachedPdfPlayerImage;
-use App\Models\Edition;
-use App\Models\EditionDivision;
-use App\Models\EditionDivisionReplacement;
-use App\Models\EditionLottery;
-use App\Models\EditionLotteryLucky;
-use App\Models\EditionLotteryPrize;
-use App\Models\EditionLotteryRule;
-use App\Models\EditionParticipation;
+use App\Models\PadelEvent;
+use App\Models\EventDivision;
+use App\Models\EventDivisionReplacement;
+use App\Models\EventLottery;
+use App\Models\EventLotteryLucky;
+use App\Models\EventLotteryPrize;
+use App\Models\EventLotteryRule;
+use App\Models\EventParticipation;
 use App\Models\SponsorPrize;
 use App\Services\Schedule\PlayingWindow;
 use Illuminate\Database\Eloquent\Builder;
@@ -29,29 +29,29 @@ final class LotteryDrawService
      *
      * Already-drawn is per lottery when $lotteryId is set.
      *
-     * @return Builder<EditionParticipation>
+     * @return Builder<EventParticipation>
      */
-    public function eligibleParticipationsQuery(int $editionId, ?int $preferEditionDivisionId = null, ?string $playingStartTimeGate = null, ?int $lotteryId = null): Builder
+    public function eligibleParticipationsQuery(int $editionId, ?int $preferEventDivisionId = null, ?string $playingStartTimeGate = null, ?int $lotteryId = null): Builder
     {
-        $replacedParticipationIds = EditionDivisionReplacement::query()
+        $replacedParticipationIds = EventDivisionReplacement::query()
             ->whereNull('match_id')
-            ->whereIn('edition_division_id', function ($q) use ($editionId): void {
-                $q->select('id_edition_division')
-                    ->from('edition_divisions')
-                    ->where('edition_id', $editionId);
+            ->whereIn('event_division_id', function ($q) use ($editionId): void {
+                $q->select('id_event_division')
+                    ->from('event_divisions')
+                    ->where('event_id', $editionId);
             })
             ->pluck('original_participation_id')
             ->all();
 
         $drawnParticipationIds = [];
         if ($lotteryId !== null) {
-            $drawnParticipationIds = EditionLotteryLucky::query()
+            $drawnParticipationIds = EventLotteryLucky::query()
                 ->whereIn('lottery_rule_id', function ($q) use ($lotteryId): void {
                     $q->select('id_lottery_rule')
-                        ->from('edition_lottery_rules')
+                        ->from('event_lottery_rules')
                         ->whereIn('lottery_prize_id', function ($q2) use ($lotteryId): void {
                             $q2->select('id_lottery_prize')
-                                ->from('edition_lottery_prizes')
+                                ->from('event_lottery_prizes')
                                 ->where('lottery_id', $lotteryId);
                         });
                 })
@@ -59,8 +59,8 @@ final class LotteryDrawService
                 ->all();
         }
 
-        $query = EditionParticipation::query()
-            ->where('edition_participations.edition_id', $editionId)
+        $query = EventParticipation::query()
+            ->where('event_participations.event_id', $editionId)
             ->whereNull('absence_reason')
             ->when($replacedParticipationIds !== [], fn (Builder $q) => $q->whereNotIn('id_participation', $replacedParticipationIds))
             ->when($drawnParticipationIds !== [], fn (Builder $q) => $q->whereNotIn('id_participation', $drawnParticipationIds));
@@ -69,42 +69,42 @@ final class LotteryDrawService
             $query->where(function (Builder $q) use ($playingStartTimeGate): void {
                 $q->whereExists(function ($sub): void {
                     $sub->select(DB::raw(1))
-                        ->from('editions')
-                        ->whereColumn('editions.id_edition', 'edition_participations.edition_id')
-                        ->whereDate('editions.date', '<=', Carbon::today()->toDateString());
+                        ->from('events')
+                        ->whereColumn('events.id_event', 'event_participations.event_id')
+                        ->whereDate('events.date', '<=', Carbon::today()->toDateString());
                 })->orWhereExists(function ($sub) use ($playingStartTimeGate): void {
                     $sub->select(DB::raw(1))
-                        ->from('edition_divisions')
-                        ->whereColumn('edition_divisions.id_edition_division', 'edition_participations.edition_division_id')
-                        ->where('edition_divisions.playing_start_time', '<=', $playingStartTimeGate);
+                        ->from('event_divisions')
+                        ->whereColumn('event_divisions.id_event_division', 'event_participations.event_division_id')
+                        ->where('event_divisions.playing_start_time', '<=', $playingStartTimeGate);
                 });
             });
         }
 
-        if ($preferEditionDivisionId !== null) {
-            $query->orderByRaw('(edition_division_id = ?) DESC', [$preferEditionDivisionId]);
+        if ($preferEventDivisionId !== null) {
+            $query->orderByRaw('(event_division_id = ?) DESC', [$preferEventDivisionId]);
         }
 
         return $query->inRandomOrder();
     }
 
     /**
-     * @param  Collection<int, EditionParticipation>  $participations
+     * @param  Collection<int, EventParticipation>  $participations
      * @param  list<int>  $alreadyDrawnParticipationIds
      * @param  list<int>  $divisionWideReplacedParticipationIds
-     * @return Collection<int, EditionParticipation>
+     * @return Collection<int, EventParticipation>
      */
     public function filterEligibleParticipations(
         Collection $participations,
         array $alreadyDrawnParticipationIds = [],
         array $divisionWideReplacedParticipationIds = [],
-        ?int $preferEditionDivisionId = null,
+        ?int $preferEventDivisionId = null,
     ): Collection {
         $drawn = array_fill_keys($alreadyDrawnParticipationIds, true);
         $replaced = array_fill_keys($divisionWideReplacedParticipationIds, true);
 
         $filtered = $participations
-            ->filter(function (EditionParticipation $p) use ($drawn, $replaced): bool {
+            ->filter(function (EventParticipation $p) use ($drawn, $replaced): bool {
                 if ($p->absence_reason !== null) {
                     return false;
                 }
@@ -119,9 +119,9 @@ final class LotteryDrawService
             })
             ->values();
 
-        if ($preferEditionDivisionId !== null) {
+        if ($preferEventDivisionId !== null) {
             $filtered = $filtered->sortByDesc(
-                fn (EditionParticipation $p) => (int) $p->edition_division_id === (int) $preferEditionDivisionId ? 1 : 0
+                fn (EventParticipation $p) => (int) $p->event_division_id === (int) $preferEventDivisionId ? 1 : 0
             )->values();
         }
 
@@ -131,10 +131,10 @@ final class LotteryDrawService
     /**
      * @return array<string, mixed>
      */
-    public function liveState(EditionLottery $lottery): array
+    public function liveState(EventLottery $lottery): array
     {
-        $edition = $lottery->edition()->with('location')->firstOrFail();
-        $nextEdition = Edition::query()->whereDate('date', '>', Carbon::today()->toDateString())->orderBy('date')->first();
+        $event = $lottery->event()->with('location')->firstOrFail();
+        $nextEdition = PadelEvent::query()->whereDate('date', '>', Carbon::today()->toDateString())->orderBy('date')->first();
 
         $pending = $this->currentPendingLucky($lottery);
 
@@ -148,27 +148,27 @@ final class LotteryDrawService
         if ($pending !== null) {
             $pending->loadMissing([
                 'drawnParticipation.player',
-                'drawnParticipation.editionDivision.division',
-                'drawnParticipation.editionDivision.editionDivisionCourts.court',
+                'drawnParticipation.eventDivision.division',
+                'drawnParticipation.eventDivision.eventDivisionCourts.court',
                 'lotteryRule.lotteryPrize.prize',
                 'lotteryRule.lotteryPrize.sponsor',
-                'lotteryRule.editionDivision',
+                'lotteryRule.eventDivision',
             ]);
 
             return [
                 'status' => 'pending',
                 ...$this->lotteryBrandingUrls(),
-                'edition' => [
-                    'id_edition' => $edition->id_edition,
-                    'name' => $edition->name,
-                    'date' => optional($edition->date)?->format('Y-m-d') ?? (string) $edition->getRawOriginal('date'),
+                'event' => [
+                    'id_event' => $event->id_event,
+                    'name' => $event->name,
+                    'date' => optional($event->date)?->format('Y-m-d') ?? (string) $event->getRawOriginal('date'),
                 ],
                 'next_edition' => $nextEdition ? [
-                    'id_edition' => $nextEdition->id_edition,
+                    'id_event' => $nextEdition->id_event,
                     'name' => $nextEdition->name,
                     'date' => optional($nextEdition->date)?->format('Y-m-d') ?? (string) $nextEdition->getRawOriginal('date'),
                 ] : null,
-                'lucky' => $this->serializeLucky($pending, $edition, $nextEdition),
+                'lucky' => $this->serializeLucky($pending, $event, $nextEdition),
                 'accepted' => [],
             ];
         }
@@ -176,22 +176,22 @@ final class LotteryDrawService
         $accepted = $this->luckiesForLotteryQuery($lottery)
             ->whereNotNull('accepted_at')
             ->whereNull('rejected_at')
-            ->with(['drawnParticipation.player', 'drawnParticipation.editionDivision.division', 'lotteryRule.lotteryPrize.prize', 'lotteryRule.lotteryPrize.sponsor'])
+            ->with(['drawnParticipation.player', 'drawnParticipation.eventDivision.division', 'lotteryRule.lotteryPrize.prize', 'lotteryRule.lotteryPrize.sponsor'])
             ->orderBy('id_lucky')
             ->get()
-            ->map(fn (EditionLotteryLucky $lucky) => $this->serializeLucky($lucky, $edition, $nextEdition))
+            ->map(fn (EventLotteryLucky $lucky) => $this->serializeLucky($lucky, $event, $nextEdition))
             ->all();
 
         return [
             'status' => 'finished',
             ...$this->lotteryBrandingUrls(),
-            'edition' => [
-                'id_edition' => $edition->id_edition,
-                'name' => $edition->name,
-                'date' => optional($edition->date)?->format('Y-m-d') ?? (string) $edition->getRawOriginal('date'),
+            'event' => [
+                'id_event' => $event->id_event,
+                'name' => $event->name,
+                'date' => optional($event->date)?->format('Y-m-d') ?? (string) $event->getRawOriginal('date'),
             ],
             'next_edition' => $nextEdition ? [
-                'id_edition' => $nextEdition->id_edition,
+                'id_event' => $nextEdition->id_event,
                 'name' => $nextEdition->name,
                 'date' => optional($nextEdition->date)?->format('Y-m-d') ?? (string) $nextEdition->getRawOriginal('date'),
             ] : null,
@@ -200,7 +200,7 @@ final class LotteryDrawService
         ];
     }
 
-    public function drawNext(EditionLottery $lottery): EditionLotteryLucky
+    public function drawNext(EventLottery $lottery): EventLotteryLucky
     {
         $pending = $this->currentPendingLucky($lottery);
         if ($pending !== null) {
@@ -214,7 +214,7 @@ final class LotteryDrawService
         throw new RuntimeException('No pending draw and lottery already started; accept or reject the previous lucky first.');
     }
 
-    public function announce(EditionLotteryLucky $lucky): EditionLotteryLucky
+    public function announce(EventLotteryLucky $lucky): EventLotteryLucky
     {
         if ($lucky->announced_at === null) {
             $lucky->announced_at = time();
@@ -224,25 +224,25 @@ final class LotteryDrawService
         return $lucky->fresh();
     }
 
-    public function reject(EditionLotteryLucky $lucky, Edition $edition): EditionLotteryLucky
+    public function reject(EventLotteryLucky $lucky, PadelEvent $event): EventLotteryLucky
     {
-        return DB::transaction(function () use ($lucky, $edition): EditionLotteryLucky {
+        return DB::transaction(function () use ($lucky, $event): EventLotteryLucky {
             $lucky->rejected_at = time();
             $lucky->save();
 
             $rule = $lucky->lotteryRule()->with('lotteryPrize')->first();
             $lotteryId = $rule?->lotteryPrize?->lottery_id;
-            $preferDivisionId = $rule?->edition_division_id;
+            $preferDivisionId = $rule?->event_division_id;
             $gateTime = null;
             if ($preferDivisionId) {
-                $gateTime = EditionDivision::query()->whereKey($preferDivisionId)->value('playing_start_time');
+                $gateTime = EventDivision::query()->whereKey($preferDivisionId)->value('playing_start_time');
                 $gateTime = $gateTime ? Carbon::parse((string) $gateTime)->format('H:i:s') : date('H:i:s');
             } else {
                 $gateTime = date('H:i:s');
             }
 
             $participation = $this->eligibleParticipationsQuery(
-                (int) $edition->id_edition,
+                (int) $event->id_event,
                 $preferDivisionId !== null ? (int) $preferDivisionId : null,
                 $gateTime,
                 $lotteryId !== null ? (int) $lotteryId : null,
@@ -252,7 +252,7 @@ final class LotteryDrawService
                 return $lucky->fresh();
             }
 
-            return EditionLotteryLucky::query()->create([
+            return EventLotteryLucky::query()->create([
                 'lottery_rule_id' => $lucky->lottery_rule_id,
                 'drawn_participation_id' => $participation->id_participation,
                 'drawn_at' => time(),
@@ -261,15 +261,15 @@ final class LotteryDrawService
         });
     }
 
-    public function accept(EditionLotteryLucky $lucky, Edition $edition): ?EditionLotteryLucky
+    public function accept(EventLotteryLucky $lucky, PadelEvent $event): ?EventLotteryLucky
     {
-        return DB::transaction(function () use ($lucky, $edition): ?EditionLotteryLucky {
+        return DB::transaction(function () use ($lucky, $event): ?EventLotteryLucky {
             $lucky->accepted_at = time();
             $lucky->save();
 
             $lucky->loadMissing('lotteryRule.lotteryPrize');
             $lotteryId = (int) ($lucky->lotteryRule?->lotteryPrize?->lottery_id ?? 0);
-            $lottery = EditionLottery::query()->find($lotteryId);
+            $lottery = EventLottery::query()->find($lotteryId);
             if ($lottery === null) {
                 return null;
             }
@@ -277,7 +277,7 @@ final class LotteryDrawService
             $rules = $this->sortedRulesForLottery($lottery);
 
             foreach ($rules as $rule) {
-                $acceptedCount = EditionLotteryLucky::query()
+                $acceptedCount = EventLotteryLucky::query()
                     ->where('lottery_rule_id', $rule->id_lottery_rule)
                     ->whereNotNull('accepted_at')
                     ->count();
@@ -286,7 +286,7 @@ final class LotteryDrawService
                     continue;
                 }
 
-                $existing = EditionLotteryLucky::query()
+                $existing = EventLotteryLucky::query()
                     ->where('lottery_rule_id', $rule->id_lottery_rule)
                     ->whereNull('accepted_at')
                     ->whereNull('rejected_at')
@@ -298,19 +298,19 @@ final class LotteryDrawService
 
                 $currentTime = date('H:i:s');
                 $participation = $this->eligibleParticipationsQuery(
-                    (int) $edition->id_edition,
-                    $rule->edition_division_id !== null ? (int) $rule->edition_division_id : null,
+                    (int) $event->id_event,
+                    $rule->event_division_id !== null ? (int) $rule->event_division_id : null,
                     $currentTime,
                     (int) $lottery->id_lottery,
-                )->with('editionDivision')->first();
+                )->with('eventDivision')->first();
 
                 if ($participation === null) {
                     continue;
                 }
 
-                $availableAt = $this->computeNextAvailableAt($edition, $participation, $currentTime, $lottery);
+                $availableAt = $this->computeNextAvailableAt($event, $participation, $currentTime, $lottery);
 
-                return EditionLotteryLucky::query()->create([
+                return EventLotteryLucky::query()->create([
                     'lottery_rule_id' => $rule->id_lottery_rule,
                     'drawn_participation_id' => $participation->id_participation,
                     'drawn_at' => time(),
@@ -325,18 +325,18 @@ final class LotteryDrawService
     /**
      * @return array{logo: string, background: string, intervals: list<array<string, mixed>>}
      */
-    public function prizesBoard(EditionLottery $lottery): array
+    public function prizesBoard(EventLottery $lottery): array
     {
-        $edition = $lottery->edition()->with('location')->firstOrFail();
-        $nextEdition = Edition::query()->whereDate('date', '>', Carbon::today()->toDateString())->orderBy('date')->first();
+        $event = $lottery->event()->with('location')->firstOrFail();
+        $nextEdition = PadelEvent::query()->whereDate('date', '>', Carbon::today()->toDateString())->orderBy('date')->first();
 
         $rules = $this->sortedRulesForLottery($lottery);
 
         $grouped = [];
         foreach ($rules as $rule) {
-            $start = $rule->editionDivision?->playing_start_time;
-            $end = $rule->editionDivision?->playing_end_time;
-            $key = $rule->edition_division_id === null
+            $start = $rule->eventDivision?->playing_start_time;
+            $end = $rule->eventDivision?->playing_end_time;
+            $key = $rule->event_division_id === null
                 ? '__unscheduled__'
                 : $this->prizesBoardIntervalKey($start, $end);
             $grouped[$key][] = $rule;
@@ -355,7 +355,7 @@ final class LotteryDrawService
 
         $intervals = [];
         foreach ($grouped as $key => $intervalRules) {
-            /** @var list<EditionLotteryRule> $intervalRules */
+            /** @var list<EventLotteryRule> $intervalRules */
             $byPrizeLine = [];
             foreach ($intervalRules as $rule) {
                 $byPrizeLine[(int) $rule->lottery_prize_id][] = $rule;
@@ -363,12 +363,12 @@ final class LotteryDrawService
 
             $prizes = [];
             foreach ($byPrizeLine as $prizeLineRules) {
-                usort($prizeLineRules, static fn (EditionLotteryRule $a, EditionLotteryRule $b): int => [
+                usort($prizeLineRules, static fn (EventLotteryRule $a, EventLotteryRule $b): int => [
                     (int) $a->orderliness, (int) $a->id_lottery_rule,
                 ] <=> [(int) $b->orderliness, (int) $b->id_lottery_rule]);
 
                 $head = $prizeLineRules[0];
-                $qty = array_sum(array_map(fn (EditionLotteryRule $r) => (int) $r->rule_prize_quantity, $prizeLineRules));
+                $qty = array_sum(array_map(fn (EventLotteryRule $r) => (int) $r->rule_prize_quantity, $prizeLineRules));
                 $prizePayload = $this->resolvePrizePayload($head->lotteryPrize, $nextEdition);
 
                 $luckies = [];
@@ -378,8 +378,8 @@ final class LotteryDrawService
                             'id_lucky' => $lucky->id_lucky,
                             'status' => $this->luckyStatus($lucky),
                             'player_name' => $lucky->drawnParticipation?->player?->name,
-                            'division_title' => $lucky->drawnParticipation?->editionDivision?->division_title,
-                            'division_color' => $lucky->drawnParticipation?->editionDivision?->division?->color,
+                            'division_title' => $lucky->drawnParticipation?->eventDivision?->division_title,
+                            'division_color' => $lucky->drawnParticipation?->eventDivision?->division?->color,
                         ];
                     }
                 }
@@ -421,9 +421,9 @@ final class LotteryDrawService
         ];
     }
 
-    private function createFirstDraw(EditionLottery $lottery): EditionLotteryLucky
+    private function createFirstDraw(EventLottery $lottery): EventLotteryLucky
     {
-        $edition = $lottery->edition()->firstOrFail();
+        $event = $lottery->event()->firstOrFail();
         $firstRule = $this->sortedRulesForLottery($lottery)->first();
 
         if ($firstRule === null) {
@@ -431,8 +431,8 @@ final class LotteryDrawService
         }
 
         $participation = $this->eligibleParticipationsQuery(
-            (int) $edition->id_edition,
-            $firstRule->edition_division_id !== null ? (int) $firstRule->edition_division_id : null,
+            (int) $event->id_event,
+            $firstRule->event_division_id !== null ? (int) $firstRule->event_division_id : null,
             null,
             (int) $lottery->id_lottery,
         )->first();
@@ -441,13 +441,13 @@ final class LotteryDrawService
             throw new RuntimeException('No eligible participations for this edition.');
         }
 
-        $start = $firstRule->editionDivision?->playing_start_time;
-        $editionDate = optional($edition->date)?->format('Y-m-d') ?? (string) $edition->getRawOriginal('date');
+        $start = $firstRule->eventDivision?->playing_start_time;
+        $editionDate = optional($event->date)?->format('Y-m-d') ?? (string) $event->getRawOriginal('date');
         $target = $start
             ? Carbon::parse($editionDate . ' ' . Carbon::parse((string) $start)->format('H:i:s'))->addMinutes(20)->getTimestamp()
             : time() + 10;
 
-        return EditionLotteryLucky::query()->create([
+        return EventLotteryLucky::query()->create([
             'lottery_rule_id' => $firstRule->id_lottery_rule,
             'drawn_participation_id' => $participation->id_participation,
             'drawn_at' => time(),
@@ -455,7 +455,7 @@ final class LotteryDrawService
         ]);
     }
 
-    private function currentPendingLucky(EditionLottery $lottery): ?EditionLotteryLucky
+    private function currentPendingLucky(EventLottery $lottery): ?EventLotteryLucky
     {
         return $this->luckiesForLotteryQuery($lottery)
             ->whereNull('accepted_at')
@@ -464,38 +464,38 @@ final class LotteryDrawService
             ->first();
     }
 
-    private function lotteryLuckiesCount(EditionLottery $lottery): int
+    private function lotteryLuckiesCount(EventLottery $lottery): int
     {
         return $this->luckiesForLotteryQuery($lottery)->count();
     }
 
     /**
-     * @return Builder<EditionLotteryLucky>
+     * @return Builder<EventLotteryLucky>
      */
-    private function luckiesForLotteryQuery(EditionLottery $lottery): Builder
+    private function luckiesForLotteryQuery(EventLottery $lottery): Builder
     {
-        return EditionLotteryLucky::query()
+        return EventLotteryLucky::query()
             ->whereHas('lotteryRule.lotteryPrize', fn (Builder $q) => $q->where('lottery_id', $lottery->id_lottery));
     }
 
     /**
-     * @return Collection<int, EditionLotteryRule>
+     * @return Collection<int, EventLotteryRule>
      */
-    private function sortedRulesForLottery(EditionLottery $lottery): Collection
+    private function sortedRulesForLottery(EventLottery $lottery): Collection
     {
-        $rules = EditionLotteryRule::query()
+        $rules = EventLotteryRule::query()
             ->whereHas('lotteryPrize', fn (Builder $q) => $q->where('lottery_id', $lottery->id_lottery))
             ->with([
                 'lotteryPrize.prize',
                 'lotteryPrize.sponsor',
-                'editionDivision',
+                'eventDivision',
                 'luckies.drawnParticipation.player',
-                'luckies.drawnParticipation.editionDivision.division',
+                'luckies.drawnParticipation.eventDivision.division',
             ])
             ->get();
 
-        return $rules->sortBy(function (EditionLotteryRule $rule): array {
-            $start = $rule->editionDivision?->playing_start_time;
+        return $rules->sortBy(function (EventLotteryRule $rule): array {
+            $start = $rule->eventDivision?->playing_start_time;
 
             return [
                 $start === null ? 1 : 0,
@@ -506,21 +506,21 @@ final class LotteryDrawService
         })->values();
     }
 
-    private function computeNextAvailableAt(Edition $edition, EditionParticipation $participation, string $currentTime, ?EditionLottery $lottery = null): int
+    private function computeNextAvailableAt(PadelEvent $event, EventParticipation $participation, string $currentTime, ?EventLottery $lottery = null): int
     {
-        $participation->loadMissing('editionDivision');
-        $drawnStart = $participation->editionDivision?->playing_start_time;
+        $participation->loadMissing('eventDivision');
+        $drawnStart = $participation->eventDivision?->playing_start_time;
         $drawnStartStr = PlayingWindow::toClockString($drawnStart) ?? PlayingWindow::normalizeStoredTime($currentTime);
 
-        $rulesQuery = EditionLotteryRule::query()
+        $rulesQuery = EventLotteryRule::query()
             ->when(
                 $lottery !== null,
                 fn (Builder $q) => $q->whereHas('lotteryPrize', fn (Builder $lp) => $lp->where('lottery_id', $lottery->id_lottery)),
-                fn (Builder $q) => $q->whereHas('lotteryPrize.lottery', fn (Builder $l) => $l->where('edition_id', $edition->id_edition)),
+                fn (Builder $q) => $q->whereHas('lotteryPrize.lottery', fn (Builder $l) => $l->where('event_id', $event->id_event)),
             )
             ->where(function (Builder $q) use ($currentTime, $drawnStartStr): void {
-                $q->whereNull('edition_division_id')
-                    ->orWhereHas('editionDivision', function (Builder $ed) use ($currentTime, $drawnStartStr): void {
+                $q->whereNull('event_division_id')
+                    ->orWhereHas('eventDivision', function (Builder $ed) use ($currentTime, $drawnStartStr): void {
                         $ed->where('playing_start_time', '<=', $currentTime)
                             ->orWhere('playing_start_time', '=', $drawnStartStr);
                     });
@@ -528,15 +528,15 @@ final class LotteryDrawService
 
         $sumOfPrizeQuantity = (int) $rulesQuery->sum('rule_prize_quantity');
 
-        $luckiesQuery = EditionLotteryLucky::query()
+        $luckiesQuery = EventLotteryLucky::query()
             ->when(
                 $lottery !== null,
                 fn (Builder $q) => $q->whereHas('lotteryRule.lotteryPrize', fn (Builder $lp) => $lp->where('lottery_id', $lottery->id_lottery)),
-                fn (Builder $q) => $q->whereHas('lotteryRule.lotteryPrize.lottery', fn (Builder $l) => $l->where('edition_id', $edition->id_edition)),
+                fn (Builder $q) => $q->whereHas('lotteryRule.lotteryPrize.lottery', fn (Builder $l) => $l->where('event_id', $event->id_event)),
             )
             ->whereNull('rejected_at')
-            ->whereHas('lotteryRule.editionDivision', function (Builder $ed) use ($currentTime, $drawnStartStr, $edition): void {
-                $ed->where('edition_id', $edition->id_edition)
+            ->whereHas('lotteryRule.eventDivision', function (Builder $ed) use ($currentTime, $drawnStartStr, $event): void {
+                $ed->where('event_id', $event->id_event)
                     ->where(function (Builder $q) use ($currentTime, $drawnStartStr): void {
                         $q->where('playing_start_time', '<=', $currentTime)
                             ->orWhere('playing_start_time', '=', $drawnStartStr);
@@ -547,15 +547,15 @@ final class LotteryDrawService
 
         $remaining = max(1, $sumOfPrizeQuantity - $nonRejectedCount);
 
-        $editionDate = optional($edition->date)?->format('Y-m-d') ?? (string) $edition->getRawOriginal('date');
+        $editionDate = optional($event->date)?->format('Y-m-d') ?? (string) $event->getRawOriginal('date');
         $currentClock = PlayingWindow::normalizeStoredTime($currentTime);
 
         $endingEnds = [];
-        $editionDivisions = EditionDivision::query()
-            ->where('edition_id', $edition->id_edition)
+        $eventDivisions = EventDivision::query()
+            ->where('event_id', $event->id_event)
             ->get(['playing_start_time', 'playing_end_time']);
 
-        foreach ($editionDivisions as $ed) {
+        foreach ($eventDivisions as $ed) {
             $start = PlayingWindow::toClockString($ed->getAttributes()['playing_start_time'] ?? null);
             $end = PlayingWindow::toClockString($ed->getAttributes()['playing_end_time'] ?? null);
             if ($start === null || $end === null) {
@@ -600,12 +600,12 @@ final class LotteryDrawService
     /**
      * @return array<string, mixed>
      */
-    private function serializeLucky(EditionLotteryLucky $lucky, Edition $edition, ?Edition $nextEdition): array
+    private function serializeLucky(EventLotteryLucky $lucky, PadelEvent $event, ?PadelEvent $nextEdition): array
     {
         $line = $lucky->lotteryRule?->lotteryPrize;
         $prize = $this->resolvePrizePayload($line, $nextEdition);
-        $division = $lucky->drawnParticipation?->editionDivision;
-        $acceptedForPrizeLine = EditionLotteryLucky::query()
+        $division = $lucky->drawnParticipation?->eventDivision;
+        $acceptedForPrizeLine = EventLotteryLucky::query()
             ->whereHas('lotteryRule', fn (Builder $q) => $q->where('lottery_prize_id', $lucky->lotteryRule?->lottery_prize_id))
             ->whereNotNull('accepted_at')
             ->count();
@@ -638,10 +638,10 @@ final class LotteryDrawService
                 'avatar_url' => $avatarUrl,
             ],
             'division' => [
-                'edition_division_id' => $division?->id_edition_division,
+                'event_division_id' => $division?->id_event_division,
                 'division_title' => $division?->division_title,
                 'color' => $division?->division?->color,
-                'court' => $division?->editionDivisionCourts?->sortBy('display_order')->first()?->court?->name,
+                'court' => $division?->eventDivisionCourts?->sortBy('display_order')->first()?->court?->name,
             ],
             'prize' => $prize,
         ];
@@ -650,7 +650,7 @@ final class LotteryDrawService
     /**
      * @return null|array<string, mixed>
      */
-    private function resolvePrizePayload(?EditionLotteryPrize $line, ?Edition $nextEdition): ?array
+    private function resolvePrizePayload(?EventLotteryPrize $line, ?PadelEvent $nextEdition): ?array
     {
         $prize = $line?->prize;
         if ($line === null || $prize === null) {
@@ -718,7 +718,7 @@ final class LotteryDrawService
         return $overlayValue;
     }
 
-    private function luckyStatus(EditionLotteryLucky $lucky): string
+    private function luckyStatus(EventLotteryLucky $lucky): string
     {
         if ($lucky->accepted_at !== null) {
             return 'accepted';

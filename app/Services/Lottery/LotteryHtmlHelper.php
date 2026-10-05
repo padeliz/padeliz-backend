@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Lottery;
 
-use App\Models\Edition;
+use App\Models\PadelEvent;
 
 final class LotteryHtmlHelper
 {
@@ -22,7 +22,7 @@ final class LotteryHtmlHelper
     /**
      * Leave {{edition.next.*}} placeholders unreplaced when next edition is missing (no crash).
      */
-    public static function replaceEditionNextPlaceholders(?string $text, ?Edition $nextEdition): ?string
+    public static function replaceEditionNextPlaceholders(?string $text, ?PadelEvent $nextEdition): ?string
     {
         if ($text === null || $text === '') {
             return $text;

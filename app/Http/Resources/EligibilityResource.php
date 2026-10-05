@@ -21,7 +21,7 @@ class EligibilityResource extends JsonResource
         return [
             'id_eligibility' => $this->id_eligibility,
             'player_id' => $this->player_id,
-            'edition_ids' => $this->edition_ids,
+            'event_ids' => $this->event_ids,
             'media_source' => $this->media_source,
             'friends_source' => $this->friends_source,
             'racket_experience' => $this->racket_experience,

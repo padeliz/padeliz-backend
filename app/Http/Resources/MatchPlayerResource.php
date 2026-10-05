@@ -23,7 +23,7 @@ class MatchPlayerResource extends JsonResource
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
             'participation' => $this->whenLoaded('participation', function () {
-                return new EditionParticipationResource($this->participation);
+                return new EventParticipationResource($this->participation);
             }),
             'player' => $this->whenLoaded('player', function () {
                 return new PlayerResource($this->player);

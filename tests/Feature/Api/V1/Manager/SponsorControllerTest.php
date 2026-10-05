@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Club;
-use App\Models\EditionLottery;
-use App\Models\EditionLotteryPrize;
+use App\Models\EventLottery;
+use App\Models\EventLotteryPrize;
 use App\Models\Player;
 use App\Models\Prize;
 use App\Models\Sponsor;
@@ -92,8 +92,8 @@ class SponsorControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $sponsor = Sponsor::factory()->create();
-        $lottery = EditionLottery::factory()->create();
-        EditionLotteryPrize::factory()->create([
+        $lottery = EventLottery::factory()->create();
+        EventLotteryPrize::factory()->create([
             'lottery_id' => $lottery->id_lottery,
             'sponsor_id' => $sponsor->id_sponsor,
             'prize_id' => Prize::factory()->create()->id_prize,

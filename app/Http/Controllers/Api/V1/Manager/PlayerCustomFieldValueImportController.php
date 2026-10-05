@@ -112,7 +112,7 @@ class PlayerCustomFieldValueImportController extends V1BaseController
         $validated = $request->validate([
             'format' => 'required|string|max:64',
             'filename' => 'required|string|max:255',
-            'edition_id' => 'nullable|integer|exists:editions,id_edition',
+            'event_id' => 'nullable|integer|exists:events,id_event',
             'rows' => 'required|array|min:1',
             'rows.*.index' => 'required|integer|min:0',
             'rows.*.full_name' => 'nullable|string|max:255',
@@ -148,7 +148,7 @@ class PlayerCustomFieldValueImportController extends V1BaseController
      */
     public function index(Request $request)
     {
-        $query = PlayerCustomFieldValueImport::with(['importedByPlayer', 'edition']);
+        $query = PlayerCustomFieldValueImport::with(['importedByPlayer', 'event']);
 
         $this->applyAdvancedPagination(
             $query,
@@ -185,7 +185,7 @@ class PlayerCustomFieldValueImportController extends V1BaseController
      */
     public function show(PlayerCustomFieldValueImport $playerCustomFieldValueImport): JsonResponse
     {
-        $playerCustomFieldValueImport->load(['rows.player', 'importedByPlayer', 'edition']);
+        $playerCustomFieldValueImport->load(['rows.player', 'importedByPlayer', 'event']);
 
         return $this->resourceResponse(
             new PlayerCustomFieldValueImportResource($playerCustomFieldValueImport),

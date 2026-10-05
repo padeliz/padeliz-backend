@@ -19,7 +19,7 @@ class OrganizerResource extends JsonResource
             'name' => $this->name,
             'logo_path' => $this->logo_path,
             'url' => $this->url,
-            'show_edition_label' => $this->show_edition_label,
+            'show_event_label' => $this->show_event_label,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
         ];

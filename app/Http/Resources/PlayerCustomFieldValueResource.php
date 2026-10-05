@@ -19,7 +19,7 @@ class PlayerCustomFieldValueResource extends JsonResource
             'id_player_custom_field_value' => $this->id_player_custom_field_value,
             'player_id' => $this->player_id,
             'player_custom_field_id' => $this->player_custom_field_id,
-            'edition_id' => $this->edition_id,
+            'event_id' => $this->event_id,
             'value_text' => $this->value_text,
             'value_integer' => $this->value_integer,
             'value_boolean' => $this->value_boolean,
@@ -36,8 +36,8 @@ class PlayerCustomFieldValueResource extends JsonResource
             'field' => $this->whenLoaded('field', function () {
                 return new PlayerCustomFieldResource($this->field);
             }),
-            'edition' => $this->whenLoaded('edition', function () {
-                return $this->edition ? new EditionResource($this->edition) : null;
+            'event' => $this->whenLoaded('event', function () {
+                return $this->event ? new EventResource($this->event) : null;
             }),
             'selected_options' => $this->whenLoaded('selectedOptions', function () {
                 return PlayerCustomFieldValueOptionResource::collection($this->selectedOptions);

@@ -180,7 +180,7 @@ class CourtController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
     {
         return $this->deleteResourceWithResponse(
             $court,
-            ['editionDivisionCourts' => 'edition_division_courts_count'],
+            ['eventDivisionCourts' => 'event_division_courts_count'],
             'court',
             'Court deleted successfully'
         );
@@ -205,7 +205,7 @@ class CourtController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
         return $this->deleteBulkResourcesWithResponse(
             $request->court_ids,
             Court::class,
-            ['editionDivisionCourts' => 'edition_division_courts_count'],
+            ['eventDivisionCourts' => 'event_division_courts_count'],
             'court',
             'Courts deleted successfully'
         );

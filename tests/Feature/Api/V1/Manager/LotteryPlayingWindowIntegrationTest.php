@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Manager;
 
-use App\Models\Edition;
-use App\Models\EditionDivision;
-use App\Models\EditionLottery;
-use App\Models\EditionLotteryPrize;
-use App\Models\EditionLotteryRule;
-use App\Models\EditionParticipation;
+use App\Models\PadelEvent;
+use App\Models\EventDivision;
+use App\Models\EventLottery;
+use App\Models\EventLotteryPrize;
+use App\Models\EventLotteryRule;
+use App\Models\EventParticipation;
 use App\Models\Player;
 use App\Models\Prize;
 use App\Services\Lottery\LotteryDrawService;
@@ -24,22 +24,22 @@ final class LotteryPlayingWindowIntegrationTest extends TestCase
 
     public function test_compute_next_available_includes_overnight_active_edition_division(): void
     {
-        $edition = Edition::factory()->create([
+        $event = PadelEvent::factory()->create([
             'date' => '2026-08-14',
         ]);
 
-        $overnight = EditionDivision::factory()->create([
-            'edition_id' => $edition->id_edition,
+        $overnight = EventDivision::factory()->create([
+            'event_id' => $event->id_event,
             'playing_start_time' => '18:00:00',
             'playing_end_time' => '00:00:00',
         ]);
 
-        $participation = EditionParticipation::factory()->create([
-            'edition_id' => $edition->id_edition,
-            'edition_division_id' => $overnight->id_edition_division,
+        $participation = EventParticipation::factory()->create([
+            'event_id' => $event->id_event,
+            'event_division_id' => $overnight->id_event_division,
             'player_id' => Player::factory()->create()->id_player,
         ]);
-        $participation->setRelation('editionDivision', $overnight);
+        $participation->setRelation('eventDivision', $overnight);
 
         $this->assertTrue(PlayingWindow::isActiveAt('18:00:00', '00:00:00', '19:00:00', '2026-08-14'));
 
@@ -47,7 +47,7 @@ final class LotteryPlayingWindowIntegrationTest extends TestCase
         $method = new ReflectionMethod(LotteryDrawService::class, 'computeNextAvailableAt');
         $method->setAccessible(true);
 
-        $ts = $method->invoke($service, $edition, $participation, '19:00:00');
+        $ts = $method->invoke($service, $event, $participation, '19:00:00');
         $this->assertIsInt($ts);
         $this->assertGreaterThan(0, $ts);
     }
@@ -67,51 +67,51 @@ final class LotteryPlayingWindowIntegrationTest extends TestCase
 
     public function test_prizes_board_merges_24_00_and_overnight_00_00_ends(): void
     {
-        $edition = Edition::factory()->create(['date' => now()->toDateString()]);
-        $div24 = EditionDivision::factory()->create([
-            'edition_id' => $edition->id_edition,
+        $event = PadelEvent::factory()->create(['date' => now()->toDateString()]);
+        $div24 = EventDivision::factory()->create([
+            'event_id' => $event->id_event,
             'playing_start_time' => '18:00:00',
             'playing_end_time' => '24:00:00',
         ]);
-        $div00 = EditionDivision::factory()->create([
-            'edition_id' => $edition->id_edition,
+        $div00 = EventDivision::factory()->create([
+            'event_id' => $event->id_event,
             'playing_start_time' => '18:00:00',
             'playing_end_time' => '00:00:00',
         ]);
-        $divOther = EditionDivision::factory()->create([
-            'edition_id' => $edition->id_edition,
+        $divOther = EventDivision::factory()->create([
+            'event_id' => $event->id_event,
             'playing_start_time' => '10:00:00',
             'playing_end_time' => '13:00:00',
         ]);
 
         $prize = Prize::factory()->create();
-        $lottery = EditionLottery::factory()->create([
-            'edition_id' => $edition->id_edition,
+        $lottery = EventLottery::factory()->create([
+            'event_id' => $event->id_event,
             'name' => 'Playing Window Lottery',
         ]);
-        $lotteryPrize = EditionLotteryPrize::factory()->create([
+        $lotteryPrize = EventLotteryPrize::factory()->create([
             'lottery_id' => $lottery->id_lottery,
             'prize_id' => $prize->id_prize,
             'prize_quantity' => 3,
         ]);
-        EditionLotteryRule::factory()->create([
+        EventLotteryRule::factory()->create([
             'lottery_prize_id' => $lotteryPrize->id_lottery_prize,
-            'edition_division_id' => $div24->id_edition_division,
+            'event_division_id' => $div24->id_event_division,
             'rule_prize_quantity' => 1,
         ]);
-        EditionLotteryRule::factory()->create([
+        EventLotteryRule::factory()->create([
             'lottery_prize_id' => $lotteryPrize->id_lottery_prize,
-            'edition_division_id' => $div00->id_edition_division,
+            'event_division_id' => $div00->id_event_division,
             'rule_prize_quantity' => 1,
         ]);
-        EditionLotteryRule::factory()->create([
+        EventLotteryRule::factory()->create([
             'lottery_prize_id' => $lotteryPrize->id_lottery_prize,
-            'edition_division_id' => $divOther->id_edition_division,
+            'event_division_id' => $divOther->id_event_division,
             'rule_prize_quantity' => 1,
         ]);
-        EditionLotteryRule::factory()->create([
+        EventLotteryRule::factory()->create([
             'lottery_prize_id' => $lotteryPrize->id_lottery_prize,
-            'edition_division_id' => null,
+            'event_division_id' => null,
             'rule_prize_quantity' => 1,
         ]);
 

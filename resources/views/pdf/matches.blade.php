@@ -17,10 +17,10 @@
                             @if ($organizer_image)
                                 <img style="max-width: 100%; width: 400px; max-height: 100px;" src="{{ $organizer_image }}" />
                             @endif
-                            @if ($show_edition_label)
+                            @if ($show_event_label)
                                 <span style="font-size: 60px;">&nbsp;</span>
-                                <b style="font-family: sans; font-size: 60px; color: #a9d78b;">
-                                    @if (is_numeric($edition_label))#@endif<span style="color: #7ab857;">{{ $edition_label }}</span>
+                                <b style="font-family: sans; font-size: 60px; color: {{ $edition_label_muted ?? '#a9d78b' }};">
+                                    @if (is_numeric($edition_label))#@endif<span style="color: {{ $edition_label_accent ?? '#7ab857' }};">{{ $edition_label }}</span>
                                 </b>
                             @endif
                         </td>

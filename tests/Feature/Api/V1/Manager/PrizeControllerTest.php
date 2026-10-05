@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Club;
-use App\Models\Edition;
-use App\Models\EditionLottery;
-use App\Models\EditionLotteryPrize;
+use App\Models\PadelEvent;
+use App\Models\EventLottery;
+use App\Models\EventLotteryPrize;
 use App\Models\Player;
 use App\Models\Prize;
 use App\Models\Sponsor;
@@ -263,7 +263,7 @@ class PrizeControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $prize = Prize::factory()->create();
-        EditionLotteryPrize::factory()->create(['prize_id' => $prize->id_prize]);
+        EventLotteryPrize::factory()->create(['prize_id' => $prize->id_prize]);
 
         $response = $this->deleteJson("/api/v1/manager/prizes/{$prize->id_prize}");
 
@@ -426,11 +426,11 @@ class PrizeControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $prize = Prize::factory()->create();
-        $edition = Edition::factory()->create();
-        $lottery = EditionLottery::factory()->create([
-            'edition_id' => $edition->id_edition,
+        $event = PadelEvent::factory()->create();
+        $lottery = EventLottery::factory()->create([
+            'event_id' => $event->id_event,
         ]);
-        EditionLotteryPrize::factory()->create([
+        EventLotteryPrize::factory()->create([
             'lottery_id' => $lottery->id_lottery,
             'prize_id' => $prize->id_prize,
         ]);

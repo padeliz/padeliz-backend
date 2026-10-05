@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\Manager;
 
 use App\Enums\PlayerCustomFieldType;
-use App\Models\Edition;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Models\PlayerCustomField;
 use App\Models\PlayerCustomFieldOption;
@@ -108,12 +108,12 @@ final class PlayerCustomFieldValueControllerTest extends TestCase
     public function test_edition_scoped_write_replaces_existing_row(): void
     {
         $player = Player::factory()->create();
-        $edition = Edition::factory()->create();
+        $event = PadelEvent::factory()->create();
         $field = PlayerCustomField::factory()->create();
 
         $this->postJson('/api/v1/manager/players/' . $player->id_player . '/custom-field-values', [
             'player_custom_field_id' => $field->id_player_custom_field,
-            'edition_id' => $edition->id_edition,
+            'event_id' => $event->id_event,
             'value' => 'First',
         ])->assertCreated();
 
@@ -121,7 +121,7 @@ final class PlayerCustomFieldValueControllerTest extends TestCase
 
         $this->postJson('/api/v1/manager/players/' . $player->id_player . '/custom-field-values', [
             'player_custom_field_id' => $field->id_player_custom_field,
-            'edition_id' => $edition->id_edition,
+            'event_id' => $event->id_event,
             'value' => 'Second',
         ])->assertCreated()
             ->assertJsonPath('data.value', 'Second');
@@ -166,7 +166,7 @@ final class PlayerCustomFieldValueControllerTest extends TestCase
             ->assertJsonPath('data.value', 'Yes');
     }
 
-    public function test_rejects_edition_division_id_in_body(): void
+    public function test_rejects_event_division_id_in_body(): void
     {
         $player = Player::factory()->create();
         $field = PlayerCustomField::factory()->create();
@@ -174,7 +174,7 @@ final class PlayerCustomFieldValueControllerTest extends TestCase
         $this->postJson('/api/v1/manager/players/' . $player->id_player . '/custom-field-values', [
             'player_custom_field_id' => $field->id_player_custom_field,
             'value' => 'Hello',
-            'edition_division_id' => 1,
+            'event_division_id' => 1,
         ])->assertStatus(422);
     }
 }

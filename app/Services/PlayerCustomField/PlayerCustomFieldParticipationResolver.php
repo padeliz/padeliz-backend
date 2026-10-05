@@ -49,13 +49,13 @@ final class PlayerCustomFieldParticipationResolver
         $activeFieldIds = $fields->keys()->map(static fn ($id): int => (int) $id)->all();
 
         $rows = PlayerCustomFieldValue::query()
-            ->with(['field', 'selectedOptions', 'edition'])
+            ->with(['field', 'selectedOptions', 'event'])
             ->whereIn('player_id', $playerIds)
             ->whereIn('player_custom_field_id', $activeFieldIds)
             ->whereNull('invalidated_at')
             ->where(function ($query) use ($cutoffDateYmd): void {
-                $query->whereNull('edition_id')
-                    ->orWhereHas('edition', function ($editionQuery) use ($cutoffDateYmd): void {
+                $query->whereNull('event_id')
+                    ->orWhereHas('event', function ($editionQuery) use ($cutoffDateYmd): void {
                         $editionQuery->whereDate('date', '<=', $cutoffDateYmd);
                     });
             })
@@ -126,9 +126,9 @@ final class PlayerCustomFieldParticipationResolver
 
             $answers[] = [
                 'value' => $display,
-                'edition_name' => $row->edition_id === null
+                'edition_name' => $row->event_id === null
                     ? null
-                    : (string) ($row->edition?->name ?? ''),
+                    : (string) ($row->event?->name ?? ''),
                 'inserted_date' => $this->insertedDateYmd($row),
             ];
         }
@@ -142,20 +142,20 @@ final class PlayerCustomFieldParticipationResolver
 
     private function isEligible(PlayerCustomFieldValue $row, string $cutoffDateYmd): bool
     {
-        if ($row->edition_id === null) {
+        if ($row->event_id === null) {
             return $this->insertedDateYmd($row) <= $cutoffDateYmd;
         }
 
-        $edition = $row->edition;
-        if ($edition === null) {
+        $event = $row->event;
+        if ($event === null) {
             return false;
         }
 
-        if ($edition->date instanceof \DateTimeInterface) {
-            return $edition->date->format('Y-m-d') <= $cutoffDateYmd;
+        if ($event->date instanceof \DateTimeInterface) {
+            return $event->date->format('Y-m-d') <= $cutoffDateYmd;
         }
 
-        return (string) ($edition->formatted_date ?? '') <= $cutoffDateYmd;
+        return (string) ($event->formatted_date ?? '') <= $cutoffDateYmd;
     }
 
     private function insertedDateYmd(PlayerCustomFieldValue $row): string
@@ -176,9 +176,9 @@ final class PlayerCustomFieldParticipationResolver
         $editionScoped = [];
         $global = [];
         foreach ($candidates as $row) {
-            if ($row->edition_id !== null && (int) $row->edition_id === $editionId) {
+            if ($row->event_id !== null && (int) $row->event_id === $editionId) {
                 $editionScoped[] = $row;
-            } elseif ($row->edition_id === null) {
+            } elseif ($row->event_id === null) {
                 $global[] = $row;
             }
         }

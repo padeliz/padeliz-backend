@@ -23,8 +23,8 @@ class PendingEligibilityRequest extends FormRequest
         return [
             'duplicate_id' => ['sometimes', 'nullable', 'integer'],
 
-            'edition_ids' => ['sometimes', 'nullable', 'array'],
-            'edition_ids.*' => ['integer', 'exists:editions,id_edition'],
+            'event_ids' => ['sometimes', 'nullable', 'array'],
+            'event_ids.*' => ['integer', 'exists:events,id_event'],
 
             'media_source' => ['sometimes', 'nullable', 'array'],
             'friends_source' => ['sometimes', 'nullable', 'array'],

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Standings;
 
-use App\Models\EditionDivision;
-use App\Models\EditionDivisionReplacement;
-use App\Models\EditionDivisionStanding;
-use App\Models\EditionParticipation;
+use App\Models\EventDivision;
+use App\Models\EventDivisionReplacement;
+use App\Models\EventDivisionStanding;
+use App\Models\EventParticipation;
 use App\Models\GameMatch;
 use Illuminate\Support\Facades\DB;
 
@@ -18,7 +18,7 @@ use Illuminate\Support\Facades\DB;
  * - REGULAR matches only
  * - Higher side score → +1 win per eligible player on that side; tie → +0.5 each side
  * - points_total += side score for each counted match
- * - Skip slots covered by an edition_division_replacements row
+ * - Skip slots covered by an event_division_replacements row
  *   (same original participation; match_id NULL or this match)
  * - Skip participation.is_collecting_points = false
  * - Substitute is not credited for the replaced slot
@@ -27,13 +27,13 @@ use Illuminate\Support\Facades\DB;
 final class StandingsRecalculator
 {
     /**
-     * @return list<EditionDivisionStanding>
+     * @return list<EventDivisionStanding>
      */
-    public function recalculate(EditionDivision $editionDivision): array
+    public function recalculate(EventDivision $eventDivision): array
     {
-        return DB::transaction(function () use ($editionDivision): array {
-            $participations = EditionParticipation::query()
-                ->where('edition_division_id', $editionDivision->id_edition_division)
+        return DB::transaction(function () use ($eventDivision): array {
+            $participations = EventParticipation::query()
+                ->where('event_division_id', $eventDivision->id_event_division)
                 ->get()
                 ->keyBy('id_participation');
 
@@ -48,8 +48,8 @@ final class StandingsRecalculator
 
             /** @var array<int, list<null|int>> $coveringByOriginal */
             $coveringByOriginal = [];
-            $replacementRows = EditionDivisionReplacement::query()
-                ->where('edition_division_id', $editionDivision->id_edition_division)
+            $replacementRows = EventDivisionReplacement::query()
+                ->where('event_division_id', $eventDivision->id_event_division)
                 ->get(['original_participation_id', 'match_id']);
             foreach ($replacementRows as $row) {
                 $orig = (int) $row->original_participation_id;
@@ -57,7 +57,7 @@ final class StandingsRecalculator
             }
 
             $matches = GameMatch::query()
-                ->where('edition_division_id', $editionDivision->id_edition_division)
+                ->where('event_division_id', $eventDivision->id_event_division)
                 ->where('match_kind', 'REGULAR')
                 ->with(['sides.players.participation'])
                 ->get();
@@ -94,14 +94,14 @@ final class StandingsRecalculator
 
             $rankByParticipation = StandingsRanker::assignCompetitionRanks($totals);
 
-            EditionDivisionStanding::query()
-                ->where('edition_division_id', $editionDivision->id_edition_division)
+            EventDivisionStanding::query()
+                ->where('event_division_id', $eventDivision->id_event_division)
                 ->delete();
 
             $standings = [];
             foreach ($totals as $participationId => $row) {
-                $standings[] = EditionDivisionStanding::create([
-                    'edition_division_id' => $editionDivision->id_edition_division,
+                $standings[] = EventDivisionStanding::create([
+                    'event_division_id' => $eventDivision->id_event_division,
                     'participation_id' => $participationId,
                     'points_total' => $row['points_total'],
                     'wins' => $row['wins'],
@@ -109,7 +109,7 @@ final class StandingsRecalculator
                 ]);
             }
 
-            usort($standings, static fn (EditionDivisionStanding $a, EditionDivisionStanding $b): int => ($a->rank ?? PHP_INT_MAX) <=> ($b->rank ?? PHP_INT_MAX));
+            usort($standings, static fn (EventDivisionStanding $a, EventDivisionStanding $b): int => ($a->rank ?? PHP_INT_MAX) <=> ($b->rank ?? PHP_INT_MAX));
 
             return $standings;
         });
@@ -117,7 +117,7 @@ final class StandingsRecalculator
 
     /**
      * @param  array<int, array{points_total: int, wins: float}>  $totals
-     * @param  \Illuminate\Support\Collection<int, EditionParticipation>  $participations
+     * @param  \Illuminate\Support\Collection<int, EventParticipation>  $participations
      * @param  array<int, list<null|int>>  $coveringByOriginal
      */
     private function applySide(

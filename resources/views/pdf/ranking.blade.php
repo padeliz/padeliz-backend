@@ -14,10 +14,10 @@
                 @if ($organizer_image)
                     <img style="max-width: 100%; width: 280px; max-height: 80px;" src="{{ $organizer_image }}" />
                 @endif
-                @if ($show_edition_label)
+                @if ($show_event_label)
                     <span style="font-size: 40px;">&nbsp;</span>
-                    <b style="font-family: sans; font-size: 40px; color: #a9d78b;">
-                        @if (is_numeric($edition_label))#@endif<span style="color: #7ab857;">{{ $edition_label }}</span>
+                    <b style="font-family: sans; font-size: 40px; color: {{ $edition_label_muted ?? '#a9d78b' }};">
+                        @if (is_numeric($edition_label))#@endif<span style="color: {{ $edition_label_accent ?? '#7ab857' }};">{{ $edition_label }}</span>
                     </b>
                 @endif
             </div>
@@ -73,7 +73,9 @@
                                 {!! $player['html_short_name'] !!}
                                 <br>
                             </div>
-                            <small style="color: #999999;">#{{ $player['id'] }}</small>
+                            @if ($show_player_ids ?? true)
+                                <small style="color: #999999;">#{{ $player['id'] }}</small>
+                            @endif
                         </td>
                         <td rowspan="{{ $nr_of_rows }}" style="width: 155px; align-items: center;">
                             <img width="{{ $sizing['img-width'] }}" src="{{ $player['avatar_path'] }}" alt="{{ $player['short_name'] }}" />

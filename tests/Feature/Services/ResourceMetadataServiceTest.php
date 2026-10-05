@@ -6,8 +6,8 @@ namespace Tests\Feature\Services;
 
 use App\Models\Club;
 use App\Models\Division;
-use App\Models\Edition;
-use App\Models\EditionParticipation;
+use App\Models\PadelEvent;
+use App\Models\EventParticipation;
 use App\Models\Eligibility;
 use App\Models\Location;
 use App\Models\Player;
@@ -259,9 +259,9 @@ class ResourceMetadataServiceTest extends TestCase
 
         $this->assertArrayHasKey('display_field', $metadata);
         // Display field should be 'name' for models with searchable fields, null for models without
-        if (in_array($expectedSchemaName, ['EditionLotteryLucky', 'EditionParticipation', 'EditionRegistration', 'EditionLotteryPrize', 'SponsorPrize', 'Eligibility'])) {
+        if (in_array($expectedSchemaName, ['EventLotteryLucky', 'EventParticipation', 'EventRegistration', 'EventLotteryPrize', 'SponsorPrize', 'Eligibility'])) {
             $this->assertNull($metadata['display_field']);
-        } elseif ($expectedSchemaName === 'EditionDivision') {
+        } elseif ($expectedSchemaName === 'EventDivision') {
             $this->assertEquals('division_title', $metadata['display_field']);
         } else {
             $this->assertEquals('name', $metadata['display_field']);
@@ -278,17 +278,19 @@ class ResourceMetadataServiceTest extends TestCase
 
         $this->assertArrayHasKey('list_fields', $metadata);
         $this->assertIsArray($metadata['list_fields']);
-        if ($expectedSchemaName === 'EditionRegistration') {
+        if ($expectedSchemaName === 'EventRegistration') {
             $this->assertEquals(
                 [
                     'player.profile_image_url',
                     'player_id',
-                    'edition_division_id',
+                    'event_division_id',
                 ],
                 $metadata['list_fields']
             );
         } elseif (in_array($expectedSchemaName, ['Club', 'Prize'], true)) {
             $this->assertEquals(['url'], $metadata['list_fields']);
+        } elseif ($expectedSchemaName === 'Event') {
+            $this->assertEquals(['cover_url'], $metadata['list_fields']);
         } else {
             $this->assertEquals([], $metadata['list_fields']);
         }
@@ -299,12 +301,12 @@ class ResourceMetadataServiceTest extends TestCase
         return [
             'Club' => ['Club', 'Club'],
             'Division' => ['Division', 'Division'],
-            'Edition' => ['Edition', 'Edition'],
-            'EditionDivision' => ['EditionDivision', 'EditionDivision'],
-            'EditionLottery' => ['EditionLottery', 'EditionLottery'],
-            'EditionLotteryLucky' => ['EditionLotteryLucky', 'EditionLotteryLucky'],
-            'EditionParticipation' => ['EditionParticipation', 'EditionParticipation'],
-            'EditionRegistration' => ['EditionRegistration', 'EditionRegistration'],
+            'Event' => ['Event', 'Event'],
+            'EventDivision' => ['EventDivision', 'EventDivision'],
+            'EventLottery' => ['EventLottery', 'EventLottery'],
+            'EventLotteryLucky' => ['EventLotteryLucky', 'EventLotteryLucky'],
+            'EventParticipation' => ['EventParticipation', 'EventParticipation'],
+            'EventRegistration' => ['EventRegistration', 'EventRegistration'],
             'Location' => ['Location', 'Location'],
             'Player' => ['Player', 'Player'],
             'Eligibility' => ['Eligibility', 'Eligibility'],
@@ -324,17 +326,17 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertEquals('divisions', $metadata['resource_path']);
         $this->assertContains('name', $metadata['searchable_fields']);
         $this->assertArrayNotHasKey('is_students_only', $metadata['filterable_fields']);
-        $this->assertArrayHasKey('its_first_edition_id', $metadata['filterable_fields']);
-        $this->assertEquals('foreign_key', $metadata['filterable_fields']['its_first_edition_id']['type']);
-        $this->assertEquals('Edition', $metadata['filterable_fields']['its_first_edition_id']['related_schema_name']);
-        $this->assertEquals('name', $metadata['filterable_fields']['its_first_edition_id']['related_schema_field']);
+        $this->assertArrayHasKey('its_first_event_id', $metadata['filterable_fields']);
+        $this->assertEquals('foreign_key', $metadata['filterable_fields']['its_first_event_id']['type']);
+        $this->assertEquals('Event', $metadata['filterable_fields']['its_first_event_id']['related_schema_name']);
+        $this->assertEquals('name', $metadata['filterable_fields']['its_first_event_id']['related_schema_field']);
 
         $required = $metadata['swagger_schema']['required'] ?? [];
-        $this->assertContains('its_first_edition_id', $required);
-        $this->assertArrayHasKey('its_first_edition', $metadata['swagger_schema']['properties']);
+        $this->assertContains('its_first_event_id', $required);
+        $this->assertArrayHasKey('its_first_event', $metadata['swagger_schema']['properties']);
         $this->assertArrayHasKey(
             'oneOf',
-            $metadata['swagger_schema']['properties']['its_first_edition'] ?? []
+            $metadata['swagger_schema']['properties']['its_first_event'] ?? []
         );
 
         $color = $metadata['swagger_schema']['properties']['color'] ?? [];
@@ -345,16 +347,15 @@ class ResourceMetadataServiceTest extends TestCase
     public function test_edition_metadata(): void
     {
         // Create test data
-        Edition::factory()->create(['name' => 'Summer 2024', 'date' => '2024-06-01']);
-        Edition::factory()->create(['name' => 'Winter 2024', 'date' => '2024-12-01']);
+        PadelEvent::factory()->create(['name' => 'Summer 2024', 'date' => '2024-06-01']);
+        PadelEvent::factory()->create(['name' => 'Winter 2024', 'date' => '2024-12-01']);
 
-        $metadata = $this->metadataService->getMetadata('Edition', 'v1');
+        $metadata = $this->metadataService->getMetadata('Event', 'v1');
 
-        $this->assertEquals('Edition', $metadata['schema_name']);
-        $this->assertEquals('editions', $metadata['resource_path']);
+        $this->assertEquals('Event', $metadata['schema_name']);
+        $this->assertEquals('events', $metadata['resource_path']);
         $this->assertContains('name', $metadata['searchable_fields']);
-        $this->assertArrayHasKey('entry_fee', $metadata['filterable_fields']);
-        $this->assertEquals('integer', $metadata['filterable_fields']['entry_fee']['type']);
+        $this->assertArrayHasKey('location_id', $metadata['filterable_fields']);
         $required = $metadata['swagger_schema']['required'] ?? [];
         $this->assertContains('arriving_time', $required);
         $this->assertContains('closing_time', $required);
@@ -368,29 +369,29 @@ class ResourceMetadataServiceTest extends TestCase
     {
         // Create test data with relationships
         $player = Player::factory()->create();
-        $edition = Edition::factory()->create();
+        $event = PadelEvent::factory()->create();
         $division = Division::factory()->create();
 
-        $editionDivision = \App\Models\EditionDivision::factory()->create([
-            'edition_id' => $edition->id_edition,
+        $eventDivision = \App\Models\EventDivision::factory()->create([
+            'event_id' => $event->id_event,
             'division_id' => $division->id_division,
             'division_title' => $division->name,
         ]);
 
-        EditionParticipation::factory()->create([
+        EventParticipation::factory()->create([
             'player_id' => $player->id_player,
-            'edition_id' => $edition->id_edition,
-            'edition_division_id' => $editionDivision->id_edition_division,
+            'event_id' => $event->id_event,
+            'event_division_id' => $eventDivision->id_event_division,
         ]);
 
-        $metadata = $this->metadataService->getMetadata('EditionParticipation', 'v1');
+        $metadata = $this->metadataService->getMetadata('EventParticipation', 'v1');
 
-        $this->assertEquals('EditionParticipation', $metadata['schema_name']);
+        $this->assertEquals('EventParticipation', $metadata['schema_name']);
 
         $filterableFields = $metadata['filterable_fields'];
         $this->assertArrayHasKey('player_id', $filterableFields);
-        $this->assertArrayHasKey('edition_id', $filterableFields);
-        $this->assertArrayHasKey('edition_division_id', $filterableFields);
+        $this->assertArrayHasKey('event_id', $filterableFields);
+        $this->assertArrayHasKey('event_division_id', $filterableFields);
 
         // Test foreign key relationships
         if (isset($filterableFields['player_id']['type']) && $filterableFields['player_id']['type'] === 'foreign_key') {
@@ -427,8 +428,8 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertContains('discarded', $props['review_status']['enum'] ?? []);
 
         $postBody = $metadata['request_body']['POST']['/eligibilities'] ?? [];
-        $this->assertArrayHasKey('edition_ids', $postBody);
-        $this->assertArrayNotHasKey('edition_id', $postBody);
+        $this->assertArrayHasKey('event_ids', $postBody);
+        $this->assertArrayNotHasKey('event_id', $postBody);
         $this->assertContains('discarded', $postBody['review_status']['enum'] ?? []);
     }
 
@@ -549,11 +550,11 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertArrayHasKey('request_body', $playerMetadata);
 
         // Test hyphenated models (only last word should be pluralized)
-        $editionLotteryMetadata = $this->metadataService->getMetadata('EditionLottery', 'v1');
+        $editionLotteryMetadata = $this->metadataService->getMetadata('EventLottery', 'v1');
         $this->assertArrayHasKey('request_body', $editionLotteryMetadata);
 
-        $editionParticipationMetadata = $this->metadataService->getMetadata('EditionParticipation', 'v1');
-        $this->assertArrayHasKey('request_body', $editionParticipationMetadata);
+        $eventParticipationMetadata = $this->metadataService->getMetadata('EventParticipation', 'v1');
+        $this->assertArrayHasKey('request_body', $eventParticipationMetadata);
 
         $eligibilityMetadata = $this->metadataService->getMetadata('Eligibility', 'v1');
         $this->assertArrayHasKey('request_body', $eligibilityMetadata);
@@ -665,23 +666,23 @@ class ResourceMetadataServiceTest extends TestCase
             'Player' => ['Player', 'players'],
             'Club' => ['Club', 'clubs'],
             'Division' => ['Division', 'divisions'],
-            'Edition' => ['Edition', 'editions'],
+            'Event' => ['Event', 'events'],
             'Location' => ['Location', 'locations'],
             'Prize' => ['Prize', 'prizes'],
 
             // Hyphenated models (only last word should be pluralized)
-            'EditionLottery' => ['EditionLottery', 'edition-lotteries'],
-            'EditionParticipation' => ['EditionParticipation', 'edition-participations'],
-            'EditionRegistration' => ['EditionRegistration', 'edition-registrations'],
-            'EditionDivision' => ['EditionDivision', 'edition-divisions'],
-            'EditionLotteryLucky' => ['EditionLotteryLucky', 'edition-lottery-luckies'],
-            'EditionLotteryPrize' => ['EditionLotteryPrize', 'edition-lottery-prizes'],
+            'EventLottery' => ['EventLottery', 'event-lotteries'],
+            'EventParticipation' => ['EventParticipation', 'event-participations'],
+            'EventRegistration' => ['EventRegistration', 'event-registrations'],
+            'EventDivision' => ['EventDivision', 'event-divisions'],
+            'EventLotteryLucky' => ['EventLotteryLucky', 'event-lottery-luckies'],
+            'EventLotteryPrize' => ['EventLotteryPrize', 'event-lottery-prizes'],
             'Eligibility' => ['Eligibility', 'eligibilities'],
             'Sponsor' => ['Sponsor', 'sponsors'],
             'SponsorPrize' => ['SponsorPrize', 'sponsor-prizes'],
 
             // Edge cases with multiple hyphens (using existing models)
-            'EditionDivision' => ['EditionDivision', 'edition-divisions'],
+            'EventDivision' => ['EventDivision', 'event-divisions'],
         ];
     }
 
@@ -718,9 +719,9 @@ class ResourceMetadataServiceTest extends TestCase
             'Player' => 'name',
             'Location' => 'name',
             'Division' => 'name',
-            'Edition' => 'name',
+            'Event' => 'name',
             'Prize' => 'name',
-            'EditionLottery' => 'name',
+            'EventLottery' => 'name',
             'Sponsor' => 'name',
         ];
 
@@ -737,10 +738,10 @@ class ResourceMetadataServiceTest extends TestCase
 
         // Test models with display_field set to null (no searchable fields / explicit null)
         $modelsWithNullDisplayField = [
-            'EditionLotteryLucky',
-            'EditionLotteryPrize',
-            'EditionParticipation',
-            'EditionRegistration',
+            'EventLotteryLucky',
+            'EventLotteryPrize',
+            'EventParticipation',
+            'EventRegistration',
             'SponsorPrize',
             'Eligibility',
         ];
@@ -755,19 +756,19 @@ class ResourceMetadataServiceTest extends TestCase
             );
         }
 
-        $editionDivisionMetadata = $this->metadataService->getMetadata('EditionDivision', 'v1');
-        $this->assertEquals('division_title', $editionDivisionMetadata['display_field']);
-        $edProps = $editionDivisionMetadata['swagger_schema']['properties'];
+        $eventDivisionMetadata = $this->metadataService->getMetadata('EventDivision', 'v1');
+        $this->assertEquals('division_title', $eventDivisionMetadata['display_field']);
+        $edProps = $eventDivisionMetadata['swagger_schema']['properties'];
         $this->assertArrayHasKey('courts', $edProps);
 
-        $scheduleMetadata = $this->metadataService->getMetadata('EditionDivisionSchedule', 'v1');
+        $scheduleMetadata = $this->metadataService->getMetadata('EventDivisionSchedule', 'v1');
         $scheduleProps = $scheduleMetadata['swagger_schema']['properties'];
         $this->assertTrue($scheduleProps['player_matches_repeat']['nullable'] ?? false);
 
         $courtMetadata = $this->metadataService->getMetadata('Court', 'v1');
         $this->assertArrayHasKey('location', $courtMetadata['swagger_schema']['properties']);
 
-        $replacementMetadata = $this->metadataService->getMetadata('EditionDivisionReplacement', 'v1');
+        $replacementMetadata = $this->metadataService->getMetadata('EventDivisionReplacement', 'v1');
         $this->assertArrayHasKey('match_id', $replacementMetadata['swagger_schema']['properties']);
     }
 

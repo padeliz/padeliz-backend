@@ -32,9 +32,11 @@ final class ScheduleGenerationService
      *     include_final: bool,
      *     has_demonstrative_match: bool,
      *     template_version: int,
+     *     template_file: string,
      *     rounds_total: int,
      *     matches_count: int,
      *     points_per_match: int,
+     *     average_playing_time_minutes: float,
      *     partners_count_variation: int,
      *     partners_count: array<int|string, int>,
      *     players_met: array<int|string, array<int|string, int>>,
@@ -76,6 +78,8 @@ final class ScheduleGenerationService
             throw new InvalidArgumentException('repeatPartners must be >= 1.');
         }
 
+        $repository = $this->repository ?? new TemplateMatchesRepository();
+
         $generator = new MatchesGenerator(
             $playerIds,
             $opponentsPerPlayer,
@@ -86,7 +90,7 @@ final class ScheduleGenerationService
             $includeFinal,
             $hasDemonstrativeMatch,
             $templateVersion,
-            $this->repository ?? new TemplateMatchesRepository(),
+            $repository,
         );
 
         $rawByCourt = $generator->getMatches();
@@ -112,6 +116,13 @@ final class ScheduleGenerationService
         }
 
         $roundsTotal = $generator->getRoundsTotal();
+        $templateFile = $repository->filenameForIdentity(
+            count($playerIds),
+            $opponentsPerPlayer,
+            $repeatPartners,
+            count($courtNames),
+            false,
+        );
 
         return [
             'player_ids' => $playerIds,
@@ -124,9 +135,15 @@ final class ScheduleGenerationService
             'include_final' => $includeFinal,
             'has_demonstrative_match' => $hasDemonstrativeMatch,
             'template_version' => $generator->getTemplateVersion(),
+            'template_file' => $templateFile,
             'rounds_total' => $roundsTotal,
             'matches_count' => $generator->getMatchesCount(),
             'points_per_match' => PointsPerMatchCalculator::calculate($timeStart, $timeEnd, $roundsTotal),
+            'average_playing_time_minutes' => AveragePlayingTimeCalculator::calculate(
+                $timeStart,
+                $timeEnd,
+                $roundsTotal,
+            ),
             'partners_count_variation' => $generator->partnersCountVariation(),
             'partners_count' => $generator->getPartnersCount(),
             'players_met' => $generator->getPlayersMet(),

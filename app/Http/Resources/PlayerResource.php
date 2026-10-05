@@ -57,12 +57,20 @@ class PlayerResource extends JsonResource
                     'verified_at' => $phone->verified_at,
                 ])->values()->all();
             }),
+            'identities' => $this->whenLoaded('identities', function () {
+                return PlayerIdentityResource::collection(
+                    $this->identities->sortBy([
+                        ['linked_at', 'asc'],
+                        ['id_identity', 'asc'],
+                    ])->values()
+                )->resolve();
+            }),
             'uploaded_profile_images' => $this->profileImages
                 ->map(static fn (PlayerProfileImage $img) => $img->toApiArray())
                 ->values()
                 ->all(),
             'participations' => $this->whenLoaded('participations', function () {
-                return EditionParticipationResource::collection($this->participations);
+                return EventParticipationResource::collection($this->participations);
             }),
         ];
     }

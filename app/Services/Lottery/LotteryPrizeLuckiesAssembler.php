@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Services\Lottery;
 
 use App\Models\CachedPdfPlayerImage;
-use App\Models\EditionLotteryLucky;
-use App\Models\EditionLotteryPrize;
-use App\Models\EditionLotteryRule;
+use App\Models\EventLotteryLucky;
+use App\Models\EventLotteryPrize;
+use App\Models\EventLotteryRule;
 use Illuminate\Support\Collection;
 
 final class LotteryPrizeLuckiesAssembler
@@ -24,9 +24,9 @@ final class LotteryPrizeLuckiesAssembler
     ];
 
     /**
-     * @param  Collection<int, EditionLotteryPrize>  $prizeLines
+     * @param  Collection<int, EventLotteryPrize>  $prizeLines
      */
-    public function attach(Collection $prizeLines, ?int $editionDivisionId): void
+    public function attach(Collection $prizeLines, ?int $eventDivisionId): void
     {
         if ($prizeLines->isEmpty()) {
             return;
@@ -34,16 +34,16 @@ final class LotteryPrizeLuckiesAssembler
 
         $prizeIds = $prizeLines->pluck('id_lottery_prize')->all();
 
-        $rulesQuery = EditionLotteryRule::query()->whereIn('lottery_prize_id', $prizeIds);
-        if ($editionDivisionId !== null) {
-            $rulesQuery->where('edition_division_id', $editionDivisionId);
+        $rulesQuery = EventLotteryRule::query()->whereIn('lottery_prize_id', $prizeIds);
+        if ($eventDivisionId !== null) {
+            $rulesQuery->where('event_division_id', $eventDivisionId);
         }
         $rules = $rulesQuery->get();
 
         $ruleIds = $rules->pluck('id_lottery_rule')->all();
         $luckies = $ruleIds === []
             ? collect()
-            : EditionLotteryLucky::query()
+            : EventLotteryLucky::query()
                 ->whereIn('lottery_rule_id', $ruleIds)
                 ->with(['lotteryRule', 'drawnParticipation.player.phones'])
                 ->orderBy('inserted_at')
@@ -52,8 +52,8 @@ final class LotteryPrizeLuckiesAssembler
 
         $this->preloadPdfAvatars($luckies);
 
-        $rulesByPrize = $rules->groupBy(static fn (EditionLotteryRule $rule): int => (int) $rule->lottery_prize_id);
-        $luckiesByRule = $luckies->groupBy(static fn (EditionLotteryLucky $lucky): int => (int) $lucky->lottery_rule_id);
+        $rulesByPrize = $rules->groupBy(static fn (EventLotteryRule $rule): int => (int) $rule->lottery_prize_id);
+        $luckiesByRule = $luckies->groupBy(static fn (EventLotteryLucky $lucky): int => (int) $lucky->lottery_rule_id);
 
         foreach ($prizeLines as $line) {
             $prizeRules = $rulesByPrize->get((int) $line->id_lottery_prize, collect());
@@ -73,7 +73,7 @@ final class LotteryPrizeLuckiesAssembler
             $line->setRelation('luckies', $merged);
             $line->setAttribute(
                 'rule_prize_quantity_total',
-                (int) $prizeRules->sum(static fn (EditionLotteryRule $rule): int => (int) $rule->rule_prize_quantity)
+                (int) $prizeRules->sum(static fn (EventLotteryRule $rule): int => (int) $rule->rule_prize_quantity)
             );
             $line->setAttribute('activity_at', $this->activityAt($merged));
         }
@@ -81,7 +81,7 @@ final class LotteryPrizeLuckiesAssembler
 
     public function hasUnresolvedPendingForLottery(int $lotteryId): bool
     {
-        return EditionLotteryLucky::query()
+        return EventLotteryLucky::query()
             ->whereHas(
                 'lotteryRule.lotteryPrize',
                 static fn ($q) => $q->where('lottery_id', $lotteryId)
@@ -92,7 +92,7 @@ final class LotteryPrizeLuckiesAssembler
     }
 
     /**
-     * @param  Collection<int, EditionLotteryLucky>  $luckies
+     * @param  Collection<int, EventLotteryLucky>  $luckies
      */
     private function preloadPdfAvatars(Collection $luckies): void
     {
@@ -130,7 +130,7 @@ final class LotteryPrizeLuckiesAssembler
     }
 
     /**
-     * @param  Collection<int, EditionLotteryLucky>  $luckies
+     * @param  Collection<int, EventLotteryLucky>  $luckies
      */
     private function activityAt(Collection $luckies): ?int
     {

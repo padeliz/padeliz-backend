@@ -21,7 +21,7 @@ class PlayerCustomFieldValueFactory extends Factory
         return [
             'player_id' => Player::factory(),
             'player_custom_field_id' => PlayerCustomField::factory(),
-            'edition_id' => null,
+            'event_id' => null,
             'value_text' => $this->faker->sentence(3),
             'value_integer' => null,
             'value_boolean' => null,

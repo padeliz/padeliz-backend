@@ -87,10 +87,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *         nullable=true
  *     ),
  *     @OA\Property(
- *         property="editions",
+ *         property="events",
  *         type="array",
- *         @OA\Items(ref="#/components/schemas/Edition"),
- *         title="Editions",
+ *         @OA\Items(ref="#/components/schemas/Event"),
+ *         title="Events",
  *         description="Array of related editions",
  *         nullable=true
  *     )
@@ -171,9 +171,9 @@ class Location extends Model
         return $this->belongsTo(Club::class, 'club_id');
     }
 
-    public function editions(): HasMany
+    public function events(): HasMany
     {
-        return $this->hasMany(Edition::class, 'location_id');
+        return $this->hasMany(PadelEvent::class, 'location_id');
     }
 
     public function courts(): HasMany

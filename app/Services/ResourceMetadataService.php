@@ -92,12 +92,13 @@ class ResourceMetadataService
 
         $swaggerContent = File::get($swaggerFile);
         $swaggerData = json_decode($swaggerContent, true);
+        $lookup = $schemaName === 'PadelEvent' ? 'Event' : $schemaName;
 
-        if (! isset($swaggerData['components']['schemas'][$schemaName])) {
+        if (! isset($swaggerData['components']['schemas'][$lookup])) {
             return null;
         }
 
-        return $swaggerData['components']['schemas'][$schemaName];
+        return $swaggerData['components']['schemas'][$lookup];
     }
 
     /**
@@ -156,6 +157,12 @@ class ResourceMetadataService
     private function getResourceNameFromSchema(string $schemaName): string
     {
         $modelName = class_basename($schemaName);
+
+        // PHP root model is PadelEvent (avoids Facade clash); HTTP resource stays /events.
+        if ($modelName === 'PadelEvent' || $modelName === 'Event') {
+            return 'events';
+        }
+
         $kebabCase = Str::kebab($modelName);
 
         // For hyphenated strings, only pluralize the last word
@@ -358,12 +365,17 @@ class ResourceMetadataService
             : [];
 
         // Fall back to primary key when related model has no searchable string fields
-        // (e.g. EditionLottery used as lottery_id filter on EditionLotteryRule).
+        // (e.g. EventLottery used as lottery_id filter on EventLotteryRule).
         $labelField = ! empty($searchableFields) ? $searchableFields[0] : $primaryKey;
+
+        $relatedSchema = class_basename($relatedModelClass);
+        if ($relatedSchema === 'PadelEvent') {
+            $relatedSchema = 'Event';
+        }
 
         return [
             'type' => 'foreign_key',
-            'related_schema_name' => class_basename($relatedModelClass),
+            'related_schema_name' => $relatedSchema,
             'related_schema_field' => $labelField,
             'values' => $this->getRelatedModelValuesAsObject($relatedModelClass, $labelField),
         ];

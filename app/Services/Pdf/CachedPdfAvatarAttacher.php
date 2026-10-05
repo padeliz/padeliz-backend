@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Services\Pdf;
 
 use App\Models\CachedPdfPlayerImage;
-use App\Models\EditionParticipation;
+use App\Models\EventParticipation;
 use Illuminate\Support\Collection;
 
 /**
@@ -56,7 +56,7 @@ final class CachedPdfAvatarAttacher
     }
 
     /**
-     * @param  Collection<int, EditionParticipation>|iterable<EditionParticipation>  $participations
+     * @param  Collection<int, EventParticipation>|iterable<EventParticipation>  $participations
      */
     public function hydrateParticipations(iterable $participations): void
     {
@@ -70,7 +70,7 @@ final class CachedPdfAvatarAttacher
 
         $pairs = [];
         foreach ($items as $participation) {
-            if (! $participation instanceof EditionParticipation) {
+            if (! $participation instanceof EventParticipation) {
                 continue;
             }
             $playerId = (int) $participation->player_id;
@@ -87,7 +87,7 @@ final class CachedPdfAvatarAttacher
         $urls = CachedPdfPlayerImage::urlsByPlayerCollectingPairs(array_values($pairs));
 
         foreach ($items as $participation) {
-            if (! $participation instanceof EditionParticipation) {
+            if (! $participation instanceof EventParticipation) {
                 continue;
             }
             $playerId = (int) $participation->player_id;
@@ -102,7 +102,7 @@ final class CachedPdfAvatarAttacher
         }
     }
 
-    public function hydrateParticipation(EditionParticipation $participation): void
+    public function hydrateParticipation(EventParticipation $participation): void
     {
         $this->hydrateParticipations([$participation]);
     }

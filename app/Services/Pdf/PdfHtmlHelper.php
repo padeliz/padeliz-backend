@@ -4,6 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\Pdf;
 
+use App\Services\Schedule\PointsPerMatchCalculator;
+
 /**
  * Layout helpers ported from MiniTour PdfHtmlHelper.
  */
@@ -169,7 +171,7 @@ final class PdfHtmlHelper
     /** Even-round for print only; does not mutate stored points. */
     public static function evenRoundPointsForPrint(int $pointsPerMatch): int
     {
-        return $pointsPerMatch % 2 === 0 ? $pointsPerMatch : $pointsPerMatch + 1;
+        return PointsPerMatchCalculator::evenRoundForPrint($pointsPerMatch);
     }
 
     public static function shortenPlayerName(string $fullName): string

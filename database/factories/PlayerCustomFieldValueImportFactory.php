@@ -21,7 +21,7 @@ class PlayerCustomFieldValueImportFactory extends Factory
             'imported_by_player_id' => Player::factory()->manager(),
             'format' => 'google_form_minitour_welcome',
             'original_filename' => 'minitour.csv',
-            'edition_id' => null,
+            'event_id' => null,
             'included_count' => 0,
             'values_new_count' => 0,
             'values_replaced_count' => 0,

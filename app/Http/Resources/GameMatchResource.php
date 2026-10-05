@@ -16,8 +16,8 @@ class GameMatchResource extends JsonResource
     {
         return [
             'id_match' => $this->id_match,
-            'edition_division_id' => $this->edition_division_id,
-            'edition_division_court_id' => $this->edition_division_court_id,
+            'event_division_id' => $this->event_division_id,
+            'event_division_court_id' => $this->event_division_court_id,
             'match_kind' => $this->match_kind,
             'sequence_no' => $this->sequence_no,
             'scheduled_start' => $this->scheduled_start?->format('H:i:s'),
@@ -25,11 +25,11 @@ class GameMatchResource extends JsonResource
             'points_target' => $this->points_target,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
-            'edition_division' => $this->whenLoaded('editionDivision', function () {
-                return new EditionDivisionResource($this->editionDivision);
+            'event_division' => $this->whenLoaded('eventDivision', function () {
+                return new EventDivisionResource($this->eventDivision);
             }),
-            'edition_division_court' => $this->whenLoaded('editionDivisionCourt', function () {
-                return new EditionDivisionCourtResource($this->editionDivisionCourt);
+            'event_division_court' => $this->whenLoaded('eventDivisionCourt', function () {
+                return new EventDivisionCourtResource($this->eventDivisionCourt);
             }),
             'sides' => $this->whenLoaded('sides', function () {
                 return MatchSideResource::collection($this->sides);

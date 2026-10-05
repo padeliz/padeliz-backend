@@ -42,14 +42,14 @@ class MatchScoreController extends \App\Http\Controllers\BaseVersions\V1\V1BaseC
      *         )
      *     ),
      *     @OA\Response(response=200, description="Scores updated"),
-     *     @OA\Response(response=409, description="Edition finalized")
+     *     @OA\Response(response=409, description="PadelEvent finalized")
      * )
      */
     public function update(Request $request, GameMatch $match)
     {
-        $match->loadMissing('editionDivision.edition');
+        $match->loadMissing('eventDivision.event');
 
-        if ($match->editionDivision?->edition?->finalized_at !== null) {
+        if ($match->eventDivision?->event?->finalized_at !== null) {
             return $this->errorResponse('Scores cannot be updated after finalize.', 409);
         }
 
@@ -88,7 +88,7 @@ class MatchScoreController extends \App\Http\Controllers\BaseVersions\V1\V1BaseC
         $match->load([
             'sides.players.player',
             'sides.players.participation',
-            'editionDivisionCourt.court',
+            'eventDivisionCourt.court',
         ]);
 
         return $this->resourceResponse(

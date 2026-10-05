@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Pdf;
 
-use App\Models\EditionParticipation;
+use App\Models\EventParticipation;
 
 final class AttendancePosterInvalidation
 {
@@ -12,7 +12,7 @@ final class AttendancePosterInvalidation
      * @param  array<string, mixed>  $validated
      */
     public function shouldInvalidateForParticipationChange(
-        EditionParticipation $participation,
+        EventParticipation $participation,
         array $validated,
     ): bool {
         if (array_key_exists('player_id', $validated)
@@ -20,8 +20,8 @@ final class AttendancePosterInvalidation
             return true;
         }
 
-        if (array_key_exists('edition_division_id', $validated)
-            && (int) $validated['edition_division_id'] !== (int) $participation->edition_division_id) {
+        if (array_key_exists('event_division_id', $validated)
+            && (int) $validated['event_division_id'] !== (int) $participation->event_division_id) {
             return true;
         }
 

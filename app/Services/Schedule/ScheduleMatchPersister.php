@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Schedule;
 
-use App\Models\EditionDivision;
-use App\Models\EditionDivisionCourt;
-use App\Models\EditionDivisionReplacement;
-use App\Models\EditionParticipation;
+use App\Models\EventDivision;
+use App\Models\EventDivisionCourt;
+use App\Models\EventDivisionReplacement;
+use App\Models\EventParticipation;
 use App\Models\GameMatch;
 use App\Models\MatchPlayer;
 use App\Models\MatchSide;
@@ -32,28 +32,28 @@ final class ScheduleMatchPersister
      *     }>>,
      *     points_per_match: int
      * }  $preview
-     * @param  array<int, EditionParticipation>  $participationsByPlayerId
+     * @param  array<int, EventParticipation>  $participationsByPlayerId
      * @return list<GameMatch>
      */
     public function persistRegularMatches(
-        EditionDivision $editionDivision,
+        EventDivision $eventDivision,
         array $preview,
         array $participationsByPlayerId,
     ): array {
-        $courts = EditionDivisionCourt::query()
-            ->where('edition_division_id', $editionDivision->id_edition_division)
+        $courts = EventDivisionCourt::query()
+            ->where('event_division_id', $eventDivision->id_event_division)
             ->orderBy('display_order')
-            ->orderBy('id_edition_division_court')
+            ->orderBy('id_event_division_court')
             ->get()
             ->values();
 
         if ($courts->isEmpty()) {
-            throw new InvalidArgumentException('Edition division has no assigned courts.');
+            throw new InvalidArgumentException('PadelEvent division has no assigned courts.');
         }
 
-        $schedule = $editionDivision->relationLoaded('schedule')
-            ? $editionDivision->getRelation('schedule')
-            : $editionDivision->schedule()->first();
+        $schedule = $eventDivision->relationLoaded('schedule')
+            ? $eventDivision->getRelation('schedule')
+            : $eventDivision->schedule()->first();
 
         $pointsTarget = (int) ($preview['points_per_match'] ?? $schedule?->points_per_match ?? 0);
         $created = [];
@@ -68,8 +68,8 @@ final class ScheduleMatchPersister
                 $sequenceNo = ((int) $matchData['round_index']) + 1;
 
                 $match = GameMatch::create([
-                    'edition_division_id' => $editionDivision->id_edition_division,
-                    'edition_division_court_id' => $edCourt->id_edition_division_court,
+                    'event_division_id' => $eventDivision->id_event_division,
+                    'event_division_court_id' => $edCourt->id_event_division_court,
                     'match_kind' => 'REGULAR',
                     'sequence_no' => $sequenceNo,
                     'scheduled_start' => $this->normalizeTime($matchData['starts_at']),
@@ -98,10 +98,10 @@ final class ScheduleMatchPersister
         return $created;
     }
 
-    public function deleteRegularMatches(EditionDivision $editionDivision): int
+    public function deleteRegularMatches(EventDivision $eventDivision): int
     {
         $matchIds = GameMatch::query()
-            ->where('edition_division_id', $editionDivision->id_edition_division)
+            ->where('event_division_id', $eventDivision->id_event_division)
             ->where('match_kind', 'REGULAR')
             ->pluck('id_match');
 
@@ -109,39 +109,39 @@ final class ScheduleMatchPersister
             return 0;
         }
 
-        EditionDivisionReplacement::query()
-            ->where('edition_division_id', $editionDivision->id_edition_division)
+        EventDivisionReplacement::query()
+            ->where('event_division_id', $eventDivision->id_event_division)
             ->delete();
 
         return GameMatch::query()->whereIn('id_match', $matchIds)->delete();
     }
 
-    public function hasAnyScores(EditionDivision $editionDivision): bool
+    public function hasAnyScores(EventDivision $eventDivision): bool
     {
         return MatchSide::query()
             ->whereNotNull('score')
-            ->whereHas('match', function ($query) use ($editionDivision) {
-                $query->where('edition_division_id', $editionDivision->id_edition_division);
+            ->whereHas('match', function ($query) use ($eventDivision) {
+                $query->where('event_division_id', $eventDivision->id_event_division);
             })
             ->exists();
     }
 
-    public function hasStandings(EditionDivision $editionDivision): bool
+    public function hasStandings(EventDivision $eventDivision): bool
     {
-        return $editionDivision->standings()->exists();
+        return $eventDivision->standings()->exists();
     }
 
-    public function hasRegularMatches(EditionDivision $editionDivision): bool
+    public function hasRegularMatches(EventDivision $eventDivision): bool
     {
         return GameMatch::query()
-            ->where('edition_division_id', $editionDivision->id_edition_division)
+            ->where('event_division_id', $eventDivision->id_event_division)
             ->where('match_kind', 'REGULAR')
             ->exists();
     }
 
     /**
      * @param  list<int>  $playerIds
-     * @param  array<int, EditionParticipation>  $participationsByPlayerId
+     * @param  array<int, EventParticipation>  $participationsByPlayerId
      */
     private function createMatchPlayers(MatchSide $side, array $playerIds, array $participationsByPlayerId): void
     {

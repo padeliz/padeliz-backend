@@ -14,7 +14,7 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 /**
  * @OA\Schema(
  *     schema="Division",
- *     required={"name", "color", "its_first_edition_id"},
+ *     required={"name", "color", "its_first_event_id"},
  *     @OA\Property(
  *         property="id_division",
  *         type="integer",
@@ -42,18 +42,18 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
  *         example="#FF0000"
  *     ),
  *     @OA\Property(
- *         property="its_first_edition_id",
+ *         property="its_first_event_id",
  *         type="integer",
  *         format="int64",
  *         minimum=1,
- *         title="First Edition",
+ *         title="First PadelEvent",
  *         description="First edition for this division",
  *         example=1
  *     ),
  *     @OA\Property(
- *         property="its_first_edition",
- *         ref="#/components/schemas/Edition",
- *         title="First Edition",
+ *         property="its_first_event",
+ *         ref="#/components/schemas/Event",
+ *         title="First PadelEvent",
  *         description="Related first edition object",
  *         nullable=true
  *     ),
@@ -75,10 +75,10 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
  *         description="Timestamp when the division was last updated"
  *     ),
  *     @OA\Property(
- *         property="editionDivisions",
+ *         property="eventDivisions",
  *         type="array",
- *         @OA\Items(ref="#/components/schemas/EditionDivision"),
- *         title="Edition Divisions",
+ *         @OA\Items(ref="#/components/schemas/EventDivision"),
+ *         title="PadelEvent Divisions",
  *         description="Array of related edition divisions",
  *         nullable=true
  *     )
@@ -100,7 +100,7 @@ class Division extends Model
      * Fields that can be filtered
      */
     public static array $filterableFields = [
-        'its_first_edition_id',
+        'its_first_event_id',
     ];
 
     /**
@@ -110,7 +110,7 @@ class Division extends Model
         'id_division',
         'name',
         'color',
-        'its_first_edition_id',
+        'its_first_event_id',
         'inserted_at',
         'updated_at',
     ];
@@ -134,7 +134,7 @@ class Division extends Model
     protected $fillable = [
         'name',
         'color',
-        'its_first_edition_id',
+        'its_first_event_id',
     ];
 
     /**
@@ -147,25 +147,25 @@ class Division extends Model
         'updated_at' => 'integer',
     ];
 
-    public function itsFirstEdition(): BelongsTo
+    public function itsFirstEvent(): BelongsTo
     {
-        return $this->belongsTo(Edition::class, 'its_first_edition_id', 'id_edition');
+        return $this->belongsTo(PadelEvent::class, 'its_first_event_id', 'id_event');
     }
 
-    public function editionDivisions(): HasMany
+    public function eventDivisions(): HasMany
     {
-        return $this->hasMany(EditionDivision::class, 'division_id');
+        return $this->hasMany(EventDivision::class, 'division_id');
     }
 
     public function participations(): HasManyThrough
     {
         return $this->hasManyThrough(
-            EditionParticipation::class,
-            EditionDivision::class,
+            EventParticipation::class,
+            EventDivision::class,
             'division_id',
-            'edition_division_id',
+            'event_division_id',
             'id_division',
-            'id_edition_division'
+            'id_event_division'
         );
     }
 }

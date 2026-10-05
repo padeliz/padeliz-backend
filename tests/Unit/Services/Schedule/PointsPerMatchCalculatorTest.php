@@ -44,4 +44,39 @@ final class PointsPerMatchCalculatorTest extends TestCase
         $this->expectException(InvalidArgumentException::class);
         PointsPerMatchCalculator::calculate('nope', '17:00', 4);
     }
+
+    public function test_even_round_for_print(): void
+    {
+        $this->assertSame(24, PointsPerMatchCalculator::evenRoundForPrint(24));
+        $this->assertSame(24, PointsPerMatchCalculator::evenRoundForPrint(23));
+        $this->assertSame(2, PointsPerMatchCalculator::evenRoundForPrint(1));
+        $this->assertSame(0, PointsPerMatchCalculator::evenRoundForPrint(0));
+    }
+
+    public function test_apply_adjust(): void
+    {
+        $this->assertSame(12, PointsPerMatchCalculator::applyAdjust(10, 2));
+        $this->assertSame(8, PointsPerMatchCalculator::applyAdjust(10, -2));
+        $this->assertSame(0, PointsPerMatchCalculator::applyAdjust(1, -4));
+    }
+
+    public function test_finalize_preview_points(): void
+    {
+        $withAdjust = PointsPerMatchCalculator::finalizePreviewPoints(
+            ['points_per_match' => 21, 'matches_count' => 4],
+            2
+        );
+        $this->assertSame(23, $withAdjust['points_per_match']);
+        $this->assertSame(2, $withAdjust['adjust']);
+        $this->assertSame(24, $withAdjust['points_per_match_print']);
+        $this->assertSame(4, $withAdjust['matches_count']);
+
+        $zeroAdjust = PointsPerMatchCalculator::finalizePreviewPoints(
+            ['points_per_match' => 21],
+            0
+        );
+        $this->assertSame(21, $zeroAdjust['points_per_match']);
+        $this->assertSame(0, $zeroAdjust['adjust']);
+        $this->assertSame(22, $zeroAdjust['points_per_match_print']);
+    }
 }

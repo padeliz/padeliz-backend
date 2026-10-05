@@ -16,7 +16,7 @@ class OrganizerFactory extends Factory
         return [
             'name' => substr($this->faker->unique()->company(), 0, 60),
             'logo_path' => null,
-            'show_edition_label' => false,
+            'show_event_label' => false,
             'inserted_at' => time(),
         ];
     }

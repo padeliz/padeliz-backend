@@ -13,7 +13,10 @@ use App\Models\PlayerIdentity;
 use App\Models\PlayerInvite;
 use App\Models\PlayerInviteEvent;
 use App\Services\AuthLogger;
-use Google\Client as GoogleClient;
+use App\Services\PlayerIdentity\ContactConflictException;
+use App\Services\PlayerIdentity\GoogleIdTokenVerifier;
+use App\Services\PlayerIdentity\IdentityConflictException;
+use App\Services\PlayerIdentity\PlayerIdentityLinker;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -53,8 +56,11 @@ class PlayerAuthController extends V1BaseController
      *     @OA\Response(response=422, description="Validation or unsupported provider")
      * )
      */
-    public function redeemInvite(Request $request, GoogleClient $googleClient)
-    {
+    public function redeemInvite(
+        Request $request,
+        GoogleIdTokenVerifier $tokenVerifier,
+        PlayerIdentityLinker $identityLinker,
+    ) {
         $request->validate([
             'invite_token' => 'required|string',
             'provider' => 'required|string',
@@ -99,60 +105,24 @@ class PlayerAuthController extends V1BaseController
         );
 
         try {
-            $payload = $googleClient->verifyIdToken($request->string('id_token')->toString());
+            $claims = $tokenVerifier->verify($request->string('id_token')->toString());
+            $subject = $claims['sub'];
+            $email = $claims['email'];
+            $displayName = $claims['name'];
+            $avatarUrl = $claims['picture'];
+            $player = $invite->player;
 
-            if (! $payload) {
-                throw new InvalidGoogleTokenException();
-            }
-
-            $subject = (string) $payload['sub'];
-            $email = isset($payload['email']) ? strtolower(trim((string) $payload['email'])) : null;
-            $displayName = $payload['name'] ?? null;
-            $avatarUrl = $payload['picture'] ?? null;
-
-            $existingIdentity = PlayerIdentity::query()
-                ->where('provider', PlayerIdentity::PROVIDER_GOOGLE)
-                ->where('provider_subject', $subject)
-                ->first();
-
-            if ($existingIdentity) {
-                if ((int) $existingIdentity->player_id === (int) $invite->player_id) {
-                    $player = $existingIdentity->player;
-
-                    if (! $player->hasUserType('player')) {
-                        PlayerInviteEvent::log(
-                            event: PlayerInviteEvent::EVENT_REDEEM_FAILED,
-                            invite: $invite,
-                            request: $request,
-                            resultCode: 'missing_player_privileges',
-                            provider: $provider,
-                            providerSubject: $subject,
-                        );
-
-                        return $this->errorResponse('User does not have player privileges.', 403);
-                    }
-
-                    $existingIdentity->touchLastLogin();
-                    $token = $player->createToken('player-google-token')->plainTextToken;
-
-                    PlayerInviteEvent::log(
-                        event: PlayerInviteEvent::EVENT_REDEEM_SUCCEEDED,
-                        invite: $invite,
-                        request: $request,
-                        resultCode: 'already_linked_login',
-                        provider: $provider,
-                        providerSubject: $subject,
-                        contactKind: $email ? 'email' : null,
-                        contactValue: $email,
-                    );
-
-                    return $this->successResponse([
-                        'token' => $token,
-                        'player' => new PlayerResource($player),
-                        'user_type' => 'player',
-                    ], 'Player authenticated successfully');
-                }
-
+            try {
+                $linkResult = $identityLinker->link(
+                    player: $player,
+                    provider: PlayerIdentity::PROVIDER_GOOGLE,
+                    subject: $subject,
+                    email: $email,
+                    displayName: $displayName,
+                    avatarUrl: $avatarUrl,
+                    asLogin: true,
+                );
+            } catch (IdentityConflictException $e) {
                 PlayerInviteEvent::log(
                     event: PlayerInviteEvent::EVENT_REDEEM_FAILED,
                     invite: $invite,
@@ -164,63 +134,60 @@ class PlayerAuthController extends V1BaseController
                     contactValue: $email,
                 );
 
-                return $this->errorResponse('This Google account is already linked to another player.', 409);
+                return $this->errorResponse($e->getMessage(), 409);
+            } catch (ContactConflictException $e) {
+                PlayerInviteEvent::log(
+                    event: PlayerInviteEvent::EVENT_REDEEM_FAILED,
+                    invite: $invite,
+                    request: $request,
+                    resultCode: 'contact_conflict',
+                    provider: $provider,
+                    providerSubject: $subject,
+                    contactKind: 'email',
+                    contactValue: $email,
+                );
+
+                return $this->errorResponse($e->getMessage(), 409);
             }
 
-            $player = $invite->player;
-            $emailRow = null;
+            if ($linkResult->wasAlreadyLinked()) {
+                $linkedPlayer = $linkResult->identity->player;
 
-            if ($email) {
-                $emailRow = PlayerEmail::query()->where('email', $email)->first();
-
-                if ($emailRow && (int) $emailRow->player_id !== (int) $player->id_player) {
+                if (! $linkedPlayer->hasUserType('player')) {
                     PlayerInviteEvent::log(
                         event: PlayerInviteEvent::EVENT_REDEEM_FAILED,
                         invite: $invite,
                         request: $request,
-                        resultCode: 'contact_conflict',
+                        resultCode: 'missing_player_privileges',
                         provider: $provider,
                         providerSubject: $subject,
-                        contactKind: 'email',
-                        contactValue: $email,
                     );
 
-                    return $this->errorResponse('Email is already used by another player.', 409);
+                    return $this->errorResponse('User does not have player privileges.', 403);
                 }
+
+                $token = $linkedPlayer->createToken('player-google-token')->plainTextToken;
+
+                PlayerInviteEvent::log(
+                    event: PlayerInviteEvent::EVENT_REDEEM_SUCCEEDED,
+                    invite: $invite,
+                    request: $request,
+                    resultCode: 'already_linked_login',
+                    provider: $provider,
+                    providerSubject: $subject,
+                    contactKind: $email ? 'email' : null,
+                    contactValue: $email,
+                );
+
+                return $this->successResponse([
+                    'token' => $token,
+                    'player' => new PlayerResource($linkedPlayer->loadMissing(['identities.email'])),
+                    'user_type' => 'player',
+                ], 'Player authenticated successfully');
             }
 
-            DB::transaction(function () use ($invite, $player, $email, $emailRow, $subject, $displayName, $avatarUrl) {
-                if ($email) {
-                    if ($emailRow) {
-                        $emailRow->addPurpose('login');
-                        $emailRow->verified_at = time();
-                        $emailRow->save();
-                    } else {
-                        $hasPrimary = $player->emails()->where('is_primary', true)->exists();
-                        $emailRow = PlayerEmail::create([
-                            'player_id' => $player->id_player,
-                            'email' => $email,
-                            'purposes' => ['contact', 'login'],
-                            'is_primary' => ! $hasPrimary,
-                            'verified_at' => time(),
-                        ]);
-                    }
-                }
-
-                PlayerIdentity::create([
-                    'player_id' => $player->id_player,
-                    'provider' => PlayerIdentity::PROVIDER_GOOGLE,
-                    'provider_subject' => $subject,
-                    'email_id' => $emailRow?->id_player_email,
-                    'display_name' => $displayName,
-                    'avatar_url' => $avatarUrl,
-                    'linked_at' => time(),
-                    'last_login_at' => time(),
-                ]);
-
-                $invite->accepted_at = time();
-                $invite->save();
-            });
+            $invite->accepted_at = time();
+            $invite->save();
 
             if (! $player->hasUserType('player')) {
                 $player->addUserType('player');
@@ -241,7 +208,7 @@ class PlayerAuthController extends V1BaseController
 
             return $this->successResponse([
                 'token' => $token,
-                'player' => new PlayerResource($player->fresh()),
+                'player' => new PlayerResource($player->fresh()->loadMissing(['identities.email'])),
                 'user_type' => 'player',
             ], 'Invite redeemed successfully');
         } catch (\Exception $e) {
@@ -300,22 +267,18 @@ class PlayerAuthController extends V1BaseController
      *     )
      * )
      */
-    public function googleCallback(Request $request, GoogleClient $googleClient)
+    public function googleCallback(Request $request, GoogleIdTokenVerifier $tokenVerifier)
     {
         $request->validate([
             'id_token' => 'required|string',
         ]);
 
         try {
-            $payload = $googleClient->verifyIdToken($request->id_token);
-
-            if (! $payload) {
-                throw new InvalidGoogleTokenException();
-            }
+            $claims = $tokenVerifier->verify($request->string('id_token')->toString());
 
             $identity = PlayerIdentity::query()
                 ->where('provider', PlayerIdentity::PROVIDER_GOOGLE)
-                ->where('provider_subject', (string) $payload['sub'])
+                ->where('provider_subject', $claims['sub'])
                 ->first();
 
             if (! $identity) {
@@ -334,7 +297,7 @@ class PlayerAuthController extends V1BaseController
 
             return $this->successResponse([
                 'token' => $token,
-                'player' => new PlayerResource($player),
+                'player' => new PlayerResource($player->loadMissing(['identities.email'])),
                 'user_type' => 'player',
             ], 'Player authenticated successfully');
         } catch (\Exception $e) {
@@ -391,8 +354,10 @@ class PlayerAuthController extends V1BaseController
      */
     public function me(Request $request)
     {
+        $player = $request->user()->loadMissing(['identities.email']);
+
         return $this->resourceResponse(
-            new PlayerResource($request->user()),
+            new PlayerResource($player),
             'Player profile retrieved successfully'
         );
     }
@@ -488,7 +453,7 @@ class PlayerAuthController extends V1BaseController
 
         return $this->successResponse([
             'token' => $token,
-            'player' => new PlayerResource($player->fresh()),
+            'player' => new PlayerResource($player->fresh()->loadMissing(['identities.email'])),
             'user_type' => 'player',
         ], 'Player logged in successfully');
     }

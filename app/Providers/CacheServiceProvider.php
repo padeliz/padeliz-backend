@@ -7,13 +7,13 @@ namespace App\Providers;
 use App\Models\Club;
 use App\Models\Court;
 use App\Models\Division;
-use App\Models\Edition;
-use App\Models\EditionDivision;
-use App\Models\EditionLottery;
-use App\Models\EditionLotteryPrize;
-use App\Models\EditionLotteryRule;
-use App\Models\EditionParticipation;
-use App\Models\EditionRegistration;
+use App\Models\PadelEvent;
+use App\Models\EventDivision;
+use App\Models\EventLottery;
+use App\Models\EventLotteryPrize;
+use App\Models\EventLotteryRule;
+use App\Models\EventParticipation;
+use App\Models\EventRegistration;
 use App\Models\Location;
 use App\Models\Organizer;
 use App\Models\Player;
@@ -24,7 +24,7 @@ use App\Models\Prize;
 use App\Models\Sponsor;
 use App\Models\SponsorPrize;
 use App\Observers\InvalidatesResourceCacheObserver;
-use App\Services\Cache\EditionDivisionCacheInvalidator;
+use App\Services\Cache\EventDivisionCacheInvalidator;
 use App\Services\Cache\ManagerResourceReadCache;
 use App\Services\Cache\MetadataCacheInvalidator;
 use App\Services\Cache\MetadataConsumerRegistry;
@@ -42,7 +42,7 @@ class CacheServiceProvider extends ServiceProvider
         $this->app->singleton(ModelSchemaCatalog::class);
         $this->app->singleton(MetadataConsumerRegistry::class);
         $this->app->singleton(MetadataCacheInvalidator::class);
-        $this->app->singleton(EditionDivisionCacheInvalidator::class);
+        $this->app->singleton(EventDivisionCacheInvalidator::class);
         $this->app->singleton(ModelCacheInvalidator::class);
         $this->app->singleton(ManagerResourceReadCache::class);
         $this->app->singleton(ScheduleReadCache::class);
@@ -63,15 +63,15 @@ class CacheServiceProvider extends ServiceProvider
             SponsorPrize::class,
             PlayerCustomField::class,
             PlayerCustomFieldOption::class,
-            Edition::class,
-            EditionDivision::class,
-            EditionRegistration::class,
-            EditionParticipation::class,
+            PadelEvent::class,
+            EventDivision::class,
+            EventRegistration::class,
+            EventParticipation::class,
             Player::class,
             PlayerCustomFieldValue::class,
-            EditionLottery::class,
-            EditionLotteryPrize::class,
-            EditionLotteryRule::class,
+            EventLottery::class,
+            EventLotteryPrize::class,
+            EventLotteryRule::class,
         ] as $model) {
             $model::observe($observer);
         }

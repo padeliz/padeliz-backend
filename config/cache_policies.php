@@ -31,11 +31,15 @@ return [
         'ttl' => 300,
         'tags' => ['reference'],
     ],
-    'edition_scoped_index' => [
+    'event_scoped_index' => [
         'ttl' => 120,
         'tags' => [],
     ],
-    'edition_show' => [
+    'registration_queue_counts' => [
+        'ttl' => 60,
+        'tags' => ['mgr-list:event-registrations'],
+    ],
+    'event_show' => [
         'ttl' => 120,
         'tags' => [],
     ],
@@ -52,7 +56,7 @@ return [
         'ttl' => 300,
         'tags' => [],
     ],
-    'app_editions' => [
+    'app_events' => [
         'ttl' => 300,
         'tags' => ['response-cache'],
     ],

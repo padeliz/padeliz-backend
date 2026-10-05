@@ -4,11 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1\Manager;
 
+use App\Models\EventDivisionSchedule;
 use App\Services\Pdf\PosterPdfService;
 use App\Services\Schedule\PlayingWindow;
+use App\Services\Schedule\PointsPerMatchCalculator;
 use App\Services\Schedule\ScheduleGenerationService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
+use Illuminate\Validation\Rule;
 use Illuminate\Validation\ValidationException;
 use Symfony\Component\HttpFoundation\StreamedResponse;
 use Throwable;
@@ -183,7 +186,7 @@ class ScratchScheduleController extends \App\Http\Controllers\BaseVersions\V1\V1
             'include_final' => ['nullable', 'boolean'],
             'has_demonstrative_match' => ['nullable', 'boolean'],
             'template_version' => ['nullable', 'integer', 'min:1'],
-            'adjust' => ['nullable', 'integer'],
+            'adjust' => ['nullable', 'integer', Rule::in(EventDivisionSchedule::ADJUST_VALUES)],
         ]);
 
         $validated['time_start'] = $this->toHi(
@@ -235,11 +238,10 @@ class ScratchScheduleController extends \App\Http\Controllers\BaseVersions\V1\V1
             isset($validated['template_version']) ? (int) $validated['template_version'] : null,
         );
 
-        if (isset($validated['adjust'])) {
-            $preview['points_per_match'] = max(0, (int) $preview['points_per_match'] + (int) $validated['adjust']);
-        }
-
-        return $preview;
+        return PointsPerMatchCalculator::finalizePreviewPoints(
+            $preview,
+            (int) ($validated['adjust'] ?? 0),
+        );
     }
 
     private function toHi(string $time): string

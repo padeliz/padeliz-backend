@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Database\Seeders;
 
 use App\Models\Division;
-use App\Models\Edition;
+use App\Models\PadelEvent;
 use Illuminate\Database\Seeder;
 
 /**
@@ -25,15 +25,15 @@ class DivisionSeeder extends Seeder
     public function run(): void
     {
         $existing = Division::query()->find(self::MINITOUR_COUPLES_ID);
-        $firstEditionId = $existing?->its_first_edition_id
-            ?? Edition::query()->value('id_edition')
-            ?? Edition::factory()->create()->id_edition;
+        $firstEditionId = $existing?->its_first_event_id
+            ?? PadelEvent::query()->value('id_event')
+            ?? PadelEvent::factory()->create()->id_event;
 
         $division = $existing ?? new Division();
         $division->id_division = self::MINITOUR_COUPLES_ID;
         $division->name = self::MINITOUR_COUPLES_NAME;
         $division->color = '#ff0000';
-        $division->its_first_edition_id = $firstEditionId;
+        $division->its_first_event_id = $firstEditionId;
         $division->save();
     }
 }

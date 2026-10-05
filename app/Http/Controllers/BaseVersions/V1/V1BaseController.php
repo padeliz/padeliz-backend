@@ -64,7 +64,7 @@ use App\Traits\HasAdvancedPagination;
  *     schema="ResourceMetadata",
  *     description="Resource metadata information including Swagger schema",
  *     @OA\Property(property="version", type="string", example="v1", description="API version"),
- *     @OA\Property(property="schema_name", type="string", example="EditionParticipation", description="Schema/Model name"),
+ *     @OA\Property(property="schema_name", type="string", example="EventParticipation", description="Schema/Model name"),
  *     @OA\Property(
  *         property="swagger_schema",
  *         type="object",

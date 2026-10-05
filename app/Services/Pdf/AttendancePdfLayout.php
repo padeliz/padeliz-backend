@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Pdf;
 
-use App\Models\EditionParticipation;
+use App\Models\EventParticipation;
 
 final class AttendancePdfLayout
 {
@@ -57,31 +57,31 @@ final class AttendancePdfLayout
     /**
      * @template T
      *
-     * @param  list<T>  $editionDivisions
+     * @param  list<T>  $eventDivisions
      * @return list<list<T>>
      */
-    public static function pageBatches(array $editionDivisions, int $maxPerPage = 9): array
+    public static function pageBatches(array $eventDivisions, int $maxPerPage = 9): array
     {
-        if ($editionDivisions === []) {
+        if ($eventDivisions === []) {
             return [[]];
         }
 
         return array_map(
             static fn (array $chunk): array => array_values($chunk),
-            array_chunk($editionDivisions, max(1, $maxPerPage))
+            array_chunk($eventDivisions, max(1, $maxPerPage))
         );
     }
 
     /**
-     * @param  iterable<EditionParticipation>  $participations
-     * @return list<EditionParticipation>
+     * @param  iterable<EventParticipation>  $participations
+     * @return list<EventParticipation>
      */
     public static function sortParticipationsByPlayerName(iterable $participations): array
     {
         $rows = is_array($participations) ? $participations : iterator_to_array($participations);
         usort(
             $rows,
-            static function (EditionParticipation $left, EditionParticipation $right): int {
+            static function (EventParticipation $left, EventParticipation $right): int {
                 $leftName = mb_strtolower((string) ($left->player?->name ?? ''));
                 $rightName = mb_strtolower((string) ($right->player?->name ?? ''));
 

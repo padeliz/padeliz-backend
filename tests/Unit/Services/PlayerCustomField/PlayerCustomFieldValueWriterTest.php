@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services\PlayerCustomField;
 
-use App\Models\Edition;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Models\PlayerCustomField;
 use App\Models\PlayerCustomFieldValue;
@@ -30,13 +30,13 @@ final class PlayerCustomFieldValueWriterTest extends TestCase
     public function test_returns_new_for_first_edition_scoped_write(): void
     {
         $player = Player::factory()->create();
-        $edition = Edition::factory()->create();
+        $event = PadelEvent::factory()->create();
         $field = PlayerCustomField::factory()->create();
 
         $outcome = $this->writer->write(
             (int) $player->id_player,
             $field,
-            (int) $edition->id_edition,
+            (int) $event->id_event,
             ['value' => 'Answer'],
             PlayerCustomFieldValue::SUBMITTED_VIA_MANAGER,
         );
@@ -47,13 +47,13 @@ final class PlayerCustomFieldValueWriterTest extends TestCase
     public function test_returns_replaced_for_second_edition_scoped_write(): void
     {
         $player = Player::factory()->create();
-        $edition = Edition::factory()->create();
+        $event = PadelEvent::factory()->create();
         $field = PlayerCustomField::factory()->create();
 
         $this->writer->write(
             (int) $player->id_player,
             $field,
-            (int) $edition->id_edition,
+            (int) $event->id_event,
             ['value' => 'First'],
             PlayerCustomFieldValue::SUBMITTED_VIA_MANAGER,
         );
@@ -61,7 +61,7 @@ final class PlayerCustomFieldValueWriterTest extends TestCase
         $outcome = $this->writer->write(
             (int) $player->id_player,
             $field,
-            (int) $edition->id_edition,
+            (int) $event->id_event,
             ['value' => 'Second'],
             PlayerCustomFieldValue::SUBMITTED_VIA_MANAGER,
         );

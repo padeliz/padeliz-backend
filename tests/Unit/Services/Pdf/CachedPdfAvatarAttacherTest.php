@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Tests\Unit\Services\Pdf;
 
 use App\Models\CachedPdfPlayerImage;
-use App\Models\Edition;
-use App\Models\EditionDivision;
-use App\Models\EditionParticipation;
+use App\Models\PadelEvent;
+use App\Models\EventDivision;
+use App\Models\EventParticipation;
 use App\Models\Player;
 use App\Services\Pdf\CachedPdfAvatarAttacher;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -55,12 +55,12 @@ final class CachedPdfAvatarAttacherTest extends TestCase
 
     public function test_hydrate_participations_sets_model_attribute(): void
     {
-        $edition = Edition::factory()->create();
-        $division = EditionDivision::factory()->create(['edition_id' => $edition->id_edition]);
+        $event = PadelEvent::factory()->create();
+        $division = EventDivision::factory()->create(['event_id' => $event->id_event]);
         $player = Player::factory()->create();
-        $participation = EditionParticipation::factory()->create([
-            'edition_id' => $edition->id_edition,
-            'edition_division_id' => $division->id_edition_division,
+        $participation = EventParticipation::factory()->create([
+            'event_id' => $event->id_event,
+            'event_division_id' => $division->id_event_division,
             'player_id' => $player->id_player,
             'is_collecting_points' => true,
         ]);

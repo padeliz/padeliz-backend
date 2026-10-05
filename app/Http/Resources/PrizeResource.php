@@ -29,7 +29,7 @@ class PrizeResource extends JsonResource
                 return SponsorPrizeResource::collection($this->sponsorPrizes);
             }),
             'lottery_prizes' => $this->whenLoaded('lotteryPrizes', function () {
-                return EditionLotteryPrizeResource::collection($this->lotteryPrizes);
+                return EventLotteryPrizeResource::collection($this->lotteryPrizes);
             }),
         ];
     }

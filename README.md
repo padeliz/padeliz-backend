@@ -319,12 +319,12 @@ Redis is required (`CACHE_DRIVER=redis`, `REDIS_HOST=redis`). All application ca
 |-------|------|
 | Service cache | BPT (controller boundary), metadata, templates catalog/metrics, schedule, prizes board |
 | Manager read cache | Reference `show` + picker-safe `index` (clubs, locations, organizers, divisions, prizes, sponsors, players, editions, edition-scoped lists, …) |
-| Spatie response cache | `GET /api/v1/app/editions`, `GET /api/documentation` |
+| Spatie response cache | `GET /api/v1/app/events`, `GET /api/documentation` |
 | HTTP headers | nginx `/storage/`; `Cache-Control: no-store` on authenticated manager API |
 
 TTLs are defined in `config/cache_policies.php`. Normal writes invalidate cache via model observers; TTL is a safety net only.
 
-**Tags.** Writes register each key under the global `padeliz` tag plus domain tags (e.g. `reference:clubs:1`, `mgr-list:clubs`, `metadata:Club`, `edition:5`, `division:9`). `flushTags()` flushes **one tag at a time** — it does not merge `padeliz` into targeted flushes, so saving one Club does not wipe unrelated caches. Model saves flush only the resource/id/list tags for that model (not the broad `reference` tag). Metadata FK consumers are invalidated via `MetadataConsumerRegistry`, not extra tags on cache entries.
+**Tags.** Writes register each key under the global `padeliz` tag plus domain tags (e.g. `reference:clubs:1`, `mgr-list:clubs`, `metadata:Club`, `event:5`, `division:9`). `flushTags()` flushes **one tag at a time** — it does not merge `padeliz` into targeted flushes, so saving one Club does not wipe unrelated caches. Model saves flush only the resource/id/list tags for that model (not the broad `reference` tag). Metadata FK consumers are invalidated via `MetadataConsumerRegistry`, not extra tags on cache entries.
 
 **Manager index bypass.** Picker index caching is skipped when the request has `q`, `page > 1`, `per_page > 100`, disallowed filter keys, or a non-default `sort_by`. Those requests set `X-Cache: BYPASS`.
 

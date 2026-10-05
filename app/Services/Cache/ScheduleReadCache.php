@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Cache;
 
-use App\Models\EditionDivision;
+use App\Models\EventDivision;
 use Closure;
 
 class ScheduleReadCache
@@ -21,8 +21,8 @@ class ScheduleReadCache
         Closure $resolver,
     ): mixed {
         $policy = config('cache_policies.schedule_show');
-        $division = EditionDivision::query()->with('edition')->find($divisionId);
-        $finalized = $division?->edition?->finalized_at !== null;
+        $division = EventDivision::query()->with('event')->find($divisionId);
+        $finalized = $division?->event?->finalized_at !== null;
         $ttl = $finalized ? (int) $policy['ttl_finalized'] : (int) $policy['ttl_live'];
         $tags = ['division:' . $divisionId];
         $key = sprintf('schedule:%d:board:%d:scores:%d', $divisionId, (int) $board, (int) $scores);

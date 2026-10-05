@@ -186,7 +186,7 @@ class MyEligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *             @OA\Property(property="phone", type="string", maxLength=100, nullable=true),
      *             @OA\Property(property="year_of_birth", type="integer", format="year", nullable=true),
      *
-     *             @OA\Property(property="edition_ids", type="array", @OA\Items(type="integer"), nullable=true),
+     *             @OA\Property(property="event_ids", type="array", @OA\Items(type="integer"), nullable=true),
      *             @OA\Property(property="racket_experience", type="array", @OA\Items(type="string"), nullable=true),
      *             @OA\Property(property="middle_name", type="string", maxLength=50, nullable=true),
      *             @OA\Property(property="birth_month", type="integer", nullable=true),
@@ -258,7 +258,7 @@ class MyEligibilityController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
 
             if ($source) {
                 $copy = $source->only([
-                    'edition_ids',
+                    'event_ids',
                     'media_source',
                     'friends_source',
                     'racket_experience',

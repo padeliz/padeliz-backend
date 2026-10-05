@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services\Lottery;
 
-use App\Models\EditionParticipation;
+use App\Models\EventParticipation;
 use App\Services\Lottery\LotteryDrawService;
 use App\Services\Lottery\LotteryHtmlHelper;
 use Illuminate\Support\Collection;
@@ -26,7 +26,7 @@ final class LotteryDrawServiceTest extends TestCase
             new Collection([$eligible, $absent, $drawn, $replaced, $otherDivision]),
             alreadyDrawnParticipationIds: [3],
             divisionWideReplacedParticipationIds: [4],
-            preferEditionDivisionId: 10,
+            preferEventDivisionId: 10,
         );
 
         $ids = $filtered->pluck('id_participation')->all();
@@ -53,14 +53,14 @@ final class LotteryDrawServiceTest extends TestCase
         $this->assertSame($text, LotteryHtmlHelper::replaceEditionNextPlaceholders($text, null));
     }
 
-    private function participation(int $id, ?string $absenceReason, int $editionDivisionId): EditionParticipation
+    private function participation(int $id, ?string $absenceReason, int $eventDivisionId): EventParticipation
     {
-        $p = new EditionParticipation();
+        $p = new EventParticipation();
         $p->forceFill([
             'id_participation' => $id,
             'absence_reason' => $absenceReason,
-            'edition_division_id' => $editionDivisionId,
-            'edition_id' => 1,
+            'event_division_id' => $eventDivisionId,
+            'event_id' => 1,
             'player_id' => $id,
         ]);
 

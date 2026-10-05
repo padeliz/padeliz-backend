@@ -16,7 +16,7 @@ class ManagerResourceReadCache
 
     public function rememberShow(string $resource, int $id, Closure $resolver): mixed
     {
-        if ($resource === 'editions') {
+        if ($resource === 'events') {
             return $this->rememberEditionShow($id, $resolver);
         }
 
@@ -41,10 +41,10 @@ class ManagerResourceReadCache
         $policyKey = $this->indexPolicyKey($request, $allowedFilters);
         $policy = config('cache_policies.' . $policyKey);
         $baseTags = array_merge($policy['tags'], ['mgr-list:' . $resource]);
-        $editionId = data_get($request->input('filters'), 'edition_id');
+        $editionId = data_get($request->input('filters'), 'event_id');
 
         if ($editionId !== null) {
-            $baseTags[] = 'edition:' . $editionId;
+            $baseTags[] = 'event:' . $editionId;
         }
 
         $key = 'mgr:index:' . $resource . ':' . md5($request->getQueryString() ?? '');
@@ -87,8 +87,8 @@ class ManagerResourceReadCache
     {
         $filters = $request->input('filters', []);
 
-        if (is_array($filters) && isset($filters['edition_id']) && $allowedFilters === ['edition_id']) {
-            return 'edition_scoped_index';
+        if (is_array($filters) && isset($filters['event_id']) && $allowedFilters === ['event_id']) {
+            return 'event_scoped_index';
         }
 
         return 'reference_index_picker';
@@ -96,9 +96,9 @@ class ManagerResourceReadCache
 
     private function rememberEditionShow(int $id, Closure $resolver): mixed
     {
-        $policy = config('cache_policies.edition_show');
-        $baseTags = array_merge($policy['tags'], ['edition:' . $id]);
-        $key = 'mgr:show:editions:' . $id;
+        $policy = config('cache_policies.event_show');
+        $baseTags = array_merge($policy['tags'], ['event:' . $id]);
+        $key = 'mgr:show:events:' . $id;
 
         return $this->cache->remember($key, (int) $policy['ttl'], $baseTags, $resolver);
     }

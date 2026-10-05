@@ -34,8 +34,8 @@ class ResourceMetadataController extends V1BaseController
      *         name="schema",
      *         in="path",
      *         required=true,
-     *         description="(e.g., Club, Division, Edition, EditionDivision, EditionLottery, EditionLotteryLucky, EditionLotteryPrize, EditionParticipation, EditionRegistration, Eligibility, Location, Player, PlayerImport, PlayerImportRow, PlayerProfileImageImport, PlayerProfileImageImportRow, Prize, Sponsor, SponsorPrize)",
-     *         @OA\Schema(type="string", example="EditionParticipation")
+     *         description="(e.g., Club, Division, PadelEvent, EventDivision, EventLottery, EventLotteryLucky, EventLotteryPrize, EventParticipation, EventRegistration, Eligibility, Location, Player, PlayerImport, PlayerImportRow, PlayerProfileImageImport, PlayerProfileImageImportRow, Prize, Sponsor, SponsorPrize)",
+     *         @OA\Schema(type="string", example="EventParticipation")
      *     ),
      *     @OA\Response(
      *         response=200,
@@ -127,7 +127,7 @@ class ResourceMetadataController extends V1BaseController
                 ],
             ],
             [
-                'schema.regex' => 'Schema name must start with uppercase letter and contain only letters and numbers (e.g., EditionParticipation).',
+                'schema.regex' => 'Schema name must start with uppercase letter and contain only letters and numbers (e.g., EventParticipation).',
             ]
         );
 

@@ -18,7 +18,7 @@ class EligibilityFactory extends Factory
 
         return [
             'player_id' => Player::factory(),
-            'edition_ids' => null,
+            'event_ids' => null,
             'media_source' => null,
             'friends_source' => null,
             'racket_experience' => null,
