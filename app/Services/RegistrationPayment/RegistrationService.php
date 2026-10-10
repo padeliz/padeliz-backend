@@ -7,11 +7,11 @@ namespace App\Services\RegistrationPayment;
 use App\Enums\Registration\PaymentProofReviewStatus;
 use App\Enums\Registration\RegistrationLifecycleStatus;
 use App\Enums\Registration\RegistrationPaymentStatus;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventRegistration;
 use App\Models\EventRegistrationPaymentProof;
-use App\Models\Eligibility;
+use App\Models\PadelEvent;
+use App\Models\PlayerStudentProof;
 use App\Services\Pricing\PricingService;
 use App\Services\Push\ExpoPushService;
 use InvalidArgumentException;
@@ -31,7 +31,7 @@ class RegistrationService
     /**
      * @param  array{event_id: int, player_id: int, event_division_id: int, is_minor?: bool, is_student?: bool, payment?: int}  $data
      */
-    public function createForApp(array $data, Eligibility $eligibility, bool $attachCheckout = true): EventRegistration
+    public function createForApp(array $data, bool $attachCheckout = true): EventRegistration
     {
         $event = PadelEvent::query()->findOrFail($data['event_id']);
         $playerId = (int) $data['player_id'];
@@ -60,7 +60,7 @@ class RegistrationService
             ]);
         }
 
-        $isStudent = (bool) ($eligibility->being_student ?? false);
+        $isStudent = PlayerStudentProof::hasActiveFor($playerId);
         $payment = (int) $division->entry_fee;
         $now = time();
 
@@ -94,7 +94,7 @@ class RegistrationService
                 app(PricingService::class)->finalizeOnPaid($registration);
             } else {
                 $checkoutService->openOrRefreshForUnpaid((int) $event->id_event, $playerId);
-                $this->commitAutoBenefits($registration, $eligibility);
+                $this->commitAutoBenefits($registration);
             }
         }
 
@@ -279,7 +279,7 @@ class RegistrationService
         }
     }
 
-    public function commitAutoBenefits(EventRegistration $registration, ?Eligibility $eligibility = null): void
+    public function commitAutoBenefits(EventRegistration $registration): void
     {
         $registration->refresh();
         $item = $registration->latestCheckoutItem;
@@ -292,7 +292,7 @@ class RegistrationService
         }
 
         $pricing = app(PricingService::class);
-        $context = $pricing->buildContextForRegistration($registration, $eligibility);
+        $context = $pricing->buildContextForRegistration($registration);
         $payable = $pricing->commitSelections($item, $context, []);
 
         if (

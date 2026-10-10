@@ -6,11 +6,9 @@ namespace Tests\Feature\Api\V1\Manager;
 
 use App\Enums\Benefit\BenefitAmountType;
 use App\Enums\Benefit\BenefitConditionType;
-use App\Enums\Benefit\BenefitEntitlementStatus;
 use App\Enums\Benefit\BenefitExclusivity;
 use App\Enums\Benefit\BenefitScopeType;
 use App\Models\BenefitDefinition;
-use App\Models\BenefitEntitlement;
 use App\Models\PadelEvent;
 use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;

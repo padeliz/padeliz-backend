@@ -6,9 +6,10 @@ namespace App\Http\Controllers\Api\V1\App;
 
 use App\Enums\Registration\RegistrationCancelReason;
 use App\Http\Resources\EventRegistrationResource;
-use App\Models\PadelEvent;
+use App\Models\EventDivision;
 use App\Models\EventRegistration;
-use App\Models\Eligibility;
+use App\Models\PadelEvent;
+use App\Services\PlayerLevel\PlayerLevelService;
 use App\Services\RegistrationPayment\RegistrationLifecycleService;
 use App\Services\RegistrationPayment\RegistrationService;
 use App\Services\RegistrationPayment\RegistrationValidationException;
@@ -28,6 +29,7 @@ class EventRegistrationController extends \App\Http\Controllers\BaseVersions\V1\
         private readonly RegistrationService $registrationService,
         private readonly RegistrationLifecycleService $lifecycleService,
         private readonly \App\Services\RegistrationPayment\CheckoutService $checkoutService,
+        private readonly PlayerLevelService $playerLevels,
     ) {
     }
 
@@ -78,7 +80,7 @@ class EventRegistrationController extends \App\Http\Controllers\BaseVersions\V1\
      *         )
      *     ),
      *     @OA\Response(response=201, description="Registration created"),
-     *     @OA\Response(response=403, description="Player not eligible"),
+     *     @OA\Response(response=403, description="Player has no level or level is outside the division bounds (Assess my level)"),
      *     @OA\Response(response=422, description="Validation error or past edition")
      * )
      */
@@ -98,12 +100,10 @@ class EventRegistrationController extends \App\Http\Controllers\BaseVersions\V1\
             return $this->validationErrorResponse(['event' => ['Registration is closed for this edition']]);
         }
 
-        $eligibility = Eligibility::where('player_id', $request->user()->id_player)
-            ->where('review_status', 'approved')
-            ->first();
+        $currentLevel = $this->playerLevels->currentLevel((int) $request->user()->id_player);
 
-        if (! $eligibility) {
-            return $this->forbiddenResponse('You are not eligible yet. Please submit your eligibility request first.');
+        if ($currentLevel === null) {
+            return $this->forbiddenResponse('You do not have a player level yet. Please use Assess my level first.');
         }
 
         $validated = $request->validate([
@@ -124,6 +124,18 @@ class EventRegistrationController extends \App\Http\Controllers\BaseVersions\V1\
 
         $playerId = (int) $request->user()->id_player;
 
+        $requestedDivisionIds = array_key_exists('event_division_ids', $validated)
+            ? array_map(static fn ($id) => (int) $id, $validated['event_division_ids'])
+            : [(int) $validated['event_division_id']];
+
+        $outOfBand = $this->divisionsOutsideLevel($requestedDivisionIds, (string) $currentLevel->level);
+        if ($outOfBand !== []) {
+            return $this->forbiddenResponse(
+                'Your level (' . $currentLevel->level . ') is outside the allowed level range for: '
+                . implode(', ', $outOfBand) . '. Please use Assess my level.'
+            );
+        }
+
         try {
             if (array_key_exists('event_division_ids', $validated)) {
                 $divisionIds = array_map(
@@ -133,8 +145,7 @@ class EventRegistrationController extends \App\Http\Controllers\BaseVersions\V1\
                 $result = $this->checkoutService->createManyForApp(
                     (int) $event->id_event,
                     $playerId,
-                    $divisionIds,
-                    $eligibility
+                    $divisionIds
                 );
 
                 $registrations = collect($result['registrations'])->each(
@@ -153,7 +164,7 @@ class EventRegistrationController extends \App\Http\Controllers\BaseVersions\V1\
                 'event_id' => (int) $event->id_event,
                 'player_id' => $playerId,
                 'event_division_id' => (int) $validated['event_division_id'],
-            ], $eligibility);
+            ]);
         } catch (RegistrationValidationException $e) {
             return $this->validationErrorResponse($e->errors);
         } catch (InvalidArgumentException $e) {
@@ -219,5 +230,25 @@ class EventRegistrationController extends \App\Http\Controllers\BaseVersions\V1\
             new EventRegistrationResource($registration),
             'Registration cancelled'
         );
+    }
+
+    /**
+     * Bounds run weakest (level_min) to strongest (level_max); only enforced when both are set.
+     *
+     * @param  list<int>  $eventDivisionIds
+     * @return list<string> division titles the level does not fit
+     */
+    private function divisionsOutsideLevel(array $eventDivisionIds, string $level): array
+    {
+        $value = (float) $level;
+        $titles = [];
+
+        foreach (EventDivision::query()->whereIn('id_event_division', $eventDivisionIds)->get() as $division) {
+            if (! PlayerLevelService::levelFitsBounds($value, $division->level_min, $division->level_max)) {
+                $titles[] = (string) ($division->division_title ?? $division->id_event_division);
+            }
+        }
+
+        return $titles;
     }
 }

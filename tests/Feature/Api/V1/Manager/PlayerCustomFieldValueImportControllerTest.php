@@ -61,7 +61,9 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
         $this->assertCount(2, $rows);
         $this->assertSame('mapped', $rows[0]['mapping']['status']);
         $this->assertSame($player->id_player, $rows[0]['mapping']['player']['id_player']);
-        $this->assertSame('12', $rows[0]['answers']['padel_matches_played']);
+        $this->assertSame('1998', $rows[0]['answers']['year_of_birth']);
+        $this->assertSame('female', $rows[0]['answers']['gender']);
+        $this->assertArrayNotHasKey('padel_matches_played', $rows[0]['answers']);
         $this->assertTrue($rows[0]['included']);
 
         $this->assertSame($importsBefore, PlayerCustomFieldValueImport::count());
@@ -86,7 +88,6 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
         $player = Player::factory()->create([
             'first_name' => 'Ana',
             'last_name' => 'Demo',
-            'playtomic_id' => null,
         ]);
         $this->setContacts($player, 'ana.demo@example.test', '+40712000001');
         $playersBefore = Player::count();
@@ -102,10 +103,10 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
                 'phone' => '+40712000001',
                 'player_id' => $player->id_player,
                 'answers' => [
-                    'padel_matches_played' => '12',
-                    'tennis_experience' => 'Da',
-                    'playtomic_url' => 'https://playtomic.io/user/demo-ana',
-                    'age' => '',
+                    'year_of_birth' => '1998',
+                    'gender' => 'Female',
+                    'playtomic_id' => '1234567',
+                    'rankedin_id' => '',
                 ],
             ]],
         ]);
@@ -118,11 +119,19 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
 
         $this->assertSame($playersBefore, Player::count());
         $this->assertSame($emailsBefore, PlayerEmail::count());
-        $this->assertNull($player->fresh()->playtomic_id);
 
         $value = PlayerCustomFieldValue::query()->where('player_id', $player->id_player)->firstOrFail();
         $this->assertSame('csv', $value->submitted_via);
         $this->assertNotNull($value->created_via_import_id);
+
+        $this->assertSame(
+            1998,
+            $this->currentValue($player, 'year_of_birth')->value_integer
+        );
+        $this->assertSame(
+            'female',
+            $this->currentValue($player, 'gender')->selectedOptions()->firstOrFail()->option->code
+        );
     }
 
     public function test_save_with_edition_replaces_on_reimport(): void
@@ -142,7 +151,7 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
                 'email' => '',
                 'phone' => '',
                 'player_id' => $player->id_player,
-                'answers' => ['padel_matches_played' => '5'],
+                'answers' => ['playtomic_id' => '5'],
             ]],
         ];
 
@@ -151,14 +160,23 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
             ->assertJsonPath('data.values_new_count', 1)
             ->assertJsonPath('data.values_replaced_count', 0);
 
-        $payload['rows'][0]['answers']['padel_matches_played'] = '9';
+        $payload['rows'][0]['answers']['playtomic_id'] = '9';
         $this->postJson('/api/v1/manager/players/custom-field-values/import', $payload)
             ->assertCreated()
             ->assertJsonPath('data.values_new_count', 0)
             ->assertJsonPath('data.values_replaced_count', 1);
 
-        $this->assertSame(1, PlayerCustomFieldValue::query()->count());
-        $this->assertSame('9', PlayerCustomFieldValue::query()->first()->value_text);
+        // Each import is its own submission: both rows stay validated (null manager); the newest wins.
+        $this->assertSame(2, PlayerCustomFieldValue::query()->count());
+        $this->assertSame(
+            2,
+            PlayerCustomFieldValue::query()
+                ->where('review_status', 'validated')
+                ->whereNull('reviewed_by_manager_id')
+                ->whereNotNull('reviewed_at')
+                ->count()
+        );
+        $this->assertSame('9', $this->currentValue($player, 'playtomic_id')->value_text);
     }
 
     public function test_save_included_row_without_player_id_is_422(): void
@@ -173,7 +191,7 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
                 'full_name' => 'Ana Demo',
                 'email' => 'ana.demo@example.test',
                 'phone' => '',
-                'answers' => ['padel_matches_played' => '1'],
+                'answers' => ['playtomic_id' => '1'],
             ]],
         ])->assertStatus(422);
 
@@ -194,7 +212,7 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
                 'email' => '',
                 'phone' => '',
                 'player_id' => $player->id_player,
-                'answers' => ['age' => '30'],
+                'answers' => ['year_of_birth' => '1995'],
             ]],
         ])->assertCreated()->json('data');
 
@@ -214,6 +232,80 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
         $this->postJson('/api/v1/manager/player-custom-field-value-imports', [])->assertStatus(405);
     }
 
+    public function test_preview_rejects_the_old_format_headers(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $legacy = 'Timestamp,Username,Salutare 👋 care este numele tău complet?,Câte meciuri de padel ai mai jucat?,Ai jucat tenis vreodată?,Ai luat lecții de padel sau tenis?,"În caz că ai participat la turnee mari, în ce divizie te încadrezi?",Ce vârstă ai?,La ce număr de telefon dăm de tine?,Ajută-ne cu linkul profilului tău de Playtomic,Folosim informațiile în a echilibra diviziile cât mai bine,Poza este strict pentru afișul cu meciurile
+'
+            . '2026-01-10 09:15:00,ana.demo@example.test,Ana Demo,12,Da,Da,Div 4 High,28,+40 712 000 001,https://playtomic.io/user/demo-ana,Da,Da
+';
+
+        $this->post(
+            '/api/v1/manager/players/custom-field-values/import/preview',
+            ['file' => $this->csvUpload($legacy)],
+            ['Accept' => 'application/json']
+        )->assertStatus(422);
+    }
+
+    public function test_save_writes_racket_experience_json(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $player = Player::factory()->create();
+        $experience = '[{"sport":"padel","level":"amateur","matches_played":12}]';
+
+        $this->postJson('/api/v1/manager/players/custom-field-values/import', [
+            'format' => 'google_form_minitour_welcome',
+            'filename' => 'json.csv',
+            'rows' => [[
+                'index' => 0,
+                'full_name' => 'Ana',
+                'email' => '',
+                'phone' => '',
+                'player_id' => $player->id_player,
+                'answers' => ['racket_experience' => $experience],
+            ]],
+        ])->assertCreated()->assertJsonPath('data.values_new_count', 1);
+
+        $this->assertEquals(
+            [['sport' => 'padel', 'level' => 'amateur', 'matches_played' => 12]],
+            $this->currentValue($player, 'racket_experience')->value_json
+        );
+    }
+
+    public function test_save_rejects_unknown_gender_option(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $player = Player::factory()->create();
+
+        $this->postJson('/api/v1/manager/players/custom-field-values/import', [
+            'format' => 'google_form_minitour_welcome',
+            'filename' => 'bad.csv',
+            'rows' => [[
+                'index' => 0,
+                'full_name' => 'Ana',
+                'email' => '',
+                'phone' => '',
+                'player_id' => $player->id_player,
+                'answers' => ['gender' => 'robot'],
+            ]],
+        ])->assertStatus(422);
+
+        $this->assertSame(0, PlayerCustomFieldValueImport::count());
+        $this->assertSame(0, PlayerCustomFieldValue::count());
+    }
+
+    private function currentValue(Player $player, string $code): PlayerCustomFieldValue
+    {
+        return PlayerCustomFieldValue::query()
+            ->where('player_id', $player->id_player)
+            ->whereHas('field', fn ($query) => $query->where('code', $code))
+            ->latestValidatedFirst()
+            ->firstOrFail();
+    }
+
     private function fixtureUpload(): UploadedFile
     {
         $path = base_path('tests/Fixtures/player-custom-field-value-import/google_form_minitour_welcome_sample.csv');
@@ -228,8 +320,6 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
 
     private function setContacts(Player $player, string $email, string $phone): void
     {
-        $player->emails()->delete();
-        $player->phones()->delete();
         PlayerEmail::factory()->create([
             'player_id' => $player->id_player,
             'email' => $email,

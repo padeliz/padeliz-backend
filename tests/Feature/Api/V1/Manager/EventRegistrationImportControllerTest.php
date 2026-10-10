@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventRegistration;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Models\PlayerEmail;
 use App\Models\PlayerPhone;
@@ -429,8 +429,6 @@ class EventRegistrationImportControllerTest extends TestCase
 
     private function setContacts(Player $player, string $email, string $phone): void
     {
-        $player->emails()->delete();
-        $player->phones()->delete();
         PlayerEmail::factory()->create([
             'player_id' => $player->id_player,
             'email' => $email,

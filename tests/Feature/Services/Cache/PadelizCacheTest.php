@@ -6,10 +6,19 @@ namespace Tests\Feature\Services\Cache;
 
 use App\Services\Cache\MetadataCacheInvalidator;
 use App\Services\Cache\PadelizCache;
+use Tests\Support\UsesRedisTaggedCache;
 use Tests\TestCase;
 
 final class PadelizCacheTest extends TestCase
 {
+    use UsesRedisTaggedCache;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        $this->forceRedisTaggedCache();
+    }
+
     public function test_remember_hit_and_tag_flush(): void
     {
         $cache = app(PadelizCache::class);

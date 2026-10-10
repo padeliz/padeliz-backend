@@ -10,17 +10,20 @@ use App\Models\Player;
 use App\Services\Cache\PadelizCache;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\Support\UsesRedisTaggedCache;
 use Tests\TestCase;
 
 final class ClubControllerCacheTest extends TestCase
 {
     use RefreshDatabase;
+    use UsesRedisTaggedCache;
 
     private Player $manager;
 
     protected function setUp(): void
     {
         parent::setUp();
+        $this->forceRedisTaggedCache();
 
         app(PadelizCache::class)->flushApplicationTags();
 

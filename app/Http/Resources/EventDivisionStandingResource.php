@@ -23,6 +23,14 @@ class EventDivisionStandingResource extends JsonResource
             'rank' => $this->rank,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
+            'player_level' => $this->when(
+                $this->resource->relationLoaded('participation')
+                    && $this->participation !== null
+                    && $this->participation->relationLoaded('playerLevel'),
+                fn () => $this->participation->playerLevel !== null
+                    ? new PlayerLevelResource($this->participation->playerLevel)
+                    : null
+            ),
         ];
     }
 }

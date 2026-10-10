@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1\App;
 
+use App\Enums\Registration\RegistrationCancelReason;
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
 use App\Http\Resources\EventRegistrationCheckoutResource;
 use App\Http\Resources\EventRegistrationResource;
-use App\Enums\Registration\RegistrationCancelReason;
 use App\Models\EventRegistration;
 use App\Models\EventRegistrationCheckout;
 use App\Models\EventRegistrationPaymentProof;

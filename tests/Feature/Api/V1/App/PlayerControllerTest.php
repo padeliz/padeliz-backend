@@ -40,8 +40,6 @@ class PlayerControllerTest extends TestCase
         $response = $this->postJson('/api/v1/app/players', [
             'first_name' => 'Updated',
             'last_name' => 'Player',
-            'skill_division' => 4.5,
-            'being_student' => true,
             'created_via' => 'csv',
             'created_via_format' => 'playtomic',
         ]);
@@ -53,8 +51,6 @@ class PlayerControllerTest extends TestCase
                 'data' => [
                     'id_player',
                     'name',
-                    'skill_division',
-                    'being_student',
                 ],
             ])
             ->assertJson([
@@ -108,7 +104,6 @@ class PlayerControllerTest extends TestCase
             'first_name' => 'Updated',
             'middle_name' => 'Player',
             'last_name' => 'Name',
-            'skill_division' => 3.5,
         ]);
 
         $response->assertStatus(200)
@@ -118,7 +113,6 @@ class PlayerControllerTest extends TestCase
                 'data' => [
                     'id_player',
                     'name',
-                    'skill_division',
                 ],
             ])
             ->assertJson([
@@ -127,7 +121,6 @@ class PlayerControllerTest extends TestCase
                 'data' => [
                     'id_player' => $this->player->id_player,
                     'name' => 'Updated Player Name',
-                    'skill_division' => 3.5,
                 ],
             ]);
     }
@@ -215,27 +208,28 @@ class PlayerControllerTest extends TestCase
         $this->assertSame(3, PlayerProfileImage::where('player_id', $this->player->id_player)->count());
     }
 
-    public function test_player_cannot_upload_more_than_three_images()
+    public function test_player_cannot_upload_more_than_max_per_player_images()
     {
         Sanctum::actingAs($this->player);
 
-        for ($i = 1; $i <= 3; $i++) {
+        $max = PlayerProfileImage::MAX_PER_PLAYER;
+        for ($i = 1; $i <= $max; $i++) {
             $file = $this->createFakeImage("profile{$i}.png");
             $response = $this->post('/api/v1/app/players/image', ['image' => $file]);
             $response->assertStatus(201);
             $this->assertSame($i, PlayerProfileImage::where('player_id', $this->player->id_player)->count());
         }
 
-        $file4 = $this->createFakeImage('profile4.png');
-        $response = $this->post('/api/v1/app/players/image', ['image' => $file4]);
+        $extra = $this->createFakeImage('profile-extra.png');
+        $response = $this->post('/api/v1/app/players/image', ['image' => $extra]);
 
         $response->assertStatus(422)
             ->assertJson([
                 'success' => false,
-                'message' => 'Maximum number of profile images (3) reached. Delete an existing image first.',
+                'message' => 'Maximum number of profile images (' . $max . ') reached. Delete an existing image first.',
             ]);
 
-        $this->assertSame(3, PlayerProfileImage::where('player_id', $this->player->id_player)->count());
+        $this->assertSame($max, PlayerProfileImage::where('player_id', $this->player->id_player)->count());
     }
 
     public function test_player_can_delete_profile_image()

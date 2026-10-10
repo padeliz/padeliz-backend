@@ -40,7 +40,7 @@ class PlayerProfileImageImportControllerTest extends TestCase
         ]);
 
         $response->assertOk()
-            ->assertJsonPath('data.max_images_per_player', 3)
+            ->assertJsonPath('data.max_images_per_player', 10)
             ->assertJsonPath('data.rows.0.mapping.status', 'mapped')
             ->assertJsonPath('data.rows.0.mapping.matched_by', 'email')
             ->assertJsonPath('data.rows.0.mapping.player.id_player', $player->id_player);

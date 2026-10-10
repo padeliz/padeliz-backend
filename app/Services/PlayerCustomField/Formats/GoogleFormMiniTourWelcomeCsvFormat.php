@@ -23,15 +23,34 @@ final class GoogleFormMiniTourWelcomeCsvFormat implements PlayerCustomFieldValue
     private const HEADER_POSTER_PHOTO = 'Poza este strict pentru afișul cu meciurile';
 
     /**
+     * Question headers of the current form, keyed by custom field code. The racket experience
+     * column holds a JSON array of per-sport entries (see PlayerCustomFieldValueWriter).
+     *
      * @var array<string, string>
      */
     private const FIELD_HEADERS = [
-        'padel_matches_played' => 'Câte meciuri de padel ai mai jucat?',
-        'tennis_experience' => 'Ai jucat tenis vreodată?',
-        'racket_lessons' => 'Ai luat lecții de padel sau tenis?',
+        'racket_experience' => 'Experiența ta cu sporturile cu rachetă (JSON)',
         'big_tournament_division' => 'În caz că ai participat la turnee mari, în ce divizie te încadrezi?',
-        'age' => 'Ce vârstă ai?',
-        'playtomic_url' => 'Ajută-ne cu linkul profilului tău de Playtomic',
+        'year_of_birth' => 'În ce an te-ai născut?',
+        'playtomic_id' => 'Care este ID-ul tău de Playtomic?',
+        'rankedin_id' => 'Care este ID-ul tău de Rankedin?',
+        'gender' => 'Care este genul tău?',
+        'instagram_username' => 'Care este username-ul tău de Instagram?',
+        'facebook_username' => 'Care este username-ul tău de Facebook?',
+    ];
+
+    /**
+     * Headers of the retired form. Seeing any of them means the file predates the new field codes
+     * and must be rejected instead of being silently half-imported.
+     *
+     * @var list<string>
+     */
+    private const LEGACY_HEADERS = [
+        'Câte meciuri de padel ai mai jucat?',
+        'Ai jucat tenis vreodată?',
+        'Ai luat lecții de padel sau tenis?',
+        'Ce vârstă ai?',
+        'Ajută-ne cu linkul profilului tău de Playtomic',
     ];
 
     public function formatKey(): string
@@ -42,6 +61,13 @@ final class GoogleFormMiniTourWelcomeCsvFormat implements PlayerCustomFieldValue
     public function supports(array $headers): bool
     {
         $normalized = $this->normalizeHeaders($headers);
+
+        foreach (self::LEGACY_HEADERS as $legacy) {
+            if (in_array($legacy, $normalized, true)) {
+                return false;
+            }
+        }
+
         $required = array_merge(
             [
                 self::HEADER_TIMESTAMP,

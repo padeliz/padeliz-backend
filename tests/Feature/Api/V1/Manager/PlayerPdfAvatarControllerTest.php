@@ -7,33 +7,23 @@ namespace Tests\Feature\Api\V1\Manager;
 use App\Models\CachedPdfPlayerImage;
 use App\Models\Player;
 use App\Models\PlayerProfileImage;
+use App\Services\Pdf\PdfCachedImageGenerator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
+use Tests\Support\PdfFixtures;
 use Tests\TestCase;
 
 final class PlayerPdfAvatarControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private function solidPng(): string
-    {
-        $img = imagecreatetruecolor(80, 80);
-        $red = imagecolorallocate($img, 255, 0, 0);
-        imagefill($img, 0, 0, $red);
-        ob_start();
-        imagepng($img);
-        $png = (string) ob_get_clean();
-        imagedestroy($img);
-
-        return $png;
-    }
-
     private function attachProfile(Player $player, int $sortOrder = 0): PlayerProfileImage
     {
         Storage::fake(config('filesystems.user_uploads_disk', 'public'));
         $relative = 'player-profile-images/' . $player->id_player . '/profile/avatar.png';
-        Storage::disk(config('filesystems.user_uploads_disk', 'public'))->put($relative, $this->solidPng());
+        Storage::disk(config('filesystems.user_uploads_disk', 'public'))
+            ->put($relative, PdfFixtures::solidRed80Bytes());
 
         return PlayerProfileImage::query()->create([
             'player_id' => $player->id_player,
@@ -41,6 +31,14 @@ final class PlayerPdfAvatarControllerTest extends TestCase
             'sort_order' => $sortOrder,
             'inserted_at' => time(),
         ]);
+    }
+
+    private function mockAvatarUrl(string $url): void
+    {
+        $this->mock(PdfCachedImageGenerator::class, function ($mock) use ($url): void {
+            $mock->shouldReceive('generatePlayerAvatarUrl')
+                ->andReturn($url);
+        });
     }
 
     public function test_unauthenticated_returns_401(): void
@@ -84,6 +82,27 @@ final class PlayerPdfAvatarControllerTest extends TestCase
         Sanctum::actingAs($manager);
         $player = Player::factory()->create();
 
+        $this->mock(PdfCachedImageGenerator::class, function ($mock) use ($player): void {
+            $mock->shouldReceive('generatePlayerAvatarUrl')
+                ->once()
+                ->andReturnUsing(function () use ($player): string {
+                    $row = CachedPdfPlayerImage::query()->create([
+                        'player_id' => $player->id_player,
+                        'player_is_collecting_points' => true,
+                        'picture_path' => null,
+                        'source_player_profile_image_id' => null,
+                        'inserted_at' => time(),
+                    ]);
+                    $relative = 'cached-pdf-player-images/' . $row->id_cached_pdf_player_image . '/picture/avatar.png';
+                    Storage::disk(config('filesystems.user_uploads_disk', 'public'))
+                        ->put($relative, PdfFixtures::circularRed200Bytes());
+                    $row->picture_path = $relative;
+                    $row->save();
+
+                    return '/storage/' . $relative;
+                });
+        });
+
         $res = $this->postJson("/api/v1/manager/players/{$player->id_player}/pdf-avatar", [
             'is_collecting_points' => true,
         ]);
@@ -104,6 +123,27 @@ final class PlayerPdfAvatarControllerTest extends TestCase
         Sanctum::actingAs($manager);
         $player = Player::factory()->create();
         $profile = $this->attachProfile($player);
+
+        $this->mock(PdfCachedImageGenerator::class, function ($mock) use ($player, $profile): void {
+            $mock->shouldReceive('generatePlayerAvatarUrl')
+                ->once()
+                ->andReturnUsing(function () use ($player, $profile): string {
+                    $row = CachedPdfPlayerImage::query()->create([
+                        'player_id' => $player->id_player,
+                        'player_is_collecting_points' => true,
+                        'picture_path' => null,
+                        'source_player_profile_image_id' => (int) $profile->id,
+                        'inserted_at' => time(),
+                    ]);
+                    $relative = 'cached-pdf-player-images/' . $row->id_cached_pdf_player_image . '/picture/avatar.png';
+                    Storage::disk(config('filesystems.user_uploads_disk', 'public'))
+                        ->put($relative, PdfFixtures::circularRed200Bytes());
+                    $row->picture_path = $relative;
+                    $row->save();
+
+                    return '/storage/' . $relative;
+                });
+        });
 
         $res = $this->postJson("/api/v1/manager/players/{$player->id_player}/pdf-avatar", [
             'is_collecting_points' => true,
@@ -130,20 +170,19 @@ final class PlayerPdfAvatarControllerTest extends TestCase
         $player = Player::factory()->create();
         $profile = $this->attachProfile($player);
 
-        $this->postJson("/api/v1/manager/players/{$player->id_player}/pdf-avatar", [
-            'is_collecting_points' => true,
-        ])->assertOk();
-
-        $disk = config('filesystems.user_uploads_disk', 'public');
-        $abs = Storage::disk($disk)->path((string) $profile->profile_path);
-        touch($abs, 1_600_000_000);
-
-        $row = CachedPdfPlayerImage::query()
-            ->where('player_id', $player->id_player)
-            ->where('player_is_collecting_points', true)
-            ->firstOrFail();
+        $row = CachedPdfPlayerImage::query()->create([
+            'player_id' => $player->id_player,
+            'player_is_collecting_points' => true,
+            'picture_path' => 'cached-pdf-player-images/1/picture/avatar.png',
+            'source_player_profile_image_id' => (int) $profile->id,
+            'inserted_at' => time(),
+        ]);
+        Storage::disk(config('filesystems.user_uploads_disk', 'public'))
+            ->put((string) $row->picture_path, PdfFixtures::circularRed200Bytes());
         $frozen = time();
         $row->forceFill(['updated_at' => $frozen, 'inserted_at' => $frozen])->save();
+
+        $this->mockAvatarUrl('/storage/' . $row->picture_path);
 
         $this->postJson("/api/v1/manager/players/{$player->id_player}/pdf-avatar", [
             'is_collecting_points' => true,
@@ -161,6 +200,26 @@ final class PlayerPdfAvatarControllerTest extends TestCase
         Sanctum::actingAs($manager);
         $player = Player::factory()->create();
         $this->attachProfile($player);
+
+        $this->mock(PdfCachedImageGenerator::class, function ($mock) use ($player): void {
+            $mock->shouldReceive('generatePlayerAvatarUrl')
+                ->twice()
+                ->andReturnUsing(function (Player $p, bool $collecting) use ($player): string {
+                    $this->assertSame((int) $player->id_player, (int) $p->id_player);
+                    CachedPdfPlayerImage::query()->firstOrCreate(
+                        [
+                            'player_id' => $player->id_player,
+                            'player_is_collecting_points' => $collecting,
+                        ],
+                        [
+                            'picture_path' => 'cached-pdf-player-images/' . ($collecting ? 'c' : 'n') . '/picture/avatar.png',
+                            'inserted_at' => time(),
+                        ]
+                    );
+
+                    return '/storage/fake-' . ($collecting ? 'c' : 'n') . '.png';
+                });
+        });
 
         $this->postJson("/api/v1/manager/players/{$player->id_player}/pdf-avatar", [
             'is_collecting_points' => true,

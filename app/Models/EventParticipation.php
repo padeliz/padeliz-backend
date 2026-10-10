@@ -8,6 +8,7 @@ use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasOne;
 
 /**
  * @OA\Schema(
@@ -199,5 +200,13 @@ class EventParticipation extends Model
     public function eventDivision(): BelongsTo
     {
         return $this->belongsTo(EventDivision::class, 'event_division_id', 'id_event_division');
+    }
+
+    /**
+     * The player level a manager entered for this participation (at most one row).
+     */
+    public function playerLevel(): HasOne
+    {
+        return $this->hasOne(PlayerLevel::class, 'event_participation_id', 'id_participation');
     }
 }

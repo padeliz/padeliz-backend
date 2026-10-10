@@ -6,14 +6,15 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Resources\EventDivisionResource;
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventParticipation;
+use App\Models\PadelEvent;
 use App\Services\Pdf\EventDivisionPosterInvalidator;
 use App\Services\Schedule\PlayingWindow;
 use App\Traits\CachesManagerResourceReads;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
+use Illuminate\Validation\ValidationException;
 
 /**
  * @OA\Tag(
@@ -289,6 +290,8 @@ class EventDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
                 'playing_start_time' => ['required', PlayingWindow::clockRegexRule()],
                 'playing_end_time' => ['required', PlayingWindow::clockRegexRule()],
                 'skill_order' => 'nullable|integer|min:0',
+                'level_min' => 'nullable|numeric|between:0,9.99',
+                'level_max' => 'nullable|numeric|between:0,9.99',
             ], $this->movedScheduleKeyRules()),
             $this->movedScheduleKeyMessages()
         );
@@ -296,18 +299,6 @@ class EventDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
         $event = PadelEvent::query()->find($validated['event_id']);
         if ($event?->finalized_at !== null) {
             return $this->errorResponse('PadelEvent divisions cannot be created after finalize.', 409);
-        }
-
-        // Check if this edition-division combination already exists
-        $existingDivision = EventDivision::where('event_id', $validated['event_id'])
-            ->where('division_id', $validated['division_id'])
-            ->first();
-
-        if ($existingDivision) {
-            return $this->errorResponse(
-                'This division is already assigned to this edition',
-                422
-            );
         }
 
         if (($validated['division_title'] ?? null) === null || $validated['division_title'] === '') {
@@ -320,6 +311,10 @@ class EventDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
             ?? $this->nextSkillOrder((int) $validated['event_id']);
         $validated['playing_start_time'] = PlayingWindow::normalizeStoredTime((string) $validated['playing_start_time']);
         $validated['playing_end_time'] = PlayingWindow::normalizeStoredTime((string) $validated['playing_end_time']);
+        $this->assertDistinctPlayingWindow(
+            (string) $validated['playing_start_time'],
+            (string) $validated['playing_end_time']
+        );
 
         $eventDivision = EventDivision::create($validated);
         $eventDivision->load(['event', 'division', 'courts']);
@@ -413,27 +408,11 @@ class EventDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
                 'playing_start_time' => ['required', PlayingWindow::clockRegexRule()],
                 'playing_end_time' => ['required', PlayingWindow::clockRegexRule()],
                 'skill_order' => 'nullable|integer|min:0',
+                'level_min' => 'nullable|numeric|between:0,9.99',
+                'level_max' => 'nullable|numeric|between:0,9.99',
             ], $this->movedScheduleKeyRules()),
             $this->movedScheduleKeyMessages()
         );
-
-        // Check if this edition-division combination already exists (excluding current record)
-        if (isset($validated['event_id']) || isset($validated['division_id'])) {
-            $editionId = $validated['event_id'] ?? $eventDivision->event_id;
-            $divisionId = $validated['division_id'] ?? $eventDivision->division_id;
-
-            $existingDivision = EventDivision::where('id_event_division', '!=', $eventDivision->id_event_division)
-                ->where('event_id', $editionId)
-                ->where('division_id', $divisionId)
-                ->first();
-
-            if ($existingDivision) {
-                return $this->errorResponse(
-                    'This division is already assigned to this edition',
-                    422
-                );
-            }
-        }
 
         if (isset($validated['playing_start_time'])) {
             $validated['playing_start_time'] = PlayingWindow::normalizeStoredTime((string) $validated['playing_start_time']);
@@ -441,6 +420,10 @@ class EventDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
         if (isset($validated['playing_end_time'])) {
             $validated['playing_end_time'] = PlayingWindow::normalizeStoredTime((string) $validated['playing_end_time']);
         }
+        $this->assertDistinctPlayingWindow(
+            (string) ($validated['playing_start_time'] ?? $eventDivision->getAttributes()['playing_start_time']),
+            (string) ($validated['playing_end_time'] ?? $eventDivision->getAttributes()['playing_end_time'])
+        );
 
         $this->applyAndInvalidatePosters($eventDivision, $validated);
         $eventDivision->load(['event', 'division', 'courts']);
@@ -532,33 +515,23 @@ class EventDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
                 'playing_start_time' => ['sometimes', PlayingWindow::clockRegexRule()],
                 'playing_end_time' => ['sometimes', PlayingWindow::clockRegexRule()],
                 'skill_order' => 'sometimes|integer|min:0',
+                'level_min' => 'sometimes|nullable|numeric|between:0,9.99',
+                'level_max' => 'sometimes|nullable|numeric|between:0,9.99',
             ], $this->movedScheduleKeyRules()),
             $this->movedScheduleKeyMessages()
         );
-
-        // Check if this edition-division combination already exists (excluding current record)
-        if (isset($validated['event_id']) || isset($validated['division_id'])) {
-            $editionId = $validated['event_id'] ?? $eventDivision->event_id;
-            $divisionId = $validated['division_id'] ?? $eventDivision->division_id;
-
-            $existingDivision = EventDivision::where('id_event_division', '!=', $eventDivision->id_event_division)
-                ->where('event_id', $editionId)
-                ->where('division_id', $divisionId)
-                ->first();
-
-            if ($existingDivision) {
-                return $this->errorResponse(
-                    'This division is already assigned to this edition',
-                    422
-                );
-            }
-        }
 
         if (isset($validated['playing_start_time'])) {
             $validated['playing_start_time'] = PlayingWindow::normalizeStoredTime((string) $validated['playing_start_time']);
         }
         if (isset($validated['playing_end_time'])) {
             $validated['playing_end_time'] = PlayingWindow::normalizeStoredTime((string) $validated['playing_end_time']);
+        }
+        if (isset($validated['playing_start_time']) || isset($validated['playing_end_time'])) {
+            $this->assertDistinctPlayingWindow(
+                (string) ($validated['playing_start_time'] ?? $eventDivision->getAttributes()['playing_start_time']),
+                (string) ($validated['playing_end_time'] ?? $eventDivision->getAttributes()['playing_end_time'])
+            );
         }
 
         $this->applyAndInvalidatePosters($eventDivision, $validated);
@@ -1011,6 +984,17 @@ class EventDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
         }
 
         return $messages;
+    }
+
+    private function assertDistinctPlayingWindow(string $start, string $end): void
+    {
+        if (PlayingWindow::windowsAreDistinct($start, $end)) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'playing_end_time' => ['Playing start time and playing end time must differ.'],
+        ]);
     }
 
     private function nextSkillOrder(int $editionId): int

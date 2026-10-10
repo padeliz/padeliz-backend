@@ -12,13 +12,13 @@ use App\Enums\Referral\ReferralAttributionStatus;
 use App\Models\BenefitCondition;
 use App\Models\BenefitDefinition;
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventReferralCode;
 use App\Models\EventReferralCodeInvitee;
-use App\Models\Eligibility;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Models\PlayerEmail;
+use App\Models\PlayerLevel;
 use App\Models\ReferralTouchpoint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -40,7 +40,7 @@ class CheckoutPricingControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->player = Player::factory()->playerOnly()->create();
+        $this->player = Player::factory()->playerOnly()->withPrimaryEmail()->create();
         $this->event = PadelEvent::factory()->create([
             'date' => now()->addDays(30)->format('Y-m-d'),
         ]);
@@ -50,14 +50,10 @@ class CheckoutPricingControllerTest extends TestCase
             'players_limit' => 10,
             'entry_fee' => 55,
         ]);
-        Eligibility::factory()->create([
-            'player_id' => $this->player->id_player,
-            'review_status' => 'approved',
-            'being_student' => false,
-        ]);
+        PlayerLevel::factory()->level('4.50')->create(['player_id' => $this->player->id_player]);
 
         $this->referredBenefit = BenefitDefinition::factory()->create([
-            'slug' => 'referred-test-'.uniqid(),
+            'slug' => 'referred-test-' . uniqid(),
             'name' => 'Referred',
             'is_active' => true,
             'amount_type' => BenefitAmountType::FixedRon,

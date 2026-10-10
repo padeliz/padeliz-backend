@@ -9,7 +9,6 @@ use App\Models\EventDivision;
 use App\Models\GameMatch;
 use App\Models\MatchPlayer;
 use App\Services\Pdf\PdfHtmlHelper;
-use App\Services\Schedule\PointsPerMatchCalculator;
 use Illuminate\Support\Collection;
 
 /**

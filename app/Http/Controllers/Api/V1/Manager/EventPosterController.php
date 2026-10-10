@@ -6,8 +6,8 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\Controller;
 use App\Http\Resources\EventDivisionPosterResource;
-use App\Models\PadelEvent;
 use App\Models\EventDivisionPoster;
+use App\Models\PadelEvent;
 use App\Services\Pdf\EventMergedPosterPdfException;
 use App\Services\Pdf\EventMergedPosterPdfService;
 use App\Services\Pdf\PosterPdfService;

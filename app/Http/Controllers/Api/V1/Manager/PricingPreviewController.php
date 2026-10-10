@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventRegistration;
-use App\Models\Eligibility;
+use App\Models\PadelEvent;
 use App\Models\Player;
+use App\Models\PlayerStudentProof;
 use App\Services\Pricing\PricingContext;
 use App\Services\Pricing\PricingService;
 use Illuminate\Http\Request;
@@ -58,12 +58,6 @@ class PricingPreviewController extends V1BaseController
         $event = PadelEvent::query()->with('location')->findOrFail($validated['event_id']);
         $division = EventDivision::query()->findOrFail($validated['event_division_id']);
 
-        $eligibility = Eligibility::query()
-            ->where('player_id', $player->id_player)
-            ->where('review_status', 'approved')
-            ->orderByDesc('id_eligibility')
-            ->first();
-
         $registration = EventRegistration::query()
             ->where('event_id', $event->id_event)
             ->where('player_id', $player->id_player)
@@ -78,7 +72,7 @@ class PricingPreviewController extends V1BaseController
                 'player_id' => $player->id_player,
                 'event_division_id' => $division->id_event_division,
                 'is_minor' => false,
-                'is_student' => (bool) ($eligibility?->being_student ?? false),
+                'is_student' => PlayerStudentProof::hasActiveFor($player),
                 'payment' => (int) $division->entry_fee,
             ]);
         }
@@ -98,7 +92,6 @@ class PricingPreviewController extends V1BaseController
             eventDivision: $division,
             registration: $registration,
             checkout: null,
-            eligibility: $eligibility,
             now: time(),
             selectedBenefitIds: $selectedBenefitIds,
             selectedReferrerPlayerId: $referrerPlayerId,

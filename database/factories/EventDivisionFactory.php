@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
+use App\Models\PadelEvent;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\Factory;
 

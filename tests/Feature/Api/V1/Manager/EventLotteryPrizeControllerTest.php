@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\CachedPdfPlayerImage;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventLottery;
 use App\Models\EventLotteryLucky;
 use App\Models\EventLotteryPrize;
 use App\Models\EventLotteryRule;
 use App\Models\EventParticipation;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Models\PlayerPhone;
 use App\Models\Prize;

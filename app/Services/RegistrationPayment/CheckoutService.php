@@ -10,12 +10,11 @@ use App\Enums\Registration\PaymentProofReviewStatus;
 use App\Enums\Registration\RegistrationLifecycleStatus;
 use App\Enums\Registration\RegistrationPaymentMethod;
 use App\Enums\Registration\RegistrationPaymentStatus;
-use App\Models\PadelEvent;
 use App\Models\EventRegistration;
 use App\Models\EventRegistrationCheckout;
 use App\Models\EventRegistrationCheckoutItem;
 use App\Models\EventRegistrationPaymentProof;
-use App\Models\Eligibility;
+use App\Models\PadelEvent;
 use App\Services\Pricing\PricingService;
 use App\Services\Referral\ReferralService;
 use Illuminate\Support\Facades\DB;
@@ -32,7 +31,7 @@ class CheckoutService
      * @param  list<int>  $eventDivisionIds
      * @return array{registrations: list<EventRegistration>, checkout: EventRegistrationCheckout}
      */
-    public function createManyForApp(int $editionId, int $playerId, array $eventDivisionIds, Eligibility $eligibility): array
+    public function createManyForApp(int $editionId, int $playerId, array $eventDivisionIds): array
     {
         if ($eventDivisionIds === []) {
             throw new RegistrationValidationException([
@@ -53,7 +52,7 @@ class CheckoutService
             ]);
         }
 
-        return DB::transaction(function () use ($editionId, $playerId, $specific, $eligibility) {
+        return DB::transaction(function () use ($editionId, $playerId, $specific) {
             PadelEvent::query()->lockForUpdate()->findOrFail($editionId);
 
             foreach ($specific as $divisionId) {
@@ -66,7 +65,7 @@ class CheckoutService
                     'event_id' => $editionId,
                     'player_id' => $playerId,
                     'event_division_id' => $divisionId,
-                ], $eligibility, attachCheckout: false);
+                ], attachCheckout: false);
             }
 
             $hasUnpaid = collect($registrations)->contains(
@@ -96,7 +95,7 @@ class CheckoutService
                 $checkout = $this->openOrRefreshForUnpaid($editionId, $playerId);
                 foreach ($registrations as $registration) {
                     if ($registration->payment_status === RegistrationPaymentStatus::Unpaid) {
-                        $this->registrationService->commitAutoBenefits($registration, $eligibility);
+                        $this->registrationService->commitAutoBenefits($registration);
                     }
                 }
             }
@@ -253,6 +252,7 @@ class CheckoutService
                             $this->registrationService->markPaid($reg, null);
                         }
                     }
+
                     continue;
                 }
 
@@ -338,7 +338,7 @@ class CheckoutService
      *
      * @return list<array{
      *     registration_id: int,
-     *     event_division_id: int|null,
+     *     event_division_id: null|int,
      *     division_title: string,
      *     division_color: string,
      *     amount_ron: int

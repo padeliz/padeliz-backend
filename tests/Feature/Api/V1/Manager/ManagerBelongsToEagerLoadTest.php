@@ -6,16 +6,17 @@ namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Court;
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventLottery;
 use App\Models\EventLotteryLucky;
 use App\Models\EventLotteryPrize;
 use App\Models\EventLotteryRule;
 use App\Models\EventParticipation;
-use App\Models\Eligibility;
 use App\Models\Location;
+use App\Models\PadelEvent;
 use App\Models\Player;
+use App\Models\PlayerLevelAssessment;
+use App\Models\PlayerStudentProof;
 use App\Models\Prize;
 use App\Models\Sponsor;
 use App\Models\SponsorPrize;
@@ -141,7 +142,8 @@ class ManagerBelongsToEagerLoadTest extends TestCase
             'event_division_id' => EventDivision::factory()->create()->id_event_division,
         ]);
         $participation = EventParticipation::factory()->create();
-        $eligibility = Eligibility::factory()->create();
+        $assessment = PlayerLevelAssessment::factory()->readyForReview()->create();
+        $studentProof = PlayerStudentProof::factory()->create();
         $location = Location::factory()->create();
         $sponsor = Sponsor::factory()->forClub(\App\Models\Club::factory()->create())->create();
         $player = Player::factory()->create();
@@ -190,8 +192,12 @@ class ManagerBelongsToEagerLoadTest extends TestCase
                 "/api/v1/manager/event-participations/{$participation->id_participation}",
                 ['event', 'player', 'event_division'],
             ],
-            'eligibilities.player' => [
-                "/api/v1/manager/eligibilities/{$eligibility->id_eligibility}",
+            'player-level-assessments.player' => [
+                "/api/v1/manager/player-level-assessments/{$assessment->id_player_level_assessment}",
+                ['player'],
+            ],
+            'player-student-proofs.player' => [
+                "/api/v1/manager/player-student-proofs/{$studentProof->id_player_student_proof}",
                 ['player'],
             ],
             'locations.club' => [

@@ -4,9 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1\App;
 
-use App\Exceptions\InvalidGoogleTokenException;
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
-use App\Http\Resources\PlayerResource;
+use App\Http\Resources\AppPlayerResource;
 use App\Models\Player;
 use App\Models\PlayerEmail;
 use App\Models\PlayerIdentity;
@@ -181,7 +180,7 @@ class PlayerAuthController extends V1BaseController
 
                 return $this->successResponse([
                     'token' => $token,
-                    'player' => new PlayerResource($linkedPlayer->loadMissing(['identities.email'])),
+                    'player' => new AppPlayerResource($linkedPlayer->loadMissing(['identities.email'])),
                     'user_type' => 'player',
                 ], 'Player authenticated successfully');
             }
@@ -208,7 +207,7 @@ class PlayerAuthController extends V1BaseController
 
             return $this->successResponse([
                 'token' => $token,
-                'player' => new PlayerResource($player->fresh()->loadMissing(['identities.email'])),
+                'player' => new AppPlayerResource($player->fresh()->loadMissing(['identities.email'])),
                 'user_type' => 'player',
             ], 'Invite redeemed successfully');
         } catch (\Exception $e) {
@@ -267,8 +266,11 @@ class PlayerAuthController extends V1BaseController
      *     )
      * )
      */
-    public function googleCallback(Request $request, GoogleIdTokenVerifier $tokenVerifier)
-    {
+    public function googleCallback(
+        Request $request,
+        GoogleIdTokenVerifier $tokenVerifier,
+        PlayerIdentityLinker $identityLinker,
+    ) {
         $request->validate([
             'id_token' => 'required|string',
         ]);
@@ -291,13 +293,14 @@ class PlayerAuthController extends V1BaseController
                 return $this->errorResponse('User does not have player privileges.', 403);
             }
 
+            $identityLinker->refreshAvatarUrl($identity, $claims['picture'] ?? null);
             $identity->touchLastLogin();
 
             $token = $player->createToken('player-google-token')->plainTextToken;
 
             return $this->successResponse([
                 'token' => $token,
-                'player' => new PlayerResource($player->loadMissing(['identities.email'])),
+                'player' => new AppPlayerResource($player->loadMissing(['identities.email'])),
                 'user_type' => 'player',
             ], 'Player authenticated successfully');
         } catch (\Exception $e) {
@@ -357,7 +360,7 @@ class PlayerAuthController extends V1BaseController
         $player = $request->user()->loadMissing(['identities.email']);
 
         return $this->resourceResponse(
-            new PlayerResource($player),
+            new AppPlayerResource($player),
             'Player profile retrieved successfully'
         );
     }
@@ -453,7 +456,7 @@ class PlayerAuthController extends V1BaseController
 
         return $this->successResponse([
             'token' => $token,
-            'player' => new PlayerResource($player->fresh()->loadMissing(['identities.email'])),
+            'player' => new AppPlayerResource($player->fresh()->loadMissing(['identities.email'])),
             'user_type' => 'player',
         ], 'Player logged in successfully');
     }

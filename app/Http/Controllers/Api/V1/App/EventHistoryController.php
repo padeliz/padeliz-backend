@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1\App;
 
-use App\Models\PadelEvent;
 use App\Models\EventParticipation;
+use App\Models\PadelEvent;
 use Illuminate\Http\Request;
 
 /**
  * @OA\Tag(
  *     name="🐥 App: Event History",
- *     description="(v1) Player event history"
+ *     description="(v1) Player event history (My Participations)"
  * )
  */
 class EventHistoryController extends \App\Http\Controllers\BaseVersions\V1\V1BaseController
@@ -47,7 +47,7 @@ class EventHistoryController extends \App\Http\Controllers\BaseVersions\V1\V1Bas
             ->where('player_id', $playerId)
             ->whereIn('event_id', $pageEditionIds)
             ->with([
-                'event:id_event,name,date',
+                'event:id_event,name,date,slug',
                 'eventDivision.division:id_division,name',
             ])
             ->get()
@@ -56,7 +56,7 @@ class EventHistoryController extends \App\Http\Controllers\BaseVersions\V1\V1Bas
         $data = [];
         foreach ($pageEditionIds as $editionId) {
             $group = $participations->get($editionId) ?? collect();
-            /** @var EventParticipation|null $first */
+            /** @var null|EventParticipation $first */
             $first = $group->first();
             $event = $first?->event;
             if ($event === null) {
@@ -79,6 +79,7 @@ class EventHistoryController extends \App\Http\Controllers\BaseVersions\V1\V1Bas
             $data[] = [
                 'id_event' => (int) $event->id_event,
                 'name' => (string) $event->name,
+                'slug' => $event->slug !== null && $event->slug !== '' ? (string) $event->slug : null,
                 'date' => (string) ($event->formatted_date ?? $event->date),
                 'division_titles' => $titles,
             ];

@@ -5,12 +5,13 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\App;
 
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventParticipation;
 use App\Models\EventRegistration;
-use App\Models\Eligibility;
+use App\Models\PadelEvent;
 use App\Models\Player;
+use App\Models\PlayerLevel;
+use App\Models\PlayerStudentProof;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -42,11 +43,7 @@ class EventRegistrationControllerTest extends TestCase
             'entry_fee' => 55,
         ]);
 
-        Eligibility::factory()->create([
-            'player_id' => $this->player->id_player,
-            'review_status' => 'approved',
-            'being_student' => false,
-        ]);
+        PlayerLevel::factory()->level('4.50')->create(['player_id' => $this->player->id_player]);
     }
 
     public function test_store_rejects_when_registration_deadline_passed(): void
@@ -129,7 +126,7 @@ class EventRegistrationControllerTest extends TestCase
 
     public function test_store_snapshots_division_entry_fee_and_marks_student_flag(): void
     {
-        Eligibility::query()->where('player_id', $this->player->id_player)->update(['being_student' => true]);
+        PlayerStudentProof::factory()->approved()->create(['player_id' => $this->player->id_player]);
         Sanctum::actingAs($this->player);
 
         $response = $this->postJson('/api/v1/app/event-registrations', [
@@ -189,9 +186,9 @@ class EventRegistrationControllerTest extends TestCase
         ])->assertStatus(201);
     }
 
-    public function test_store_forbidden_without_approved_eligibility(): void
+    public function test_store_forbidden_without_player_level(): void
     {
-        Eligibility::query()->where('player_id', $this->player->id_player)->delete();
+        PlayerLevel::query()->where('player_id', $this->player->id_player)->delete();
         Sanctum::actingAs($this->player);
 
         $this->postJson('/api/v1/app/event-registrations', [

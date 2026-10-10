@@ -36,6 +36,16 @@ class EventRegistrationSchemaTest extends TestCase
         $this->assertFalse(Schema::hasColumn('events', 'students_entry_fee'));
         $this->assertTrue(Schema::hasColumn('event_divisions', 'entry_fee'));
 
+        $entryFeeColumn = collect(Schema::getColumns('event_divisions'))
+            ->firstWhere('name', 'entry_fee');
+        $this->assertNotNull($entryFeeColumn);
+        $this->assertFalse((bool) ($entryFeeColumn['nullable'] ?? true));
+        $default = $entryFeeColumn['default'] ?? null;
+        $this->assertTrue(
+            $default === null || $default === '',
+            'event_divisions.entry_fee must have no DB default'
+        );
+
         $activeDivisionUnique = collect(Schema::getIndexes('event_registrations'))->first(function (array $index): bool {
             $columns = $index['columns'] ?? [];
 

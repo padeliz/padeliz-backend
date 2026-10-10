@@ -5,9 +5,10 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventParticipation;
+use App\Models\Level;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -153,6 +154,79 @@ class DivisionControllerTest extends TestCase
             'name' => 'Updated Name',
             'color' => '#0000FF',
         ]);
+    }
+
+    /**
+     * @return array{0: Division, 1: EventDivision, 2: list<int>}
+     */
+    private function divisionWithEventDivisionBounds(): array
+    {
+        $division = Division::factory()->create([
+            'level_min' => '4.99',
+            'level_max' => '4.00',
+        ]);
+        $eventDivision = EventDivision::factory()->create([
+            'division_id' => $division->id_division,
+            'level_min' => '4.80',
+            'level_max' => '4.20',
+        ]);
+        $levelIds = Level::query()->orderBy('id_level')->limit(2)->pluck('id_level')->map(fn ($id) => (int) $id)->all();
+        $this->assertCount(2, $levelIds);
+
+        return [$division, $eventDivision, $levelIds];
+    }
+
+    private function assertBoundsUntouched(Division $division, EventDivision $eventDivision): void
+    {
+        $this->assertDatabaseHas('divisions', [
+            'id_division' => $division->id_division,
+            'level_min' => '4.99',
+            'level_max' => '4.00',
+        ]);
+        $this->assertDatabaseHas('event_divisions', [
+            'id_event_division' => $eventDivision->id_event_division,
+            'level_min' => '4.80',
+            'level_max' => '4.20',
+        ]);
+    }
+
+    public function test_put_level_ids_sync_does_not_rewrite_division_or_event_division_bounds(): void
+    {
+        Sanctum::actingAs($this->manager);
+        [$division, $eventDivision, $levelIds] = $this->divisionWithEventDivisionBounds();
+
+        $this->putJson("/api/v1/manager/divisions/{$division->id_division}", [
+            'name' => $division->name,
+            'color' => $division->color,
+            'its_first_event_id' => $division->its_first_event_id,
+            'level_ids' => $levelIds,
+        ])->assertOk();
+
+        $this->assertEqualsCanonicalizing(
+            $levelIds,
+            $division->fresh()->levels()->pluck('levels.id_level')->map(fn ($id) => (int) $id)->all()
+        );
+        $this->assertBoundsUntouched($division, $eventDivision);
+    }
+
+    public function test_patch_level_ids_sync_does_not_rewrite_division_or_event_division_bounds(): void
+    {
+        Sanctum::actingAs($this->manager);
+        [$division, $eventDivision, $levelIds] = $this->divisionWithEventDivisionBounds();
+
+        $this->patchJson("/api/v1/manager/divisions/{$division->id_division}", [
+            'level_ids' => $levelIds,
+        ])->assertOk();
+
+        $this->assertCount(2, $division->fresh()->levels);
+
+        // Re-syncing to a smaller set still leaves every bound alone.
+        $this->patchJson("/api/v1/manager/divisions/{$division->id_division}", [
+            'level_ids' => [$levelIds[0]],
+        ])->assertOk();
+
+        $this->assertCount(1, $division->fresh()->levels);
+        $this->assertBoundsUntouched($division, $eventDivision);
     }
 
     public function test_manager_can_partially_update_division()

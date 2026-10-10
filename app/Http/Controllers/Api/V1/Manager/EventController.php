@@ -259,6 +259,10 @@ class EventController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
         $payload['description'] = $this->sanitizeDescriptionOrFail((string) $payload['description']);
         $payload['arriving_time'] = PlayingWindow::normalizeStoredTime((string) $payload['arriving_time']);
         $payload['closing_time'] = PlayingWindow::normalizeStoredTime((string) $payload['closing_time']);
+        $this->assertDistinctArrivingClosingWindow(
+            (string) $payload['arriving_time'],
+            (string) $payload['closing_time']
+        );
         $payload['include_club_host_on_pdf'] = $request->has('include_club_host_on_pdf')
             ? $request->boolean('include_club_host_on_pdf')
             : true;
@@ -369,6 +373,10 @@ class EventController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
         $payload['description'] = $this->sanitizeDescriptionOrFail((string) $payload['description']);
         $payload['arriving_time'] = PlayingWindow::normalizeStoredTime((string) $payload['arriving_time']);
         $payload['closing_time'] = PlayingWindow::normalizeStoredTime((string) $payload['closing_time']);
+        $this->assertDistinctArrivingClosingWindow(
+            (string) $payload['arriving_time'],
+            (string) $payload['closing_time']
+        );
         if ($request->has('include_club_host_on_pdf')) {
             $payload['include_club_host_on_pdf'] = $request->boolean('include_club_host_on_pdf');
         }
@@ -417,7 +425,7 @@ class EventController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *             @OA\Property(property="date", type="string", format="date", description="PadelEvent date"),
      *             @OA\Property(property="location_id", type="integer", description="Location ID"),
      *             @OA\Property(property="organizer_id", type="integer", nullable=true, description="Organizer branding owner"),
-             *             @OA\Property(property="include_club_host_on_pdf", type="boolean", description="Whether posters show the hosting club logo"),
+     *             @OA\Property(property="include_club_host_on_pdf", type="boolean", description="Whether posters show the hosting club logo"),
      *             @OA\Property(property="arriving_time", type="string", format="time", description="Arriving time"),
      *             @OA\Property(property="closing_time", type="string", format="time", description="Closing time"),
      *             @OA\Property(property="registration_allowed_until", type="integer", format="timestamp", description="Unix timestamp until which players may register"),
@@ -489,6 +497,15 @@ class EventController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
         }
         if (array_key_exists('closing_time', $payload) && $payload['closing_time'] !== null && $payload['closing_time'] !== '') {
             $payload['closing_time'] = PlayingWindow::normalizeStoredTime((string) $payload['closing_time']);
+        }
+        if (
+            (array_key_exists('arriving_time', $payload) && $payload['arriving_time'] !== null && $payload['arriving_time'] !== '')
+            || (array_key_exists('closing_time', $payload) && $payload['closing_time'] !== null && $payload['closing_time'] !== '')
+        ) {
+            $this->assertDistinctArrivingClosingWindow(
+                (string) ($payload['arriving_time'] ?? $event->getAttributes()['arriving_time']),
+                (string) ($payload['closing_time'] ?? $event->getAttributes()['closing_time'])
+            );
         }
         if ($request->has('include_club_host_on_pdf')) {
             $payload['include_club_host_on_pdf'] = $request->boolean('include_club_host_on_pdf');
@@ -681,6 +698,17 @@ class EventController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
             'event',
             'Events deleted successfully'
         );
+    }
+
+    private function assertDistinctArrivingClosingWindow(string $start, string $end): void
+    {
+        if (PlayingWindow::windowsAreDistinct($start, $end)) {
+            return;
+        }
+
+        throw ValidationException::withMessages([
+            'closing_time' => ['Arriving time and closing time must differ.'],
+        ]);
     }
 
     /**

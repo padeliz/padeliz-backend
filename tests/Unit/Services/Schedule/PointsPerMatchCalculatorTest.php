@@ -24,7 +24,6 @@ final class PointsPerMatchCalculatorTest extends TestCase
             'sub-hour window yields 0 hours' => ['12:00', '12:45', 4, (int) floor(ceil(110 * 0 - 1 + 20 / 60) / 4)],
             'accepts H:i:s' => ['14:00:00', '17:00:00', 8, (int) floor(ceil(110 * 3 - 1 + 20 / 60) / 8)],
             'overnight ~6h' => ['18:00', '00:00', 8, (int) floor(ceil(110 * 6 - 1 + 20 / 60) / 8)],
-            'end of day 24:00 ~6h' => ['18:00', '24:00:00', 8, (int) floor(ceil(110 * 6 - 1 + 20 / 60) / 8)],
         ];
     }
 

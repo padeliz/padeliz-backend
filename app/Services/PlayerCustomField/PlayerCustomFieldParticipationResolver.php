@@ -18,7 +18,7 @@ final class PlayerCustomFieldParticipationResolver
      *     field_id: int,
      *     label: string,
      *     value: string,
-     *     recent_answers: list<array{value: string, edition_name: null|string, inserted_date: string}>
+     *     recent_answers: list<array{value: string, submitted_via: string, inserted_date: string}>
      * }>>
      */
     public function resolveForPlayers(
@@ -49,17 +49,11 @@ final class PlayerCustomFieldParticipationResolver
         $activeFieldIds = $fields->keys()->map(static fn ($id): int => (int) $id)->all();
 
         $rows = PlayerCustomFieldValue::query()
-            ->with(['field', 'selectedOptions', 'event'])
+            ->with(['field', 'selectedOptions'])
             ->whereIn('player_id', $playerIds)
             ->whereIn('player_custom_field_id', $activeFieldIds)
-            ->whereNull('invalidated_at')
-            ->where(function ($query) use ($cutoffDateYmd): void {
-                $query->whereNull('event_id')
-                    ->orWhereHas('event', function ($editionQuery) use ($cutoffDateYmd): void {
-                        $editionQuery->whereDate('date', '<=', $cutoffDateYmd);
-                    });
-            })
-            ->orderBy('inserted_at')
+            ->validated()
+            ->orderBy('reviewed_at')
             ->orderBy('id_player_custom_field_value')
             ->get();
 
@@ -75,31 +69,25 @@ final class PlayerCustomFieldParticipationResolver
             $entries = [];
             foreach ($fields as $field) {
                 $fieldId = (int) $field->id_player_custom_field;
-                $candidates = $grouped[$playerId][$fieldId] ?? [];
+                $candidates = array_values(array_filter(
+                    $grouped[$playerId][$fieldId] ?? [],
+                    fn (PlayerCustomFieldValue $row): bool => $this->isEligible($row, $cutoffDateYmd)
+                ));
                 if ($candidates === []) {
                     continue;
                 }
 
-                $valueRow = $this->pickBestValue($candidates, $editionId);
-                if ($valueRow === null) {
-                    continue;
-                }
-
+                $valueRow = $candidates[array_key_last($candidates)];
                 $display = $this->scalarString($valueRow, $field);
                 if ($display === null || $display === '') {
                     continue;
                 }
 
-                $tipCandidates = array_values(array_filter(
-                    $candidates,
-                    fn (PlayerCustomFieldValue $row): bool => $this->isEligible($row, $cutoffDateYmd)
-                ));
-
                 $entries[] = [
                     'field_id' => $fieldId,
                     'label' => (string) $field->label,
                     'value' => $display,
-                    'recent_answers' => $this->buildRecentAnswers($tipCandidates, $field),
+                    'recent_answers' => $this->buildRecentAnswers($candidates, $field),
                 ];
             }
 
@@ -113,7 +101,7 @@ final class PlayerCustomFieldParticipationResolver
 
     /**
      * @param  list<PlayerCustomFieldValue>  $candidates  inserted_at ASC
-     * @return list<array{value: string, edition_name: null|string, inserted_date: string}>
+     * @return list<array{value: string, submitted_via: string, inserted_date: string}>
      */
     private function buildRecentAnswers(array $candidates, PlayerCustomField $field): array
     {
@@ -126,9 +114,7 @@ final class PlayerCustomFieldParticipationResolver
 
             $answers[] = [
                 'value' => $display,
-                'edition_name' => $row->event_id === null
-                    ? null
-                    : (string) ($row->event?->name ?? ''),
+                'submitted_via' => (string) $row->submitted_via,
                 'inserted_date' => $this->insertedDateYmd($row),
             ];
         }
@@ -140,22 +126,12 @@ final class PlayerCustomFieldParticipationResolver
         return array_slice($answers, -2);
     }
 
+    /**
+     * Values are no longer edition-scoped, so only the submission date gates them.
+     */
     private function isEligible(PlayerCustomFieldValue $row, string $cutoffDateYmd): bool
     {
-        if ($row->event_id === null) {
-            return $this->insertedDateYmd($row) <= $cutoffDateYmd;
-        }
-
-        $event = $row->event;
-        if ($event === null) {
-            return false;
-        }
-
-        if ($event->date instanceof \DateTimeInterface) {
-            return $event->date->format('Y-m-d') <= $cutoffDateYmd;
-        }
-
-        return (string) ($event->formatted_date ?? '') <= $cutoffDateYmd;
+        return $this->insertedDateYmd($row) <= $cutoffDateYmd;
     }
 
     private function insertedDateYmd(PlayerCustomFieldValue $row): string
@@ -166,32 +142,6 @@ final class PlayerCustomFieldParticipationResolver
         }
 
         return Carbon::createFromTimestamp($ts, config('app.timezone'))->format('Y-m-d');
-    }
-
-    /**
-     * @param  list<PlayerCustomFieldValue>  $candidates  oldest-first
-     */
-    private function pickBestValue(array $candidates, int $editionId): ?PlayerCustomFieldValue
-    {
-        $editionScoped = [];
-        $global = [];
-        foreach ($candidates as $row) {
-            if ($row->event_id !== null && (int) $row->event_id === $editionId) {
-                $editionScoped[] = $row;
-            } elseif ($row->event_id === null) {
-                $global[] = $row;
-            }
-        }
-
-        if ($editionScoped !== []) {
-            return $editionScoped[array_key_last($editionScoped)];
-        }
-
-        if ($global !== []) {
-            return $global[array_key_last($global)];
-        }
-
-        return null;
     }
 
     private function scalarString(PlayerCustomFieldValue $value, PlayerCustomField $field): ?string
@@ -213,6 +163,10 @@ final class PlayerCustomFieldParticipationResolver
             ));
 
             return $labels === [] ? null : implode(', ', $labels);
+        }
+
+        if (is_array($resolved)) {
+            return json_encode($resolved) ?: null;
         }
 
         if (is_bool($resolved)) {

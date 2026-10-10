@@ -15,7 +15,8 @@ final class PlayerIdentityLinkResult
     public function __construct(
         public readonly string $status,
         public readonly PlayerIdentity $identity,
-    ) {}
+    ) {
+    }
 
     public function wasAlreadyLinked(): bool
     {

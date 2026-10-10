@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace App\Services\Pdf;
 
 use App\Models\Club;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventDivisionCourt;
 use App\Models\EventDivisionPoster;
 use App\Models\GameMatch;
 use App\Models\MatchPlayer;
 use App\Models\Organizer;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Services\Schedule\PlayingWindow;
 use App\Services\Schedule\PointsPerMatchCalculator;
@@ -23,7 +23,7 @@ use Mpdf\Mpdf;
 use Mpdf\Output\Destination;
 use RuntimeException;
 
-final class PosterPdfService
+class PosterPdfService
 {
     /** @var list<string> */
     private array $ephemeralTemps = [];

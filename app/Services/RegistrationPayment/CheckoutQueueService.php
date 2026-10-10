@@ -9,7 +9,6 @@ use App\Enums\Registration\PaymentAttemptStatus;
 use App\Enums\Registration\PaymentProofReviewStatus;
 use App\Enums\Registration\PaymentRefundStatus;
 use App\Enums\Registration\RegistrationPaymentStatus;
-use App\Models\EventRegistration;
 use App\Models\EventRegistrationCheckout;
 use Illuminate\Database\Eloquent\Builder;
 use InvalidArgumentException;

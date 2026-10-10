@@ -143,7 +143,7 @@ use App\Traits\HasAdvancedPagination;
  *         property="sortable_fields",
  *         type="array",
  *         @OA\Items(type="string"),
- *         example={"name", "first_name", "last_name", "skill_division", "inserted_at"}
+ *         example={"name", "first_name", "last_name", "inserted_at"}
  *     )
  * )
  *

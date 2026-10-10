@@ -5,18 +5,16 @@ declare(strict_types=1);
 namespace App\Services\Pricing;
 
 use App\Enums\Benefit\BenefitSelectionSource;
-use App\Enums\Registration\CheckoutItemStatus;
+use App\Enums\Referral\ReferralAttributionStatus;
 use App\Enums\Registration\RegistrationPaymentStatus;
 use App\Models\BenefitDefinition;
 use App\Models\BenefitEntitlement;
 use App\Models\BenefitRedemption;
 use App\Models\EventReferralAttribution;
 use App\Models\EventRegistration;
-use App\Models\EventRegistrationCheckout;
 use App\Models\EventRegistrationCheckoutItem;
-use App\Models\Eligibility;
 use App\Models\Player;
-use App\Enums\Referral\ReferralAttributionStatus;
+use App\Models\PlayerStudentProof;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
 
@@ -99,7 +97,6 @@ final class PricingService
             eventDivision: $context->eventDivision,
             registration: $context->registration,
             checkout: $context->checkout,
-            eligibility: $context->eligibility,
             now: $context->now,
             selectedBenefitIds: $selectedBenefitIds,
             selectedReferrerPlayerId: $context->selectedReferrerPlayerId,
@@ -172,7 +169,7 @@ final class PricingService
         $item->save();
     }
 
-    public function revalidateStudentOnPay(EventRegistrationCheckoutItem $item, ?Eligibility $eligibility): void
+    public function revalidateStudentOnPay(EventRegistrationCheckoutItem $item): void
     {
         $registration = $item->registration()->firstOrFail();
         if ($registration->feesAreLocked()) {
@@ -186,7 +183,7 @@ final class PricingService
             return;
         }
 
-        $isStudent = (bool) ($eligibility?->being_student ?? false);
+        $isStudent = PlayerStudentProof::hasActiveFor((int) $registration->player_id);
         $existing = BenefitRedemption::query()
             ->where('checkout_item_id', $item->id_checkout_item)
             ->where('benefit_definition_id', $studentBenefit->id_benefit)
@@ -335,7 +332,6 @@ final class PricingService
 
     public function buildContextForRegistration(
         EventRegistration $registration,
-        ?Eligibility $eligibility = null,
         array $selectedBenefitIds = [],
         ?int $selectedReferrerPlayerId = null,
         bool $hasReferrerSelected = false,
@@ -348,7 +344,6 @@ final class PricingService
             eventDivision: $registration->eventDivision,
             registration: $registration,
             checkout: $registration->latestCheckoutItem?->checkout,
-            eligibility: $eligibility,
             now: time(),
             selectedBenefitIds: $selectedBenefitIds,
             selectedReferrerPlayerId: $selectedReferrerPlayerId,

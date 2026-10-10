@@ -6,7 +6,7 @@ namespace App\Http\Controllers\Api\V1\App;
 
 use App\Http\Requests\App\PlayerProfileImageUploadRequest;
 use App\Http\Requests\PlayerFormRequest;
-use App\Http\Resources\PlayerResource;
+use App\Http\Resources\AppPlayerResource;
 use App\Models\Player;
 use App\Models\PlayerEmail;
 use App\Models\PlayerPhone;
@@ -71,7 +71,7 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
         $player->load(['emails', 'phones']);
 
         return $this->resourceResponse(
-            new PlayerResource($player),
+            new AppPlayerResource($player),
             'Player profile updated successfully',
             201
         );
@@ -108,7 +108,7 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
         $player->load(['participations.event', 'participations.eventDivision']);
 
         return $this->resourceResponse(
-            new PlayerResource($player),
+            new AppPlayerResource($player),
             'Player details retrieved successfully'
         );
     }
@@ -129,16 +129,9 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
      *         required=true,
      *         @OA\JsonContent(
      *             @OA\Property(property="phone", type="string", maxLength=255),
-     *             @OA\Property(property="skill_division", type="number", format="float", maximum=9.9),
      *             @OA\Property(property="first_name", type="string", maxLength=50),
      *             @OA\Property(property="middle_name", type="string", maxLength=50),
-     *             @OA\Property(property="last_name", type="string", maxLength=50),
-     *             @OA\Property(property="year_of_birth", type="integer", minimum=1900, maximum=9999),
-     *             @OA\Property(property="being_student", type="integer", enum={0, 1}, description="Being student (use 0 or 1, not true/false)"),
-     *             @OA\Property(property="playtomic_id", type="string", maxLength=10),
-     *             @OA\Property(property="rankedin_id", type="string", maxLength=15),
-     *             @OA\Property(property="instagram_username", type="string", maxLength=50),
-     *             @OA\Property(property="facebook_username", type="string", maxLength=50)
+     *             @OA\Property(property="last_name", type="string", maxLength=50)
      *         )
      *     ),
      *     @OA\Response(
@@ -177,7 +170,7 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
         $player->load(['emails', 'phones']);
 
         return $this->resourceResponse(
-            new PlayerResource($player),
+            new AppPlayerResource($player),
             'Player profile updated successfully'
         );
     }
@@ -271,19 +264,29 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
         /** @var Player $player */
         $player = $request->user();
 
-        if ($player->profileImages()->count() >= PlayerProfileImage::MAX_PER_PLAYER) {
-            return $this->errorResponse(
-                'Maximum number of profile images (3) reached. Delete an existing image first.',
-                422
-            );
-        }
-
         try {
             app(\App\Services\PlayerProfileImage\PlayerProfileImageUploadService::class)
                 ->upload($player, $request->file('image'), [
                     'uploaded_via' => PlayerProfileImage::UPLOADED_VIA_APP,
                     'is_pdf_primary' => false,
                 ]);
+        } catch (\RuntimeException $e) {
+            if (str_contains($e->getMessage(), 'Maximum number of profile images')) {
+                return $this->errorResponse($e->getMessage(), 422);
+            }
+
+            Log::error('PlayerController::uploadImage - Error uploading file', [
+                'player_id' => $player->id_player,
+                'error' => $e->getMessage(),
+                'file_name' => $request->file('image')->getClientOriginalName(),
+                'file_size' => $request->file('image')->getSize(),
+                'file_mime' => $request->file('image')->getMimeType(),
+            ]);
+
+            return $this->errorResponse(
+                'The image failed to upload. Please try again with a different image.',
+                422
+            );
         } catch (\Throwable $e) {
             Log::error('PlayerController::uploadImage - Error uploading file', [
                 'player_id' => $player->id_player,

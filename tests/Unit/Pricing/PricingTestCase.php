@@ -8,13 +8,12 @@ use App\Enums\Registration\CheckoutItemStatus;
 use App\Enums\Registration\CheckoutStatus;
 use App\Enums\Registration\RegistrationPaymentStatus;
 use App\Models\Club;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventRegistration;
 use App\Models\EventRegistrationCheckout;
 use App\Models\EventRegistrationCheckoutItem;
-use App\Models\Eligibility;
 use App\Models\Location;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Services\Pricing\BenefitDiscoveryService;
 use App\Services\Pricing\PricingContext;
@@ -46,7 +45,6 @@ abstract class PricingTestCase extends TestCase
      *   registration: EventRegistration,
      *   checkout: EventRegistrationCheckout,
      *   item: EventRegistrationCheckoutItem,
-     *   eligibility: ?Eligibility,
      *   club: Club,
      *   location: Location
      * }
@@ -54,7 +52,6 @@ abstract class PricingTestCase extends TestCase
     protected function seedRegistrationFixture(
         int $payment = 100,
         ?string $editionDate = null,
-        ?Eligibility $eligibility = null,
         RegistrationPaymentStatus $paymentStatus = RegistrationPaymentStatus::Unpaid,
         ?Club $club = null,
     ): array {
@@ -101,7 +98,6 @@ abstract class PricingTestCase extends TestCase
             'registration' => $registration,
             'checkout' => $checkout,
             'item' => $item,
-            'eligibility' => $eligibility,
             'club' => $club,
             'location' => $location,
         ];
@@ -112,7 +108,6 @@ abstract class PricingTestCase extends TestCase
         array $selectedBenefitIds = [],
         ?int $now = null,
         bool $hasReferrerSelected = false,
-        ?Eligibility $eligibility = null,
     ): PricingContext {
         return new PricingContext(
             player: $fixture['player'],
@@ -120,7 +115,6 @@ abstract class PricingTestCase extends TestCase
             eventDivision: $fixture['eventDivision'],
             registration: $fixture['registration'],
             checkout: $fixture['checkout'],
-            eligibility: $eligibility ?? $fixture['eligibility'],
             now: $now ?? time(),
             selectedBenefitIds: $selectedBenefitIds,
             hasReferrerSelected: $hasReferrerSelected,

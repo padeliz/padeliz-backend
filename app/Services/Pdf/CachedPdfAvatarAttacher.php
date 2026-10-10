@@ -142,7 +142,7 @@ final class CachedPdfAvatarAttacher
     }
 
     /**
-     * Overlay pdf_avatar_url on a single player show payload.
+     * Overlay pdf_avatar_url and the per-variant cached_pdf_images on a single player show payload.
      *
      * @param  array<string, mixed>  $player
      */
@@ -152,6 +152,30 @@ final class CachedPdfAvatarAttacher
         $player['pdf_avatar_url'] = $id > 0
             ? CachedPdfPlayerImage::urlForPlayerPreferCollecting($id)
             : null;
+        $player['cached_pdf_images'] = $id > 0
+            ? $this->cachedImagesPayload($id)
+            : [];
+    }
+
+    /**
+     * Cached circular avatar rows for a player, `is_collecting_points = true` first.
+     *
+     * @return list<array{id_cached_pdf_player_image: int, player_is_collecting_points: bool, url: null|string, updated_at: null|int}>
+     */
+    private function cachedImagesPayload(int $playerId): array
+    {
+        return CachedPdfPlayerImage::query()
+            ->where('player_id', $playerId)
+            ->orderByDesc('player_is_collecting_points')
+            ->get()
+            ->map(static fn (CachedPdfPlayerImage $image): array => [
+                'id_cached_pdf_player_image' => (int) $image->id_cached_pdf_player_image,
+                'player_is_collecting_points' => (bool) $image->player_is_collecting_points,
+                'url' => $image->url,
+                'updated_at' => $image->updated_at,
+            ])
+            ->values()
+            ->all();
     }
 
     /**

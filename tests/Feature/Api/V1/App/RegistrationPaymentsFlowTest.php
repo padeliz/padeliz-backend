@@ -8,10 +8,10 @@ use App\Enums\Registration\RegistrationLifecycleStatus;
 use App\Enums\Registration\RegistrationPaymentStatus;
 use App\Models\BankTransferSettings;
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
-use App\Models\Eligibility;
+use App\Models\PadelEvent;
 use App\Models\Player;
+use App\Models\PlayerLevel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
@@ -73,11 +73,7 @@ class RegistrationPaymentsFlowTest extends TestCase
             'division_title' => $division->name,
             'players_limit' => 10,
         ]);
-        Eligibility::factory()->create([
-            'player_id' => $this->player->id_player,
-            'review_status' => 'approved',
-            'being_student' => false,
-        ]);
+        PlayerLevel::factory()->level('4.50')->create(['player_id' => $this->player->id_player]);
         BankTransferSettings::factory()->create();
     }
 
@@ -104,10 +100,7 @@ class RegistrationPaymentsFlowTest extends TestCase
 
         // Same player cannot mix edition-wide; use new player for zero fee
         $player2 = Player::factory()->playerOnly()->create();
-        Eligibility::factory()->create([
-            'player_id' => $player2->id_player,
-            'review_status' => 'approved',
-        ]);
+        PlayerLevel::factory()->level('4.50')->create(['player_id' => $player2->id_player]);
         Sanctum::actingAs($player2);
 
         $this->postJson('/api/v1/app/event-registrations', [
@@ -197,7 +190,7 @@ class RegistrationPaymentsFlowTest extends TestCase
         ])->assertStatus(422);
 
         $player2 = Player::factory()->playerOnly()->create();
-        Eligibility::factory()->create(['player_id' => $player2->id_player, 'review_status' => 'approved']);
+        PlayerLevel::factory()->level('4.50')->create(['player_id' => $player2->id_player]);
         Sanctum::actingAs($player2);
         $id2 = $this->postJson('/api/v1/app/event-registrations', [
             'event_id' => $this->event->id_event,

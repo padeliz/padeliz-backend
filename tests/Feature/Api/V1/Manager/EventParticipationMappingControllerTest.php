@@ -6,13 +6,13 @@ namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Court;
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventDivisionCourt;
 use App\Models\EventLotteryLucky;
 use App\Models\EventParticipation;
 use App\Models\EventRegistration;
 use App\Models\GameMatch;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;

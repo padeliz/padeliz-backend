@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -26,6 +27,40 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class PlayerPhone extends Model
 {
     use HasFactory;
+    use HasResourceMetadata;
+
+    /**
+     * Fields that can be searched
+     */
+    public static array $searchableFields = [
+        'phone',
+    ];
+
+    /**
+     * Fields that can be filtered
+     */
+    public static array $filterableFields = [
+        'player_id',
+        'is_primary',
+    ];
+
+    /**
+     * Fields that can be sorted
+     */
+    public static array $sortableFields = [
+        'id_player_phone',
+        'player_id',
+        'phone',
+        'is_primary',
+        'verified_at',
+        'inserted_at',
+        'updated_at',
+    ];
+
+    /**
+     * Field that will be used to display the phone in the UI
+     */
+    public static ?string $displayField = 'phone';
 
     protected $table = 'player_phones';
 

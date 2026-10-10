@@ -22,7 +22,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *     @OA\Property(
  *         property="type",
  *         type="string",
- *         enum={"text", "integer", "boolean", "date", "single_select", "multi_select"},
+ *         enum={"text", "integer", "boolean", "date", "single_select", "multi_select", "json", "labeled_foreign_id"},
  *         title="Type"
  *     ),
  *     @OA\Property(property="rules_json", type="object", nullable=true, readOnly=true, title="Rules"),

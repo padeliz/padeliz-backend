@@ -6,10 +6,12 @@ namespace App\Http\Controllers\Api\V1\App;
 
 use App\Http\Requests\App\EventDateRangeRequest;
 use App\Http\Resources\EventResource;
+use App\Models\EventParticipation;
 use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Services\EventAppQueryService;
 use App\Services\EventBadgeService;
+use App\Services\PlayerLevel\PlayerLevelService;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 
@@ -24,6 +26,7 @@ class EventController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
     public function __construct(
         private readonly EventAppQueryService $queryService,
         private readonly EventBadgeService $badgeService,
+        private readonly PlayerLevelService $playerLevels,
     ) {
     }
 
@@ -52,6 +55,13 @@ class EventController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *     @OA\Parameter(name="registered", in="query", required=false, @OA\Schema(type="boolean")),
      *     @OA\Parameter(name="unpaid", in="query", required=false, @OA\Schema(type="boolean")),
      *     @OA\Parameter(name="lottery_winner", in="query", required=false, @OA\Schema(type="boolean")),
+     *     @OA\Parameter(
+     *         name="sort",
+     *         in="query",
+     *         required=false,
+     *         description="Order by date then arriving_time. Past tab sends desc; Ongoing/Upcoming use asc (default).",
+     *         @OA\Schema(type="string", enum={"asc", "desc"}, default="asc")
+     *     ),
      *     @OA\Parameter(
      *         name="club_ids[]",
      *         in="query",
@@ -101,6 +111,9 @@ class EventController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
 
         $events = $query->paginate($this->paginationLimit);
         $this->attachBadges($events->getCollection(), $player);
+        if ($player !== null) {
+            $this->attachEligibilityToEvents($events->getCollection(), $player);
+        }
 
         return EventResource::collection($events);
     }
@@ -139,11 +152,57 @@ class EventController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
 
         $player = $this->optionalPlayer();
         $this->attachBadges(collect([$event]), $player);
+        $this->attachEligibilityToEvents(collect([$event]), $player);
+        $event->setAttribute('has_participated', $this->hasParticipated($event, $player));
 
         return $this->resourceResponse(
             new EventResource($event),
             'Event retrieved successfully'
         );
+    }
+
+    /**
+     * `is_eligible` per event division: true when the player has any level and it fits the
+     * division bounds (or the bounds are open). Null for guests, whose answer is unknown.
+     * The player's current level is looked up once for the whole collection.
+     *
+     * @param  \Illuminate\Support\Collection<int, PadelEvent>  $events
+     */
+    private function attachEligibilityToEvents($events, ?Player $player): void
+    {
+        $current = $player !== null
+            ? $this->playerLevels->currentLevel((int) $player->id_player)
+            : null;
+
+        foreach ($events as $event) {
+            foreach ($event->divisions as $division) {
+                $division->setAttribute('is_eligible', match (true) {
+                    $player === null => null,
+                    $current === null => false,
+                    default => PlayerLevelService::levelFitsBounds(
+                        (string) $current->level,
+                        $division->level_min,
+                        $division->level_max
+                    ),
+                });
+            }
+        }
+    }
+
+    /**
+     * True only when the authenticated player has an EventParticipation row for the event
+     * (never inferred from registration / payment badges). Guests always get false.
+     */
+    private function hasParticipated(PadelEvent $event, ?Player $player): bool
+    {
+        if ($player === null) {
+            return false;
+        }
+
+        return EventParticipation::query()
+            ->where('event_id', (int) $event->id_event)
+            ->where('player_id', (int) $player->id_player)
+            ->exists();
     }
 
     private function optionalPlayer(): ?Player

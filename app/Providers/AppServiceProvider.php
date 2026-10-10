@@ -8,12 +8,12 @@ use App\Integrations\RankedinBpt\BptDivisionMapper;
 use App\Integrations\RankedinBpt\BptTopPlayersService;
 use App\Integrations\RankedinBpt\Contracts\BptTopPlayersReportBuilder;
 use App\Integrations\RankedinBpt\RankedinBptClient;
+use App\Models\PadelEvent;
 use App\Services\Cache\PadelizCache;
 use App\Services\PlayerCustomField\Formats\GoogleFormMiniTourWelcomeCsvFormat;
 use App\Services\PlayerCustomField\PlayerCustomFieldValueCsvFormatRegistry;
 use App\Services\PlayerImport\Formats\PlaytomicPlayerCsvFormat;
 use App\Services\PlayerImport\PlayerCsvFormatRegistry;
-use App\Models\PadelEvent;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -59,7 +59,7 @@ class AppServiceProvider extends ServiceProvider
      */
     public function boot()
     {
-        \App\Models\Eligibility::observe(\App\Observers\EligibilityPushObserver::class);
+        \App\Models\PlayerLevelAssessment::observe(\App\Observers\PlayerLevelAssessmentPushObserver::class);
 
         Route::bind('event', static function (string $value): PadelEvent {
             return PadelEvent::query()->whereKey($value)->firstOrFail();

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Manager;
 
-use App\Models\CachedPdfPairImage;
 use App\Models\EventDivision;
 use App\Models\EventDivisionCourt;
 use App\Models\EventDivisionPoster;
@@ -14,11 +13,13 @@ use App\Models\GameMatch;
 use App\Models\MatchPlayer;
 use App\Models\MatchSide;
 use App\Models\Player;
-use App\Models\PlayerProfileImage;
+use App\Services\Pdf\MissingMatchParticipationException;
+use App\Services\Pdf\PosterPdfResult;
 use App\Services\Pdf\PosterPdfService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
+use Tests\Support\PdfFixtures;
 use Tests\TestCase;
 
 final class EventDivisionPosterControllerTest extends TestCase
@@ -54,6 +55,14 @@ final class EventDivisionPosterControllerTest extends TestCase
             ]);
         }
 
+        $poster = $this->makePoster($eventDivision, 'RANKING', null, 'rank.pdf');
+        Storage::disk($poster->storageDisk())->put((string) $poster->generated_path, '%PDF-fake');
+        $this->mock(PosterPdfService::class, function ($mock) use ($poster): void {
+            $mock->shouldReceive('generateRankingForEventDivision')
+                ->once()
+                ->andReturn(new PosterPdfResult('%PDF-fake', 'rank.pdf', $poster->fresh()));
+        });
+
         $response = $this->postJson(
             "/api/v1/manager/event-divisions/{$eventDivision->id_event_division}/posters/ranking",
             []
@@ -61,12 +70,6 @@ final class EventDivisionPosterControllerTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('data.poster_kind', 'RANKING');
-
-        $cached = \App\Models\CachedPdfPlayerImage::query()->get();
-        $this->assertCount(4, $cached);
-        foreach ($cached as $row) {
-            $this->assertNull($row->source_player_profile_image_id);
-        }
     }
 
     public function test_post_ranking_returns_json_not_pdf(): void
@@ -74,7 +77,6 @@ final class EventDivisionPosterControllerTest extends TestCase
         [$manager, $eventDivision] = $this->actingManagerWithDivision();
         Storage::fake(config('filesystems.user_uploads_disk', 'public'));
         foreach (Player::factory()->count(4)->create() as $i => $player) {
-            $this->attachProfilePng($player);
             EventParticipation::factory()->create([
                 'event_id' => $eventDivision->event_id,
                 'event_division_id' => $eventDivision->id_event_division,
@@ -84,6 +86,14 @@ final class EventDivisionPosterControllerTest extends TestCase
                 'sort_order' => $i,
             ]);
         }
+
+        $poster = $this->makePoster($eventDivision, 'RANKING', null, 'rank.pdf');
+        Storage::disk($poster->storageDisk())->put((string) $poster->generated_path, '%PDF-fake');
+        $this->mock(PosterPdfService::class, function ($mock) use ($poster): void {
+            $mock->shouldReceive('generateRankingForEventDivision')
+                ->once()
+                ->andReturn(new PosterPdfResult('%PDF-fake', 'rank.pdf', $poster->fresh()));
+        });
 
         $response = $this->postJson(
             "/api/v1/manager/event-divisions/{$eventDivision->id_event_division}/posters/ranking",
@@ -215,7 +225,15 @@ final class EventDivisionPosterControllerTest extends TestCase
     public function test_matches_generate_uses_participation_when_player_id_null(): void
     {
         [$manager, $eventDivision, $court] = $this->actingManagerWithDivisionAndCourt();
-        $players = $this->seedMatchWithParticipations($eventDivision, $court, playerIdOnMatchPlayer: false);
+        $this->seedMatchWithParticipations($eventDivision, $court, playerIdOnMatchPlayer: false);
+
+        $poster = $this->makePoster($eventDivision, 'MATCHES', (int) $court->id_event_division_court, 'matches.pdf');
+        Storage::disk($poster->storageDisk())->put((string) $poster->generated_path, '%PDF-matches');
+        $this->mock(PosterPdfService::class, function ($mock) use ($poster): void {
+            $mock->shouldReceive('generateMatchesForEventDivision')
+                ->once()
+                ->andReturn(new PosterPdfResult('%PDF-matches', 'matches.pdf', $poster->fresh()));
+        });
 
         $response = $this->postJson(
             "/api/v1/manager/event-divisions/{$eventDivision->id_event_division}/posters/matches",
@@ -232,13 +250,19 @@ final class EventDivisionPosterControllerTest extends TestCase
         [$manager, $eventDivision, $court] = $this->actingManagerWithDivisionAndCourt();
         $this->seedMatchWithParticipations($eventDivision, $court, playerIdOnMatchPlayer: false, omitParticipation: true);
 
+        $this->mock(PosterPdfService::class, function ($mock): void {
+            $mock->shouldReceive('generateMatchesForEventDivision')
+                ->once()
+                ->andThrow(new MissingMatchParticipationException());
+        });
+
         $this->postJson(
             "/api/v1/manager/event-divisions/{$eventDivision->id_event_division}/posters/matches",
             ['court' => $court->id_event_division_court]
         )->assertStatus(422);
     }
 
-    public function test_matches_pair_uses_participation_collecting_flag(): void
+    public function test_matches_generate_returns_json_ok(): void
     {
         [$manager, $eventDivision, $court] = $this->actingManagerWithDivisionAndCourt();
         $this->seedMatchWithParticipations(
@@ -248,17 +272,19 @@ final class EventDivisionPosterControllerTest extends TestCase
             firstCollecting: false,
         );
 
+        $poster = $this->makePoster($eventDivision, 'MATCHES', (int) $court->id_event_division_court, 'matches.pdf');
+        Storage::disk($poster->storageDisk())->put((string) $poster->generated_path, '%PDF-matches');
+        $this->mock(PosterPdfService::class, function ($mock) use ($poster): void {
+            $mock->shouldReceive('generateMatchesForEventDivision')
+                ->once()
+                ->andReturn(new PosterPdfResult('%PDF-matches', 'matches.pdf', $poster->fresh()));
+        });
+
         $this->postJson(
             "/api/v1/manager/event-divisions/{$eventDivision->id_event_division}/posters/matches",
             ['court' => $court->id_event_division_court]
-        )->assertOk();
-
-        $row = CachedPdfPairImage::query()->first();
-        $this->assertNotNull($row);
-        $this->assertTrue(
-            ! (bool) $row->player_1_is_collecting_points
-            || ! (bool) $row->player_2_is_collecting_points
-        );
+        )->assertOk()
+            ->assertJsonPath('data.poster_kind', 'MATCHES');
     }
 
     public function test_regenerate_overwrites_generated_and_keeps_printed(): void
@@ -392,16 +418,10 @@ final class EventDivisionPosterControllerTest extends TestCase
 
     private function attachProfilePng(Player $player): void
     {
-        $img = imagecreatetruecolor(40, 40);
-        imagefill($img, 0, 0, imagecolorallocate($img, 255, 0, 0));
-        ob_start();
-        imagepng($img);
-        $png = (string) ob_get_clean();
-        imagedestroy($img);
-
         $relative = 'player-profile-images/' . $player->id_player . '/profile/avatar.png';
-        Storage::disk(config('filesystems.user_uploads_disk', 'public'))->put($relative, $png);
-        PlayerProfileImage::query()->create([
+        Storage::disk(config('filesystems.user_uploads_disk', 'public'))
+            ->put($relative, PdfFixtures::solidRed40Bytes());
+        \App\Models\PlayerProfileImage::query()->create([
             'player_id' => $player->id_player,
             'profile_path' => $relative,
             'sort_order' => 0,

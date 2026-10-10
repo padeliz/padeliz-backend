@@ -10,7 +10,6 @@ use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Services\EventSlug\EventSlugSync;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Illuminate\Support\Facades\DB;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
@@ -68,13 +67,13 @@ final class EventSlugSyncFeatureTest extends TestCase
             'slug' => 'alpha',
         ]);
 
-        $this->patchJson('/api/v1/manager/events/'.$event->id_event, [
+        $this->patchJson('/api/v1/manager/events/' . $event->id_event, [
             'name' => 'Beta Cup',
         ])->assertOk();
         $this->assertSame('beta-cup', $event->fresh()->slug);
 
         $before = $event->fresh()->slug;
-        $this->patchJson('/api/v1/manager/events/'.$event->id_event, [
+        $this->patchJson('/api/v1/manager/events/' . $event->id_event, [
             'include_club_host_on_pdf' => false,
         ])->assertOk();
         $this->assertSame($before, $event->fresh()->slug);
@@ -92,7 +91,7 @@ final class EventSlugSyncFeatureTest extends TestCase
             'slug' => 'old-club-open',
         ]);
 
-        $this->putJson('/api/v1/manager/organizers/'.$organizer->id_organizer, [
+        $this->putJson('/api/v1/manager/organizers/' . $organizer->id_organizer, [
             'name' => 'New Club',
         ])->assertOk();
 
@@ -115,7 +114,7 @@ final class EventSlugSyncFeatureTest extends TestCase
             $mock->shouldReceive('syncForOrganizer')->once()->andThrow(new \RuntimeException('boom'));
         });
 
-        $this->putJson('/api/v1/manager/organizers/'.$organizer->id_organizer, [
+        $this->putJson('/api/v1/manager/organizers/' . $organizer->id_organizer, [
             'name' => 'Broken Club',
         ])->assertStatus(500);
 

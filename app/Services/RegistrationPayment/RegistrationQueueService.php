@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\RegistrationPayment;
 
-use App\Models\EventRegistration;
 use Illuminate\Database\Eloquent\Builder;
 use InvalidArgumentException;
 

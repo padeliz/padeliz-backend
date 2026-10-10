@@ -518,14 +518,8 @@ class NetopiaPaymentService
     private function revalidateStudentBenefits(EventRegistrationCheckout $checkout): void
     {
         $pricing = app(\App\Services\Pricing\PricingService::class);
-        $eligibility = \App\Models\Eligibility::query()
-            ->where('player_id', $checkout->player_id)
-            ->where('review_status', 'approved')
-            ->latest('id_eligibility')
-            ->first();
-
         foreach ($this->checkoutService->payableActiveItems($checkout) as $item) {
-            $pricing->revalidateStudentOnPay($item, $eligibility);
+            $pricing->revalidateStudentOnPay($item);
         }
 
         $this->checkoutService->recomputeTotals($checkout->fresh(['items.registration']));

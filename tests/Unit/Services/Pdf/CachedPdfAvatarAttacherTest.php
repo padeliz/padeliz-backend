@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Tests\Unit\Services\Pdf;
 
 use App\Models\CachedPdfPlayerImage;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventParticipation;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Services\Pdf\CachedPdfAvatarAttacher;
 use Illuminate\Foundation\Testing\RefreshDatabase;

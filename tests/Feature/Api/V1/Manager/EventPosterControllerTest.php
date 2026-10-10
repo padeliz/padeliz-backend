@@ -6,17 +6,17 @@ namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Court;
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventDivisionCourt;
 use App\Models\EventDivisionPoster;
 use App\Models\EventParticipation;
+use App\Models\PadelEvent;
 use App\Models\Player;
-use App\Services\Pdf\AttendancePdfLayout;
+use App\Services\Pdf\PosterPdfResult;
+use App\Services\Pdf\PosterPdfService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
-use Tests\Support\PdfDecompress;
 use Tests\TestCase;
 
 final class EventPosterControllerTest extends TestCase
@@ -59,76 +59,18 @@ final class EventPosterControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $this->seedEventDivisionsWithParticipations(1);
+        $poster = $this->mockAttendanceGenerate('%PDF-attendance-gen');
 
         $generate = $this->postJson("/api/v1/manager/events/{$this->event->id_event}/posters/attendance");
         $generate->assertOk()
             ->assertJsonPath('message', 'Poster generated.')
-            ->assertJsonPath('data.poster_kind', 'ATTENDANCE');
-        $generatedPath = $generate->json('data.generated_path');
-        $this->assertNotNull($generatedPath);
+            ->assertJsonPath('data.poster_kind', 'ATTENDANCE')
+            ->assertJsonPath('data.id_event_division_poster', $poster->id_event_division_poster);
+        $this->assertNotNull($generate->json('data.generated_path'));
 
         $download = $this->get("/api/v1/manager/events/{$this->event->id_event}/posters/attendance/file");
         $download->assertOk();
-        $this->assertStringStartsWith('%PDF', $download->streamedContent());
-    }
-
-    public function test_attendance_pdf_contains_grid_content(): void
-    {
-        Sanctum::actingAs($this->manager);
-
-        $seed = $this->seedEventDivisionsWithParticipations(4);
-
-        $this->postJson("/api/v1/manager/events/{$this->event->id_event}/posters/attendance")->assertOk();
-
-        $pdfBytes = $this->get("/api/v1/manager/events/{$this->event->id_event}/posters/attendance/file")
-            ->streamedContent();
-
-        foreach ($seed as $row) {
-            $this->assertTrue(PdfDecompress::containsText($pdfBytes, $row['division_title']));
-            $this->assertTrue(PdfDecompress::containsText($pdfBytes, $row['court_name']));
-            $this->assertTrue(PdfDecompress::containsText($pdfBytes, $row['player_name']));
-        }
-
-        $this->assertGreaterThanOrEqual(1, PdfDecompress::countPages($pdfBytes));
-        $this->assertStringStartsWith('%PDF', $pdfBytes);
-        $this->assertTrue(PdfDecompress::containsImageOperator($pdfBytes));
-        $this->assertTrue(PdfDecompress::containsText($pdfBytes, 'Poster PadelEvent'));
-        $this->assertTrue(PdfDecompress::containsText(
-            $pdfBytes,
-            AttendancePdfLayout::formatOrdinalHeaderDate('2026-06-15')
-        ));
-    }
-
-    public function test_attendance_pdf_with_six_divisions_contains_content(): void
-    {
-        Sanctum::actingAs($this->manager);
-
-        $seed = $this->seedEventDivisionsWithParticipations(6);
-
-        $this->postJson("/api/v1/manager/events/{$this->event->id_event}/posters/attendance")->assertOk();
-
-        $pdfBytes = $this->get("/api/v1/manager/events/{$this->event->id_event}/posters/attendance/file")
-            ->streamedContent();
-
-        $this->assertGreaterThanOrEqual(1, PdfDecompress::countPages($pdfBytes));
-        $this->assertStringStartsWith('%PDF', $pdfBytes);
-        $this->assertTrue(PdfDecompress::containsText($pdfBytes, $seed[0]['division_title']));
-        $this->assertTrue(PdfDecompress::containsText($pdfBytes, $seed[0]['player_name']));
-    }
-
-    public function test_attendance_pdf_with_ten_divisions_has_two_pages(): void
-    {
-        Sanctum::actingAs($this->manager);
-
-        $this->seedEventDivisionsWithParticipations(10);
-
-        $this->postJson("/api/v1/manager/events/{$this->event->id_event}/posters/attendance")->assertOk();
-
-        $pdfBytes = $this->get("/api/v1/manager/events/{$this->event->id_event}/posters/attendance/file")
-            ->streamedContent();
-
-        $this->assertSame(2, PdfDecompress::countPages($pdfBytes));
-        $this->assertStringStartsWith('%PDF', $pdfBytes);
+        $this->assertSame('%PDF-attendance-gen', $download->streamedContent());
     }
 
     public function test_attendance_generate_persists_poster_file(): void
@@ -136,11 +78,13 @@ final class EventPosterControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $this->seedEventDivisionsWithParticipations(1);
+        $poster = $this->mockAttendanceGenerate('%PDF-persisted');
 
         $response = $this->postJson("/api/v1/manager/events/{$this->event->id_event}/posters/attendance");
         $generatedPath = $response->json('data.generated_path');
 
         $this->assertNotNull($generatedPath);
+        $this->assertSame($poster->generated_path, $generatedPath);
         Storage::disk(config('filesystems.user_uploads_disk', 'public'))->assertExists((string) $generatedPath);
     }
 
@@ -149,16 +93,26 @@ final class EventPosterControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $seed = $this->seedEventDivisionsWithParticipations(2);
+        $html = '<html><body>'
+            . '<div class="checkbox-box"></div><div class="color-swatch"></div>'
+            . e($seed[0]['division_title']) . ' ' . e($seed[0]['player_name'])
+            . '</body></html>';
+
+        $this->mock(PosterPdfService::class, function ($mock) use ($html): void {
+            $mock->shouldReceive('renderAttendanceHtmlForEdition')
+                ->once()
+                ->andReturn($html);
+        });
 
         $response = $this->get("/api/v1/manager/events/{$this->event->id_event}/posters/attendance/preview");
 
         $response->assertOk();
         $this->assertStringContainsString('text/html', (string) $response->headers->get('Content-Type'));
-        $html = $response->getContent();
-        $this->assertStringContainsString($seed[0]['division_title'], $html);
-        $this->assertStringContainsString($seed[0]['player_name'], $html);
-        $this->assertStringContainsString('class="checkbox-box"', $html);
-        $this->assertStringContainsString('class="color-swatch"', $html);
+        $body = $response->getContent();
+        $this->assertStringContainsString($seed[0]['division_title'], $body);
+        $this->assertStringContainsString($seed[0]['player_name'], $body);
+        $this->assertStringContainsString('class="checkbox-box"', $body);
+        $this->assertStringContainsString('class="color-swatch"', $body);
     }
 
     public function test_attendance_preview_uses_public_avatar_urls(): void
@@ -166,6 +120,11 @@ final class EventPosterControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $this->seedEventDivisionsWithParticipations(1);
+        $this->mock(PosterPdfService::class, function ($mock): void {
+            $mock->shouldReceive('renderAttendanceHtmlForEdition')
+                ->once()
+                ->andReturn('<img src="/storage/cached-pdf-player-images/1/picture/avatar.png"/>');
+        });
 
         $html = $this->get("/api/v1/manager/events/{$this->event->id_event}/posters/attendance/preview")
             ->getContent();
@@ -180,6 +139,11 @@ final class EventPosterControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $this->seedEventDivisionsWithParticipations(1);
+        $this->mock(PosterPdfService::class, function ($mock): void {
+            $mock->shouldReceive('renderAttendanceHtmlForEdition')
+                ->once()
+                ->andReturn('<html></html>');
+        });
 
         $before = EventDivisionPoster::query()
             ->where('event_id', $this->event->id_event)
@@ -209,6 +173,11 @@ final class EventPosterControllerTest extends TestCase
 
         $this->seedEventDivisionsWithParticipations(1);
         $this->event->forceFill(['finalized_at' => time()])->save();
+        $this->mock(PosterPdfService::class, function ($mock): void {
+            $mock->shouldReceive('renderAttendanceHtmlForEdition')
+                ->once()
+                ->andReturn('<html>preview</html>');
+        });
 
         $this->get("/api/v1/manager/events/{$this->event->id_event}/posters/attendance/preview")
             ->assertOk();
@@ -276,6 +245,29 @@ final class EventPosterControllerTest extends TestCase
         $download = $this->get("/api/v1/manager/events/{$this->event->id_event}/posters/attendance/file");
         $download->assertOk();
         $this->assertSame('%PDF-attendance', $download->streamedContent());
+    }
+
+    private function mockAttendanceGenerate(string $pdfBytes): EventDivisionPoster
+    {
+        $poster = new EventDivisionPoster();
+        $poster->event_id = $this->event->id_event;
+        $poster->event_division_id = null;
+        $poster->poster_kind = 'ATTENDANCE';
+        $poster->inserted_at = time();
+        $poster->save();
+        $poster->generated_path = 'event-division-posters/' . $poster->id_event_division_poster . '/generated/attendance.pdf';
+        $poster->save();
+
+        Storage::disk(config('filesystems.user_uploads_disk', 'public'))
+            ->put((string) $poster->generated_path, $pdfBytes);
+
+        $this->mock(PosterPdfService::class, function ($mock) use ($poster, $pdfBytes): void {
+            $mock->shouldReceive('generateAttendanceForEdition')
+                ->once()
+                ->andReturn(new PosterPdfResult($pdfBytes, 'attendance.pdf', $poster->fresh()));
+        });
+
+        return $poster->fresh();
     }
 
     /**

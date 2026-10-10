@@ -6,7 +6,7 @@ namespace App\Enums\Benefit;
 
 enum BenefitConditionType: string
 {
-    case EligibilityFlag = 'eligibility_flag';
+    case StudentProofActive = 'student_proof_active';
     case DaysBeforeEditionDate = 'days_before_edition_date';
     case ReferrerSelected = 'referrer_selected';
     case NoPriorPaidRegistrationInEdition = 'no_prior_paid_registration_in_edition';

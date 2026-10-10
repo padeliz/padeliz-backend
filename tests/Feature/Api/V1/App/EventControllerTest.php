@@ -7,14 +7,15 @@ namespace Tests\Feature\Api\V1\App;
 use App\Enums\Registration\RegistrationPaymentStatus;
 use App\Models\Club;
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventLotteryLucky;
 use App\Models\EventParticipation;
 use App\Models\EventRegistration;
 use App\Models\Location;
 use App\Models\Organizer;
+use App\Models\PadelEvent;
 use App\Models\Player;
+use App\Models\PlayerLevel;
 use App\Services\EventBadgeService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -405,5 +406,247 @@ class EventControllerTest extends TestCase
 
         $keys = collect($response->json('data.0.badges'))->pluck('key')->all();
         $this->assertContains(EventBadgeService::KEY_PENDING_PAYMENT, $keys);
+    }
+
+    /**
+     * @return array<string, mixed>  is_eligible keyed by division title
+     */
+    private function listEligibility(PadelEvent $event, ?Player $player): array
+    {
+        if ($player !== null) {
+            Sanctum::actingAs($player);
+        }
+
+        $date = $event->fresh()->formatted_date;
+        $response = $this->getJson('/api/v1/app/events?' . http_build_query([
+            'date_from' => $date,
+            'date_to' => $date,
+        ]))->assertOk();
+
+        return collect($response->json('data.0.event_divisions'))
+            ->mapWithKeys(fn (array $row): array => [
+                $row['division_title'] => array_key_exists('is_eligible', $row) ? $row['is_eligible'] : 'missing',
+            ])
+            ->all();
+    }
+
+    private function eventWithBoundedDivisions(): PadelEvent
+    {
+        $event = PadelEvent::factory()->create([
+            'date' => Carbon::now($this->tz)->addDays(8)->format('Y-m-d'),
+        ]);
+        foreach ([
+            'inside' => ['4.99', '4.00'],
+            'too-strong' => ['3.99', '3.00'],
+            'open' => [null, null],
+        ] as $title => [$min, $max]) {
+            EventDivision::factory()->create([
+                'event_id' => $event->id_event,
+                'division_id' => Division::factory()->create()->id_division,
+                'division_title' => $title,
+                'level_min' => $min,
+                'level_max' => $max,
+            ]);
+        }
+
+        return $event;
+    }
+
+    public function test_authenticated_list_attaches_per_division_is_eligible_like_show(): void
+    {
+        $event = $this->eventWithBoundedDivisions();
+        $player = Player::factory()->playerOnly()->create();
+        PlayerLevel::factory()->level('4.50')->create(['player_id' => $player->id_player]);
+
+        $this->assertSame(
+            ['inside' => true, 'too-strong' => false, 'open' => true],
+            $this->listEligibility($event, $player)
+        );
+
+        $show = $this->getJson('/api/v1/app/events/' . $event->id_event)->assertOk();
+        $this->assertSame(
+            ['inside' => true, 'too-strong' => false, 'open' => true],
+            collect($show->json('data.event_divisions'))->pluck('is_eligible', 'division_title')->all()
+        );
+    }
+
+    public function test_authenticated_list_marks_every_division_ineligible_without_a_level(): void
+    {
+        $event = $this->eventWithBoundedDivisions();
+        $player = Player::factory()->playerOnly()->create();
+
+        $this->assertSame(
+            ['inside' => false, 'too-strong' => false, 'open' => false],
+            $this->listEligibility($event, $player)
+        );
+    }
+
+    public function test_guest_list_does_not_include_is_eligible(): void
+    {
+        $event = $this->eventWithBoundedDivisions();
+
+        $this->assertSame(
+            ['inside' => 'missing', 'too-strong' => 'missing', 'open' => 'missing'],
+            $this->listEligibility($event, null)
+        );
+    }
+
+    /**
+     * @return list<int>
+     */
+    private function sortedIds(string $query): array
+    {
+        $response = $this->getJson('/api/v1/app/events?' . $query)->assertOk();
+
+        return array_map('intval', $response->json('data.*.id_event'));
+    }
+
+    public function test_list_defaults_to_date_then_arriving_time_ascending(): void
+    {
+        $lateSameDay = PadelEvent::factory()->create(['date' => '2026-04-12', 'arriving_time' => '18:00:00']);
+        $earlySameDay = PadelEvent::factory()->create(['date' => '2026-04-12', 'arriving_time' => '10:00:00']);
+        $earlierDay = PadelEvent::factory()->create(['date' => '2026-04-11', 'arriving_time' => '20:00:00']);
+
+        $ids = $this->sortedIds(http_build_query([
+            'date_from' => '2026-04-01',
+            'date_to' => '2026-04-30',
+        ]));
+
+        $this->assertSame(
+            [$earlierDay->id_event, $earlySameDay->id_event, $lateSameDay->id_event],
+            $ids
+        );
+    }
+
+    public function test_sort_asc_orders_date_and_arriving_time_ascending(): void
+    {
+        $lateSameDay = PadelEvent::factory()->create(['date' => '2026-04-12', 'arriving_time' => '18:00:00']);
+        $earlySameDay = PadelEvent::factory()->create(['date' => '2026-04-12', 'arriving_time' => '10:00:00']);
+        $laterDay = PadelEvent::factory()->create(['date' => '2026-04-13', 'arriving_time' => '09:00:00']);
+
+        $ids = $this->sortedIds(http_build_query([
+            'date_from' => '2026-04-01',
+            'date_to' => '2026-04-30',
+            'sort' => 'asc',
+        ]));
+
+        $this->assertSame(
+            [$earlySameDay->id_event, $lateSameDay->id_event, $laterDay->id_event],
+            $ids
+        );
+    }
+
+    public function test_sort_desc_orders_date_and_arriving_time_descending_for_past_tab(): void
+    {
+        $lateSameDay = PadelEvent::factory()->create(['date' => '2026-04-12', 'arriving_time' => '18:00:00']);
+        $earlySameDay = PadelEvent::factory()->create(['date' => '2026-04-12', 'arriving_time' => '10:00:00']);
+        $laterDay = PadelEvent::factory()->create(['date' => '2026-04-13', 'arriving_time' => '09:00:00']);
+        $earlierDay = PadelEvent::factory()->create(['date' => '2026-04-11', 'arriving_time' => '20:00:00']);
+
+        $ids = $this->sortedIds(http_build_query([
+            'date_from' => '2026-04-01',
+            'date_to' => '2026-04-30',
+            'sort' => 'desc',
+        ]));
+
+        $this->assertSame(
+            [
+                $laterDay->id_event,
+                $lateSameDay->id_event,
+                $earlySameDay->id_event,
+                $earlierDay->id_event,
+            ],
+            $ids
+        );
+    }
+
+    public function test_rejects_invalid_sort_value(): void
+    {
+        $this->getJson('/api/v1/app/events?' . http_build_query([
+            'date_from' => '2026-04-01',
+            'date_to' => '2026-04-30',
+            'sort' => 'sideways',
+        ]))
+            ->assertStatus(422)
+            ->assertJsonStructure(['errors' => ['sort']]);
+    }
+
+    public function test_show_has_participated_true_when_player_has_participation_row(): void
+    {
+        $player = Player::factory()->playerOnly()->create();
+        $event = PadelEvent::factory()->create([
+            'date' => Carbon::now($this->tz)->subDays(5)->format('Y-m-d'),
+        ]);
+        $division = EventDivision::factory()->create(['event_id' => $event->id_event]);
+        EventParticipation::factory()->create([
+            'event_id' => $event->id_event,
+            'event_division_id' => $division->id_event_division,
+            'player_id' => $player->id_player,
+        ]);
+        Sanctum::actingAs($player);
+
+        $this->getJson('/api/v1/app/events/' . $event->id_event)
+            ->assertOk()
+            ->assertJsonPath('data.has_participated', true);
+    }
+
+    public function test_show_has_participated_false_for_paid_registration_without_participation(): void
+    {
+        $player = Player::factory()->playerOnly()->create();
+        $event = PadelEvent::factory()->create([
+            'date' => Carbon::now($this->tz)->subDays(5)->format('Y-m-d'),
+        ]);
+        $division = EventDivision::factory()->create(['event_id' => $event->id_event]);
+        EventRegistration::factory()->forEvent($event)->paid()->create([
+            'player_id' => $player->id_player,
+            'event_division_id' => $division->id_event_division,
+            'payment' => 55,
+        ]);
+        Sanctum::actingAs($player);
+
+        $this->getJson('/api/v1/app/events/' . $event->id_event)
+            ->assertOk()
+            ->assertJsonPath('data.has_participated', false);
+    }
+
+    public function test_show_has_participated_ignores_other_players_participation(): void
+    {
+        $player = Player::factory()->playerOnly()->create();
+        $other = Player::factory()->playerOnly()->create();
+        $event = PadelEvent::factory()->create([
+            'date' => Carbon::now($this->tz)->subDays(5)->format('Y-m-d'),
+        ]);
+        $division = EventDivision::factory()->create(['event_id' => $event->id_event]);
+        EventParticipation::factory()->create([
+            'event_id' => $event->id_event,
+            'event_division_id' => $division->id_event_division,
+            'player_id' => $other->id_player,
+        ]);
+        Sanctum::actingAs($player);
+
+        $this->getJson('/api/v1/app/events/' . $event->id_event)
+            ->assertOk()
+            ->assertJsonPath('data.has_participated', false);
+    }
+
+    public function test_guest_show_has_participated_false(): void
+    {
+        $event = PadelEvent::factory()->create(['date' => '2026-04-15']);
+
+        $this->getJson('/api/v1/app/events/' . $event->id_event)
+            ->assertOk()
+            ->assertJsonPath('data.has_participated', false);
+    }
+
+    public function test_list_does_not_include_has_participated(): void
+    {
+        PadelEvent::factory()->create(['date' => '2026-04-15']);
+
+        $response = $this->getJson('/api/v1/app/events?' . http_build_query([
+            'date_from' => '2026-04-01',
+            'date_to' => '2026-04-30',
+        ]))->assertOk();
+
+        $this->assertArrayNotHasKey('has_participated', $response->json('data.0'));
     }
 }

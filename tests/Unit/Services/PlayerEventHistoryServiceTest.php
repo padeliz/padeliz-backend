@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Tests\Unit\Services;
 
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventDivisionStanding;
 use App\Models\EventParticipation;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Services\PlayerEventHistoryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;

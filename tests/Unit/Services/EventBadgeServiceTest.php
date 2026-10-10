@@ -5,13 +5,13 @@ declare(strict_types=1);
 namespace Tests\Unit\Services;
 
 use App\Enums\Registration\RegistrationPaymentStatus;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventLotteryLucky;
 use App\Models\EventParticipation;
 use App\Models\EventRegistration;
-use App\Models\Eligibility;
+use App\Models\PadelEvent;
 use App\Models\Player;
+use App\Models\PlayerLevelAssessment;
 use App\Services\EventBadgeService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -114,7 +114,7 @@ final class EventBadgeServiceTest extends TestCase
         $this->assertSame([], $this->badgesFor($past, $player));
     }
 
-    public function test_eligibility_pending_only_when_event_ids_contains_edition(): void
+    public function test_level_assessment_pending_only_when_pending_and_ready_for_review(): void
     {
         $player = Player::factory()->playerOnly()->create();
         $event = $this->upcomingEdition(['inserted_at' => $this->now - (72 * 3600)]);
@@ -123,38 +123,26 @@ final class EventBadgeServiceTest extends TestCase
             'players_limit' => 16,
         ]);
 
-        Eligibility::factory()->pending()->create([
-            'player_id' => $player->id_player,
-            'event_ids' => null,
-        ]);
+        $draft = PlayerLevelAssessment::factory()->forPlayer($player)->create();
         $this->assertSame([], $this->badgesFor($event, $player));
 
-        Eligibility::query()->where('player_id', $player->id_player)->delete();
-        Eligibility::factory()->pending()->create([
-            'player_id' => $player->id_player,
-            'event_ids' => [],
-        ]);
+        $draft->delete();
+        PlayerLevelAssessment::factory()->forPlayer($player)->approved()->create();
         $this->assertSame([], $this->badgesFor($event, $player));
 
-        Eligibility::query()->where('player_id', $player->id_player)->delete();
-        Eligibility::factory()->pending()->create([
-            'player_id' => $player->id_player,
-            'event_ids' => [(int) $event->id_event + 999],
-        ]);
+        PlayerLevelAssessment::query()->where('player_id', $player->id_player)->delete();
+        PlayerLevelAssessment::factory()->forPlayer($player)->rejected()->create();
         $this->assertSame([], $this->badgesFor($event, $player));
 
-        Eligibility::query()->where('player_id', $player->id_player)->delete();
-        Eligibility::factory()->pending()->create([
-            'player_id' => $player->id_player,
-            'event_ids' => [(int) $event->id_event],
-        ]);
+        PlayerLevelAssessment::query()->where('player_id', $player->id_player)->delete();
+        PlayerLevelAssessment::factory()->forPlayer($player)->readyForReview()->create();
         $this->assertSame(
-            [['key' => EventBadgeService::KEY_ELIGIBILITY_PENDING, 'label' => 'Eligibility Pending']],
+            [['key' => EventBadgeService::KEY_LEVEL_ASSESSMENT_PENDING, 'label' => 'Level Assessment Pending']],
             $this->badgesFor($event, $player)
         );
     }
 
-    public function test_eligibility_pending_omitted_on_past_edition(): void
+    public function test_level_assessment_pending_omitted_on_past_edition(): void
     {
         $player = Player::factory()->playerOnly()->create();
         $past = $this->pastEdition(['inserted_at' => $this->now - (72 * 3600)]);
@@ -163,10 +151,7 @@ final class EventBadgeServiceTest extends TestCase
             'players_limit' => 16,
         ]);
 
-        Eligibility::factory()->pending()->create([
-            'player_id' => $player->id_player,
-            'event_ids' => [(int) $past->id_event],
-        ]);
+        PlayerLevelAssessment::factory()->forPlayer($player)->readyForReview()->create();
 
         $this->assertSame([], $this->badgesFor($past, $player));
     }

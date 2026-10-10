@@ -23,6 +23,7 @@ class PlayerIdentityResource extends JsonResource
             ),
             'display_name' => $this->display_name,
             'avatar_url' => $this->avatar_url,
+            'is_avatar_primary' => (bool) $this->is_avatar_primary,
             'linked_at' => $this->linked_at,
             'last_login_at' => $this->last_login_at,
         ];

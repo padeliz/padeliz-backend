@@ -4,11 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Pricing;
 
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventRegistration;
 use App\Models\EventRegistrationCheckout;
-use App\Models\Eligibility;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use Carbon\Carbon;
 
@@ -24,7 +23,6 @@ final class PricingContext
         public readonly EventDivision $eventDivision,
         public readonly EventRegistration $registration,
         public readonly ?EventRegistrationCheckout $checkout,
-        public readonly ?Eligibility $eligibility,
         public readonly int $now,
         public readonly array $selectedBenefitIds = [],
         public readonly ?int $selectedReferrerPlayerId = null,

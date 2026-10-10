@@ -153,8 +153,6 @@ final class PlayerImportMapperTest extends TestCase
 
     private function setContacts(Player $player, string $email, string $phone): void
     {
-        $player->emails()->delete();
-        $player->phones()->delete();
         PlayerEmail::factory()->create([
             'player_id' => $player->id_player,
             'email' => $email,

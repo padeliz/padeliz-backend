@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\App;
 
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventParticipation;
 use App\Models\EventReferralCode;
 use App\Models\EventReferralCodeInvitee;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Models\PlayerEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -34,7 +34,7 @@ class ReferralTouchpointControllerTest extends TestCase
             'ban_reason' => null,
         ]);
 
-        $invitee = Player::factory()->playerOnly()->create();
+        $invitee = Player::factory()->playerOnly()->withPrimaryEmail()->create();
         $email = PlayerEmail::query()->where('player_id', $invitee->id_player)->value('email');
         $code = EventReferralCode::factory()->create([
             'event_id' => $event->id_event,

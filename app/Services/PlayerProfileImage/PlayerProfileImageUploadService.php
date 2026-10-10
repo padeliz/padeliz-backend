@@ -21,15 +21,14 @@ final class PlayerProfileImageUploadService
      * @param  array{
      *     uploaded_via: string,
      *     uploaded_via_import_id?: null|int,
+     *     uploaded_via_level_assessment_id?: null|int,
      *     original_filename?: null|string,
      *     is_pdf_primary?: bool
      * }  $provenance
      */
     public function upload(Player $player, UploadedFile $file, array $provenance): PlayerProfileImage
     {
-        if ($player->profileImages()->count() >= PlayerProfileImage::MAX_PER_PLAYER) {
-            throw new \RuntimeException('Maximum number of profile images reached.');
-        }
+        $this->assertWithinCaps($player, $provenance['uploaded_via_level_assessment_id'] ?? null);
 
         $disk = config('filesystems.user_uploads_disk', 'public');
         $storedPath = null;
@@ -51,6 +50,7 @@ final class PlayerProfileImageUploadService
                 'sort_order' => $sortOrder,
                 'uploaded_via' => $provenance['uploaded_via'],
                 'uploaded_via_import_id' => $provenance['uploaded_via_import_id'] ?? null,
+                'uploaded_via_level_assessment_id' => $provenance['uploaded_via_level_assessment_id'] ?? null,
                 'original_filename' => $provenance['original_filename'] ?? null,
                 'is_pdf_primary' => false,
             ]);
@@ -71,5 +71,28 @@ final class PlayerProfileImageUploadService
 
             return $image;
         });
+    }
+
+    public function assertWithinCaps(Player $player, ?int $levelAssessmentId): void
+    {
+        if ($player->profileImages()->count() >= PlayerProfileImage::MAX_PER_PLAYER) {
+            throw new \RuntimeException(
+                'Maximum number of profile images (' . PlayerProfileImage::MAX_PER_PLAYER . ') reached. Delete an existing image first.'
+            );
+        }
+
+        if ($levelAssessmentId === null) {
+            return;
+        }
+
+        $assessmentCount = $player->profileImages()
+            ->where('uploaded_via_level_assessment_id', $levelAssessmentId)
+            ->count();
+
+        if ($assessmentCount >= PlayerProfileImage::MAX_PER_PLAYER_ASSESSMENT) {
+            throw new \RuntimeException(
+                'Maximum number of profile images (' . PlayerProfileImage::MAX_PER_PLAYER_ASSESSMENT . ') reached for this level assessment. Delete an existing image first.'
+            );
+        }
     }
 }

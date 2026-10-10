@@ -11,13 +11,13 @@ use App\Enums\Registration\RegistrationPaymentStatus;
 use App\Models\BenefitDefinition;
 use App\Models\BenefitRedemption;
 use App\Models\Club;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventRegistration;
 use App\Models\EventRegistrationCheckout;
 use App\Models\EventRegistrationCheckoutItem;
-use App\Models\Eligibility;
+use App\Models\PadelEvent;
 use App\Models\Player;
+use App\Models\PlayerStudentProof;
 use Carbon\Carbon;
 use InvalidArgumentException;
 
@@ -280,26 +280,28 @@ final class PricingEngineTest extends PricingTestCase
         $this->pricing->applyManualAdjustment($paid['item'], 10, 'Too late');
     }
 
-    public function test_student_condition_from_eligibility_being_student(): void
+    public function test_student_condition_needs_an_active_approved_student_proof(): void
     {
         $fixture = $this->seedRegistrationFixture(payment: 100);
-        $benefit = BenefitDefinition::factory()->fixedRon(10)->withEligibilityFlag('being_student')->create(['slug' => 'student-test']);
+        $benefit = BenefitDefinition::factory()->fixedRon(10)->withStudentProofActive()->create(['slug' => 'student-test']);
 
-        $this->assertSame([], $this->pricing->quote($this->makeContext($fixture, eligibility: null))['eligible']);
+        $this->assertSame([], $this->pricing->quote($this->makeContext($fixture))['eligible']);
 
-        $notStudent = Eligibility::factory()->create([
+        $pending = PlayerStudentProof::factory()->create([
             'player_id' => $fixture['player']->id_player,
-            'being_student' => false,
-            'review_status' => 'approved',
         ]);
-        $this->assertSame([], $this->pricing->quote($this->makeContext($fixture, eligibility: $notStudent))['eligible']);
+        $this->assertSame([], $this->pricing->quote($this->makeContext($fixture))['eligible']);
 
-        $student = Eligibility::factory()->create([
+        $pending->delete();
+        PlayerStudentProof::factory()->expired()->create([
             'player_id' => $fixture['player']->id_player,
-            'being_student' => true,
-            'review_status' => 'approved',
         ]);
-        $allowed = $this->pricing->quote($this->makeContext($fixture, eligibility: $student));
+        $this->assertSame([], $this->pricing->quote($this->makeContext($fixture))['eligible']);
+
+        PlayerStudentProof::factory()->approved()->create([
+            'player_id' => $fixture['player']->id_player,
+        ]);
+        $allowed = $this->pricing->quote($this->makeContext($fixture));
         $this->assertSame([(int) $benefit->id_benefit], array_column($allowed['applied'], 'benefit_id'));
         $this->assertSame(90, $allowed['amount_due']);
     }

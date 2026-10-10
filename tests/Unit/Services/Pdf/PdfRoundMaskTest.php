@@ -7,18 +7,16 @@ namespace Tests\Unit\Services\Pdf;
 use App\Services\Pdf\PdfRoundMask;
 use PHPUnit\Framework\TestCase;
 use ReflectionClass;
+use Tests\Support\PdfFixtures;
 
 final class PdfRoundMaskTest extends TestCase
 {
     public function test_corners_are_transparent_and_center_is_opaque(): void
     {
-        $size = 200;
-        $canvas = imagecreatetruecolor($size, $size);
+        $canvas = imagecreatefrompng(PdfFixtures::solidRed200Path());
         $this->assertNotFalse($canvas);
         imagealphablending($canvas, false);
         imagesavealpha($canvas, true);
-        $red = imagecolorallocate($canvas, 255, 0, 0);
-        imagefill($canvas, 0, 0, $red);
 
         PdfRoundMask::apply($canvas);
 
@@ -31,6 +29,7 @@ final class PdfRoundMaskTest extends TestCase
         $this->assertNotFalse($decoded);
         imagesavealpha($decoded, true);
 
+        $size = imagesx($decoded);
         $corner = PdfRoundMask::sampleRgba($decoded, 0, 0);
         $center = PdfRoundMask::sampleRgba($decoded, (int) ($size / 2), (int) ($size / 2));
 

@@ -5,14 +5,32 @@ declare(strict_types=1);
 namespace App\Services;
 
 use App\Enums\Registration\RegistrationPaymentStatus;
-use App\Models\PadelEvent;
 use App\Models\EventLotteryLucky;
-use App\Models\EventRegistration;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use Illuminate\Database\Eloquent\Builder;
 
 final class EventAppQueryService
 {
+    public const SORT_ASC = 'asc';
+
+    public const SORT_DESC = 'desc';
+
+    /**
+     * Explicit list ordering chosen by the App timing tab:
+     * Past → date DESC, arriving_time DESC; Ongoing/Upcoming → both ASC (default).
+     *
+     * @param  Builder<PadelEvent>  $query
+     */
+    public function applySort(Builder $query, string $sort): void
+    {
+        $direction = $sort === self::SORT_DESC ? 'desc' : 'asc';
+
+        $query->orderBy('date', $direction)
+            ->orderBy('arriving_time', $direction)
+            ->orderBy('id_event', $direction);
+    }
+
     /**
      * @param  array{
      *     date_from: string,
@@ -40,7 +58,8 @@ final class EventAppQueryService
      *     registered?: bool,
      *     unpaid?: bool,
      *     lottery_winner?: bool,
-     *     club_ids?: list<int>
+     *     club_ids?: list<int>,
+     *     sort?: string
      * }  $filters
      * @return Builder<PadelEvent>
      */
@@ -50,8 +69,9 @@ final class EventAppQueryService
             ->with(['location.club', 'divisions.division', 'organizer'])
             ->withCount('participations')
             ->whereDate('date', '>=', $filters['date_from'])
-            ->whereDate('date', '<=', $filters['date_to'])
-            ->orderBy('date', 'asc');
+            ->whereDate('date', '<=', $filters['date_to']);
+
+        $this->applySort($query, $filters['sort'] ?? self::SORT_ASC);
 
         if (! empty($filters['club_ids'])) {
             $clubIds = array_map('intval', $filters['club_ids']);

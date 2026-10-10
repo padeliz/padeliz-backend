@@ -7,14 +7,14 @@ namespace App\Services\Referral;
 use App\Enums\Benefit\BenefitEntitlementStatus;
 use App\Enums\Referral\ReferralAttributionStatus;
 use App\Models\BenefitEntitlement;
-use App\Models\PadelEvent;
+use App\Models\EventParticipation;
 use App\Models\EventReferralAttribution;
 use App\Models\EventReferralCode;
 use App\Models\EventReferralCodeInvitee;
 use App\Models\EventReferralSetting;
 use App\Models\EventRegistration;
 use App\Models\EventRegistrationCheckout;
-use App\Models\EventParticipation;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Models\PlayerEmail;
 use App\Models\PlayerPhone;
@@ -111,7 +111,7 @@ final class ReferralService
                 throw new InvalidArgumentException('Each invitee requires email and/or phone.');
             }
 
-            $key = ($email ?? '').'|'.($phone ?? '').'|'.($playerId ?? '');
+            $key = ($email ?? '') . '|' . ($phone ?? '') . '|' . ($playerId ?? '');
             if (isset($seen[$key])) {
                 throw new InvalidArgumentException('Duplicate invitees on the same code are not allowed.');
             }

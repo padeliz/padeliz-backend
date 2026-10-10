@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\EventParticipationMapping;
 
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventParticipation;
 use App\Models\EventRegistration;
+use App\Models\PadelEvent;
 use App\Services\EventParticipationLotteryGuard;
 use App\Services\Pdf\EventDivisionPosterInvalidator;
 use App\Services\PlayerEventHistoryService;

@@ -8,6 +8,7 @@ use App\Http\Controllers\BaseVersions\V1\V1BaseController;
 use App\Http\Resources\PlayerCustomFieldValueResource;
 use App\Models\Player;
 use App\Models\PlayerCustomField;
+use App\Models\PlayerCustomFieldSubmission;
 use App\Models\PlayerCustomFieldValue;
 use App\Services\PlayerCustomField\PlayerCustomFieldValueWriter;
 use Illuminate\Http\JsonResponse;
@@ -40,7 +41,7 @@ class PlayerCustomFieldValueController extends V1BaseController
     {
         $query = PlayerCustomFieldValue::query()
             ->where('player_id', $player->id_player)
-            ->with(['field', 'event', 'selectedOptions']);
+            ->with(['field', 'submission', 'selectedOptions']);
 
         $this->applyAdvancedPagination(
             $query,
@@ -79,7 +80,7 @@ class PlayerCustomFieldValueController extends V1BaseController
     {
         $validated = $request->validate([
             'player_custom_field_id' => 'required|integer|exists:player_custom_fields,id_player_custom_field',
-            'event_id' => 'nullable|integer|exists:events,id_event',
+            'submission_id' => 'nullable|integer|exists:player_custom_field_submissions,id_player_custom_field_submission',
             'value' => 'nullable',
             'option_id' => 'nullable|integer',
             'option_ids' => 'nullable|array',
@@ -93,26 +94,25 @@ class PlayerCustomFieldValueController extends V1BaseController
         }
 
         $field = PlayerCustomField::query()->findOrFail((int) $validated['player_custom_field_id']);
-        $editionId = $validated['event_id'] ?? null;
+        $submission = $this->resolveSubmission($player, $request, $validated['submission_id'] ?? null);
 
         $this->writer->write(
             (int) $player->id_player,
             $field,
-            $editionId !== null ? (int) $editionId : null,
+            (int) $submission->id_player_custom_field_submission,
             $validated,
             PlayerCustomFieldValue::SUBMITTED_VIA_MANAGER,
             (int) $request->user()->id_player,
+            null,
+            false,
         );
 
         $value = PlayerCustomFieldValue::query()
             ->where('player_id', $player->id_player)
             ->where('player_custom_field_id', $field->id_player_custom_field)
-            ->when(
-                $editionId !== null,
-                static fn ($query) => $query->where('event_id', $editionId),
-                static fn ($query) => $query->orderByDesc('id_player_custom_field_value')
-            )
-            ->with(['field', 'event', 'selectedOptions'])
+            ->where('submission_id', $submission->id_player_custom_field_submission)
+            ->orderByDesc('id_player_custom_field_value')
+            ->with(['field', 'submission', 'selectedOptions'])
             ->firstOrFail();
 
         return $this->resourceResponse(
@@ -136,7 +136,7 @@ class PlayerCustomFieldValueController extends V1BaseController
         PlayerCustomFieldValue $playerCustomFieldValue,
     ): JsonResponse {
         $this->assertValueBelongsToPlayer($player, $playerCustomFieldValue);
-        $playerCustomFieldValue->load(['field', 'event', 'selectedOptions']);
+        $playerCustomFieldValue->load(['field', 'submission', 'selectedOptions']);
 
         return $this->resourceResponse(
             new PlayerCustomFieldValueResource($playerCustomFieldValue),
@@ -144,44 +144,28 @@ class PlayerCustomFieldValueController extends V1BaseController
         );
     }
 
-    /**
-     * @OA\Post(
-     *     path="/api/v1/manager/players/{player}/custom-field-values/{playerCustomFieldValue}/invalidate",
-     *     summary="Invalidate a player custom field value",
-     *     tags={"🐧 Manager: Player Custom Field Values"},
-     *     security={{"sanctum":{}}},
-     *     @OA\Response(response=200, description="Invalidated")
-     * )
-     */
-    public function invalidate(
-        Request $request,
+    private function resolveSubmission(
         Player $player,
-        PlayerCustomFieldValue $playerCustomFieldValue,
-    ): JsonResponse {
-        $this->assertValueBelongsToPlayer($player, $playerCustomFieldValue);
-
-        if ($playerCustomFieldValue->isInvalidated()) {
-            throw ValidationException::withMessages([
-                'player_custom_field_value' => ['This value is already invalidated.'],
+        Request $request,
+        ?int $submissionId,
+    ): PlayerCustomFieldSubmission {
+        if ($submissionId === null) {
+            return PlayerCustomFieldSubmission::create([
+                'player_id' => $player->id_player,
+                'submitted_via' => PlayerCustomFieldSubmission::SUBMITTED_VIA_MANAGER,
+                'submitted_by_player_id' => (int) $request->user()->id_player,
             ]);
         }
 
-        $validated = $request->validate([
-            'invalidation_reason' => 'nullable|string|max:512',
-        ]);
+        $submission = PlayerCustomFieldSubmission::query()->findOrFail($submissionId);
 
-        $playerCustomFieldValue->update([
-            'invalidated_at' => time(),
-            'invalidated_by_player_id' => (int) $request->user()->id_player,
-            'invalidation_reason' => $validated['invalidation_reason'] ?? null,
-        ]);
+        if ((int) $submission->player_id !== (int) $player->id_player) {
+            throw ValidationException::withMessages([
+                'submission_id' => ['The submission does not belong to this player.'],
+            ]);
+        }
 
-        $playerCustomFieldValue->load(['field', 'event', 'selectedOptions']);
-
-        return $this->resourceResponse(
-            new PlayerCustomFieldValueResource($playerCustomFieldValue),
-            'Player custom field value invalidated successfully'
-        );
+        return $submission;
     }
 
     private function assertValueBelongsToPlayer(Player $player, PlayerCustomFieldValue $value): void

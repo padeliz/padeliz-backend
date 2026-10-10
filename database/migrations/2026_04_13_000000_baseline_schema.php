@@ -2,6 +2,7 @@
 
 declare(strict_types=1);
 
+use App\Services\PlayerLevel\LevelBand;
 use Illuminate\Database\Migrations\Migration;
 use Illuminate\Database\Schema\Blueprint;
 use Illuminate\Support\Facades\DB;
@@ -36,8 +37,32 @@ return new class () extends Migration {
             $table->string('color', 7);
             // FK added after events table exists (see below)
             $table->unsignedBigInteger('its_first_event_id');
+            $table->decimal('level_min', 3, 2)->nullable();
+            $table->decimal('level_max', 3, 2)->nullable();
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
+        });
+
+        Schema::create('levels', function (Blueprint $table) {
+            $table->id('id_level');
+            $table->string('name', 64)->unique();
+            $table->decimal('level_min', 3, 2);
+            $table->decimal('level_max', 3, 2);
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
+        });
+
+        Schema::create('division_levels', function (Blueprint $table) {
+            $table->id('id_division_level');
+            $table->unsignedBigInteger('division_id');
+            $table->unsignedBigInteger('level_id');
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
+            $table->unique(['division_id', 'level_id'], 'uq_division_levels_pair');
+            $table->foreign('division_id', 'fk_division_levels_division')
+                ->references('id_division')->on('divisions')->cascadeOnDelete();
+            $table->foreign('level_id', 'fk_division_levels_level')
+                ->references('id_level')->on('levels')->cascadeOnDelete();
         });
 
         Schema::create('locations', function (Blueprint $table) {
@@ -96,14 +121,7 @@ return new class () extends Migration {
             $table->string('middle_name', 50)->nullable();
             $table->string('last_name', 50)->nullable();
             $table->json('user_types')->nullable();
-            $table->string('playtomic_id', 10)->nullable();
-            $table->string('rankedin_id', 15)->nullable();
-            $table->integer('year_of_birth')->nullable();
-            $table->boolean('being_student')->default(false);
             $table->rememberToken();
-            $table->float('skill_division', 3, 1)->nullable();
-            $table->string('instagram_username', 50)->nullable();
-            $table->string('facebook_username', 50)->nullable();
             $table->string('created_via', 16)->nullable();
             $table->string('created_via_format', 32)->nullable();
             $table->integer('inserted_at');
@@ -141,11 +159,134 @@ return new class () extends Migration {
             $table->foreignId('phone_id')->nullable()->constrained('player_phones', 'id_player_phone')->nullOnDelete();
             $table->string('display_name', 255)->nullable();
             $table->string('avatar_url', 512)->nullable();
+            $table->boolean('is_avatar_primary')->default(false);
             $table->integer('linked_at');
             $table->integer('last_login_at')->nullable();
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
             $table->unique(['provider', 'provider_subject'], 'uq_player_identity_provider_subject');
+        });
+
+        Schema::create('media_sources', function (Blueprint $table) {
+            $table->id('id_media_source');
+            $table->string('code', 32)->unique();
+            $table->string('label', 64);
+            $table->unsignedInteger('sort_order')->default(0);
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
+        });
+
+        Schema::create('player_media_sources', function (Blueprint $table) {
+            $table->id('id_player_media_source');
+            $table->unsignedBigInteger('player_id');
+            $table->unsignedBigInteger('media_source_id');
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
+            $table->unique(['player_id', 'media_source_id'], 'uq_player_media_sources');
+            $table->foreign('player_id', 'fk_pms_player')
+                ->references('id_player')->on('players')->cascadeOnDelete();
+            $table->foreign('media_source_id', 'fk_pms_source')
+                ->references('id_media_source')->on('media_sources')->cascadeOnDelete();
+        });
+
+        Schema::create('player_friends_sources', function (Blueprint $table) {
+            $table->id('id_player_friends_source');
+            $table->unsignedBigInteger('player_id');
+            $table->unsignedBigInteger('friend_player_id')->nullable();
+            $table->string('full_name', 120)->nullable();
+            $table->string('email', 255)->nullable();
+            $table->string('phone', 30)->nullable();
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
+            $table->index('player_id', 'player_friends_sources_player_idx');
+            $table->foreign('player_id', 'fk_pfs_player')
+                ->references('id_player')->on('players')->cascadeOnDelete();
+            $table->foreign('friend_player_id', 'fk_pfs_friend')
+                ->references('id_player')->on('players')->nullOnDelete();
+        });
+
+        Schema::create('player_custom_field_submissions', function (Blueprint $table) {
+            $table->id('id_player_custom_field_submission');
+            $table->unsignedBigInteger('player_id');
+            $table->string('submitted_via', 32);
+            $table->unsignedBigInteger('submitted_by_player_id')->nullable();
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
+            $table->foreign('player_id', 'fk_pcfs_player')
+                ->references('id_player')->on('players')->cascadeOnDelete();
+            $table->foreign('submitted_by_player_id', 'fk_pcfs_submitted_by')
+                ->references('id_player')->on('players')->nullOnDelete();
+        });
+
+        Schema::create('player_level_assessments', function (Blueprint $table) {
+            $table->id('id_player_level_assessment');
+            $table->unsignedBigInteger('player_id');
+            $table->unsignedBigInteger('player_custom_field_submission_id');
+            $table->integer('submitted_at')->nullable();
+            $table->integer('resubmitted_at')->nullable();
+            $table->boolean('ready_for_review')->default(false);
+            $table->integer('reviewed_at')->nullable();
+            $table->enum('review_status', ['pending', 'approved', 'rejected', 'discarded'])->default('pending');
+            $table->text('review_message')->nullable();
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
+            $table->index(['player_id', 'review_status'], 'pla_player_status_idx');
+            // No ON DELETE CASCADE: incompatible with generated pending_player_id.
+            $table->foreign('player_id', 'fk_pla_player')
+                ->references('id_player')->on('players');
+            $table->foreign('player_custom_field_submission_id', 'fk_pla_submission')
+                ->references('id_player_custom_field_submission')
+                ->on('player_custom_field_submissions');
+        });
+
+        DB::statement(
+            "ALTER TABLE `{$prefix}player_level_assessments` " .
+            'ADD COLUMN `pending_player_id` BIGINT UNSIGNED ' .
+            "GENERATED ALWAYS AS (CASE WHEN `review_status` = 'pending' THEN `player_id` ELSE NULL END) STORED"
+        );
+        DB::statement(
+            'CREATE UNIQUE INDEX `pla_one_pending_per_player` ' .
+            "ON `{$prefix}player_level_assessments` (`pending_player_id`)"
+        );
+
+        Schema::create('player_student_proofs', function (Blueprint $table) {
+            $table->id('id_player_student_proof');
+            $table->unsignedBigInteger('player_id');
+            $table->date('student_until');
+            $table->unsignedTinyInteger('sort_order')->default(0);
+            $table->boolean('ready_for_review')->default(false);
+            $table->integer('reviewed_at')->nullable();
+            $table->enum('review_status', ['pending', 'approved', 'rejected', 'discarded'])->default('pending');
+            $table->text('review_message')->nullable();
+            $table->integer('submitted_at')->nullable();
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
+            $table->index(['player_id', 'review_status'], 'psp_player_status_idx');
+            $table->foreign('player_id', 'fk_psp_player')
+                ->references('id_player')->on('players');
+        });
+
+        DB::statement(
+            "ALTER TABLE `{$prefix}player_student_proofs` " .
+            'ADD COLUMN `pending_player_id` BIGINT UNSIGNED ' .
+            "GENERATED ALWAYS AS (CASE WHEN `review_status` = 'pending' THEN `player_id` ELSE NULL END) STORED"
+        );
+        DB::statement(
+            'CREATE UNIQUE INDEX `psp_one_pending_per_player` ' .
+            "ON `{$prefix}player_student_proofs` (`pending_player_id`)"
+        );
+
+        Schema::create('player_student_proof_files', function (Blueprint $table) {
+            $table->id('id_player_student_proof_file');
+            $table->unsignedBigInteger('student_proof_id');
+            $table->string('student_proof_path', 512);
+            $table->unsignedTinyInteger('sort_order')->default(0);
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
+            $table->index(['student_proof_id', 'sort_order'], 'pspf_proof_sort_idx');
+            $table->foreign('student_proof_id', 'fk_pspf_proof')
+                ->references('id_player_student_proof')->on('player_student_proofs')
+                ->cascadeOnDelete();
         });
 
         Schema::create('player_invites', function (Blueprint $table) {
@@ -198,8 +339,9 @@ return new class () extends Migration {
             $table->foreignId('player_id')->constrained('players', 'id_player')->cascadeOnDelete();
             $table->string('profile_path', 512);
             $table->unsignedTinyInteger('sort_order');
-            $table->string('uploaded_via', 16)->nullable();
+            $table->string('uploaded_via', 32)->nullable();
             $table->unsignedBigInteger('uploaded_via_import_id')->nullable();
+            $table->unsignedBigInteger('uploaded_via_level_assessment_id')->nullable();
             $table->string('original_filename', 255)->nullable();
             $table->boolean('is_pdf_primary')->default(false);
             $table->integer('inserted_at');
@@ -208,6 +350,10 @@ return new class () extends Migration {
             $table->foreign('uploaded_via_import_id', 'ppi_uploaded_via_import_fk')
                 ->references('id_player_profile_image_import')
                 ->on('player_profile_image_imports')
+                ->nullOnDelete();
+            $table->foreign('uploaded_via_level_assessment_id', 'ppi_uploaded_via_assessment_fk')
+                ->references('id_player_level_assessment')
+                ->on('player_level_assessments')
                 ->nullOnDelete();
         });
 
@@ -304,8 +450,10 @@ return new class () extends Migration {
             $table->foreignId('division_id')->constrained('divisions', 'id_division');
             $table->string('division_title', 64);
             $table->integer('players_limit');
-            $table->integer('entry_fee')->default(55)->comment('ron');
+            $table->integer('entry_fee')->comment('ron');
             $table->unsignedInteger('skill_order')->default(0);
+            $table->decimal('level_min', 3, 2)->nullable();
+            $table->decimal('level_max', 3, 2)->nullable();
             $table->time('playing_start_time');
             $table->time('playing_end_time');
             $table->integer('inserted_at')->nullable();
@@ -378,6 +526,29 @@ return new class () extends Migration {
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
             $table->unique(['event_division_id', 'player_id'], 'uq_participation_ed_player');
+        });
+
+        Schema::create('player_levels', function (Blueprint $table) {
+            $table->id('id_player_level');
+            $table->unsignedBigInteger('player_id');
+            $table->decimal('level', 3, 2);
+            $table->unsignedBigInteger('player_level_assessment_id')->nullable();
+            $table->unsignedBigInteger('event_participation_id')->nullable();
+            $table->integer('inserted_at');
+            $table->integer('updated_at')->nullable();
+            $table->unique('player_level_assessment_id', 'uq_player_levels_assessment');
+            $table->unique('event_participation_id', 'uq_player_levels_participation');
+            $table->index(['player_id', 'inserted_at'], 'player_levels_player_inserted_idx');
+            $table->foreign('player_id', 'fk_player_levels_player')
+                ->references('id_player')->on('players')->cascadeOnDelete();
+            $table->foreign('player_level_assessment_id', 'fk_player_levels_assessment')
+                ->references('id_player_level_assessment')
+                ->on('player_level_assessments')
+                ->nullOnDelete();
+            $table->foreign('event_participation_id', 'fk_player_levels_participation')
+                ->references('id_participation')
+                ->on('event_participations')
+                ->nullOnDelete();
         });
 
         Schema::create('event_registrations', function (Blueprint $table) {
@@ -776,66 +947,6 @@ return new class () extends Migration {
             $table->mediumText('message_en');
         });
 
-        Schema::create('eligibilities', function (Blueprint $table) {
-            $table->id('id_eligibility');
-            $table->foreignId('player_id')->constrained('players', 'id_player')->index();
-            $table->json('event_ids')->nullable();
-            $table->json('media_source')->nullable();
-            $table->json('friends_source')->nullable();
-            $table->json('racket_experience')->nullable();
-            $table->string('playtomic_id', 10)->nullable();
-            $table->string('rankedin_id', 15)->nullable();
-            $table->string('first_name', 50)->nullable();
-            $table->string('middle_name', 50)->nullable();
-            $table->string('last_name', 50)->nullable();
-            $table->string('phone', 100)->nullable();
-            $table->integer('year_of_birth')->nullable();
-            $table->integer('birth_month')->nullable();
-            $table->integer('birth_day')->nullable();
-            $table->boolean('being_student')->nullable();
-            $table->string('instagram_username', 50)->nullable();
-            $table->string('facebook_username', 50)->nullable();
-            $table->integer('submitted_at');
-            $table->integer('resubmitted_at')->nullable();
-            $table->boolean('ready_for_review')->default(false);
-            $table->integer('reviewed_at')->nullable();
-            $table->enum('review_status', ['pending', 'approved', 'rejected', 'discarded'])->default('pending');
-            $table->text('review_message')->nullable();
-            $table->integer('inserted_at');
-            $table->integer('updated_at')->nullable();
-            $table->index(['player_id', 'review_status'], 'eligibilities_player_status_idx');
-        });
-
-        DB::statement(
-            "ALTER TABLE `{$prefix}eligibilities` " .
-            'ADD COLUMN `pending_player_id` BIGINT UNSIGNED ' .
-            "GENERATED ALWAYS AS (CASE WHEN `review_status` = 'pending' THEN `player_id` ELSE NULL END) STORED"
-        );
-        DB::statement(
-            'CREATE UNIQUE INDEX `eligibilities_one_pending_per_player` ' .
-            "ON `{$prefix}eligibilities` (`pending_player_id`)"
-        );
-
-        Schema::create('eligibility_student_proofs', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('eligibility_id')->constrained('eligibilities', 'id_eligibility')->cascadeOnDelete();
-            $table->string('student_proof_path', 512);
-            $table->unsignedTinyInteger('sort_order');
-            $table->integer('inserted_at');
-            $table->integer('updated_at')->nullable();
-            $table->index('eligibility_id', 'eligibility_student_proofs_eligibility_id_idx');
-        });
-
-        Schema::create('eligibility_portrait_photos', function (Blueprint $table) {
-            $table->id();
-            $table->foreignId('eligibility_id')->constrained('eligibilities', 'id_eligibility')->cascadeOnDelete();
-            $table->string('portrait_photo_path', 512);
-            $table->unsignedTinyInteger('sort_order');
-            $table->integer('inserted_at');
-            $table->integer('updated_at')->nullable();
-            $table->index('eligibility_id', 'eligibility_portrait_photos_eligibility_id_idx');
-        });
-
         Schema::create('player_custom_fields', function (Blueprint $table) {
             $table->id('id_player_custom_field');
             $table->string('code', 64)->unique();
@@ -914,26 +1025,26 @@ return new class () extends Migration {
             $table->id('id_player_custom_field_value');
             $table->unsignedBigInteger('player_id');
             $table->unsignedBigInteger('player_custom_field_id');
-            $table->unsignedBigInteger('event_id')->nullable();
+            $table->unsignedBigInteger('submission_id');
             $table->text('value_text')->nullable();
             $table->integer('value_integer')->nullable();
             $table->boolean('value_boolean')->nullable();
             $table->date('value_date')->nullable();
+            $table->json('value_json')->nullable();
             $table->unsignedBigInteger('submitted_by_player_id')->nullable();
             $table->string('submitted_via', 16);
             $table->unsignedBigInteger('created_via_import_id')->nullable();
-            $table->integer('invalidated_at')->nullable();
-            $table->unsignedBigInteger('invalidated_by_player_id')->nullable();
-            $table->string('invalidation_reason', 512)->nullable();
+            $table->enum('review_status', ['pending', 'validated', 'rejected', 'discarded'])->default('pending');
+            $table->integer('reviewed_at')->nullable();
+            $table->unsignedBigInteger('reviewed_by_manager_id')->nullable();
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
-            $table->unique(
-                ['player_id', 'player_custom_field_id', 'event_id'],
-                'uq_pcfv_player_field_event'
-            );
             $table->index(['player_id', 'player_custom_field_id'], 'pcfv_player_field_idx');
             $table->index('player_custom_field_id', 'pcfv_field_idx');
-            $table->index('event_id', 'pcfv_event_idx');
+            $table->index(
+                ['player_id', 'player_custom_field_id', 'review_status', 'reviewed_at'],
+                'pcfv_current_idx'
+            );
             $table->foreign('player_id', 'fk_pcfv_player')
                 ->references('id_player')
                 ->on('players')
@@ -942,10 +1053,10 @@ return new class () extends Migration {
                 ->references('id_player_custom_field')
                 ->on('player_custom_fields')
                 ->restrictOnDelete();
-            $table->foreign('event_id', 'fk_pcfv_event')
-                ->references('id_event')
-                ->on('events')
-                ->nullOnDelete();
+            $table->foreign('submission_id', 'fk_pcfv_submission')
+                ->references('id_player_custom_field_submission')
+                ->on('player_custom_field_submissions')
+                ->restrictOnDelete();
             $table->foreign('submitted_by_player_id', 'fk_pcfv_submitted_by')
                 ->references('id_player')
                 ->on('players')
@@ -954,7 +1065,7 @@ return new class () extends Migration {
                 ->references('id_player_custom_field_value_import')
                 ->on('player_custom_field_value_imports')
                 ->nullOnDelete();
-            $table->foreign('invalidated_by_player_id', 'fk_pcfv_invalidated_by')
+            $table->foreign('reviewed_by_manager_id', 'fk_pcfv_reviewed_by')
                 ->references('id_player')
                 ->on('players')
                 ->nullOnDelete();
@@ -1184,32 +1295,145 @@ return new class () extends Migration {
         });
 
         $now = time();
-        $rules = json_encode(['max_length' => 2000], JSON_THROW_ON_ERROR);
-        $fields = [
-            ['padel_matches_played', 'Câte meciuri de padel ai mai jucat?', 1],
-            ['tennis_experience', 'Ai jucat tenis vreodată?', 2],
-            ['racket_lessons', 'Ai luat lecții de padel sau tenis?', 3],
-            ['big_tournament_division', 'În caz că ai participat la turnee mari, în ce divizie te încadrezi?', 4],
-            ['age', 'Ce vârstă ai?', 5],
-            ['playtomic_url', 'Ajută-ne cu linkul profilului tău de Playtomic', 6],
-        ];
+        $this->seedLevels($now);
+        $this->seedMediaSources($now);
+        $this->seedPlayerCustomFields($now);
+        $this->seedSystemBenefits($now);
+    }
 
-        foreach ($fields as [$code, $label, $sortOrder]) {
-            DB::table('player_custom_fields')->insert([
-                'code' => $code,
-                'label' => $label,
-                'help_text' => null,
-                'sort_order' => $sortOrder,
-                'type' => 'text',
-                'rules_json' => $rules,
-                'is_required' => false,
-                'archived_at' => null,
+    private function seedLevels(int $now): void
+    {
+        foreach (LevelBand::catalog() as $band) {
+            DB::table('levels')->insert([
+                'name' => $band->name,
+                'level_min' => $band->levelMin,
+                'level_max' => $band->levelMax,
                 'inserted_at' => $now,
                 'updated_at' => null,
             ]);
         }
+    }
 
-        $this->seedSystemBenefits($now);
+    private function seedMediaSources(int $now): void
+    {
+        $sources = [
+            ['instagram', 'Instagram', 1],
+            ['tiktok', 'TikTok', 2],
+            ['facebook', 'Facebook', 3],
+            ['friends', 'Friends', 4],
+        ];
+
+        foreach ($sources as [$code, $label, $sort]) {
+            DB::table('media_sources')->insert([
+                'code' => $code,
+                'label' => $label,
+                'sort_order' => $sort,
+                'inserted_at' => $now,
+                'updated_at' => null,
+            ]);
+        }
+    }
+
+    private function seedPlayerCustomFields(int $now): void
+    {
+        $fields = [
+            [
+                'code' => 'racket_experience',
+                'label' => 'Racket experience',
+                'help_text' => 'Sports you have played and how much.',
+                'sort_order' => 1,
+                'type' => 'json',
+                'rules_json' => json_encode([
+                    'sports' => ['padel', 'tennis', 'badminton', 'squash', 'ping-pong', 'pickleball'],
+                    'levels' => ['amateur', 'intermediate', 'advanced', 'professional'],
+                ], JSON_THROW_ON_ERROR),
+            ],
+            [
+                'code' => 'big_tournament_division',
+                'label' => 'Big tournament division',
+                'help_text' => 'If you played major tournaments, which division fit you?',
+                'sort_order' => 2,
+                'type' => 'labeled_foreign_id',
+                'rules_json' => json_encode(['catalog' => 'levels'], JSON_THROW_ON_ERROR),
+            ],
+            [
+                'code' => 'year_of_birth',
+                'label' => 'Year of birth',
+                'help_text' => 'Four-digit year you were born.',
+                'sort_order' => 3,
+                'type' => 'integer',
+                'rules_json' => json_encode(['min' => 1900, 'max' => 2100], JSON_THROW_ON_ERROR),
+            ],
+            [
+                'code' => 'playtomic_id',
+                'label' => 'Playtomic ID',
+                'help_text' => 'Digits from your Playtomic profile URL.',
+                'sort_order' => 4,
+                'type' => 'text',
+                'rules_json' => json_encode(['max_length' => 32], JSON_THROW_ON_ERROR),
+            ],
+            [
+                'code' => 'rankedin_id',
+                'label' => 'Rankedin ID',
+                'help_text' => 'Your Rankedin player id, if any.',
+                'sort_order' => 5,
+                'type' => 'text',
+                'rules_json' => json_encode(['max_length' => 32], JSON_THROW_ON_ERROR),
+            ],
+            [
+                'code' => 'gender',
+                'label' => 'Gender',
+                'help_text' => 'Select your gender.',
+                'sort_order' => 6,
+                'type' => 'single_select',
+                'rules_json' => null,
+            ],
+            [
+                'code' => 'instagram_username',
+                'label' => 'Instagram',
+                'help_text' => 'Username without @.',
+                'sort_order' => 7,
+                'type' => 'text',
+                'rules_json' => json_encode(['max_length' => 50], JSON_THROW_ON_ERROR),
+            ],
+            [
+                'code' => 'facebook_username',
+                'label' => 'Facebook',
+                'help_text' => 'Username or profile name.',
+                'sort_order' => 8,
+                'type' => 'text',
+                'rules_json' => json_encode(['max_length' => 50], JSON_THROW_ON_ERROR),
+            ],
+        ];
+
+        foreach ($fields as $field) {
+            $id = DB::table('player_custom_fields')->insertGetId([
+                'code' => $field['code'],
+                'label' => $field['label'],
+                'help_text' => $field['help_text'],
+                'sort_order' => $field['sort_order'],
+                'type' => $field['type'],
+                'rules_json' => $field['rules_json'],
+                'is_required' => false,
+                'archived_at' => null,
+                'inserted_at' => $now,
+                'updated_at' => null,
+            ], 'id_player_custom_field');
+
+            if ($field['code'] === 'gender') {
+                foreach ([['female', 'Female', 1], ['male', 'Male', 2]] as [$code, $label, $sort]) {
+                    DB::table('player_custom_field_options')->insert([
+                        'player_custom_field_id' => $id,
+                        'code' => $code,
+                        'label' => $label,
+                        'sort_order' => $sort,
+                        'is_active' => true,
+                        'inserted_at' => $now,
+                        'updated_at' => null,
+                    ]);
+                }
+            }
+        }
     }
 
     private function seedSystemBenefits(int $now): void
@@ -1228,7 +1452,7 @@ return new class () extends Migration {
                 'exclusivity' => 'stackable',
                 'priority' => 10,
                 'conditions' => [
-                    ['condition_type' => 'eligibility_flag', 'parameters' => json_encode(['flag' => 'being_student'])],
+                    ['condition_type' => 'student_proof_active', 'parameters' => json_encode((object) [])],
                 ],
             ],
             [
@@ -1342,9 +1566,6 @@ return new class () extends Migration {
         Schema::dropIfExists('player_custom_field_value_imports');
         Schema::dropIfExists('player_custom_field_options');
         Schema::dropIfExists('player_custom_fields');
-        Schema::dropIfExists('eligibility_portrait_photos');
-        Schema::dropIfExists('eligibility_student_proofs');
-        Schema::dropIfExists('eligibilities');
         Schema::dropIfExists('validations_site');
         Schema::dropIfExists('cached_pdf_player_images');
         Schema::dropIfExists('cached_pdf_pair_images');
@@ -1368,6 +1589,7 @@ return new class () extends Migration {
         Schema::dropIfExists('event_registration_checkout_items');
         Schema::dropIfExists('event_registration_checkouts');
         Schema::dropIfExists('event_registrations');
+        Schema::dropIfExists('player_levels');
         Schema::dropIfExists('event_participations');
         Schema::dropIfExists('event_division_posters');
         Schema::dropIfExists('event_division_courts');
@@ -1383,6 +1605,13 @@ return new class () extends Migration {
         Schema::dropIfExists('player_profile_image_imports');
         Schema::dropIfExists('player_invite_events');
         Schema::dropIfExists('player_invites');
+        Schema::dropIfExists('player_student_proof_files');
+        Schema::dropIfExists('player_student_proofs');
+        Schema::dropIfExists('player_level_assessments');
+        Schema::dropIfExists('player_custom_field_submissions');
+        Schema::dropIfExists('player_friends_sources');
+        Schema::dropIfExists('player_media_sources');
+        Schema::dropIfExists('media_sources');
         Schema::dropIfExists('player_identities');
         Schema::dropIfExists('player_phones');
         Schema::dropIfExists('player_emails');
@@ -1398,6 +1627,8 @@ return new class () extends Migration {
         Schema::dropIfExists('events');
         Schema::dropIfExists('courts');
         Schema::dropIfExists('locations');
+        Schema::dropIfExists('division_levels');
+        Schema::dropIfExists('levels');
         Schema::dropIfExists('divisions');
         Schema::dropIfExists('organizers');
         Schema::dropIfExists('clubs');

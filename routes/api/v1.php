@@ -58,6 +58,8 @@ Route::prefix('v1')->group(function () {
             Route::post('identities/{provider}', [\App\Http\Controllers\Api\V1\App\PlayerIdentityController::class, 'store']);
             Route::delete('identities/{playerIdentity}', [\App\Http\Controllers\Api\V1\App\PlayerIdentityController::class, 'destroy'])
                 ->whereNumber('playerIdentity');
+            Route::post('identities/{playerIdentity}/avatar-primary', [\App\Http\Controllers\Api\V1\App\PlayerIdentityController::class, 'setAvatarPrimary'])
+                ->whereNumber('playerIdentity');
         });
 
         Route::prefix('my')->group(function () {
@@ -114,18 +116,55 @@ Route::prefix('v1')->group(function () {
         Route::post('device-tokens', [\App\Http\Controllers\Api\V1\App\DeviceTokenController::class, 'store']);
         Route::delete('device-tokens', [\App\Http\Controllers\Api\V1\App\DeviceTokenController::class, 'destroy']);
 
-        Route::prefix('my/eligibility')->group(function () {
-            Route::get('status', [\App\Http\Controllers\Api\V1\App\MyEligibilityController::class, 'status']);
-            Route::get('approved', [\App\Http\Controllers\Api\V1\App\MyEligibilityController::class, 'approved']);
-            Route::get('latest', [\App\Http\Controllers\Api\V1\App\MyEligibilityController::class, 'latest']);
-            Route::post('pending/student-proof', [\App\Http\Controllers\Api\V1\App\MyEligibilityUploadController::class, 'storeStudentProof']);
-            Route::delete('pending/student-proof/{eligibilityStudentProof}', [\App\Http\Controllers\Api\V1\App\MyEligibilityUploadController::class, 'destroyStudentProof'])
-                ->whereNumber('eligibilityStudentProof');
-            Route::post('pending/portrait-photo', [\App\Http\Controllers\Api\V1\App\MyEligibilityUploadController::class, 'storePortraitPhoto']);
-            Route::delete('pending/portrait-photo/{eligibilityPortraitPhoto}', [\App\Http\Controllers\Api\V1\App\MyEligibilityUploadController::class, 'destroyPortraitPhoto'])
-                ->whereNumber('eligibilityPortraitPhoto');
-            Route::patch('pending', [\App\Http\Controllers\Api\V1\App\MyEligibilityController::class, 'pending']);
-            Route::post('discard', [\App\Http\Controllers\Api\V1\App\MyEligibilityController::class, 'discard']);
+        Route::prefix('my/level-assessment')->group(function () {
+            Route::get('status', [\App\Http\Controllers\Api\V1\App\MyLevelAssessmentController::class, 'status']);
+            Route::get('latest', [\App\Http\Controllers\Api\V1\App\MyLevelAssessmentController::class, 'latest']);
+            Route::get('current-level', [\App\Http\Controllers\Api\V1\App\MyLevelAssessmentController::class, 'currentLevel']);
+            Route::get('pending', [\App\Http\Controllers\Api\V1\App\MyLevelAssessmentController::class, 'showPending']);
+            Route::post('pending', [\App\Http\Controllers\Api\V1\App\MyLevelAssessmentController::class, 'storePending']);
+            Route::patch('pending', [\App\Http\Controllers\Api\V1\App\MyLevelAssessmentController::class, 'patchPending']);
+            Route::post('pending/ready', [\App\Http\Controllers\Api\V1\App\MyLevelAssessmentController::class, 'markReady']);
+            Route::post('pending/reopen', [\App\Http\Controllers\Api\V1\App\MyLevelAssessmentController::class, 'reopen']);
+            Route::post('pending/profile-image', [\App\Http\Controllers\Api\V1\App\MyLevelAssessmentController::class, 'storeProfileImage']);
+            Route::delete('pending/profile-image/{playerProfileImage}', [\App\Http\Controllers\Api\V1\App\MyLevelAssessmentController::class, 'destroyProfileImage'])
+                ->whereNumber('playerProfileImage');
+            Route::post('discard', [\App\Http\Controllers\Api\V1\App\MyLevelAssessmentController::class, 'discard']);
+        });
+
+        // Discovery (media sources + friends). Friends are never required by the API.
+        Route::prefix('my/discovery')->group(function () {
+            $controller = \App\Http\Controllers\Api\V1\App\MyDiscoveryController::class;
+            Route::get('/', [$controller, 'summary']);
+            Route::get('media-sources', [$controller, 'catalog']);
+            Route::get('media', [$controller, 'showMedia']);
+            Route::put('media', [$controller, 'replaceMedia']);
+            Route::patch('media', [$controller, 'replaceMedia']);
+            Route::get('friends', [$controller, 'showFriends']);
+            Route::put('friends', [$controller, 'replaceFriends']);
+            Route::patch('friends', [$controller, 'replaceFriends']);
+            Route::get('suggest-friends', [$controller, 'suggestFriends']);
+            Route::get('search-players', [$controller, 'searchPlayers']);
+        });
+
+        // Student proofs (one pending per player, 1-3 files)
+        Route::prefix('my/student-proofs')->group(function () {
+            $controller = \App\Http\Controllers\Api\V1\App\MyStudentProofController::class;
+            Route::get('/', [$controller, 'index']);
+            Route::post('/', [$controller, 'store']);
+            Route::get('pending', [$controller, 'showPending']);
+            Route::patch('pending', [$controller, 'updatePending']);
+            Route::post('pending/files', [$controller, 'addFile']);
+            Route::delete('pending/files/{file}', [$controller, 'removeFile'])->whereNumber('file');
+            Route::post('pending/ready', [$controller, 'markReady']);
+            Route::post('pending/reopen', [$controller, 'reopen']);
+            Route::post('discard', [$controller, 'discard']);
+        });
+
+        // Level bands (read-only)
+        Route::prefix('levels')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\App\LevelController::class, 'index']);
+            Route::get('{level}', [\App\Http\Controllers\Api\V1\App\LevelController::class, 'show'])
+                ->whereNumber('level');
         });
     });
 
@@ -476,9 +515,6 @@ Route::prefix('v1')->group(function () {
             Route::get('{player}/custom-field-values/{playerCustomFieldValue}', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldValueController::class, 'show'])
                 ->whereNumber('player')
                 ->whereNumber('playerCustomFieldValue');
-            Route::post('{player}/custom-field-values/{playerCustomFieldValue}/invalidate', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldValueController::class, 'invalidate'])
-                ->whereNumber('player')
-                ->whereNumber('playerCustomFieldValue');
             Route::get('{player}', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'show'])
                 ->whereNumber('player');
             Route::post('/', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'store']);
@@ -595,27 +631,81 @@ Route::prefix('v1')->group(function () {
             Route::patch('{eventParticipation}', [\App\Http\Controllers\Api\V1\Manager\EventParticipationController::class, 'patch']);
             Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EventParticipationController::class, 'bulkDestroy']);
             Route::delete('{eventParticipation}', [\App\Http\Controllers\Api\V1\Manager\EventParticipationController::class, 'destroy']);
+
+            // Standings level entry (participation-sourced player level)
+            Route::get('{eventParticipation}/level', [\App\Http\Controllers\Api\V1\Manager\EventParticipationLevelController::class, 'show'])
+                ->whereNumber('eventParticipation');
+            Route::post('{eventParticipation}/level', [\App\Http\Controllers\Api\V1\Manager\EventParticipationLevelController::class, 'upsert'])
+                ->whereNumber('eventParticipation');
+            Route::put('{eventParticipation}/level', [\App\Http\Controllers\Api\V1\Manager\EventParticipationLevelController::class, 'upsert'])
+                ->whereNumber('eventParticipation');
+            Route::patch('{eventParticipation}/level', [\App\Http\Controllers\Api\V1\Manager\EventParticipationLevelController::class, 'upsert'])
+                ->whereNumber('eventParticipation');
         });
 
-        // Eligibility management
-        Route::prefix('eligibilities')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'index']);
-            Route::post('{playerEligibility}/student-proofs', [\App\Http\Controllers\Api\V1\Manager\EligibilityUploadController::class, 'storeStudentProof'])
-                ->whereNumber('playerEligibility');
-            Route::delete('{playerEligibility}/student-proofs/{eligibilityStudentProof}', [\App\Http\Controllers\Api\V1\Manager\EligibilityUploadController::class, 'destroyStudentProof'])
-                ->whereNumber('playerEligibility')
-                ->whereNumber('eligibilityStudentProof');
-            Route::post('{playerEligibility}/portrait-photos', [\App\Http\Controllers\Api\V1\Manager\EligibilityUploadController::class, 'storePortraitPhoto'])
-                ->whereNumber('playerEligibility');
-            Route::delete('{playerEligibility}/portrait-photos/{eligibilityPortraitPhoto}', [\App\Http\Controllers\Api\V1\Manager\EligibilityUploadController::class, 'destroyPortraitPhoto'])
-                ->whereNumber('playerEligibility')
-                ->whereNumber('eligibilityPortraitPhoto');
-            Route::get('{playerEligibility}', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'show']);
-            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'store']);
-            Route::put('{playerEligibility}', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'update']);
-            Route::patch('{playerEligibility}', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'patch']);
-            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'bulkDestroy']);
-            Route::delete('{playerEligibility}', [\App\Http\Controllers\Api\V1\Manager\EligibilityController::class, 'destroy']);
+        // Player phones / emails (full CRUD)
+        Route::prefix('player-phones')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\PlayerPhoneController::class, 'index']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\PlayerPhoneController::class, 'store']);
+            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\PlayerPhoneController::class, 'bulkDestroy']);
+            Route::get('{playerPhone}', [\App\Http\Controllers\Api\V1\Manager\PlayerPhoneController::class, 'show'])
+                ->whereNumber('playerPhone');
+            Route::put('{playerPhone}', [\App\Http\Controllers\Api\V1\Manager\PlayerPhoneController::class, 'update'])
+                ->whereNumber('playerPhone');
+            Route::delete('{playerPhone}', [\App\Http\Controllers\Api\V1\Manager\PlayerPhoneController::class, 'destroy'])
+                ->whereNumber('playerPhone');
+        });
+
+        Route::prefix('player-emails')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\PlayerEmailController::class, 'index']);
+            Route::post('/', [\App\Http\Controllers\Api\V1\Manager\PlayerEmailController::class, 'store']);
+            Route::delete('bulk', [\App\Http\Controllers\Api\V1\Manager\PlayerEmailController::class, 'bulkDestroy']);
+            Route::get('{playerEmail}', [\App\Http\Controllers\Api\V1\Manager\PlayerEmailController::class, 'show'])
+                ->whereNumber('playerEmail');
+            Route::put('{playerEmail}', [\App\Http\Controllers\Api\V1\Manager\PlayerEmailController::class, 'update'])
+                ->whereNumber('playerEmail');
+            Route::delete('{playerEmail}', [\App\Http\Controllers\Api\V1\Manager\PlayerEmailController::class, 'destroy'])
+                ->whereNumber('playerEmail');
+        });
+
+        // Player identities (OAuth-linked by players in the App: no store route)
+        Route::prefix('player-identities')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\PlayerIdentityController::class, 'index']);
+            Route::get('{playerIdentity}', [\App\Http\Controllers\Api\V1\Manager\PlayerIdentityController::class, 'show'])
+                ->whereNumber('playerIdentity');
+            Route::put('{playerIdentity}', [\App\Http\Controllers\Api\V1\Manager\PlayerIdentityController::class, 'update'])
+                ->whereNumber('playerIdentity');
+            Route::delete('{playerIdentity}', [\App\Http\Controllers\Api\V1\Manager\PlayerIdentityController::class, 'destroy'])
+                ->whereNumber('playerIdentity');
+        });
+
+        // Player student proofs (review-only; players create them)
+        Route::prefix('player-student-proofs')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\PlayerStudentProofController::class, 'index']);
+            Route::get('{playerStudentProof}', [\App\Http\Controllers\Api\V1\Manager\PlayerStudentProofController::class, 'show'])
+                ->whereNumber('playerStudentProof');
+            Route::patch('{playerStudentProof}/approve', [\App\Http\Controllers\Api\V1\Manager\PlayerStudentProofController::class, 'approve'])
+                ->whereNumber('playerStudentProof');
+            Route::patch('{playerStudentProof}/reject', [\App\Http\Controllers\Api\V1\Manager\PlayerStudentProofController::class, 'reject'])
+                ->whereNumber('playerStudentProof');
+        });
+
+        // Player level assessments (review-only; players create them)
+        Route::prefix('player-level-assessments')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\PlayerLevelAssessmentController::class, 'index']);
+            Route::get('{playerLevelAssessment}', [\App\Http\Controllers\Api\V1\Manager\PlayerLevelAssessmentController::class, 'show'])
+                ->whereNumber('playerLevelAssessment');
+            Route::patch('{playerLevelAssessment}/approve', [\App\Http\Controllers\Api\V1\Manager\PlayerLevelAssessmentController::class, 'approve'])
+                ->whereNumber('playerLevelAssessment');
+            Route::patch('{playerLevelAssessment}/reject', [\App\Http\Controllers\Api\V1\Manager\PlayerLevelAssessmentController::class, 'reject'])
+                ->whereNumber('playerLevelAssessment');
+        });
+
+        // Level bands (read-only)
+        Route::prefix('levels')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\LevelController::class, 'index']);
+            Route::get('{level}', [\App\Http\Controllers\Api\V1\Manager\LevelController::class, 'show'])
+                ->whereNumber('level');
         });
 
         // Resource metadata management

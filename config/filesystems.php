@@ -77,7 +77,7 @@ return [
     | User uploads disk
     |--------------------------------------------------------------------------
     |
-    | Default disk for any user-uploaded files (profile photos, eligibility
+    | Default disk for any user-uploaded files (profile photos, student
     | documents, participation attachments, etc.). Store only paths relative to
     | this disk in the database. Point USER_UPLOADS_DISK at s3 when ready.
     |

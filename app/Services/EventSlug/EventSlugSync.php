@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Services\EventSlug;
 
-use App\Models\PadelEvent;
 use App\Models\Organizer;
+use App\Models\PadelEvent;
 
 /**
  * Persists computed event slugs via Eloquent (cache observers still run).

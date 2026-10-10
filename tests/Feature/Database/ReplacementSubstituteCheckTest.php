@@ -5,10 +5,10 @@ declare(strict_types=1);
 namespace Tests\Feature\Database;
 
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventDivisionReplacement;
 use App\Models\EventParticipation;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;

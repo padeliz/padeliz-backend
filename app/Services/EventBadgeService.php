@@ -4,12 +4,13 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Enums\PlayerLevel\AssessmentReviewStatus;
 use App\Enums\Registration\RegistrationPaymentStatus;
-use App\Models\PadelEvent;
 use App\Models\EventLotteryLucky;
 use App\Models\EventRegistration;
-use App\Models\Eligibility;
+use App\Models\PadelEvent;
 use App\Models\Player;
+use App\Models\PlayerLevelAssessment;
 use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
@@ -24,7 +25,7 @@ final class EventBadgeService
 
     public const KEY_REGISTRATION_PENDING = 'registration_pending';
 
-    public const KEY_ELIGIBILITY_PENDING = 'eligibility_pending';
+    public const KEY_LEVEL_ASSESSMENT_PENDING = 'level_assessment_pending';
 
     public const KEY_REGISTERED = 'registered';
 
@@ -52,12 +53,12 @@ final class EventBadgeService
         }
 
         $regsByEdition = [];
-        $pendingEligibilityEditionIds = [];
+        $levelAssessmentPending = false;
         $lotteryEditionIds = [];
 
         if ($player !== null) {
             $regsByEdition = $this->loadActiveRegistrationsByEdition((int) $player->id_player, $editionIds);
-            $pendingEligibilityEditionIds = $this->loadPendingEligibilityEditionIds((int) $player->id_player);
+            $levelAssessmentPending = $this->hasPendingLevelAssessmentInReview((int) $player->id_player);
             $lotteryEditionIds = $this->loadAcceptedLotteryEditionIds((int) $player->id_player, $editionIds);
         }
 
@@ -75,7 +76,7 @@ final class EventBadgeService
                 $pathBadge = $this->registrationPathBadge(
                     $regsByEdition[$id] ?? [],
                     $timing,
-                    in_array($id, $pendingEligibilityEditionIds, true),
+                    $levelAssessmentPending,
                     $now
                 );
                 if ($pathBadge !== null) {
@@ -106,9 +107,9 @@ final class EventBadgeService
 
     /**
      * @param  list<EventRegistration>  $regs
-     * @return Badge|null
+     * @return null|Badge
      */
-    private function registrationPathBadge(array $regs, string $timing, bool $eligibilityPendingForEdition, int $now): ?array
+    private function registrationPathBadge(array $regs, string $timing, bool $levelAssessmentPending, int $now): ?array
     {
         $active = array_values(array_filter(
             $regs,
@@ -157,8 +158,8 @@ final class EventBadgeService
             }
         }
 
-        if ($eligibilityPendingForEdition && $timing !== 'past') {
-            return $this->badge(self::KEY_ELIGIBILITY_PENDING, 'Eligibility Pending');
+        if ($levelAssessmentPending && $timing !== 'past') {
+            return $this->badge(self::KEY_LEVEL_ASSESSMENT_PENDING, 'Level Assessment Pending');
         }
 
         return null;
@@ -185,25 +186,15 @@ final class EventBadgeService
     }
 
     /**
-     * @return list<int>
+     * A pending assessment already handed over for review applies to the player, not to any single edition.
      */
-    private function loadPendingEligibilityEditionIds(int $playerId): array
+    private function hasPendingLevelAssessmentInReview(int $playerId): bool
     {
-        $pending = Eligibility::query()
+        return PlayerLevelAssessment::query()
             ->where('player_id', $playerId)
-            ->where('review_status', 'pending')
-            ->first();
-
-        if ($pending === null) {
-            return [];
-        }
-
-        $ids = $pending->event_ids;
-        if (! is_array($ids) || $ids === []) {
-            return [];
-        }
-
-        return array_values(array_map('intval', $ids));
+            ->where('review_status', AssessmentReviewStatus::Pending->value)
+            ->where('ready_for_review', true)
+            ->exists();
     }
 
     /**

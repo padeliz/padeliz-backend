@@ -9,7 +9,7 @@ use InvalidArgumentException;
 /**
  * MiniTour points-per-match formula from playing window and template round count.
  *
- * hours = whole hours of resolved playing window (overnight / 24:00 aware)
+ * hours = whole hours of resolved playing window (overnight-aware)
  * points = floor(ceil(110 * hours - 1 + 20/60) / rounds)
  */
 final class PointsPerMatchCalculator

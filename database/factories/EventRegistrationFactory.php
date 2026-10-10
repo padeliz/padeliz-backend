@@ -6,9 +6,9 @@ namespace Database\Factories;
 
 use App\Enums\Registration\RegistrationLifecycleStatus;
 use App\Enums\Registration\RegistrationPaymentStatus;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventRegistration;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use Illuminate\Database\Eloquent\Factories\Factory;
 

@@ -6,8 +6,8 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
 use App\Http\Resources\EventReferralSettingResource;
-use App\Models\PadelEvent;
 use App\Models\EventReferralSetting;
+use App\Models\PadelEvent;
 use App\Services\Referral\ReferralService;
 use Illuminate\Http\Request;
 

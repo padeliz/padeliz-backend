@@ -27,6 +27,7 @@ class PlayerController extends V1BaseController
 
     public function __construct(
         private readonly CachedPdfAvatarAttacher $pdfAvatarAttacher,
+        private readonly PdfCachedImageGenerator $pdfCachedImageGenerator = new PdfCachedImageGenerator(),
     ) {
     }
 
@@ -47,7 +48,7 @@ class PlayerController extends V1BaseController
      *     @OA\Parameter(
      *         name="q",
      *         in="query",
-     *         description="Search term for first_name, last_name, playtomic_id, rankedin_id, email, and phone",
+     *         description="Search term for first_name, middle_name, last_name, email, and phone",
      *         required=false,
      *         @OA\Schema(type="string")
      *     ),
@@ -61,9 +62,6 @@ class PlayerController extends V1BaseController
      *         @OA\Schema(
      *             type="object",
      *             additionalProperties=false,
-     *             @OA\Property(property="skill_division", type="string", description="Filter by skill division"),
-     *             @OA\Property(property="year_of_birth", type="string", description="Filter by year of birth"),
-     *             @OA\Property(property="being_student", type="string", description="Filter by student status (use 0 or 1)"),
      *             @OA\Property(property="user_types", type="string", description="Filter by user types")
      *         )
      *     ),
@@ -78,9 +76,8 @@ class PlayerController extends V1BaseController
      *             type="object",
      *             additionalProperties=false,
      *             @OA\Property(property="id_player", type="string", enum={"asc", "desc"}, description="Sort by player ID"),
-     *             @OA\Property(property="skill_division", type="string", enum={"asc", "desc"}, description="Sort by skill division"),
-     *             @OA\Property(property="year_of_birth", type="string", enum={"asc", "desc"}, description="Sort by year of birth"),
-     *             @OA\Property(property="being_student", type="string", enum={"asc", "desc"}, description="Sort by student status"),
+     *             @OA\Property(property="first_name", type="string", enum={"asc", "desc"}, description="Sort by first name"),
+     *             @OA\Property(property="last_name", type="string", enum={"asc", "desc"}, description="Sort by last name"),
      *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}, description="Sort by creation date"),
      *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"}, description="Sort by update date")
      *         )
@@ -220,7 +217,6 @@ class PlayerController extends V1BaseController
      *             @OA\Property(property="middle_name", type="string", maxLength=50, nullable=true),
      *             @OA\Property(property="last_name", type="string", maxLength=50, nullable=true),
      *             @OA\Property(property="phone", type="string", description="Optional primary phone contact"),
-     *             @OA\Property(property="skill_division", type="number"),
      *             @OA\Property(property="user_types", type="array", @OA\Items(type="string"))
      *         )
      *     ),
@@ -265,7 +261,6 @@ class PlayerController extends V1BaseController
             'middle_name' => 'nullable|string|max:50',
             'last_name' => 'nullable|string|max:50',
             'phone' => ['nullable', 'string', 'max:30', Rule::unique('player_phones', 'phone')],
-            'skill_division' => 'nullable|numeric|min:0|max:9.9',
             'user_types' => 'nullable|array',
             'user_types.*' => 'string|in:player,manager,admin',
         ]);
@@ -315,7 +310,6 @@ class PlayerController extends V1BaseController
      *             @OA\Property(property="middle_name", type="string", maxLength=50, nullable=true, description="Player middle name"),
      *             @OA\Property(property="last_name", type="string", maxLength=50, nullable=true, description="Player last name"),
      *             @OA\Property(property="phone", type="string", maxLength=30, description="Optional primary phone contact"),
-     *             @OA\Property(property="skill_division", type="number", minimum=0, maximum=9.9, description="Player skill division"),
      *             @OA\Property(property="user_types", type="array", description="User types", @OA\Items(type="string", enum={"player", "manager", "admin"}))
      *         )
      *     ),
@@ -370,9 +364,6 @@ class PlayerController extends V1BaseController
                 'max:30',
                 Rule::unique('player_phones', 'phone')->where(fn ($q) => $q->where('player_id', '!=', $player->id_player)),
             ],
-            'skill_division' => 'nullable|numeric|min:0|max:9.9',
-            'year_of_birth' => 'nullable|integer|min:1900|max:9999',
-            'being_student' => 'boolean',
             'user_types' => 'nullable|array',
             'user_types.*' => 'string|in:player,manager,admin',
         ]);
@@ -409,7 +400,6 @@ class PlayerController extends V1BaseController
      *             @OA\Property(property="middle_name", type="string", maxLength=50, nullable=true, description="Player middle name"),
      *             @OA\Property(property="last_name", type="string", maxLength=50, nullable=true, description="Player last name"),
      *             @OA\Property(property="phone", type="string", maxLength=30, description="Optional primary phone contact"),
-     *             @OA\Property(property="skill_division", type="number", minimum=0, maximum=9.9, description="Player skill division"),
      *             @OA\Property(property="user_types", type="array", description="User types", @OA\Items(type="string", enum={"player", "manager", "admin"}))
      *         )
      *     ),
@@ -465,7 +455,6 @@ class PlayerController extends V1BaseController
                 'max:30',
                 Rule::unique('player_phones', 'phone')->where(fn ($q) => $q->where('player_id', '!=', $player->id_player)),
             ],
-            'skill_division' => 'nullable|numeric|min:0|max:9.9',
             'user_types' => 'nullable|array',
             'user_types.*' => 'string|in:player,manager,admin',
         ]);
@@ -726,7 +715,7 @@ class PlayerController extends V1BaseController
         $collecting = (bool) $validated['is_collecting_points'];
 
         try {
-            $url = (new PdfCachedImageGenerator())->generatePlayerAvatarUrl($player, $collecting);
+            $url = $this->pdfCachedImageGenerator->generatePlayerAvatarUrl($player, $collecting);
         } catch (\Throwable $e) {
             return response()->json([
                 'message' => $e->getMessage() !== '' ? $e->getMessage() : 'Failed to generate PDF avatar.',

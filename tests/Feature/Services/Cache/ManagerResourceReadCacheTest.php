@@ -7,10 +7,13 @@ namespace Tests\Feature\Services\Cache;
 use App\Services\Cache\ManagerResourceReadCache;
 use App\Services\Cache\PadelizCache;
 use Illuminate\Http\Request;
+use Tests\Support\UsesRedisTaggedCache;
 use Tests\TestCase;
 
 final class ManagerResourceReadCacheTest extends TestCase
 {
+    use UsesRedisTaggedCache;
+
     private ManagerResourceReadCache $readCache;
 
     private PadelizCache $cache;
@@ -18,6 +21,7 @@ final class ManagerResourceReadCacheTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->forceRedisTaggedCache();
 
         $this->cache = app(PadelizCache::class);
         $this->readCache = app(ManagerResourceReadCache::class);

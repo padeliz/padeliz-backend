@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services;
 
-use App\Models\PadelEvent;
 use App\Models\EventDivisionStanding;
 use App\Models\EventParticipation;
+use App\Models\PadelEvent;
 use Illuminate\Support\Collection;
 
 final class PlayerEventHistoryService

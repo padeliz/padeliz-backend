@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Club;
-use App\Models\PadelEvent;
 use App\Models\Location;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Services\EventDeadlineTimestamps;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -40,7 +40,7 @@ class EventDeadlinesControllerTest extends TestCase
         $this->assertTrue(Schema::hasColumn('events', 'cancellation_allowed_until'));
         $this->assertFalse(Schema::hasColumn('events', 'registration_cancel_until'));
 
-        $editionsTable = DB::getTablePrefix().'events';
+        $editionsTable = DB::getTablePrefix() . 'events';
         foreach (['registration_allowed_until', 'cancellation_allowed_until'] as $column) {
             $meta = DB::selectOne("SHOW COLUMNS FROM `{$editionsTable}` WHERE Field = ?", [$column]);
             $this->assertNotNull($meta);

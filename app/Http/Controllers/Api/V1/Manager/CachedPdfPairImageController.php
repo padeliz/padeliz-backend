@@ -18,6 +18,11 @@ use Illuminate\Http\Request;
  */
 class CachedPdfPairImageController extends V1BaseController
 {
+    public function __construct(
+        private readonly PdfCachedImageGenerator $pdfCachedImageGenerator = new PdfCachedImageGenerator(),
+    ) {
+    }
+
     /**
      * @OA\Post(
      *     path="/api/v1/manager/cached-pdf-pair-images",
@@ -54,7 +59,7 @@ class CachedPdfPairImageController extends V1BaseController
         $player2 = Player::query()->findOrFail((int) $validated['player_2_id']);
 
         try {
-            $url = (new PdfCachedImageGenerator())->generatePairImageUrl(
+            $url = $this->pdfCachedImageGenerator->generatePairImageUrl(
                 $player1,
                 $player2,
                 (bool) $validated['player_1_is_collecting_points'],

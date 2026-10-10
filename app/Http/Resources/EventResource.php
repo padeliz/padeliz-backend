@@ -50,6 +50,10 @@ class EventResource extends JsonResource
                 array_key_exists('badges', $this->resource->getAttributes()),
                 fn () => $this->badges
             ),
+            'has_participated' => $this->when(
+                array_key_exists('has_participated', $this->resource->getAttributes()),
+                fn () => (bool) $this->resource->getAttribute('has_participated')
+            ),
         ];
     }
 

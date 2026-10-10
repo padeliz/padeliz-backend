@@ -12,6 +12,8 @@ enum PlayerCustomFieldType: string
     case Date = 'date';
     case SingleSelect = 'single_select';
     case MultiSelect = 'multi_select';
+    case Json = 'json';
+    case LabeledForeignId = 'labeled_foreign_id';
 
     /**
      * @return list<string>

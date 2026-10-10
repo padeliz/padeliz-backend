@@ -10,22 +10,24 @@ use App\Enums\Registration\PaymentProofReviewStatus;
 use App\Enums\Registration\RegistrationLifecycleStatus;
 use App\Enums\Registration\RegistrationPaymentStatus;
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventRegistration;
 use App\Models\EventRegistrationCheckout;
 use App\Models\EventRegistrationPaymentAttempt;
 use App\Models\EventRegistrationPaymentProof;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Services\Cache\PadelizCache;
 use App\Services\RegistrationPayment\CheckoutService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\Support\UsesRedisTaggedCache;
 use Tests\TestCase;
 
 class RegistrationQueueTest extends TestCase
 {
     use RefreshDatabase;
+    use UsesRedisTaggedCache;
 
     private Player $manager;
 
@@ -36,6 +38,7 @@ class RegistrationQueueTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->forceRedisTaggedCache();
 
         $this->manager = Player::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
@@ -148,6 +151,84 @@ class RegistrationQueueTest extends TestCase
             ->assertStatus(422);
         $this->getJson('/api/v1/manager/registration-checkouts?queue=not_a_queue')
             ->assertStatus(422);
+    }
+
+    public function test_checkout_index_without_queue_or_player_filter_returns_422(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $this->getJson('/api/v1/manager/registration-checkouts')
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['queue']);
+    }
+
+    public function test_checkout_index_by_player_does_not_require_queue(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $open = $this->makeRegistration(['payment_status' => RegistrationPaymentStatus::Unpaid], CheckoutStatus::Open);
+        $playerId = (int) $open->player_id;
+        $secondDivision = EventDivision::factory()->create([
+            'event_id' => $this->event->id_event,
+            'division_id' => Division::factory()->create()->id_division,
+            'division_title' => 'Second division',
+            'players_limit' => 50,
+        ]);
+        $completed = $this->makeRegistration([
+            'player_id' => $playerId,
+            'event_division_id' => $secondDivision->id_event_division,
+            'payment_status' => RegistrationPaymentStatus::Paid,
+        ], CheckoutStatus::Completed);
+        $otherPlayer = $this->makeRegistration();
+
+        $response = $this->getJson('/api/v1/manager/registration-checkouts?filters[player_id]=' . $playerId);
+        $response->assertStatus(200);
+
+        $ids = collect($response->json('data'))->pluck('id_checkout')->all();
+        $this->assertEqualsCanonicalizing(
+            [$this->checkoutId($open), $this->checkoutId($completed)],
+            $ids
+        );
+        $this->assertNotContains($this->checkoutId($otherPlayer), $ids);
+        $this->assertSame(
+            [$playerId],
+            collect($response->json('data'))->pluck('player_id')->unique()->values()->all()
+        );
+    }
+
+    public function test_checkout_index_by_player_skips_queue_triage_even_when_queue_is_sent(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $unpaid = $this->makeRegistration(['payment_status' => RegistrationPaymentStatus::Unpaid], CheckoutStatus::Open);
+
+        $response = $this->getJson(
+            '/api/v1/manager/registration-checkouts?queue=awaiting_proof&filters[player_id]=' . $unpaid->player_id
+        );
+        $response->assertStatus(200);
+
+        $ids = collect($response->json('data'))->pluck('id_checkout')->all();
+        $this->assertContains($this->checkoutId($unpaid), $ids);
+    }
+
+    public function test_checkout_index_by_player_with_no_checkouts_returns_empty_list(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $player = Player::factory()->create();
+
+        $this->getJson('/api/v1/manager/registration-checkouts?filters[player_id]=' . $player->id_player)
+            ->assertStatus(200)
+            ->assertJsonPath('data', []);
+    }
+
+    public function test_checkout_index_rejects_non_numeric_player_filter(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $this->getJson('/api/v1/manager/registration-checkouts?filters[player_id]=abc')
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['filters.player_id']);
     }
 
     public function test_index_without_queue_still_filters_by_event_id(): void

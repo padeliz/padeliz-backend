@@ -5,13 +5,17 @@ declare(strict_types=1);
 namespace Tests\Feature\Console;
 
 use App\Services\Cache\PadelizCache;
+use Tests\Support\UsesRedisTaggedCache;
 use Tests\TestCase;
 
 final class InvalidateMetadataCacheCommandTest extends TestCase
 {
+    use UsesRedisTaggedCache;
+
     protected function setUp(): void
     {
         parent::setUp();
+        $this->forceRedisTaggedCache();
         app(PadelizCache::class)->flushApplicationTags();
     }
 

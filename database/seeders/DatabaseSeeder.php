@@ -7,7 +7,6 @@ namespace Database\Seeders;
 use App\Models\Club;
 use App\Models\Court;
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventDivisionSchedule;
 use App\Models\EventLottery;
@@ -15,14 +14,15 @@ use App\Models\EventLotteryLucky;
 use App\Models\EventLotteryPrize;
 use App\Models\EventLotteryRule;
 use App\Models\EventParticipation;
-use App\Models\Eligibility;
-use App\Models\EligibilityPortraitPhoto;
-use App\Models\EligibilityStudentProof;
+use App\Models\Level;
 use App\Models\Location;
 use App\Models\Organizer;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Models\PlayerEmail;
 use App\Models\PlayerIdentity;
+use App\Models\PlayerLevel;
+use App\Models\PlayerLevelAssessment;
 use App\Models\PlayerPhone;
 use App\Models\PlayerProfileImage;
 use App\Models\Prize;
@@ -34,29 +34,18 @@ use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\App;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\File;
-use Illuminate\Support\Facades\Storage;
-use Illuminate\Support\Str;
 
 /**
- * Dev database seeding: truncates core tables, rebuilds synthetic clubs/events/players/eligibilities, etc.
+ * Dev database seeding: truncates core tables, rebuilds synthetic clubs/events/players/player levels, etc.
  *
  * Upload-related behaviour:
  * - Player profile images: {@see PlayerFactory} afterCreating writes files under `players/{id}/profile/`
  *   on `filesystems.user_uploads_disk` (skipped in `testing`). Seeder clears `storage/app/public/players`
  *   when that directory exists.
- * - Eligibility rows: {@see createEligibilities()} only (no attachment rows).
- * - Eligibility student proofs / portrait photos: {@see seedEligibilityAttachments()} writes files under
- *   `eligibilities/{id_eligibility}/student-proof` and `.../portrait-photo` (same layout as the API upload
- *   controller), skipped in `testing`. Seeder removes prior `eligibilities/` tree on that disk before re-seeding.
+ * - Player levels: {@see createPlayerLevels()} seeds assessments and the levels they approved (no files).
  */
 class DatabaseSeeder extends Seeder
 {
-    /** Minimal valid 1x1 PNG (transparent pixel). */
-    private const SEED_PNG_BYTES = 'iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==';
-
-    /** Minimal PDF document body for seeded student-proof files. */
-    private const SEED_PDF_BYTES = "%PDF-1.4\n1 0 obj<<>>endobj\ntrailer<<>>\n%%EOF\n";
-
     /**
      * Seed the application's database.
      *
@@ -86,9 +75,8 @@ class DatabaseSeeder extends Seeder
         EventParticipation::truncate();
         EventDivisionSchedule::truncate();
         EventDivision::truncate();
-        EligibilityPortraitPhoto::truncate();
-        EligibilityStudentProof::truncate();
-        Eligibility::truncate();
+        PlayerLevel::truncate();
+        PlayerLevelAssessment::truncate();
         PlayerProfileImage::truncate();
         PlayerIdentity::query()->delete();
         PlayerPhone::query()->delete();
@@ -109,8 +97,6 @@ class DatabaseSeeder extends Seeder
             $this->command->info('Clearing storage/app/public/players...');
             File::cleanDirectory($profileDir);
         }
-
-        $this->cleanEligibilityUploadsOnDisk();
 
         // Create specific managers with contacts/identities for local smoke login
         $this->command->info('Creating specific managers...');
@@ -206,13 +192,13 @@ class DatabaseSeeder extends Seeder
         // Create regular players (80% of total)
         $regularPlayersCount = (int) (\rand(15, 20) * 0.8);
         $players = $players->merge(
-            Player::factory()->count($regularPlayersCount)->playerOnly()->create()
+            Player::factory()->count($regularPlayersCount)->playerOnly()->withContacts()->create()
         );
 
         // Create managers (20% of total) — no admin role in seed data
         $managersCount = max(1, (int) (\rand(15, 20) * 0.2));
         $players = $players->merge(
-            Player::factory()->count($managersCount)->manager()->create()
+            Player::factory()->count($managersCount)->manager()->withContacts()->create()
         );
 
         $this->command->info('Creating past editions...');
@@ -265,14 +251,12 @@ class DatabaseSeeder extends Seeder
         $this->command->info('Creating lotteries, prize lines, rules and luckies...');
         $this->createLotteriesAndLuckies($pastEditions, $prizes, $sponsors, $faker);
 
-        $this->command->info('Creating player eligibilities...');
-        $this->createEligibilities($players, $allEditions, $faker);
-
-        $this->seedEligibilityAttachments($faker);
+        $this->command->info('Creating player level assessments and levels...');
+        $this->createPlayerLevels($players, $faker);
     }
 
     /**
-     * Create a named player and replace factory-generated contacts/identity with live-like values.
+     * Create a named player with live-like contacts and Google identity.
      *
      * @param  list<string>  $userTypes
      */
@@ -286,10 +270,6 @@ class DatabaseSeeder extends Seeder
             'last_name' => $parts['last_name'],
             'user_types' => $userTypes,
         ]);
-
-        $player->emails()->delete();
-        $player->phones()->delete();
-        $player->identities()->delete();
 
         $playerEmail = PlayerEmail::create([
             'player_id' => $player->id_player,
@@ -316,111 +296,6 @@ class DatabaseSeeder extends Seeder
         ]);
 
         return $player->fresh(['emails', 'phones', 'identities']);
-    }
-
-    /**
-     * Remove previous seeded eligibility files from the user uploads disk (local dev only).
-     * Skipped in PHPUnit so tests never touch real storage.
-     */
-    private function cleanEligibilityUploadsOnDisk(): void
-    {
-        if (App::environment('testing')) {
-            return;
-        }
-
-        $diskName = config('filesystems.user_uploads_disk', 'public');
-
-        if (! Storage::disk($diskName)->exists('eligibilities')) {
-            return;
-        }
-
-        $this->command->info('Clearing storage/app/public/eligibilities...');
-        Storage::disk($diskName)->deleteDirectory('eligibilities');
-    }
-
-    /**
-     * Seed eligibility_student_proofs / eligibility_portrait_photos with on-disk blobs matching API paths.
-     *
-     * Rules (dev realism):
-     * - Student proofs: only pending eligibilities with {@see Eligibility::$being_student} true; 0–2 files each.
-     * - Portrait photos: random subset (~25%) of any-status eligibilities; 1–2 images each (cap 3).
-     */
-    private function seedEligibilityAttachments($faker): void
-    {
-        if (App::environment('testing')) {
-            return;
-        }
-
-        $diskName = config('filesystems.user_uploads_disk', 'public');
-        $disk = Storage::disk($diskName);
-        $now = time();
-        $png = base64_decode(self::SEED_PNG_BYTES, true);
-        if ($png === false) {
-            $png = ' ';
-        }
-        $pdf = self::SEED_PDF_BYTES;
-
-        $this->command->info('Seeding eligibility student proofs and portrait photos...');
-
-        foreach (Eligibility::where('review_status', 'pending')->cursor() as $eligibility) {
-            if ($eligibility->being_student !== true) {
-                if (! $faker->boolean(55)) {
-                    continue;
-                }
-                $eligibility->being_student = true;
-                if ($eligibility->media_source === null && $eligibility->friends_source === null) {
-                    $eligibility->media_source = [$faker->numberBetween(1, 6)];
-                }
-                $eligibility->save();
-            }
-
-            if ($eligibility->being_student !== true || ! $faker->boolean(65)) {
-                continue;
-            }
-
-            $proofCount = \random_int(1, min(2, EligibilityStudentProof::MAX_PER_ELIGIBILITY));
-            $id = (int) $eligibility->getKey();
-
-            for ($i = 0; $i < $proofCount; $i++) {
-                $ext = $faker->boolean() ? '.pdf' : '.png';
-                $body = $ext === '.pdf' ? $pdf : $png;
-
-                $proof = EligibilityStudentProof::create([
-                    'eligibility_id' => $id,
-                    'student_proof_path' => '',
-                    'sort_order' => $i,
-                    'inserted_at' => $now,
-                    'updated_at' => $now,
-                ]);
-
-                $relativePath = 'eligibility-student-proofs/' . $proof->getKey() . '/student-proof/' . Str::uuid()->toString() . $ext;
-                $disk->put($relativePath, $body, ['visibility' => 'public']);
-                $proof->update(['student_proof_path' => $relativePath]);
-            }
-        }
-
-        foreach (Eligibility::cursor() as $eligibility) {
-            if (! $faker->boolean(25)) {
-                continue;
-            }
-
-            $photoCount = \random_int(1, min(2, EligibilityPortraitPhoto::MAX_PER_ELIGIBILITY));
-            $id = (int) $eligibility->getKey();
-
-            for ($i = 0; $i < $photoCount; $i++) {
-                $photo = EligibilityPortraitPhoto::create([
-                    'eligibility_id' => $id,
-                    'portrait_photo_path' => '',
-                    'sort_order' => $i,
-                    'inserted_at' => $now,
-                    'updated_at' => $now,
-                ]);
-
-                $relativePath = 'eligibility-portrait-photos/' . $photo->getKey() . '/portrait-photo/' . Str::uuid()->toString() . '.png';
-                $disk->put($relativePath, $png, ['visibility' => 'public']);
-                $photo->update(['portrait_photo_path' => $relativePath]);
-            }
-        }
     }
 
     private function createEditions(int $index_nr, int $count, Carbon $startDate, Carbon $endDate, $locations)
@@ -567,81 +442,25 @@ class DatabaseSeeder extends Seeder
         }
     }
 
-    private function createEligibilities($players, $editions, $faker): void
+    /**
+     * Most players get an approved assessment with a level; a few have one waiting in the review queue.
+     */
+    private function createPlayerLevels($players, $faker): void
     {
-        $now = time();
+        $bands = Level::query()->get();
+        if ($bands->isEmpty()) {
+            return;
+        }
 
         foreach ($players as $player) {
-            $primaryPhone = $player->phones()->where('is_primary', true)->value('phone')
-                ?? $player->phones()->value('phone');
-
-            // Create one reviewed eligibility for most players
             if ($faker->boolean(75)) {
-                $reviewStatus = $faker->randomElement(['approved', 'rejected', 'discarded']);
-                $reviewedAt = $reviewStatus === 'approved' || $reviewStatus === 'rejected' ? $now - $faker->numberBetween(60, 3600) : null;
+                $band = $bands->random();
+                $level = number_format(((float) $band->level_min + (float) $band->level_max) / 2, 2, '.', '');
 
-                $eligibility = new Eligibility();
-                $eligibility->player_id = $player->id_player;
-                $eligibility->event_ids = $faker->boolean(70) ? [$editions->random()->id_event] : null;
-
-                // Sources (required: media_source OR friends_source)
-                if ($faker->boolean(60)) {
-                    $eligibility->media_source = [$faker->numberBetween(1, 6)];
-                    $eligibility->friends_source = null;
-                } else {
-                    $eligibility->media_source = null;
-                    $eligibility->friends_source = [$faker->firstName(), $faker->firstName()];
-                }
-
-                $eligibility->racket_experience = $faker->boolean(60) ? [$faker->randomElement(['none', 'tennis', 'squash', 'badminton', 'padel'])] : null;
-
-                $eligibility->first_name = $player->first_name ?? $faker->firstName();
-                $eligibility->middle_name = $player->middle_name ?? null;
-                $eligibility->last_name = $player->last_name ?? $faker->lastName();
-                $eligibility->phone = $primaryPhone ?? $faker->phoneNumber();
-                $eligibility->year_of_birth = $faker->numberBetween(1960, 2006);
-                $eligibility->birth_month = $faker->numberBetween(1, 12);
-                $eligibility->birth_day = $faker->numberBetween(1, 28);
-                $eligibility->being_student = $faker->optional()->boolean();
-
-                $eligibility->playtomic_id = $player->playtomic_id ?? $faker->optional()->bothify('??#####');
-                $eligibility->rankedin_id = $player->rankedin_id ?? $faker->optional()->bothify('??######');
-                $eligibility->instagram_username = $player->instagram_username ?? $faker->optional()->userName();
-                $eligibility->facebook_username = $player->facebook_username ?? $faker->optional()->userName();
-
-                $eligibility->submitted_at = $now - $faker->numberBetween(3600, 86400 * 14);
-                $eligibility->resubmitted_at = $faker->boolean(20) ? $now - $faker->numberBetween(60, 3600) : null;
-                $eligibility->review_status = $reviewStatus;
-                $eligibility->reviewed_at = $reviewedAt;
-                $eligibility->review_message = $reviewStatus === 'rejected' ? $faker->sentence() : null;
-                $eligibility->inserted_at = $eligibility->submitted_at;
-                $eligibility->updated_at = $eligibility->resubmitted_at;
-
-                $eligibility->recomputeReadyForReview();
-                $eligibility->save();
-            }
-
-            // Create at most one pending eligibility per player (DB constraint also enforces this)
-            if ($faker->boolean(25)) {
-                $pending = new Eligibility();
-                $pending->player_id = $player->id_player;
-                $pending->event_ids = $faker->boolean(40) ? [$editions->random()->id_event] : null;
-                $pending->submitted_at = $now - $faker->numberBetween(60, 3600);
-                $pending->review_status = 'pending';
-                $pending->inserted_at = $pending->submitted_at;
-                $pending->updated_at = null;
-
-                // Sometimes incomplete (not ready), sometimes ready
-                if ($faker->boolean(40)) {
-                    $pending->media_source = [$faker->numberBetween(1, 6)];
-                    $pending->first_name = $player->first_name ?? $faker->firstName();
-                    $pending->last_name = $player->last_name ?? $faker->lastName();
-                    $pending->phone = $primaryPhone ?? $faker->phoneNumber();
-                    $pending->year_of_birth = $faker->numberBetween(1960, 2006);
-                }
-
-                $pending->recomputeReadyForReview();
-                $pending->save();
+                $assessment = PlayerLevelAssessment::factory()->forPlayer($player)->approved()->create();
+                PlayerLevel::factory()->fromAssessment($assessment)->level($level)->create();
+            } elseif ($faker->boolean(40)) {
+                PlayerLevelAssessment::factory()->forPlayer($player)->readyForReview()->create();
             }
         }
     }

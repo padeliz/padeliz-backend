@@ -107,7 +107,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
     public function index(Request $request)
     {
         $payload = $this->cachedManagerIndex('divisions', $request, [], function () use ($request) {
-            $query = Division::with('itsFirstEvent');
+            $query = Division::with(['itsFirstEvent', 'levels']);
 
             $this->applyAdvancedPagination(
                 $query,
@@ -180,7 +180,7 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
     public function show(Division $division)
     {
         $data = $this->cachedManagerShow('divisions', (int) $division->id_division, function () use ($division) {
-            $division->load('itsFirstEvent');
+            $division->load(['itsFirstEvent', 'levels']);
 
             return (new DivisionResource($division))->resolve();
         });
@@ -243,10 +243,19 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
             'name' => 'required|string|max:25',
             'color' => 'required|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/',
             'its_first_event_id' => 'required|integer|exists:events,id_event',
+            'level_ids' => 'sometimes|array',
+            'level_ids.*' => 'integer|distinct|exists:levels,id_level',
+            'level_min' => 'sometimes|nullable|numeric|between:0,9.99',
+            'level_max' => 'sometimes|nullable|numeric|between:0,9.99',
         ]);
 
+        $levelIds = $this->pullLevelIds($validated);
+
         $division = Division::create($validated);
-        $division->load('itsFirstEvent');
+        if ($levelIds !== null) {
+            $this->syncLevels($division, $levelIds);
+        }
+        $division->load(['itsFirstEvent', 'levels']);
 
         return $this->resourceResponse(
             new DivisionResource($division),
@@ -320,10 +329,20 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
             'name' => 'required|string|max:25',
             'color' => 'required|string|max:7|regex:/^#[0-9A-Fa-f]{6}$/',
             'its_first_event_id' => 'required|integer|exists:events,id_event',
+            'level_ids' => 'sometimes|array',
+            'level_ids.*' => 'integer|distinct|exists:levels,id_level',
+            'level_min' => 'sometimes|nullable|numeric|between:0,9.99',
+            'level_max' => 'sometimes|nullable|numeric|between:0,9.99',
         ]);
 
+        $levelIds = $this->pullLevelIds($validated);
+
         $division->update($validated);
-        $division->load('itsFirstEvent');
+        if ($levelIds !== null) {
+            // Bounds stay as sent; the pivot sync never rewrites level_min / level_max.
+            $this->syncLevels($division, $levelIds);
+        }
+        $division->load(['itsFirstEvent', 'levels']);
 
         return $this->resourceResponse(
             new DivisionResource($division),
@@ -396,10 +415,20 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
             'name' => 'sometimes|string|max:25',
             'color' => 'sometimes|string|max:7|regex:/^#[0-9A-F]{6}$/i',
             'its_first_event_id' => 'sometimes|required|integer|exists:events,id_event',
+            'level_ids' => 'sometimes|array',
+            'level_ids.*' => 'integer|distinct|exists:levels,id_level',
+            'level_min' => 'sometimes|nullable|numeric|between:0,9.99',
+            'level_max' => 'sometimes|nullable|numeric|between:0,9.99',
         ]);
 
+        $levelIds = $this->pullLevelIds($validated);
+
         $division->update($validated);
-        $division->load('itsFirstEvent');
+        if ($levelIds !== null) {
+            // Bounds stay as sent; the pivot sync never rewrites level_min / level_max.
+            $this->syncLevels($division, $levelIds);
+        }
+        $division->load(['itsFirstEvent', 'levels']);
 
         return $this->resourceResponse(
             new DivisionResource($division),
@@ -603,5 +632,32 @@ class DivisionController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
             'division',
             'Divisions deleted successfully'
         );
+    }
+
+    /**
+     * Pivot-only change: bounds are never rewritten, but cached reads still need to be flushed.
+     *
+     * @param  list<int>  $levelIds
+     */
+    private function syncLevels(Division $division, array $levelIds): void
+    {
+        $division->levels()->sync($levelIds);
+        app(\App\Services\Cache\ModelCacheInvalidator::class)->invalidate($division);
+    }
+
+    /**
+     * @param  array<string, mixed>  $validated
+     * @return null|list<int>
+     */
+    private function pullLevelIds(array &$validated): ?array
+    {
+        if (! array_key_exists('level_ids', $validated)) {
+            return null;
+        }
+
+        $ids = array_map('intval', $validated['level_ids']);
+        unset($validated['level_ids']);
+
+        return array_values(array_unique($ids));
     }
 }

@@ -6,7 +6,6 @@ namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Court;
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventDivisionCourt;
 use App\Models\EventDivisionPoster;
@@ -16,6 +15,7 @@ use App\Models\EventParticipation;
 use App\Models\GameMatch;
 use App\Models\MatchPlayer;
 use App\Models\MatchSide;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Services\Schedule\RoundClockCalculator;
 use Illuminate\Foundation\Testing\RefreshDatabase;

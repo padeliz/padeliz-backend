@@ -26,8 +26,6 @@ class HasResourceMetadataTest extends TestCase
             'first_name',
             'middle_name',
             'last_name',
-            'playtomic_id',
-            'rankedin_id',
         ];
 
         $this->assertEquals($expectedFields, Player::getSearchableFields());
@@ -46,9 +44,6 @@ class HasResourceMetadataTest extends TestCase
     public function test_get_filterable_fields_returns_defined_fields(): void
     {
         $expectedFields = [
-            'skill_division',
-            'year_of_birth',
-            'being_student',
             'user_types',
         ];
 
@@ -69,9 +64,8 @@ class HasResourceMetadataTest extends TestCase
     {
         $expectedFields = [
             'id_player',
-            'skill_division',
-            'year_of_birth',
-            'being_student',
+            'first_name',
+            'last_name',
             'inserted_at',
             'updated_at',
         ];
@@ -94,22 +88,19 @@ class HasResourceMetadataTest extends TestCase
         $this->assertTrue(Player::isSearchableField('first_name'));
         $this->assertTrue(Player::isSearchableField('middle_name'));
         $this->assertTrue(Player::isSearchableField('last_name'));
-        $this->assertTrue(Player::isSearchableField('playtomic_id'));
     }
 
     public function test_is_searchable_field_returns_false_for_invalid_field(): void
     {
         $this->assertFalse(Player::isSearchableField('invalid_field'));
-        $this->assertFalse(Player::isSearchableField('skill_division'));
+        $this->assertFalse(Player::isSearchableField('user_types'));
         $this->assertFalse(Player::isSearchableField('name'));
         $this->assertFalse(Player::isSearchableField(''));
     }
 
     public function test_is_filterable_field_returns_true_for_valid_field(): void
     {
-        $this->assertTrue(Player::isFilterableField('skill_division'));
-        $this->assertTrue(Player::isFilterableField('year_of_birth'));
-        $this->assertTrue(Player::isFilterableField('being_student'));
+        $this->assertTrue(Player::isFilterableField('user_types'));
     }
 
     public function test_is_filterable_field_returns_false_for_invalid_field(): void
@@ -122,7 +113,7 @@ class HasResourceMetadataTest extends TestCase
     public function test_is_sortable_field_returns_true_for_valid_field(): void
     {
         $this->assertTrue(Player::isSortableField('id_player'));
-        $this->assertTrue(Player::isSortableField('skill_division'));
+        $this->assertTrue(Player::isSortableField('first_name'));
         $this->assertTrue(Player::isSortableField('inserted_at'));
     }
 
@@ -131,8 +122,7 @@ class HasResourceMetadataTest extends TestCase
         $this->assertFalse(Player::isSortableField('invalid_field'));
         $this->assertFalse(Player::isSortableField('nonexistent_field'));
         $this->assertFalse(Player::isSortableField('name'));
-        $this->assertFalse(Player::isSortableField('first_name'));
-        $this->assertFalse(Player::isSortableField('last_name'));
+        $this->assertFalse(Player::isSortableField('middle_name'));
         $this->assertFalse(Player::isSortableField(''));
     }
 
@@ -290,9 +280,9 @@ class HasResourceMetadataTest extends TestCase
         $this->assertFalse(Player::isSearchableField('name'));
         $this->assertFalse(Player::isSortableField('name'));
 
-        $this->assertTrue(Player::isFilterableField('skill_division'));
-        $this->assertFalse(Player::isFilterableField('Skill_Division'));
-        $this->assertFalse(Player::isFilterableField('SKILL_DIVISION'));
+        $this->assertTrue(Player::isFilterableField('user_types'));
+        $this->assertFalse(Player::isFilterableField('User_Types'));
+        $this->assertFalse(Player::isFilterableField('USER_TYPES'));
     }
 
     public function test_empty_string_handling(): void

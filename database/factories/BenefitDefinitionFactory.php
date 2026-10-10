@@ -23,7 +23,7 @@ class BenefitDefinitionFactory extends Factory
         $name = $this->faker->unique()->words(2, true);
 
         return [
-            'slug' => Str::slug($name).'-'.$this->faker->unique()->numerify('###'),
+            'slug' => Str::slug($name) . '-' . $this->faker->unique()->numerify('###'),
             'name' => ucwords($name),
             'description' => $this->faker->optional()->sentence(),
             'is_active' => true,
@@ -168,10 +168,10 @@ class BenefitDefinitionFactory extends Factory
         ]);
     }
 
-    public function withEligibilityFlag(string $flag = 'being_student'): static
+    public function withStudentProofActive(): static
     {
-        return $this->afterCreating(function (BenefitDefinition $benefit) use ($flag): void {
-            BenefitCondition::factory()->eligibilityFlag($flag)->create([
+        return $this->afterCreating(function (BenefitDefinition $benefit): void {
+            BenefitCondition::factory()->studentProofActive()->create([
                 'benefit_definition_id' => $benefit->id_benefit,
             ]);
         });

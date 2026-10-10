@@ -4,19 +4,16 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\App;
 
-use App\Enums\Registration\PaymentAttemptStatus;
 use App\Enums\Registration\RegistrationPaymentStatus;
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventParticipation;
-use App\Models\EventReferralCode;
-use App\Models\EventReferralCodeInvitee;
 use App\Models\EventRegistration;
 use App\Models\EventRegistrationPaymentAttempt;
-use App\Models\Eligibility;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Models\PlayerEmail;
+use App\Models\PlayerLevel;
 use App\Services\Referral\ReferralService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
@@ -70,11 +67,7 @@ class BenefitsReferralAndPaymentWindowTest extends TestCase
             'players_limit' => 10,
             'entry_fee' => 55,
         ]);
-        Eligibility::factory()->create([
-            'player_id' => $this->player->id_player,
-            'review_status' => 'approved',
-            'being_student' => false,
-        ]);
+        PlayerLevel::factory()->level('4.50')->create(['player_id' => $this->player->id_player]);
     }
 
     public function test_unpaid_create_sets_payment_due_at_and_snapshots_division_fee(): void

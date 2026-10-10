@@ -9,8 +9,8 @@ use App\Models\PlayerEmail;
 use App\Models\PlayerIdentity;
 use App\Services\PlayerIdentity\ContactConflictException;
 use App\Services\PlayerIdentity\IdentityConflictException;
-use App\Services\PlayerIdentity\PlayerIdentityLinkResult;
 use App\Services\PlayerIdentity\PlayerIdentityLinker;
+use App\Services\PlayerIdentity\PlayerIdentityLinkResult;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -29,7 +29,6 @@ final class PlayerIdentityLinkerTest extends TestCase
     public function test_links_new_google_identity_with_primary_email(): void
     {
         $player = Player::factory()->create();
-        $player->emails()->delete();
 
         $result = $this->linker->link(
             player: $player,
@@ -76,6 +75,49 @@ final class PlayerIdentityLinkerTest extends TestCase
         $this->assertTrue($result->wasAlreadyLinked());
         $this->assertSame(1, PlayerIdentity::query()->where('provider_subject', 'same-sub')->count());
         $this->assertGreaterThan(100, (int) $identity->fresh()->last_login_at);
+    }
+
+    public function test_already_linked_refreshes_avatar_url_from_claims(): void
+    {
+        $player = Player::factory()->withGoogleIdentity('avatar-sub')->create();
+        $identity = $player->identities()->first();
+        $identity->update(['avatar_url' => 'https://example.com/old.png']);
+
+        $result = $this->linker->link(
+            player: $player,
+            provider: PlayerIdentity::PROVIDER_GOOGLE,
+            subject: 'avatar-sub',
+            avatarUrl: 'https://example.com/new.png',
+            asLogin: true,
+        );
+
+        $this->assertTrue($result->wasAlreadyLinked());
+        $this->assertSame('https://example.com/new.png', $identity->fresh()->avatar_url);
+        $this->assertSame('https://example.com/new.png', $result->identity->avatar_url);
+    }
+
+    public function test_already_linked_does_not_clear_avatar_url_when_claim_missing(): void
+    {
+        $player = Player::factory()->withGoogleIdentity('keep-sub')->create();
+        $identity = $player->identities()->first();
+        $identity->update(['avatar_url' => 'https://example.com/keep.png']);
+
+        $this->linker->link(
+            player: $player,
+            provider: PlayerIdentity::PROVIDER_GOOGLE,
+            subject: 'keep-sub',
+            avatarUrl: null,
+            asLogin: true,
+        );
+        $this->linker->link(
+            player: $player,
+            provider: PlayerIdentity::PROVIDER_GOOGLE,
+            subject: 'keep-sub',
+            avatarUrl: '',
+            asLogin: true,
+        );
+
+        $this->assertSame('https://example.com/keep.png', $identity->fresh()->avatar_url);
     }
 
     public function test_identity_conflict_other_player(): void
@@ -146,7 +188,7 @@ final class PlayerIdentityLinkerTest extends TestCase
 
     public function test_second_email_is_not_primary_when_primary_exists(): void
     {
-        $player = Player::factory()->create();
+        $player = Player::factory()->withPrimaryEmail()->create();
         $this->assertTrue($player->emails()->where('is_primary', true)->exists());
 
         $this->linker->link(

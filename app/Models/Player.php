@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Services\PlayerLevel\PlayerLevelService;
 use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Casts\Attribute;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
@@ -33,17 +34,6 @@ use Laravel\Sanctum\HasApiTokens;
  *         description="Computed full name from first, middle, and last name"
  *     ),
  *     @OA\Property(
- *         property="skill_division",
- *         type="number",
- *         format="float",
- *         nullable=true,
- *         minimum=0.0,
- *         maximum=9.9,
- *         title="Skill Level",
- *         description="Skill level from 0.0 to 9.9",
- *         example=4.5
- *     ),
- *     @OA\Property(
  *         property="first_name",
  *         type="string",
  *         maxLength=50,
@@ -67,39 +57,6 @@ use Laravel\Sanctum\HasApiTokens;
  *         description="Player's last name"
  *     ),
  *     @OA\Property(
- *         property="year_of_birth",
- *         type="integer",
- *         format="year",
- *         nullable=true,
- *         minimum=1900,
- *         maximum=9999,
- *         title="Birth Year",
- *         description="Year of birth"
- *     ),
- *     @OA\Property(
- *         property="being_student",
- *         type="boolean",
- *         default=false,
- *         title="Student",
- *         description="Whether the player is a student"
- *     ),
- *     @OA\Property(
- *         property="playtomic_id",
- *         type="string",
- *         maxLength=10,
- *         nullable=true,
- *         title="Playtomic ID",
- *         description="Playtomic platform identifier"
- *     ),
- *     @OA\Property(
- *         property="rankedin_id",
- *         type="string",
- *         maxLength=15,
- *         nullable=true,
- *         title="Rankedin ID",
- *         description="Rankedin platform identifier"
- *     ),
- *     @OA\Property(
  *         property="user_types",
  *         type="array",
  *         nullable=true,
@@ -107,22 +64,6 @@ use Laravel\Sanctum\HasApiTokens;
  *         title="User Types",
  *         description="Array of user roles",
  *         example={"player", "manager"}
- *     ),
- *     @OA\Property(
- *         property="instagram_username",
- *         type="string",
- *         maxLength=50,
- *         nullable=true,
- *         title="Instagram",
- *         description="Instagram username"
- *     ),
- *     @OA\Property(
- *         property="facebook_username",
- *         type="string",
- *         maxLength=50,
- *         nullable=true,
- *         title="Facebook",
- *         description="Facebook username"
  *     ),
  *     @OA\Property(
  *         property="created_via",
@@ -204,6 +145,13 @@ use Laravel\Sanctum\HasApiTokens;
  *         description="Player phone numbers"
  *     ),
  *     @OA\Property(
+ *         property="identities",
+ *         type="array",
+ *         @OA\Items(ref="#/components/schemas/PlayerIdentity"),
+ *         title="Identities",
+ *         description="Linked sign-in identities (Google, Apple, SMS, dev)"
+ *     ),
+ *     @OA\Property(
  *         property="uploaded_profile_images",
  *         type="array",
  *         readOnly=true,
@@ -260,17 +208,12 @@ class Player extends Authenticatable
         'first_name',
         'middle_name',
         'last_name',
-        'playtomic_id',
-        'rankedin_id',
     ];
 
     /**
      * Fields that can be filtered
      */
     public static array $filterableFields = [
-        'skill_division',
-        'year_of_birth',
-        'being_student',
         'user_types',
     ];
 
@@ -279,9 +222,8 @@ class Player extends Authenticatable
      */
     public static array $sortableFields = [
         'id_player',
-        'skill_division',
-        'year_of_birth',
-        'being_student',
+        'first_name',
+        'last_name',
         'inserted_at',
         'updated_at',
     ];
@@ -303,16 +245,9 @@ class Player extends Authenticatable
     public const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
-        'skill_division',
         'first_name',
         'middle_name',
         'last_name',
-        'year_of_birth',
-        'being_student',
-        'playtomic_id',
-        'rankedin_id',
-        'instagram_username',
-        'facebook_username',
         'user_types',
         'remember_token',
         'created_via',
@@ -336,9 +271,6 @@ class Player extends Authenticatable
     protected $casts = [
         'inserted_at' => 'integer',
         'updated_at' => 'integer',
-        'being_student' => 'boolean',
-        'year_of_birth' => 'integer',
-        'skill_division' => 'float',
         'user_types' => 'array',
         'created_via_import_id' => 'integer',
     ];
@@ -419,6 +351,53 @@ class Player extends Authenticatable
     public function importRows(): HasMany
     {
         return $this->hasMany(PlayerImportRow::class, 'player_id', 'id_player');
+    }
+
+    public function customFieldSubmissions(): HasMany
+    {
+        return $this->hasMany(PlayerCustomFieldSubmission::class, 'player_id', 'id_player');
+    }
+
+    public function levelAssessments(): HasMany
+    {
+        return $this->hasMany(PlayerLevelAssessment::class, 'player_id', 'id_player');
+    }
+
+    public function playerLevels(): HasMany
+    {
+        return $this->hasMany(PlayerLevel::class, 'player_id', 'id_player')
+            ->orderByDesc('inserted_at')
+            ->orderByDesc('id_player_level');
+    }
+
+    public function mediaSources(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            MediaSource::class,
+            'player_media_sources',
+            'player_id',
+            'media_source_id',
+            'id_player',
+            'id_media_source'
+        )->withPivot(['id_player_media_source', 'inserted_at', 'updated_at'])
+            ->orderBy('media_sources.sort_order');
+    }
+
+    public function friendsSources(): HasMany
+    {
+        return $this->hasMany(PlayerFriendsSource::class, 'player_id', 'id_player');
+    }
+
+    public function studentProofs(): HasMany
+    {
+        return $this->hasMany(PlayerStudentProof::class, 'player_id', 'id_player')
+            ->orderBy('sort_order')
+            ->orderBy('id_player_student_proof');
+    }
+
+    public function currentLevel(): ?PlayerLevel
+    {
+        return app(PlayerLevelService::class)->currentLevel((int) $this->id_player);
     }
 
     /**

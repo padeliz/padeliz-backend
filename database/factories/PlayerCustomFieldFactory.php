@@ -47,6 +47,13 @@ class PlayerCustomFieldFactory extends Factory
         ]);
     }
 
+    public function json(): static
+    {
+        return $this->state(fn (): array => [
+            'type' => PlayerCustomFieldType::Json,
+        ]);
+    }
+
     public function archived(): static
     {
         return $this->state(fn (): array => [

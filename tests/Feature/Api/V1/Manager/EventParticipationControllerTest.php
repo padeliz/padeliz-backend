@@ -6,9 +6,9 @@ namespace Tests\Feature\Api\V1\Manager;
 
 use App\Enums\PlayerCustomFieldType;
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventParticipation;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Models\PlayerCustomField;
 use App\Models\PlayerCustomFieldValue;
@@ -871,7 +871,7 @@ class EventParticipationControllerTest extends TestCase
         $this->assertNotEmpty($row['custom_field_values'][0]['recent_answers']);
         $this->assertSame('Padel Club', $row['custom_field_values'][0]['recent_answers'][0]['value']);
         $this->assertArrayHasKey('inserted_date', $row['custom_field_values'][0]['recent_answers'][0]);
-        $this->assertArrayHasKey('edition_name', $row['custom_field_values'][0]['recent_answers'][0]);
+        $this->assertArrayHasKey('submitted_via', $row['custom_field_values'][0]['recent_answers'][0]);
     }
 
     public function test_index_with_unknown_custom_field_ids_returns_empty_values(): void

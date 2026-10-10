@@ -27,6 +27,8 @@ final class PlayerCustomFieldValuePresenter
             PlayerCustomFieldType::Date => $value->value_date,
             PlayerCustomFieldType::SingleSelect => self::singleSelectLabel($value),
             PlayerCustomFieldType::MultiSelect => self::multiSelectLabels($value),
+            PlayerCustomFieldType::Json => $value->value_json,
+            PlayerCustomFieldType::LabeledForeignId => $value->value_text,
         };
     }
 

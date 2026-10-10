@@ -5,17 +5,19 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventParticipation;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Services\Cache\PadelizCache;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\Support\UsesRedisTaggedCache;
 use Tests\TestCase;
 
 class PlayerControllerTest extends TestCase
 {
     use RefreshDatabase;
+    use UsesRedisTaggedCache;
 
     private $manager;
 
@@ -28,6 +30,7 @@ class PlayerControllerTest extends TestCase
     public function setUp(): void
     {
         parent::setUp();
+        $this->forceRedisTaggedCache();
 
         app(PadelizCache::class)->flushApplicationTags();
 
@@ -36,17 +39,13 @@ class PlayerControllerTest extends TestCase
             'middle_name' => null,
             'last_name' => 'Manager',
             'user_types' => ['player', 'manager'],
-            'skill_division' => 2.0,
         ]);
 
-        $this->player = Player::factory()->create([
+        $this->player = Player::factory()->withContacts()->create([
             'first_name' => 'Test',
             'middle_name' => null,
             'last_name' => 'Player',
             'user_types' => ['player'],
-            'skill_division' => 4.5,
-            'year_of_birth' => 1990,
-            'being_student' => false,
         ]);
 
         $this->event = PadelEvent::factory()->create();
@@ -70,9 +69,6 @@ class PlayerControllerTest extends TestCase
                         'name',
                         'emails',
                         'phones',
-                        'skill_division',
-                        'year_of_birth',
-                        'being_student',
                         'inserted_at',
                         'updated_at',
                     ],
@@ -117,9 +113,6 @@ class PlayerControllerTest extends TestCase
                 'data' => [
                     'id_player' => $this->player->id_player,
                     'name' => 'Test Player',
-                    'skill_division' => 4.5,
-                    'year_of_birth' => 1990,
-                    'being_student' => false,
                 ],
             ]);
     }
@@ -131,7 +124,6 @@ class PlayerControllerTest extends TestCase
         $playerData = [
             'first_name' => 'New',
             'last_name' => 'Player',
-            'skill_division' => 3.0,
             'user_types' => ['player'],
         ];
 
@@ -145,14 +137,12 @@ class PlayerControllerTest extends TestCase
                     'name' => 'New Player',
                     'first_name' => 'New',
                     'last_name' => 'Player',
-                    'skill_division' => 3.0,
                 ],
             ]);
 
         $this->assertDatabaseHas('players', [
             'first_name' => 'New',
             'last_name' => 'Player',
-            'skill_division' => 3.0,
             'created_via' => 'manager',
             'created_via_format' => null,
             'created_via_import_id' => null,
@@ -170,8 +160,6 @@ class PlayerControllerTest extends TestCase
             'first_name' => 'Updated',
             'middle_name' => null,
             'last_name' => 'Player',
-            'skill_division' => 5.0,
-            'being_student' => true,
         ];
 
         $response = $this->putJson("/api/v1/manager/players/{$this->player->id_player}", $updateData);
@@ -183,8 +171,6 @@ class PlayerControllerTest extends TestCase
                 'data' => [
                     'id_player' => $this->player->id_player,
                     'name' => 'Updated Player',
-                    'skill_division' => 5.0,
-                    'being_student' => true,
                 ],
             ]);
 
@@ -192,8 +178,6 @@ class PlayerControllerTest extends TestCase
             'id_player' => $this->player->id_player,
             'first_name' => 'Updated',
             'last_name' => 'Player',
-            'skill_division' => 5.0,
-            'being_student' => true,
             'created_via' => null,
             'created_via_format' => null,
         ]);
@@ -216,13 +200,12 @@ class PlayerControllerTest extends TestCase
                 'message' => 'Player partially updated successfully',
                 'data' => [
                     'name' => 'Partially Updated Player',
-                    'skill_division' => 4.5, // Should remain unchanged
                 ],
             ]);
 
-        // Test partial update with only skill_division
+        // Test partial update with only the last name
         $response = $this->patchJson("/api/v1/manager/players/{$this->player->id_player}", [
-            'skill_division' => 6.0,
+            'last_name' => 'Again',
         ]);
 
         $response->assertStatus(200)
@@ -230,8 +213,7 @@ class PlayerControllerTest extends TestCase
                 'success' => true,
                 'message' => 'Player partially updated successfully',
                 'data' => [
-                    'name' => 'Partially Updated Player', // Should remain from previous update
-                    'skill_division' => 6.0,
+                    'name' => 'Partially Updated Again', // First/middle name remain from previous update
                 ],
             ]);
     }
@@ -242,7 +224,7 @@ class PlayerControllerTest extends TestCase
 
         // Test PUT without required fields
         $response = $this->putJson("/api/v1/manager/players/{$this->player->id_player}", [
-            'skill_division' => 5.0,
+            'last_name' => 'Player',
         ]);
 
         $response->assertStatus(422)
@@ -432,23 +414,21 @@ class PlayerControllerTest extends TestCase
         ]);
     }
 
-    public function test_manager_can_filter_players_by_skill_division()
+    public function test_manager_player_filters_ignore_columns_outside_the_whitelist()
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->getJson('/api/v1/manager/players?filters[skill_division]=4.5');
+        $response = $this->getJson('/api/v1/manager/players?filters[last_name]=Player');
 
         $response->assertStatus(200);
-        $data = $response->json('data');
-        $this->assertCount(1, $data);
-        $this->assertSame($this->player->id_player, $data[0]['id_player']);
+        $this->assertCount(2, $response->json('data'));
     }
 
     public function test_manager_can_sort_players()
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->getJson('/api/v1/manager/players?sort_by[skill_division]=asc');
+        $response = $this->getJson('/api/v1/manager/players?sort_by[first_name]=asc');
 
         $response->assertStatus(200);
 
@@ -511,5 +491,33 @@ class PlayerControllerTest extends TestCase
 
         $again = $this->getJson("/api/v1/manager/players/{$this->player->id_player}")->assertOk();
         $this->assertNotNull($again->json('data.pdf_avatar_url'));
+    }
+
+    public function test_player_show_lists_cached_pdf_images_for_both_variants_and_stays_fresh(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $warm = $this->getJson("/api/v1/manager/players/{$this->player->id_player}")->assertOk();
+        $this->assertSame([], $warm->json('data.cached_pdf_images'));
+
+        \App\Models\CachedPdfPlayerImage::query()->create([
+            'player_id' => $this->player->id_player,
+            'player_is_collecting_points' => false,
+            'picture_path' => 'cached-pdf-player-images/' . $this->player->id_player . '/false.png',
+        ]);
+        \App\Models\CachedPdfPlayerImage::query()->create([
+            'player_id' => $this->player->id_player,
+            'player_is_collecting_points' => true,
+            'picture_path' => 'cached-pdf-player-images/' . $this->player->id_player . '/true.png',
+        ]);
+
+        $again = $this->getJson("/api/v1/manager/players/{$this->player->id_player}")->assertOk();
+        $images = $again->json('data.cached_pdf_images');
+
+        $this->assertCount(2, $images);
+        $this->assertSame([true, false], array_column($images, 'player_is_collecting_points'));
+        $this->assertStringContainsString('true.png', $images[0]['url']);
+        $this->assertStringContainsString('false.png', $images[1]['url']);
+        $this->assertArrayHasKey('id_cached_pdf_player_image', $images[0]);
     }
 }

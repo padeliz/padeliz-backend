@@ -12,8 +12,9 @@
     <ini name="memory_limit" value="512M"/>
     <server name="APP_ENV" value="testing"/>
     <server name="BCRYPT_ROUNDS" value="4"/>
-    <server name="CACHE_DRIVER" value="redis"/>
+    <server name="CACHE_DRIVER" value="array"/>
     <server name="REDIS_HOST" value="redis"/>
+    <server name="RESPONSE_CACHE_ENABLED" value="false"/>
     <server name="MAIL_MAILER" value="array"/>
     <server name="QUEUE_CONNECTION" value="sync"/>
     <server name="SESSION_DRIVER" value="array"/>

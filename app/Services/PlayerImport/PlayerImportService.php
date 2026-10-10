@@ -138,7 +138,6 @@ final class PlayerImportService
                 } else {
                     $player = Player::query()->findOrFail($row['player_id']);
                     $originalName = $player->name;
-                    $originalSkill = $player->skill_division;
                     $originalVia = $player->created_via;
                     $originalFormat = $player->created_via_format;
                     $originalImportId = $player->created_via_import_id;
@@ -148,7 +147,6 @@ final class PlayerImportService
                     $player->refresh();
                     if (
                         $player->name !== $originalName
-                        || $player->skill_division !== $originalSkill
                         || $player->created_via !== $originalVia
                         || $player->created_via_format !== $originalFormat
                         || $player->created_via_import_id !== $originalImportId

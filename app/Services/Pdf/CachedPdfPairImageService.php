@@ -12,7 +12,7 @@ use RuntimeException;
  * Builds side-by-side couple photos for MATCHES posters (GD).
  * Mode A upserts cached_pdf_pair_images; Mode B uses temp files only.
  */
-final class CachedPdfPairImageService
+class CachedPdfPairImageService
 {
     public const SQUARE_SIZE = 200;
 

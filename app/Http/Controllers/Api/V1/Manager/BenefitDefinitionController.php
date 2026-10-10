@@ -328,18 +328,18 @@ class BenefitDefinitionController extends V1BaseController
         $prefix = $sometimes ? 'sometimes|' : '';
 
         return [
-            'description' => $prefix.'nullable|string',
-            'is_active' => $prefix.'boolean',
-            'max_discount_ron' => $prefix.'nullable|integer|min:0',
-            'club_id' => $prefix.'nullable|integer|exists:clubs,id_club',
-            'valid_from' => $prefix.'nullable|integer|min:0',
-            'valid_until' => $prefix.'nullable|integer|min:0',
-            'player_optional' => $prefix.'boolean',
-            'stack_group' => $prefix.'nullable|string|max:64',
-            'priority' => $prefix.'integer|min:0',
-            'max_redemptions_per_player' => $prefix.'nullable|integer|min:0',
-            'max_redemptions_global' => $prefix.'nullable|integer|min:0',
-            'max_redemptions_per_event' => $prefix.'nullable|integer|min:0',
+            'description' => $prefix . 'nullable|string',
+            'is_active' => $prefix . 'boolean',
+            'max_discount_ron' => $prefix . 'nullable|integer|min:0',
+            'club_id' => $prefix . 'nullable|integer|exists:clubs,id_club',
+            'valid_from' => $prefix . 'nullable|integer|min:0',
+            'valid_until' => $prefix . 'nullable|integer|min:0',
+            'player_optional' => $prefix . 'boolean',
+            'stack_group' => $prefix . 'nullable|string|max:64',
+            'priority' => $prefix . 'integer|min:0',
+            'max_redemptions_per_player' => $prefix . 'nullable|integer|min:0',
+            'max_redemptions_global' => $prefix . 'nullable|integer|min:0',
+            'max_redemptions_per_event' => $prefix . 'nullable|integer|min:0',
             'conditions.*.condition_type' => ['required_with:conditions', Rule::enum(BenefitConditionType::class)],
             'conditions.*.parameters' => 'nullable|array',
             'event_ids.*' => 'integer|exists:events,id_event',
@@ -347,7 +347,7 @@ class BenefitDefinitionController extends V1BaseController
     }
 
     /**
-     * @param  list<array{condition_type: string, parameters?: array<string, mixed>|null}>  $conditions
+     * @param  list<array{condition_type: string, parameters?: null|array<string, mixed>}>  $conditions
      */
     private function syncConditions(BenefitDefinition $benefit, array $conditions): void
     {

@@ -9,7 +9,6 @@ use App\Enums\Referral\ReferralAttributionStatus;
 use App\Http\Resources\EventRegistrationCheckoutResource;
 use App\Models\EventReferralAttribution;
 use App\Models\EventRegistrationCheckout;
-use App\Models\Eligibility;
 use App\Services\Pricing\PricingService;
 use App\Services\Referral\ReferralService;
 use Illuminate\Http\Request;
@@ -28,7 +27,6 @@ class CheckoutPricingController extends \App\Http\Controllers\BaseVersions\V1\V1
     public function quote(Request $request, int $checkout)
     {
         $checkoutModel = $this->ownedCheckout($request, $checkout);
-        $eligibility = $this->eligibilityFor($request);
         $candidates = $this->referralService->candidatesForCheckout(
             $request->user(),
             (int) $checkoutModel->event_id
@@ -54,7 +52,6 @@ class CheckoutPricingController extends \App\Http\Controllers\BaseVersions\V1\V1
                 ->all();
             $context = $this->pricingService->buildContextForRegistration(
                 $reg,
-                $eligibility,
                 $selectedBenefitIds,
                 $pending?->referrer_player_id !== null ? (int) $pending->referrer_player_id : null,
                 $pending !== null,
@@ -88,14 +85,12 @@ class CheckoutPricingController extends \App\Http\Controllers\BaseVersions\V1\V1
         ]);
 
         $selectedBenefitIds = array_map('intval', $validated['selected_benefit_ids'] ?? []);
-        $eligibility = $this->eligibilityFor($request);
 
         try {
             $result = DB::transaction(function () use (
                 $checkoutModel,
                 $selectedBenefitIds,
                 $validated,
-                $eligibility,
                 $request
             ) {
                 $checkoutModel = $this->checkoutService->lockCheckout((int) $checkoutModel->id_checkout);
@@ -133,7 +128,6 @@ class CheckoutPricingController extends \App\Http\Controllers\BaseVersions\V1\V1
                     }
                     $context = $this->pricingService->buildContextForRegistration(
                         $reg,
-                        $eligibility,
                         $selectedBenefitIds,
                         $referrerId !== null ? (int) $referrerId : null,
                         $referrerId !== null,
@@ -166,14 +160,5 @@ class CheckoutPricingController extends \App\Http\Controllers\BaseVersions\V1\V1
         $this->checkoutService->assertOwnedBy($checkout, (int) $request->user()->id_player);
 
         return $checkout->load(['items.registration']);
-    }
-
-    private function eligibilityFor(Request $request): ?Eligibility
-    {
-        return Eligibility::query()
-            ->where('player_id', $request->user()->id_player)
-            ->where('review_status', 'approved')
-            ->latest('id_eligibility')
-            ->first();
     }
 }

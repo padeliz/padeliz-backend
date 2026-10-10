@@ -36,6 +36,7 @@ class EventDivisionStandingController extends \App\Http\Controllers\BaseVersions
     public function index(EventDivision $eventDivision)
     {
         $standings = EventDivisionStanding::query()
+            ->with('participation.playerLevel')
             ->where('event_division_id', $eventDivision->id_event_division)
             ->orderBy('rank')
             ->orderBy('id_standing')

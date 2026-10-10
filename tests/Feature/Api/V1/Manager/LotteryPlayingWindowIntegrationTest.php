@@ -4,12 +4,12 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Manager;
 
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventLottery;
 use App\Models\EventLotteryPrize;
 use App\Models\EventLotteryRule;
 use App\Models\EventParticipation;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Models\Prize;
 use App\Services\Lottery\LotteryDrawService;
@@ -52,28 +52,28 @@ final class LotteryPlayingWindowIntegrationTest extends TestCase
         $this->assertGreaterThan(0, $ts);
     }
 
-    public function test_format_interval_label_handles_24_00(): void
+    public function test_format_interval_label_uses_real_clocks(): void
     {
         $service = new LotteryDrawService();
         $method = new ReflectionMethod(LotteryDrawService::class, 'formatIntervalLabel');
         $method->setAccessible(true);
 
-        $label = $method->invoke($service, '18:00:00', '24:00:00');
-        $this->assertSame('18:00 – 24:00', $label);
-
         $overnight = $method->invoke($service, '18:00:00', '00:00:00');
-        $this->assertSame('18:00 – 24:00', $overnight);
+        $this->assertSame('18:00 – 00:00', $overnight);
+
+        $sameDay = $method->invoke($service, '10:00:00', '13:00:00');
+        $this->assertSame('10:00 – 13:00', $sameDay);
     }
 
-    public function test_prizes_board_merges_24_00_and_overnight_00_00_ends(): void
+    public function test_prizes_board_merges_identical_overnight_windows(): void
     {
         $event = PadelEvent::factory()->create(['date' => now()->toDateString()]);
-        $div24 = EventDivision::factory()->create([
+        $divA = EventDivision::factory()->create([
             'event_id' => $event->id_event,
             'playing_start_time' => '18:00:00',
-            'playing_end_time' => '24:00:00',
+            'playing_end_time' => '00:00:00',
         ]);
-        $div00 = EventDivision::factory()->create([
+        $divB = EventDivision::factory()->create([
             'event_id' => $event->id_event,
             'playing_start_time' => '18:00:00',
             'playing_end_time' => '00:00:00',
@@ -96,12 +96,12 @@ final class LotteryPlayingWindowIntegrationTest extends TestCase
         ]);
         EventLotteryRule::factory()->create([
             'lottery_prize_id' => $lotteryPrize->id_lottery_prize,
-            'event_division_id' => $div24->id_event_division,
+            'event_division_id' => $divA->id_event_division,
             'rule_prize_quantity' => 1,
         ]);
         EventLotteryRule::factory()->create([
             'lottery_prize_id' => $lotteryPrize->id_lottery_prize,
-            'event_division_id' => $div00->id_event_division,
+            'event_division_id' => $divB->id_event_division,
             'rule_prize_quantity' => 1,
         ]);
         EventLotteryRule::factory()->create([
@@ -117,8 +117,8 @@ final class LotteryPlayingWindowIntegrationTest extends TestCase
 
         $board = (new LotteryDrawService())->prizesBoard($lottery->fresh());
         $labels = array_map(static fn (array $i): string => $i['label'], $board['intervals']);
-        $this->assertContains('18:00 – 24:00', $labels);
-        $this->assertNotContains('18:00 – 00:00', $labels);
+        $this->assertContains('18:00 – 00:00', $labels);
+        $this->assertNotContains('18:00 – 24:00', $labels);
         $this->assertContains('10:00 – 13:00', $labels);
         $this->assertContains('Unscheduled', $labels);
         $this->assertCount(3, $board['intervals']);

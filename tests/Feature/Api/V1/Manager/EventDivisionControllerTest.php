@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -238,68 +238,72 @@ class EventDivisionControllerTest extends TestCase
         ]);
     }
 
-    public function test_manager_cannot_create_duplicate_edition_division()
+    public function test_manager_can_create_second_event_division_with_same_catalog_division()
     {
         Sanctum::actingAs($this->manager);
 
-        // Create first edition division
         EventDivision::factory()->create([
             'event_id' => $this->event->id_event,
             'division_id' => $this->division->id_division,
+            'division_title' => 'Novice Low',
         ]);
 
-        // Try to create duplicate with all required fields
         $response = $this->postJson('/api/v1/manager/event-divisions', [
             'event_id' => $this->event->id_event,
             'division_id' => $this->division->id_division,
             'players_limit' => 32,
             'entry_fee' => 55,
-            'division_title' => 'Adults Explorers B',
+            'division_title' => 'Novice High',
             'playing_start_time' => '10:00:00',
             'playing_end_time' => '18:00:00',
         ]);
 
-        $response->assertStatus(422)
-            ->assertJson([
-                'success' => false,
-                'message' => 'This division is already assigned to this edition',
-            ]);
+        $response->assertStatus(201)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.division_id', $this->division->id_division)
+            ->assertJsonPath('data.division_title', 'Novice High');
+
+        $this->assertSame(
+            2,
+            EventDivision::query()
+                ->where('event_id', $this->event->id_event)
+                ->where('division_id', $this->division->id_division)
+                ->count()
+        );
     }
 
-    public function test_manager_cannot_update_to_duplicate_edition_division()
+    public function test_manager_can_update_event_division_onto_catalog_division_already_used_on_event()
     {
         Sanctum::actingAs($this->manager);
 
-        $edition2 = PadelEvent::factory()->create();
         $division2 = Division::factory()->create();
 
-        // Create two different edition divisions
-        $eventDivision1 = EventDivision::factory()->create([
+        EventDivision::factory()->create([
             'event_id' => $this->event->id_event,
             'division_id' => $this->division->id_division,
+            'division_title' => 'Novice Low',
         ]);
 
         $eventDivision2 = EventDivision::factory()->create([
-            'event_id' => $edition2->id_event,
+            'event_id' => $this->event->id_event,
             'division_id' => $division2->id_division,
+            'division_title' => 'Other',
         ]);
 
-        // Try to update second to match first
         $response = $this->putJson("/api/v1/manager/event-divisions/{$eventDivision2->id_event_division}", [
             'event_id' => $this->event->id_event,
             'division_id' => $this->division->id_division,
             'players_limit' => 32,
             'entry_fee' => 55,
-            'division_title' => 'Adults Explorers B',
+            'division_title' => 'Novice High',
             'playing_start_time' => '10:00:00',
             'playing_end_time' => '18:00:00',
         ]);
 
-        $response->assertStatus(422)
-            ->assertJson([
-                'success' => false,
-                'message' => 'This division is already assigned to this edition',
-            ]);
+        $response->assertStatus(200)
+            ->assertJsonPath('success', true)
+            ->assertJsonPath('data.division_id', $this->division->id_division)
+            ->assertJsonPath('data.division_title', 'Novice High');
     }
 
     public function test_edition_division_creation_validation()
@@ -614,7 +618,7 @@ class EventDivisionControllerTest extends TestCase
             ]);
     }
 
-    public function test_edition_division_creation_allows_overnight_and_end_of_day(): void
+    public function test_edition_division_creation_allows_overnight_and_full_day(): void
     {
         Sanctum::actingAs($this->manager);
 
@@ -633,18 +637,59 @@ class EventDivisionControllerTest extends TestCase
             ->assertJsonPath('data.playing_end_time', '09:00:00');
 
         $otherDivision = \App\Models\Division::factory()->create();
-        $endOfDay = $this->postJson('/api/v1/manager/event-divisions', [
+        $toMidnight = $this->postJson('/api/v1/manager/event-divisions', [
             'event_id' => $this->event->id_event,
             'division_id' => $otherDivision->id_division,
             'players_limit' => 16,
             'entry_fee' => 55,
-            'division_title' => 'End of day Division',
+            'division_title' => 'Until midnight Division',
             'playing_start_time' => '18:00:00',
-            'playing_end_time' => '24:00:00',
+            'playing_end_time' => '00:00:00',
         ]);
 
-        $endOfDay->assertStatus(201)
-            ->assertJsonPath('data.playing_end_time', '24:00:00');
+        $toMidnight->assertStatus(201)
+            ->assertJsonPath('data.playing_end_time', '00:00:00');
+
+        $thirdDivision = \App\Models\Division::factory()->create();
+        $fullDay = $this->postJson('/api/v1/manager/event-divisions', [
+            'event_id' => $this->event->id_event,
+            'division_id' => $thirdDivision->id_division,
+            'players_limit' => 16,
+            'entry_fee' => 55,
+            'division_title' => 'Full day Division',
+            'playing_start_time' => '00:00:00',
+            'playing_end_time' => '23:59:59',
+        ]);
+
+        $fullDay->assertStatus(201)
+            ->assertJsonPath('data.playing_end_time', '23:59:59');
+    }
+
+    public function test_edition_division_creation_rejects_24_00_and_equal_clocks(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $this->postJson('/api/v1/manager/event-divisions', [
+            'event_id' => $this->event->id_event,
+            'division_id' => $this->division->id_division,
+            'players_limit' => 16,
+            'entry_fee' => 55,
+            'division_title' => 'Bad end',
+            'playing_start_time' => '18:00:00',
+            'playing_end_time' => '24:00:00',
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['playing_end_time']);
+
+        $this->postJson('/api/v1/manager/event-divisions', [
+            'event_id' => $this->event->id_event,
+            'division_id' => $this->division->id_division,
+            'players_limit' => 16,
+            'entry_fee' => 55,
+            'division_title' => 'Equal clocks',
+            'playing_start_time' => '12:00:00',
+            'playing_end_time' => '12:00:00',
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['playing_end_time']);
     }
 
     public function test_edition_division_creation_rejects_invalid_time_shape(): void

@@ -4,10 +4,10 @@ declare(strict_types=1);
 
 namespace App\Services\Pdf;
 
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventDivisionCourt;
 use App\Models\EventDivisionPoster;
+use App\Models\PadelEvent;
 use Illuminate\Support\Facades\Storage;
 use RuntimeException;
 use setasign\Fpdi\Fpdi;

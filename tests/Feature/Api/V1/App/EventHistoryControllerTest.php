@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\App;
 
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventParticipation;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -147,5 +147,28 @@ class EventHistoryControllerTest extends TestCase
             ->assertOk()
             ->assertJsonCount(1, 'data')
             ->assertJsonPath('data.0.id_event', $mine->id_event);
+    }
+
+    public function test_includes_event_slug_for_detail_links(): void
+    {
+        $player = Player::factory()->playerOnly()->create();
+        Sanctum::actingAs($player);
+
+        $event = PadelEvent::factory()->create([
+            'name' => '#Slugged',
+            'date' => Carbon::now($this->tz)->subDays(4)->format('Y-m-d'),
+        ]);
+        $event->forceFill(['slug' => 'padeliz-slugged'])->saveQuietly();
+        $division = EventDivision::factory()->create(['event_id' => $event->id_event]);
+        EventParticipation::factory()->create([
+            'event_id' => $event->id_event,
+            'event_division_id' => $division->id_event_division,
+            'player_id' => $player->id_player,
+        ]);
+
+        $this->getJson('/api/v1/app/my/event-history')
+            ->assertOk()
+            ->assertJsonPath('data.0.id_event', $event->id_event)
+            ->assertJsonPath('data.0.slug', 'padeliz-slugged');
     }
 }

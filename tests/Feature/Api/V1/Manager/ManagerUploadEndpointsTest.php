@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Manager;
 
-use App\Models\Eligibility;
 use App\Models\Player;
 use App\Models\Prize;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -52,34 +51,18 @@ final class ManagerUploadEndpointsTest extends TestCase
         $this->assertCount(0, $delete->json('data.uploaded_profile_images'));
     }
 
-    public function test_eligibility_uploads_rejected_when_approved(): void
+    public function test_manager_cannot_create_student_proofs(): void
     {
-        $eligibility = Eligibility::factory()->create([
-            'review_status' => 'approved',
-            'being_student' => true,
-        ]);
+        $player = Player::factory()->create();
         $file = $this->createFakeImage('proof.png');
 
         $this->post(
-            "/api/v1/manager/eligibilities/{$eligibility->id_eligibility}/student-proofs",
-            ['file' => $file],
+            '/api/v1/manager/player-student-proofs',
+            ['file' => $file, 'player_id' => $player->id_player, 'student_until' => now()->addMonth()->format('Y-m-d')],
             ['Accept' => 'application/json']
-        )->assertForbidden();
-    }
+        )->assertStatus(405);
 
-    public function test_eligibility_student_proof_upload_when_not_approved(): void
-    {
-        $eligibility = Eligibility::factory()->create([
-            'review_status' => 'pending',
-            'being_student' => true,
-        ]);
-        $file = $this->createFakeImage('proof.png');
-
-        $this->post(
-            "/api/v1/manager/eligibilities/{$eligibility->id_eligibility}/student-proofs",
-            ['file' => $file],
-            ['Accept' => 'application/json']
-        )->assertCreated();
+        $this->assertDatabaseCount('player_student_proofs', 0);
     }
 
     public function test_prize_media_upload_and_delete(): void

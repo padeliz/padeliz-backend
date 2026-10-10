@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
-use App\Models\PadelEvent;
 use App\Models\EventReferralCode;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;

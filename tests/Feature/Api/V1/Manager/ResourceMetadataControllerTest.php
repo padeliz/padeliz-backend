@@ -6,11 +6,11 @@ namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Club;
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventParticipation;
-use App\Models\Eligibility;
 use App\Models\Location;
+use App\Models\PadelEvent;
 use App\Models\Player;
+use App\Models\PlayerLevelAssessment;
 use App\Models\Prize;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -27,8 +27,8 @@ class ResourceMetadataControllerTest extends TestCase
         $manager->addUserType('manager');
 
         // Create some test data
-        Player::factory()->create(['first_name' => 'John', 'middle_name' => null, 'last_name' => 'Doe', 'skill_division' => 2.5]);
-        Player::factory()->create(['first_name' => 'Jane', 'middle_name' => null, 'last_name' => 'Smith', 'skill_division' => 3.0]);
+        Player::factory()->create(['first_name' => 'John', 'middle_name' => null, 'last_name' => 'Doe']);
+        Player::factory()->create(['first_name' => 'Jane', 'middle_name' => null, 'last_name' => 'Smith']);
 
         $response = $this->actingAs($manager)
             ->getJson('/api/v1/manager/metadata/Player');
@@ -59,7 +59,8 @@ class ResourceMetadataControllerTest extends TestCase
 
         $this->assertContains('first_name', $response->json('data.searchable_fields'));
         $this->assertNotContains('name', $response->json('data.searchable_fields'));
-        $this->assertArrayHasKey('skill_division', $response->json('data.filterable_fields'));
+        $this->assertArrayHasKey('user_types', $response->json('data.filterable_fields'));
+        $this->assertArrayNotHasKey('skill_division', $response->json('data.filterable_fields'));
         $this->assertEquals('name', $response->json('data.display_field'));
         $this->assertNotContains('name', $response->json('data.sortable_fields'));
         $this->assertNotNull($response->json('data.swagger_schema'));
@@ -368,7 +369,7 @@ class ResourceMetadataControllerTest extends TestCase
             'EventRegistration' => ['EventRegistration', 'EventRegistration'],
             'Location' => ['Location', 'Location'],
             'Player' => ['Player', 'Player'],
-            'Eligibility' => ['Eligibility', 'Eligibility'],
+            'PlayerLevelAssessment' => ['PlayerLevelAssessment', 'PlayerLevelAssessment'],
             'Prize' => ['Prize', 'Prize'],
         ];
     }
@@ -544,32 +545,77 @@ class ResourceMetadataControllerTest extends TestCase
         $this->assertContains('total_amount', $swagger['required'] ?? []);
     }
 
-    public function test_eligibility_metadata_endpoint(): void
+    public function test_player_metadata_links_emails_phones_and_identities(): void
+    {
+        $manager = Player::factory()->create();
+        $manager->addUserType('manager');
+
+        $response = $this->actingAs($manager)->getJson('/api/v1/manager/metadata/Player');
+
+        $response->assertStatus(200);
+        $properties = $response->json('data.swagger_schema.properties');
+
+        foreach (['emails' => 'PlayerEmail', 'phones' => 'PlayerPhone', 'identities' => 'PlayerIdentity'] as $field => $schema) {
+            $this->assertSame('array', $properties[$field]['type'] ?? null, $field);
+            $this->assertSame('#/components/schemas/' . $schema, $properties[$field]['items']['$ref'] ?? null, $field);
+        }
+    }
+
+    /**
+     * @dataProvider linkedPlayerChildSchemas
+     */
+    public function test_player_child_metadata_is_filterable_by_player(string $schema, string $resourcePath, string $displayField): void
+    {
+        $manager = Player::factory()->create();
+        $manager->addUserType('manager');
+
+        $response = $this->actingAs($manager)->getJson('/api/v1/manager/metadata/' . $schema);
+
+        $response->assertStatus(200)
+            ->assertJsonPath('data.schema_name', $schema)
+            ->assertJsonPath('data.resource_path', $resourcePath)
+            ->assertJsonPath('data.display_field', $displayField)
+            ->assertJsonPath('data.filterable_fields.player_id.type', 'foreign_key')
+            ->assertJsonPath('data.filterable_fields.player_id.related_schema_name', 'Player');
+        $this->assertNotNull($response->json('data.swagger_schema'));
+    }
+
+    /**
+     * @return array<string, array{0: string, 1: string, 2: string}>
+     */
+    public static function linkedPlayerChildSchemas(): array
+    {
+        return [
+            'phones' => ['PlayerPhone', 'player-phones', 'phone'],
+            'emails' => ['PlayerEmail', 'player-emails', 'email'],
+            'identities' => ['PlayerIdentity', 'player-identities', 'display_name'],
+        ];
+    }
+
+    public function test_player_level_assessment_metadata_endpoint(): void
     {
         // Create a manager user
         /** @var Player $manager */
         $manager = Player::factory()->create();
         $manager->addUserType('manager');
 
-        // Create test data
-        $player = Player::factory()->create();
-        Eligibility::factory()->create([
-            'player_id' => $player->id_player,
-        ]);
+        PlayerLevelAssessment::factory()->readyForReview()->create();
 
         $response = $this->actingAs($manager)
-            ->getJson('/api/v1/manager/metadata/Eligibility');
+            ->getJson('/api/v1/manager/metadata/PlayerLevelAssessment');
 
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
                 'data' => [
                     'version' => 'v1',
-                    'schema_name' => 'Eligibility',
+                    'schema_name' => 'PlayerLevelAssessment',
                 ],
             ]);
 
-        $this->assertContains('phone', $response->json('data.searchable_fields'));
+        $this->assertContains('review_message', $response->json('data.searchable_fields'));
+        $this->assertArrayHasKey('review_status', $response->json('data.filterable_fields'));
+        $this->assertContains('discarded', $response->json('data.swagger_schema.properties.review_status.enum'));
         $this->assertIsArray($response->json('data.request_body'));
     }
 
@@ -690,7 +736,7 @@ class ResourceMetadataControllerTest extends TestCase
             'EventParticipation',
             'EventRegistration',
             'SponsorPrize',
-            'Eligibility',
+            'PlayerLevelAssessment',
         ];
 
         foreach ($modelsWithNullDisplayField as $modelName) {

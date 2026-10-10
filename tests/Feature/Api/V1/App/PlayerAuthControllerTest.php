@@ -112,6 +112,48 @@ class PlayerAuthControllerTest extends TestCase
         );
     }
 
+    public function test_google_callback_refreshes_identity_avatar_url_from_claims()
+    {
+        $this->mock(\Google\Client::class, function ($mock) {
+            $mock->shouldReceive('verifyIdToken')
+                ->andReturn([
+                    'sub' => 'google_player_123',
+                    'name' => 'Test Player',
+                    'email' => 'player@example.com',
+                    'picture' => 'https://example.com/new-avatar.jpg',
+                ]);
+        });
+
+        $this->postJson('/api/v1/app/auth/google', ['id_token' => 'valid.token'])
+            ->assertStatus(200)
+            ->assertJsonPath('data.player.avatar_url', 'https://example.com/new-avatar.jpg');
+
+        $this->assertDatabaseHas('player_identities', [
+            'provider_subject' => 'google_player_123',
+            'avatar_url' => 'https://example.com/new-avatar.jpg',
+        ]);
+    }
+
+    public function test_google_callback_keeps_avatar_url_when_claims_have_no_picture()
+    {
+        $this->mock(\Google\Client::class, function ($mock) {
+            $mock->shouldReceive('verifyIdToken')
+                ->andReturn([
+                    'sub' => 'google_player_123',
+                    'name' => 'Test Player',
+                    'email' => 'player@example.com',
+                ]);
+        });
+
+        $this->postJson('/api/v1/app/auth/google', ['id_token' => 'valid.token'])
+            ->assertStatus(200);
+
+        $this->assertDatabaseHas('player_identities', [
+            'provider_subject' => 'google_player_123',
+            'avatar_url' => 'https://example.com/player-avatar.jpg',
+        ]);
+    }
+
     public function test_google_callback_returns_403_for_manager_without_player_privileges()
     {
         $manager = Player::factory()->managerOnly()->create([
@@ -496,6 +538,37 @@ class PlayerAuthControllerTest extends TestCase
             'invite_id' => $invite->id_invite,
             'event' => PlayerInviteEvent::EVENT_REDEEM_SUCCEEDED,
             'result_code' => 'already_linked_login',
+        ]);
+    }
+
+    public function test_invite_redeem_already_linked_refreshes_avatar_url()
+    {
+        $rawToken = 'invite-token-avatar-refresh';
+        PlayerInvite::create([
+            'player_id' => $this->player->id_player,
+            'token_hash' => PlayerInvite::hashToken($rawToken),
+            'expires_at' => time() + 3600,
+        ]);
+
+        $this->mock(\Google\Client::class, function ($mock) {
+            $mock->shouldReceive('verifyIdToken')
+                ->andReturn([
+                    'sub' => 'google_player_123',
+                    'name' => 'Test Player',
+                    'email' => 'player@example.com',
+                    'picture' => 'https://example.com/redeem-avatar.jpg',
+                ]);
+        });
+
+        $this->postJson('/api/v1/app/auth/invite/redeem', [
+            'invite_token' => $rawToken,
+            'provider' => 'google',
+            'id_token' => 'valid.token',
+        ])->assertStatus(200);
+
+        $this->assertDatabaseHas('player_identities', [
+            'provider_subject' => 'google_player_123',
+            'avatar_url' => 'https://example.com/redeem-avatar.jpg',
         ]);
     }
 

@@ -16,13 +16,19 @@ class PlayerProfileImage extends Model
 {
     use HasFactory;
 
-    public const MAX_PER_PLAYER = 3;
+    /** Absolute ceiling on all profile images for one player (every upload path). */
+    public const MAX_PER_PLAYER = 10;
+
+    /** Max images linked to a single pending level assessment. */
+    public const MAX_PER_PLAYER_ASSESSMENT = 3;
 
     public const UPLOADED_VIA_APP = 'app';
 
     public const UPLOADED_VIA_MANAGER = 'manager';
 
     public const UPLOADED_VIA_IMPORT = 'import';
+
+    public const UPLOADED_VIA_APP_LEVEL_ASSESSMENT = 'app_level_assessment';
 
     protected $table = 'player_profile_images';
 
@@ -40,6 +46,7 @@ class PlayerProfileImage extends Model
         'sort_order',
         'uploaded_via',
         'uploaded_via_import_id',
+        'uploaded_via_level_assessment_id',
         'original_filename',
         'is_pdf_primary',
     ];
@@ -50,6 +57,7 @@ class PlayerProfileImage extends Model
         'sort_order' => 'integer',
         'player_id' => 'integer',
         'uploaded_via_import_id' => 'integer',
+        'uploaded_via_level_assessment_id' => 'integer',
         'is_pdf_primary' => 'boolean',
     ];
 
@@ -69,6 +77,15 @@ class PlayerProfileImage extends Model
         return $this->belongsTo(Player::class, 'player_id', 'id_player');
     }
 
+    public function uploadedViaLevelAssessment(): BelongsTo
+    {
+        return $this->belongsTo(
+            PlayerLevelAssessment::class,
+            'uploaded_via_level_assessment_id',
+            'id_player_level_assessment'
+        );
+    }
+
     public function storageDisk(): string
     {
         return config('filesystems.user_uploads_disk', 'public');
@@ -76,7 +93,13 @@ class PlayerProfileImage extends Model
 
     public function getUrlAttribute(): string
     {
-        return Storage::disk($this->storageDisk())->url($this->profile_path);
+        $url = Storage::disk($this->storageDisk())->url($this->profile_path);
+        if (preg_match('#^https?://#i', $url) === 1) {
+            return $url;
+        }
+
+        // Storage::fake() and some drivers yield root-relative paths; devices need absolute URLs.
+        return url($url);
     }
 
     /**
@@ -90,6 +113,7 @@ class PlayerProfileImage extends Model
             'is_pdf_primary' => (bool) $this->is_pdf_primary,
             'uploaded_via' => $this->uploaded_via,
             'uploaded_via_import_id' => $this->uploaded_via_import_id,
+            'uploaded_via_level_assessment_id' => $this->uploaded_via_level_assessment_id,
             'original_filename' => $this->original_filename,
         ];
     }

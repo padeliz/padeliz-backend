@@ -79,4 +79,29 @@ class EventDateRangeRequestTest extends TestCase
         $this->assertTrue($validator->fails());
         $this->assertArrayHasKey('date_to', $validator->errors()->toArray());
     }
+
+    public function test_accepts_sort_asc_and_desc(): void
+    {
+        foreach (['asc', 'desc'] as $sort) {
+            $validator = Validator::make([
+                'date_from' => '2026-04-01',
+                'date_to' => '2026-04-30',
+                'sort' => $sort,
+            ], $this->rules());
+
+            $this->assertTrue($validator->passes(), "sort={$sort} should pass");
+        }
+    }
+
+    public function test_rejects_invalid_sort(): void
+    {
+        $validator = Validator::make([
+            'date_from' => '2026-04-01',
+            'date_to' => '2026-04-30',
+            'sort' => 'sideways',
+        ], $this->rules());
+
+        $this->assertTrue($validator->fails());
+        $this->assertArrayHasKey('sort', $validator->errors()->toArray());
+    }
 }

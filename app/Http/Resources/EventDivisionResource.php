@@ -22,6 +22,12 @@ class EventDivisionResource extends JsonResource
             'players_limit' => $this->players_limit,
             'entry_fee' => $this->entry_fee,
             'skill_order' => $this->skill_order,
+            'level_min' => $this->level_min,
+            'level_max' => $this->level_max,
+            'is_eligible' => $this->when(
+                array_key_exists('is_eligible', $this->resource->getAttributes()),
+                fn () => $this->is_eligible
+            ),
             'playing_start_time' => $this->formatted_playing_start_time,
             'playing_end_time' => $this->formatted_playing_end_time,
             'inserted_at' => $this->inserted_at,

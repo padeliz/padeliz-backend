@@ -5,17 +5,17 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\App;
 
 use App\Enums\Registration\CheckoutStatus;
+use App\Enums\Registration\PaymentAttemptStatus;
 use App\Enums\Registration\RegistrationLifecycleStatus;
 use App\Enums\Registration\RegistrationPaymentStatus;
-use App\Enums\Registration\PaymentAttemptStatus;
 use App\Models\BankTransferSettings;
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventRegistrationPaymentAttempt;
 use App\Models\EventRegistrationPaymentProof;
-use App\Models\Eligibility;
+use App\Models\PadelEvent;
 use App\Models\Player;
+use App\Models\PlayerLevel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
@@ -96,11 +96,7 @@ class PaymentCoverageAndCheckoutReadTest extends TestCase
             'players_limit' => 10,
             'entry_fee' => 50,
         ]);
-        Eligibility::factory()->create([
-            'player_id' => $this->player->id_player,
-            'review_status' => 'approved',
-            'being_student' => false,
-        ]);
+        PlayerLevel::factory()->level('4.50')->create(['player_id' => $this->player->id_player]);
         BankTransferSettings::factory()->create();
     }
 

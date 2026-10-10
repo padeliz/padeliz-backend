@@ -5,10 +5,11 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\Manager;
 
 use App\Enums\PlayerCustomFieldType;
-use App\Models\PadelEvent;
+use App\Enums\PlayerCustomFieldValueReviewStatus;
 use App\Models\Player;
 use App\Models\PlayerCustomField;
 use App\Models\PlayerCustomFieldOption;
+use App\Models\PlayerCustomFieldSubmission;
 use App\Models\PlayerCustomFieldValue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -67,6 +68,8 @@ final class PlayerCustomFieldValueControllerTest extends TestCase
             'player_custom_field_id' => $field->id_player_custom_field,
             'value' => '',
         ])->assertStatus(422);
+
+        $this->assertSame(0, PlayerCustomFieldValue::query()->count());
     }
 
     public function test_archived_field_rejected_until_unarchived(): void
@@ -87,7 +90,7 @@ final class PlayerCustomFieldValueControllerTest extends TestCase
         ])->assertCreated();
     }
 
-    public function test_null_edition_allows_multiple_values(): void
+    public function test_each_write_without_a_submission_starts_a_new_one(): void
     {
         $player = Player::factory()->create();
         $field = PlayerCustomField::factory()->create();
@@ -103,51 +106,89 @@ final class PlayerCustomFieldValueControllerTest extends TestCase
         ])->assertCreated();
 
         $this->assertSame(2, PlayerCustomFieldValue::query()->count());
+        $this->assertSame(2, PlayerCustomFieldSubmission::query()->count());
     }
 
-    public function test_edition_scoped_write_replaces_existing_row(): void
+    public function test_rewriting_inside_one_submission_updates_the_row_in_place(): void
     {
         $player = Player::factory()->create();
-        $event = PadelEvent::factory()->create();
         $field = PlayerCustomField::factory()->create();
+        $submission = PlayerCustomFieldSubmission::factory()->create([
+            'player_id' => $player->id_player,
+        ]);
 
         $this->postJson('/api/v1/manager/players/' . $player->id_player . '/custom-field-values', [
             'player_custom_field_id' => $field->id_player_custom_field,
-            'event_id' => $event->id_event,
+            'submission_id' => $submission->id_player_custom_field_submission,
             'value' => 'First',
         ])->assertCreated();
 
-        $firstId = PlayerCustomFieldValue::query()->firstOrFail()->id_player_custom_field_value;
+        $first = PlayerCustomFieldValue::query()->firstOrFail();
 
         $this->postJson('/api/v1/manager/players/' . $player->id_player . '/custom-field-values', [
             'player_custom_field_id' => $field->id_player_custom_field,
-            'event_id' => $event->id_event,
+            'submission_id' => $submission->id_player_custom_field_submission,
             'value' => 'Second',
         ])->assertCreated()
             ->assertJsonPath('data.value', 'Second');
 
         $this->assertSame(1, PlayerCustomFieldValue::query()->count());
-        $this->assertNull(PlayerCustomFieldValue::query()->find($firstId));
+        $second = PlayerCustomFieldValue::query()->firstOrFail();
+        $this->assertSame($first->id_player_custom_field_value, $second->id_player_custom_field_value);
+        $this->assertSame((int) $first->inserted_at, (int) $second->inserted_at);
+        $this->assertSame('Second', $second->value_text);
+        $this->assertSame($first->review_status, $second->review_status);
+        $this->assertSame($first->reviewed_at, $second->reviewed_at);
     }
 
-    public function test_invalidate_once_and_reject_second_invalidate(): void
+    public function test_a_submission_from_another_player_is_rejected(): void
     {
         $player = Player::factory()->create();
         $field = PlayerCustomField::factory()->create();
+        $foreignSubmission = PlayerCustomFieldSubmission::factory()->create();
+
+        $this->postJson('/api/v1/manager/players/' . $player->id_player . '/custom-field-values', [
+            'player_custom_field_id' => $field->id_player_custom_field,
+            'submission_id' => $foreignSubmission->id_player_custom_field_submission,
+            'value' => 'Nope',
+        ])->assertStatus(422);
+    }
+
+    public function test_invalidate_route_is_gone(): void
+    {
+        $player = Player::factory()->create();
         $value = PlayerCustomFieldValue::factory()->create([
             'player_id' => $player->id_player,
-            'player_custom_field_id' => $field->id_player_custom_field,
         ]);
 
         $this->postJson(
             '/api/v1/manager/players/' . $player->id_player . '/custom-field-values/' . $value->id_player_custom_field_value . '/invalidate',
             ['invalidation_reason' => 'Typo']
-        )->assertOk()
-            ->assertJsonPath('data.invalidation_reason', 'Typo');
+        )->assertStatus(404);
 
-        $this->postJson(
-            '/api/v1/manager/players/' . $player->id_player . '/custom-field-values/' . $value->id_player_custom_field_value . '/invalidate'
-        )->assertStatus(422);
+        $this->assertSame(
+            PlayerCustomFieldValueReviewStatus::Validated,
+            $value->fresh()->review_status
+        );
+    }
+
+    public function test_manager_write_is_validated_with_the_acting_manager(): void
+    {
+        $player = Player::factory()->create();
+        $field = PlayerCustomField::factory()->create();
+
+        $this->postJson('/api/v1/manager/players/' . $player->id_player . '/custom-field-values', [
+            'player_custom_field_id' => $field->id_player_custom_field,
+            'value' => 'Hello',
+        ])->assertCreated()
+            ->assertJsonPath('data.review_status', 'validated')
+            ->assertJsonPath('data.reviewed_by_manager_id', $this->manager->id_player)
+            ->assertJsonMissingPath('data.invalidated_at');
+
+        $value = PlayerCustomFieldValue::query()->firstOrFail();
+        $this->assertSame(PlayerCustomFieldValueReviewStatus::Validated, $value->review_status);
+        $this->assertNotNull($value->reviewed_at);
+        $this->assertSame((int) $this->manager->id_player, (int) $value->reviewed_by_manager_id);
     }
 
     public function test_select_value_with_option_snapshot(): void

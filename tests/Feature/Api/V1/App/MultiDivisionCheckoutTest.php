@@ -6,18 +6,14 @@ namespace Tests\Feature\Api\V1\App;
 
 use App\Enums\Registration\CheckoutItemStatus;
 use App\Enums\Registration\CheckoutStatus;
-use App\Enums\Registration\PaymentAttemptStatus;
 use App\Enums\Registration\RegistrationLifecycleStatus;
 use App\Enums\Registration\RegistrationPaymentStatus;
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventRegistration;
-use App\Models\EventRegistrationCheckout;
-use App\Models\EventRegistrationCheckoutItem;
-use App\Models\EventRegistrationPaymentAttempt;
-use App\Models\Eligibility;
+use App\Models\PadelEvent;
 use App\Models\Player;
+use App\Models\PlayerLevel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Http;
@@ -81,11 +77,7 @@ class MultiDivisionCheckoutTest extends TestCase
             'players_limit' => 10,
             'entry_fee' => 50,
         ]);
-        Eligibility::factory()->create([
-            'player_id' => $this->player->id_player,
-            'review_status' => 'approved',
-            'being_student' => false,
-        ]);
+        PlayerLevel::factory()->level('4.50')->create(['player_id' => $this->player->id_player]);
     }
 
     public function test_multi_create_opens_one_checkout_with_fee_items(): void

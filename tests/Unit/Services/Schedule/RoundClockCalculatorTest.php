@@ -45,9 +45,9 @@ class RoundClockCalculatorTest extends TestCase
         $this->assertSame('02:00', $slots[1]['end']);
     }
 
-    public function test_end_of_day_24_00(): void
+    public function test_overnight_to_midnight(): void
     {
-        $slots = RoundClockCalculator::slots('18:00', '24:00', 2, false, false);
+        $slots = RoundClockCalculator::slots('18:00', '00:00', 2, false, false);
         $this->assertCount(2, $slots);
         $this->assertSame('18:00', $slots[0]['start']);
         $this->assertSame('00:00', $slots[1]['end']);

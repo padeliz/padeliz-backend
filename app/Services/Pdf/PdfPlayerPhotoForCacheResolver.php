@@ -11,7 +11,7 @@ use Illuminate\Support\Facades\Storage;
 /**
  * Resolves an on-disk photo for PDF cached avatar/pair compose (real profile or initials temp).
  */
-final class PdfPlayerPhotoForCacheResolver
+class PdfPlayerPhotoForCacheResolver
 {
     public function __construct(
         private readonly PlayerProfileImageResolver $profileResolver = new PlayerProfileImageResolver(),

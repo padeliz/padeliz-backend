@@ -43,7 +43,7 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertEquals('event-participations', $method->invoke($this->metadataService, 'EventParticipation'));
         $this->assertEquals('event-divisions', $method->invoke($this->metadataService, 'EventDivision'));
         $this->assertEquals('event-lottery-luckies', $method->invoke($this->metadataService, 'EventLotteryLucky'));
-        $this->assertEquals('eligibilities', $method->invoke($this->metadataService, 'Eligibility'));
+        $this->assertEquals('player-level-assessments', $method->invoke($this->metadataService, 'PlayerLevelAssessment'));
         $this->assertEquals('sponsors', $method->invoke($this->metadataService, 'Sponsor'));
         $this->assertEquals('sponsor-prizes', $method->invoke($this->metadataService, 'SponsorPrize'));
         $this->assertEquals('event-lottery-prizes', $method->invoke($this->metadataService, 'EventLotteryPrize'));
@@ -131,7 +131,7 @@ class ResourceMetadataServiceTest extends TestCase
             'Club',
             'EventLottery',
             'EventParticipation',
-            'Eligibility',
+            'PlayerLevelAssessment',
             'Sponsor',
             'SponsorPrize',
             'EventLotteryPrize',

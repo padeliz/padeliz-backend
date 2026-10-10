@@ -6,11 +6,11 @@ namespace Tests\Feature\Services;
 
 use App\Models\Club;
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventParticipation;
-use App\Models\Eligibility;
 use App\Models\Location;
+use App\Models\PadelEvent;
 use App\Models\Player;
+use App\Models\PlayerLevelAssessment;
 use App\Models\Prize;
 use App\Services\Cache\ModelSchemaCatalog;
 use App\Services\ResourceMetadataService;
@@ -32,9 +32,9 @@ class ResourceMetadataServiceTest extends TestCase
     public function test_get_player_metadata(): void
     {
         // Create some test data
-        Player::factory()->create(['first_name' => 'John', 'middle_name' => null, 'last_name' => 'Doe', 'skill_division' => 2.5]);
-        Player::factory()->create(['first_name' => 'Jane', 'middle_name' => null, 'last_name' => 'Smith', 'skill_division' => 3.0]);
-        Player::factory()->create(['first_name' => 'Bob', 'middle_name' => null, 'last_name' => 'Johnson', 'skill_division' => 4.5]);
+        Player::factory()->create(['first_name' => 'John', 'middle_name' => null, 'last_name' => 'Doe']);
+        Player::factory()->create(['first_name' => 'Jane', 'middle_name' => null, 'last_name' => 'Smith']);
+        Player::factory()->create(['first_name' => 'Bob', 'middle_name' => null, 'last_name' => 'Johnson']);
 
         $metadata = $this->metadataService->getMetadata('Player', 'v1');
 
@@ -59,15 +59,12 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertNotContains('name', $metadata['searchable_fields']);
 
         $this->assertArrayHasKey('filterable_fields', $metadata);
-        $this->assertArrayHasKey('skill_division', $metadata['filterable_fields']);
-        $this->assertEquals('float', $metadata['filterable_fields']['skill_division']['type']);
-        $this->assertContains(2.5, $metadata['filterable_fields']['skill_division']['values']);
-        $this->assertContains(3.0, $metadata['filterable_fields']['skill_division']['values']);
-        $this->assertContains(4.5, $metadata['filterable_fields']['skill_division']['values']);
+        $this->assertArrayHasKey('user_types', $metadata['filterable_fields']);
+        $this->assertArrayNotHasKey('skill_division', $metadata['filterable_fields']);
 
         $this->assertArrayHasKey('sortable_fields', $metadata);
         $this->assertNotContains('name', $metadata['sortable_fields']);
-        $this->assertContains('skill_division', $metadata['sortable_fields']);
+        $this->assertContains('last_name', $metadata['sortable_fields']);
 
         $this->assertArrayHasKey('list_fields', $metadata);
         $this->assertEquals([], $metadata['list_fields']);
@@ -76,10 +73,7 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertIsArray($profileImage);
         $this->assertSame('list', $profileImage['x-padeliz-image']['role'] ?? null);
 
-        $this->assertEquals(
-            'year',
-            $metadata['swagger_schema']['properties']['year_of_birth']['format'] ?? null
-        );
+        $this->assertArrayNotHasKey('year_of_birth', $metadata['swagger_schema']['properties']);
     }
 
     public function test_get_club_metadata(): void
@@ -226,14 +220,14 @@ class ResourceMetadataServiceTest extends TestCase
 
     public function test_boolean_field_values(): void
     {
-        Player::factory()->create(['being_student' => true]);
-        Player::factory()->create(['being_student' => false]);
+        PlayerLevelAssessment::factory()->readyForReview()->create();
+        PlayerLevelAssessment::factory()->create();
 
-        $metadata = $this->metadataService->getMetadata('Player', 'v1');
+        $metadata = $this->metadataService->getMetadata('PlayerLevelAssessment', 'v1');
 
-        $this->assertArrayHasKey('being_student', $metadata['filterable_fields']);
-        $this->assertEquals('boolean', $metadata['filterable_fields']['being_student']['type']);
-        $this->assertEquals([true, false], $metadata['filterable_fields']['being_student']['values']);
+        $this->assertArrayHasKey('ready_for_review', $metadata['filterable_fields']);
+        $this->assertEquals('boolean', $metadata['filterable_fields']['ready_for_review']['type']);
+        $this->assertEqualsCanonicalizing([true, false], $metadata['filterable_fields']['ready_for_review']['values']);
     }
 
     /**
@@ -259,7 +253,7 @@ class ResourceMetadataServiceTest extends TestCase
 
         $this->assertArrayHasKey('display_field', $metadata);
         // Display field should be 'name' for models with searchable fields, null for models without
-        if (in_array($expectedSchemaName, ['EventLotteryLucky', 'EventParticipation', 'EventRegistration', 'EventLotteryPrize', 'SponsorPrize', 'Eligibility'])) {
+        if (in_array($expectedSchemaName, ['EventLotteryLucky', 'EventParticipation', 'EventRegistration', 'EventLotteryPrize', 'SponsorPrize', 'PlayerLevelAssessment'])) {
             $this->assertNull($metadata['display_field']);
         } elseif ($expectedSchemaName === 'EventDivision') {
             $this->assertEquals('division_title', $metadata['display_field']);
@@ -309,7 +303,7 @@ class ResourceMetadataServiceTest extends TestCase
             'EventRegistration' => ['EventRegistration', 'EventRegistration'],
             'Location' => ['Location', 'Location'],
             'Player' => ['Player', 'Player'],
-            'Eligibility' => ['Eligibility', 'Eligibility'],
+            'PlayerLevelAssessment' => ['PlayerLevelAssessment', 'PlayerLevelAssessment'],
             'Prize' => ['Prize', 'Prize'],
         ];
     }
@@ -401,36 +395,24 @@ class ResourceMetadataServiceTest extends TestCase
         }
     }
 
-    public function test_eligibility_metadata(): void
+    public function test_player_level_assessment_metadata(): void
     {
         // Create test data
-        $player = Player::factory()->create();
-        Eligibility::factory()->create([
-            'player_id' => $player->id_player,
-        ]);
+        PlayerLevelAssessment::factory()->readyForReview()->create();
 
-        $metadata = $this->metadataService->getMetadata('Eligibility', 'v1');
+        $metadata = $this->metadataService->getMetadata('PlayerLevelAssessment', 'v1');
 
-        $this->assertEquals('Eligibility', $metadata['schema_name']);
-        $this->assertEquals('eligibilities', $metadata['resource_path']);
-        $this->assertContains('phone', $metadata['searchable_fields']);
-        $this->assertArrayHasKey('year_of_birth', $metadata['filterable_fields']);
-        $this->assertArrayNotHasKey('birth_year', $metadata['filterable_fields']);
-        $this->assertEquals('integer', $metadata['filterable_fields']['year_of_birth']['type']);
+        $this->assertEquals('PlayerLevelAssessment', $metadata['schema_name']);
+        $this->assertEquals('player-level-assessments', $metadata['resource_path']);
+        $this->assertContains('review_message', $metadata['searchable_fields']);
+        $this->assertArrayHasKey('review_status', $metadata['filterable_fields']);
+        $this->assertArrayHasKey('ready_for_review', $metadata['filterable_fields']);
 
         $props = $metadata['swagger_schema']['properties'];
-        $this->assertArrayHasKey('year_of_birth', $props);
-        $this->assertArrayNotHasKey('birth_year', $props);
-        $this->assertEquals('year', $props['year_of_birth']['format'] ?? null);
-        $this->assertTrue($props['year_of_birth']['nullable'] ?? false);
-        $this->assertEquals('string', $props['friends_source']['items']['type'] ?? null);
-        $this->assertTrue($props['being_student']['nullable'] ?? false);
         $this->assertContains('discarded', $props['review_status']['enum'] ?? []);
-
-        $postBody = $metadata['request_body']['POST']['/eligibilities'] ?? [];
-        $this->assertArrayHasKey('event_ids', $postBody);
-        $this->assertArrayNotHasKey('event_id', $postBody);
-        $this->assertContains('discarded', $postBody['review_status']['enum'] ?? []);
+        $this->assertTrue($props['review_message']['nullable'] ?? false);
+        $this->assertArrayNotHasKey('being_student', $props);
+        $this->assertArrayNotHasKey('event_ids', $props);
     }
 
     public function test_prize_metadata(): void
@@ -556,8 +538,8 @@ class ResourceMetadataServiceTest extends TestCase
         $eventParticipationMetadata = $this->metadataService->getMetadata('EventParticipation', 'v1');
         $this->assertArrayHasKey('request_body', $eventParticipationMetadata);
 
-        $eligibilityMetadata = $this->metadataService->getMetadata('Eligibility', 'v1');
-        $this->assertArrayHasKey('request_body', $eligibilityMetadata);
+        $assessmentMetadata = $this->metadataService->getMetadata('PlayerLevelAssessment', 'v1');
+        $this->assertArrayHasKey('request_body', $assessmentMetadata);
 
         $sponsorMetadata = $this->metadataService->getMetadata('Sponsor', 'v1');
         $this->assertArrayHasKey('request_body', $sponsorMetadata);
@@ -677,7 +659,7 @@ class ResourceMetadataServiceTest extends TestCase
             'EventDivision' => ['EventDivision', 'event-divisions'],
             'EventLotteryLucky' => ['EventLotteryLucky', 'event-lottery-luckies'],
             'EventLotteryPrize' => ['EventLotteryPrize', 'event-lottery-prizes'],
-            'Eligibility' => ['Eligibility', 'eligibilities'],
+            'PlayerLevelAssessment' => ['PlayerLevelAssessment', 'player-level-assessments'],
             'Sponsor' => ['Sponsor', 'sponsors'],
             'SponsorPrize' => ['SponsorPrize', 'sponsor-prizes'],
 
@@ -743,7 +725,7 @@ class ResourceMetadataServiceTest extends TestCase
             'EventParticipation',
             'EventRegistration',
             'SponsorPrize',
-            'Eligibility',
+            'PlayerLevelAssessment',
         ];
 
         foreach ($modelsWithNullDisplayField as $modelName) {

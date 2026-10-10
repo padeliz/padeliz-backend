@@ -16,7 +16,7 @@ class EventDateRangeRequest extends FormRequest
     }
 
     /**
-     * @return array<string, array<int, string|\Illuminate\Validation\Rules\Exists>>
+     * @return array<string, array<int, \Illuminate\Validation\Rules\Exists|string>>
      */
     public function rules(): array
     {
@@ -29,6 +29,7 @@ class EventDateRangeRequest extends FormRequest
             'lottery_winner' => ['sometimes', 'boolean'],
             'club_ids' => ['sometimes', 'array'],
             'club_ids.*' => ['integer', 'min:1', 'exists:clubs,id_club'],
+            'sort' => ['sometimes', 'string', 'in:asc,desc'],
         ];
     }
 

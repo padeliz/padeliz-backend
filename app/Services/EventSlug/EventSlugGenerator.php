@@ -24,7 +24,7 @@ final class EventSlugGenerator
         }
 
         if ($organizerSlug !== null) {
-            return $organizerSlug.'-'.$eventSlug;
+            return $organizerSlug . '-' . $eventSlug;
         }
 
         return $eventSlug;

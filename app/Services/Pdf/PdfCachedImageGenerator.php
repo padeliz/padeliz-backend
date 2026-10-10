@@ -11,7 +11,7 @@ use App\Models\Player;
 /**
  * Shared resolve → compose → cleanup for PDF cached player/pair images.
  */
-final class PdfCachedImageGenerator
+class PdfCachedImageGenerator
 {
     public function __construct(
         private readonly PdfPlayerPhotoForCacheResolver $photoResolver = new PdfPlayerPhotoForCacheResolver(),

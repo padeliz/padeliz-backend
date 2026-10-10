@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
-use App\Models\PadelEvent;
 use App\Models\Location;
+use App\Models\PadelEvent;
 use App\Services\EventDeadlineTimestamps;
 use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\Factory;

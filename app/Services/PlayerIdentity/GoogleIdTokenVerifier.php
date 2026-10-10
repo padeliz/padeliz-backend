@@ -9,7 +9,9 @@ use Google\Client as GoogleClient;
 
 final class GoogleIdTokenVerifier
 {
-    public function __construct(private GoogleClient $googleClient) {}
+    public function __construct(private GoogleClient $googleClient)
+    {
+    }
 
     /**
      * @return array{sub: string, email: ?string, name: ?string, picture: ?string}

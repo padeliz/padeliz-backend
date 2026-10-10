@@ -16,10 +16,13 @@ class PlayerPhoneResource extends JsonResource
     {
         return [
             'id_player_phone' => $this->id_player_phone,
+            'player_id' => $this->player_id,
             'phone' => $this->phone,
             'purposes' => $this->purposes,
             'is_primary' => $this->is_primary,
             'verified_at' => $this->verified_at,
+            'inserted_at' => $this->inserted_at,
+            'updated_at' => $this->updated_at,
         ];
     }
 }

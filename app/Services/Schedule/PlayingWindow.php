@@ -10,14 +10,15 @@ use InvalidArgumentException;
 /**
  * Shared clock-window helpers for playing / arriving / closing times.
  *
- * Supports end-of-day 24:00(:00) and overnight windows (end &lt; start).
+ * Wall clocks are 00:00–23:59(:ss). Overnight windows use end &lt; start
+ * (end falls on the next calendar day). Start and end must differ.
  */
 final class PlayingWindow
 {
     /**
-     * Shape-only validation: 00:00–23:59(:ss) or exactly 24:00 / 24:00:00.
+     * Shape-only validation: 00:00–23:59 with optional seconds.
      */
-    public const CLOCK_PATTERN = '^(?:(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?|24:00(?::00)?)$';
+    public const CLOCK_PATTERN = '^(?:[01]\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$';
 
     public static function clockRegexRule(): string
     {
@@ -49,20 +50,31 @@ final class PlayingWindow
             return null;
         }
 
-        // Preserve end-of-day sentinel that Carbon/DateTime cannot represent.
         if (preg_match('/^24:00(?::00)?$/', $raw) === 1) {
-            return '24:00:00';
+            throw new InvalidArgumentException('Invalid clock "24:00:00".');
         }
 
-        if (preg_match('/^(\d{1,2}):(\d{2})(?::(\d{2}))?/', $raw, $m) === 1) {
+        if (preg_match('/^(\d{1,2}):(\d{2})(?::(\d{2}))?$/', $raw, $m) === 1) {
             $h = (int) $m[1];
             $i = (int) $m[2];
             $s = isset($m[3]) ? (int) $m[3] : 0;
 
+            if ($h > 23 || $i > 59 || $s > 59) {
+                throw new InvalidArgumentException(sprintf('Invalid clock "%s".', $raw));
+            }
+
             return sprintf('%02d:%02d:%02d', $h, $i, $s);
         }
 
-        return $raw;
+        throw new InvalidArgumentException(sprintf('Invalid clock "%s".', $raw));
+    }
+
+    /**
+     * Whether normalized start and end clocks differ (same-day or overnight).
+     */
+    public static function windowsAreDistinct(string $start, string $end): bool
+    {
+        return self::compareClock($start, $end) !== 0;
     }
 
     /**
@@ -74,11 +86,13 @@ final class PlayingWindow
         $startClock = self::normalizeStoredTime(self::requireClock($start));
         $endClock = self::normalizeStoredTime(self::requireClock($end));
 
+        if ($startClock === $endClock) {
+            throw new InvalidArgumentException('Start and end clocks must differ.');
+        }
+
         $startDt = self::dateTimeOnDate($date, $startClock);
 
-        if (self::isEndOfDay($endClock)) {
-            $endDt = self::dateTimeOnDate($date, '00:00:00')->modify('+1 day');
-        } elseif (self::compareClock($endClock, $startClock) < 0) {
+        if (self::compareClock($endClock, $startClock) < 0) {
             $endDt = self::dateTimeOnDate($date, $endClock)->modify('+1 day');
         } else {
             $endDt = self::dateTimeOnDate($date, $endClock);
@@ -119,20 +133,12 @@ final class PlayingWindow
         return false;
     }
 
-    public static function isEndOfDay(string $clock): bool
-    {
-        $n = self::normalizeStoredTime(trim($clock));
-
-        return $n === '24:00:00';
-    }
-
     private static function requireClock(string $time): string
     {
         $time = trim($time);
         if ($time === '' || preg_match('/' . self::CLOCK_PATTERN . '/', $time) !== 1) {
-            // Allow slightly looser parse for internal callers that already validated,
-            // but still reject obvious garbage.
-            if (preg_match('/^\d{1,2}:\d{2}(?::\d{2})?$/', $time) !== 1 && preg_match('/^24:00(?::00)?$/', $time) !== 1) {
+            // Allow H:i without leading zero on hour for internal callers.
+            if (preg_match('/^(?:[01]?\d|2[0-3]):[0-5]\d(?::[0-5]\d)?$/', $time) !== 1) {
                 throw new InvalidArgumentException(sprintf('Invalid clock "%s".', $time));
             }
         }
@@ -142,10 +148,6 @@ final class PlayingWindow
 
     private static function dateTimeOnDate(string $date, string $clockHms): DateTimeImmutable
     {
-        if (self::isEndOfDay($clockHms)) {
-            throw new InvalidArgumentException('24:00:00 cannot be placed on a calendar day as a wall clock.');
-        }
-
         $parsed = DateTimeImmutable::createFromFormat('!Y-m-d H:i:s', $date . ' ' . $clockHms);
         if (! $parsed instanceof DateTimeImmutable) {
             throw new InvalidArgumentException(sprintf('Invalid date/time "%s %s".', $date, $clockHms));

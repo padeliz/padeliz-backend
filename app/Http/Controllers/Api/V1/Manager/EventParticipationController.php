@@ -6,7 +6,7 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
 use App\Http\Resources\EventParticipationResource;
-use App\Models\{PadelEvent, EventDivision, EventParticipation, Player};
+use App\Models\{EventDivision, EventParticipation, PadelEvent, Player};
 use App\Services\EventParticipationFlagService;
 use App\Services\EventParticipationLotteryGuard;
 use App\Services\Pdf\AttendancePosterInvalidation;

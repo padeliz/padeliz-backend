@@ -6,13 +6,13 @@ namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Club;
 use App\Models\Division;
-use App\Models\PadelEvent;
-use App\Services\EventDeadlineTimestamps;
 use App\Models\EventDivision;
 use App\Models\EventDivisionPoster;
 use App\Models\Location;
 use App\Models\Organizer;
+use App\Models\PadelEvent;
 use App\Models\Player;
+use App\Services\EventDeadlineTimestamps;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -63,7 +63,6 @@ class EventControllerTest extends TestCase
         ]);
     }
 
-    
     private function deadlineFieldsForDate(string $dateYmd): array
     {
         $deadline = EventDeadlineTimestamps::defaultDeadline($dateYmd);
@@ -412,7 +411,7 @@ class EventControllerTest extends TestCase
         $this->assertNotNull($poster->fresh()->generated_path);
     }
 
-    public function test_manager_can_create_edition_with_overnight_and_end_of_day_closing(): void
+    public function test_manager_can_create_edition_with_overnight_closing(): void
     {
         Sanctum::actingAs($this->manager);
 
@@ -422,13 +421,13 @@ class EventControllerTest extends TestCase
             'date' => now()->addDays(10)->format('Y-m-d'),
             'location_id' => $this->location->id_location,
             'arriving_time' => '18:00:00',
-            'closing_time' => '24:00:00',
+            'closing_time' => '00:00:00',
             ...$this->deadlineFieldsForDate(now()->addDays(10)->format('Y-m-d')),
         ]);
 
         $response->assertStatus(201)
             ->assertJsonPath('data.arriving_time', '18:00:00')
-            ->assertJsonPath('data.closing_time', '24:00:00');
+            ->assertJsonPath('data.closing_time', '00:00:00');
 
         $overnight = $this->postJson('/api/v1/manager/events', [
             'name' => 'Overnight Ed',
@@ -442,6 +441,46 @@ class EventControllerTest extends TestCase
 
         $overnight->assertStatus(201)
             ->assertJsonPath('data.closing_time', '02:00:00');
+
+        $fullDay = $this->postJson('/api/v1/manager/events', [
+            'name' => 'Full Day Ed',
+            'description' => '<p>Full day edition description.</p>',
+            'date' => now()->addDays(12)->format('Y-m-d'),
+            'location_id' => $this->location->id_location,
+            'arriving_time' => '00:00:00',
+            'closing_time' => '23:59:59',
+            ...$this->deadlineFieldsForDate(now()->addDays(12)->format('Y-m-d')),
+        ]);
+
+        $fullDay->assertStatus(201)
+            ->assertJsonPath('data.closing_time', '23:59:59');
+    }
+
+    public function test_manager_cannot_create_edition_with_24_00_or_equal_clocks(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $this->postJson('/api/v1/manager/events', [
+            'name' => 'Bad End',
+            'description' => '<p>Bad end.</p>',
+            'date' => now()->addDays(10)->format('Y-m-d'),
+            'location_id' => $this->location->id_location,
+            'arriving_time' => '18:00:00',
+            'closing_time' => '24:00:00',
+            ...$this->deadlineFieldsForDate(now()->addDays(10)->format('Y-m-d')),
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['closing_time']);
+
+        $this->postJson('/api/v1/manager/events', [
+            'name' => 'Equal Clocks',
+            'description' => '<p>Equal clocks.</p>',
+            'date' => now()->addDays(10)->format('Y-m-d'),
+            'location_id' => $this->location->id_location,
+            'arriving_time' => '12:00:00',
+            'closing_time' => '12:00:00',
+            ...$this->deadlineFieldsForDate(now()->addDays(10)->format('Y-m-d')),
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['closing_time']);
     }
 
     public function test_store_requires_non_empty_description_and_sanitizes_html(): void

@@ -6,7 +6,6 @@ namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Court;
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventDivisionCourt;
 use App\Models\EventDivisionSchedule;
@@ -14,6 +13,7 @@ use App\Models\EventDivisionStanding;
 use App\Models\EventParticipation;
 use App\Models\GameMatch;
 use App\Models\MatchSide;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -121,7 +121,7 @@ class EventDivisionScheduleControllerTest extends TestCase
 
         $this->eventDivision->update([
             'playing_start_time' => '10:00:00',
-            'playing_end_time' => '24:00:00',
+            'playing_end_time' => '00:00:00',
         ]);
 
         $this->putJson("/api/v1/manager/event-divisions/{$edId}/schedule/form", [
@@ -355,7 +355,7 @@ class EventDivisionScheduleControllerTest extends TestCase
         }
     }
 
-    public function test_edition_division_persists_end_of_day_playing_end(): void
+    public function test_edition_division_persists_overnight_playing_end(): void
     {
         Sanctum::actingAs($this->manager);
 
@@ -363,16 +363,16 @@ class EventDivisionScheduleControllerTest extends TestCase
 
         $this->patchJson("/api/v1/manager/event-divisions/{$edId}", [
             'playing_start_time' => '18:00',
-            'playing_end_time' => '24:00',
+            'playing_end_time' => '00:00',
         ])->assertOk();
 
         $fresh = $this->eventDivision->fresh();
-        $this->assertSame('24:00:00', $fresh->getAttributes()['playing_end_time'] ?? null);
-        $this->assertSame('24:00:00', $fresh->formatted_playing_end_time);
+        $this->assertSame('00:00:00', $fresh->getAttributes()['playing_end_time'] ?? null);
+        $this->assertSame('00:00:00', $fresh->formatted_playing_end_time);
 
         $this->getJson("/api/v1/manager/event-divisions/{$edId}")
             ->assertOk()
-            ->assertJsonPath('data.playing_end_time', '24:00:00');
+            ->assertJsonPath('data.playing_end_time', '00:00:00');
     }
 
     public function test_schedule_form_rejects_playing_times(): void
@@ -386,7 +386,7 @@ class EventDivisionScheduleControllerTest extends TestCase
         ])->assertStatus(422);
 
         $this->putJson("/api/v1/manager/event-divisions/{$edId}/schedule/form", [
-            'playing_end_time' => '24:00',
+            'playing_end_time' => '00:00',
         ])->assertStatus(422);
     }
 
@@ -481,17 +481,17 @@ class EventDivisionScheduleControllerTest extends TestCase
 
         $this->eventDivision->update([
             'playing_start_time' => '18:00:00',
-            'playing_end_time' => '24:00:00',
+            'playing_end_time' => '00:00:00',
         ]);
 
-        $endOfDay = $this->postJson(
+        $toMidnight = $this->postJson(
             "/api/v1/manager/event-divisions/{$edId}/schedule/preview",
             []
         );
 
-        $endOfDay->assertStatus(200)
+        $toMidnight->assertStatus(200)
             ->assertJsonPath('success', true);
-        $this->assertIsArray($endOfDay->json('data.matches_by_court'));
+        $this->assertIsArray($toMidnight->json('data.matches_by_court'));
     }
 
     public function test_generate_persists_template_version(): void
@@ -819,14 +819,6 @@ class EventDivisionScheduleControllerTest extends TestCase
 
     private function solidPngBytes(): string
     {
-        $img = imagecreatetruecolor(40, 40);
-        $color = imagecolorallocate($img, 10, 200, 90);
-        imagefill($img, 0, 0, $color);
-        ob_start();
-        imagepng($img);
-        $bytes = (string) ob_get_clean();
-        imagedestroy($img);
-
-        return $bytes;
+        return \Tests\Support\PdfFixtures::solidRed40Bytes();
     }
 }

@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Services\RegistrationPayment;
 
-use App\Enums\Registration\CheckoutItemStatus;
 use App\Enums\Registration\PaymentProofReviewStatus;
 use App\Enums\Registration\RegistrationCancelReason;
 use App\Enums\Registration\RegistrationDeclineReason;

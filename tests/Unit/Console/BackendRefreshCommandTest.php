@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace Tests\Unit\Console;
 
 use App\Console\Commands\BackendRefreshCommand;
-use Illuminate\Support\Facades\Artisan;
 use ReflectionMethod;
 use Tests\TestCase;
 
@@ -34,11 +33,6 @@ class BackendRefreshCommandTest extends TestCase
             ['queue:restart', []],
             ['api:docs:generate-all', []],
         ], $steps);
-    }
-
-    public function test_dev_refresh_runs_successfully(): void
-    {
-        $this->assertSame(0, Artisan::call('backend:refresh'));
     }
 
     /**

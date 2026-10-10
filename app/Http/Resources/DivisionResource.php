@@ -16,10 +16,15 @@ class DivisionResource extends JsonResource
             'name' => $this->name,
             'color' => $this->color,
             'its_first_event_id' => $this->its_first_event_id,
+            'level_min' => $this->level_min,
+            'level_max' => $this->level_max,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
             'its_first_event' => $this->whenLoaded('itsFirstEvent', function () {
                 return new EventResource($this->itsFirstEvent);
+            }),
+            'levels' => $this->whenLoaded('levels', function () {
+                return LevelResource::collection($this->levels);
             }),
             'event_divisions' => $this->whenLoaded('eventDivisions', function () {
                 return EventDivisionResource::collection($this->eventDivisions);

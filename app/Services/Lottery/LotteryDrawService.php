@@ -5,7 +5,6 @@ declare(strict_types=1);
 namespace App\Services\Lottery;
 
 use App\Models\CachedPdfPlayerImage;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventDivisionReplacement;
 use App\Models\EventLottery;
@@ -13,6 +12,7 @@ use App\Models\EventLotteryLucky;
 use App\Models\EventLotteryPrize;
 use App\Models\EventLotteryRule;
 use App\Models\EventParticipation;
+use App\Models\PadelEvent;
 use App\Models\SponsorPrize;
 use App\Services\Schedule\PlayingWindow;
 use Illuminate\Database\Eloquent\Builder;
@@ -733,32 +733,9 @@ final class LotteryDrawService
     private function prizesBoardIntervalKey(mixed $start, mixed $end): string
     {
         $startClock = PlayingWindow::toClockString($start) ?? '';
-        $endClock = $this->normalizePrizesBoardEndClock($start, $end);
+        $endClock = PlayingWindow::toClockString($end) ?? '';
 
         return $startClock . '|' . $endClock;
-    }
-
-    private function normalizePrizesBoardEndClock(mixed $start, mixed $end): string
-    {
-        $startClock = PlayingWindow::toClockString($start);
-        $endClock = PlayingWindow::toClockString($end);
-        if ($endClock === null) {
-            return '';
-        }
-
-        if (preg_match('/^24:00(?::00)?$/', $endClock) === 1) {
-            return '24:00:00';
-        }
-
-        if (
-            $endClock === '00:00:00'
-            && $startClock !== null
-            && $startClock !== '00:00:00'
-        ) {
-            return '24:00:00';
-        }
-
-        return $endClock;
     }
 
     private function formatIntervalLabelFromKey(string $key): string
@@ -771,12 +748,9 @@ final class LotteryDrawService
     private function formatIntervalLabel(mixed $start, mixed $end): string
     {
         $startClock = PlayingWindow::toClockString($start);
-        $endClock = $this->normalizePrizesBoardEndClock($start, $end);
-        if ($endClock === '') {
-            $endClock = PlayingWindow::toClockString($end);
-        }
+        $endClock = PlayingWindow::toClockString($end);
         $startLabel = $startClock !== null ? substr($startClock, 0, 5) : '?';
-        $endLabel = $endClock !== null && $endClock !== '' ? substr($endClock, 0, 5) : '?';
+        $endLabel = $endClock !== null ? substr($endClock, 0, 5) : '?';
 
         return $startLabel . ' – ' . $endLabel;
     }

@@ -20,16 +20,9 @@ class PlayerFactory extends Factory
     public function definition()
     {
         return [
-            'skill_division' => $this->faker->randomFloat(1, 1, 5),
             'first_name' => $this->faker->firstName(),
             'middle_name' => $this->faker->optional(0.2)->firstName(),
             'last_name' => $this->faker->lastName(),
-            'year_of_birth' => $this->faker->optional()->year(),
-            'being_student' => $this->faker->boolean(),
-            'playtomic_id' => $this->faker->optional()->bothify('??#####'),
-            'rankedin_id' => $this->faker->optional()->bothify('??######'),
-            'instagram_username' => $this->faker->optional()->userName(),
-            'facebook_username' => $this->faker->optional()->userName(),
             'user_types' => ['player'],
             'inserted_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
             'updated_at' => $this->faker->optional()->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
@@ -42,19 +35,6 @@ class PlayerFactory extends Factory
     public function configure()
     {
         return $this->afterCreating(function (Player $player) {
-            // Contacts for auth/smoke tests (identity is opt-in via withGoogleIdentity()).
-            PlayerEmail::factory()->create([
-                'player_id' => $player->id_player,
-                'email' => Str::slug($player->name, '.') . '.' . $player->id_player . '@example.test',
-                'purposes' => ['login', 'contact'],
-                'is_primary' => true,
-            ]);
-
-            PlayerPhone::factory()->create([
-                'player_id' => $player->id_player,
-                'is_primary' => true,
-            ]);
-
             // Skip image creation in testing environment
             if (app()->environment('testing')) {
                 return;
@@ -126,7 +106,52 @@ class PlayerFactory extends Factory
     }
 
     /**
+     * Attach a primary login/contact email (opt-in).
+     */
+    public function withPrimaryEmail(?string $email = null)
+    {
+        return $this->afterCreating(function (Player $player) use ($email) {
+            if ($player->emails()->where('is_primary', true)->exists()) {
+                return;
+            }
+
+            PlayerEmail::factory()->create([
+                'player_id' => $player->id_player,
+                'email' => $email ?? (Str::slug($player->name, '.') . '.' . $player->id_player . '@example.test'),
+                'purposes' => ['login', 'contact'],
+                'is_primary' => true,
+            ]);
+        });
+    }
+
+    /**
+     * Attach a primary phone (opt-in).
+     */
+    public function withPrimaryPhone()
+    {
+        return $this->afterCreating(function (Player $player) {
+            if ($player->phones()->where('is_primary', true)->exists()) {
+                return;
+            }
+
+            PlayerPhone::factory()->create([
+                'player_id' => $player->id_player,
+                'is_primary' => true,
+            ]);
+        });
+    }
+
+    /**
+     * Attach primary email and phone (opt-in).
+     */
+    public function withContacts()
+    {
+        return $this->withPrimaryEmail()->withPrimaryPhone();
+    }
+
+    /**
      * Attach a Google identity linked to the player's primary email.
+     * Creates a primary email when the player has none.
      */
     public function withGoogleIdentity(?string $providerSubject = null)
     {
@@ -134,11 +159,20 @@ class PlayerFactory extends Factory
             $email = $player->emails()->where('is_primary', true)->first()
                 ?? $player->emails()->first();
 
+            if ($email === null) {
+                $email = PlayerEmail::factory()->create([
+                    'player_id' => $player->id_player,
+                    'email' => Str::slug($player->name, '.') . '.' . $player->id_player . '@example.test',
+                    'purposes' => ['login', 'contact'],
+                    'is_primary' => true,
+                ]);
+            }
+
             PlayerIdentity::factory()->create([
                 'player_id' => $player->id_player,
                 'provider' => PlayerIdentity::PROVIDER_GOOGLE,
                 'provider_subject' => $providerSubject ?? ('google_' . $player->id_player . '_' . Str::random(8)),
-                'email_id' => $email?->id_player_email,
+                'email_id' => $email->id_player_email,
                 'display_name' => $player->name,
             ]);
         });

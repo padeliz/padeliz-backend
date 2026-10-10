@@ -13,7 +13,7 @@ use RuntimeException;
  * Mode A upserts cached_pdf_player_images keyed by player + collecting;
  * Mode B uses temp files only. Non-collecting avatars get 50% opacity (pair parity).
  */
-final class CachedPdfPlayerImageService
+class CachedPdfPlayerImageService
 {
     public const SQUARE_SIZE = 200;
 

@@ -6,12 +6,12 @@ namespace Tests\Feature\Api\V1\App;
 
 use App\Enums\Registration\RegistrationPaymentStatus;
 use App\Models\Club;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventLotteryLucky;
 use App\Models\EventParticipation;
 use App\Models\EventRegistration;
 use App\Models\Location;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;

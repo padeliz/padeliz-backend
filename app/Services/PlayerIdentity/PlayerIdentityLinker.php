@@ -46,6 +46,8 @@ final class PlayerIdentityLinker
                 );
             }
 
+            $this->refreshAvatarUrl($existing, $avatarUrl);
+
             if ($asLogin) {
                 $existing->touchLastLogin();
             }
@@ -108,5 +110,25 @@ final class PlayerIdentityLinker
             PlayerIdentityLinkResult::LINKED,
             $identity->fresh(['email']) ?? $identity,
         );
+    }
+
+    /**
+     * Keeps the stored provider avatar in sync with the latest claims (e.g. on re-login).
+     * A missing/empty claim never clears an existing avatar.
+     */
+    public function refreshAvatarUrl(PlayerIdentity $identity, ?string $avatarUrl): void
+    {
+        $avatarUrl = $avatarUrl !== null ? trim($avatarUrl) : null;
+
+        if ($avatarUrl === null || $avatarUrl === '' || strlen($avatarUrl) > 512) {
+            return;
+        }
+
+        if ($identity->avatar_url === $avatarUrl) {
+            return;
+        }
+
+        $identity->avatar_url = $avatarUrl;
+        $identity->save();
     }
 }

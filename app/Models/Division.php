@@ -8,6 +8,7 @@ use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\HasManyThrough;
 
@@ -56,6 +57,22 @@ use Illuminate\Database\Eloquent\Relations\HasManyThrough;
  *         title="First PadelEvent",
  *         description="Related first edition object",
  *         nullable=true
+ *     ),
+ *     @OA\Property(
+ *         property="level_min",
+ *         type="string",
+ *         nullable=true,
+ *         title="Level Min",
+ *         description="Weakest level accepted in this division",
+ *         example="4.99"
+ *     ),
+ *     @OA\Property(
+ *         property="level_max",
+ *         type="string",
+ *         nullable=true,
+ *         title="Level Max",
+ *         description="Strongest level accepted in this division",
+ *         example="4.67"
  *     ),
  *     @OA\Property(
  *         property="inserted_at",
@@ -135,6 +152,8 @@ class Division extends Model
         'name',
         'color',
         'its_first_event_id',
+        'level_min',
+        'level_max',
     ];
 
     /**
@@ -145,6 +164,8 @@ class Division extends Model
     protected $casts = [
         'inserted_at' => 'integer',
         'updated_at' => 'integer',
+        'level_min' => 'decimal:2',
+        'level_max' => 'decimal:2',
     ];
 
     public function itsFirstEvent(): BelongsTo
@@ -155,6 +176,20 @@ class Division extends Model
     public function eventDivisions(): HasMany
     {
         return $this->hasMany(EventDivision::class, 'division_id');
+    }
+
+    public function levels(): BelongsToMany
+    {
+        return $this->belongsToMany(
+            Level::class,
+            'division_levels',
+            'division_id',
+            'level_id',
+            'id_division',
+            'id_level'
+        )->using(DivisionLevel::class)
+            ->withTimestamps('inserted_at', 'updated_at')
+            ->withPivot(['id_division_level']);
     }
 
     public function participations(): HasManyThrough

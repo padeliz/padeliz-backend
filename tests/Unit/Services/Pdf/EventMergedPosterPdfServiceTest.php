@@ -6,16 +6,15 @@ namespace Tests\Unit\Services\Pdf;
 
 use App\Models\Court;
 use App\Models\Division;
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventDivisionCourt;
 use App\Models\EventDivisionPoster;
-use App\Models\Player;
+use App\Models\PadelEvent;
 use App\Services\Pdf\EventMergedPosterPdfException;
 use App\Services\Pdf\EventMergedPosterPdfService;
-use App\Services\Pdf\PosterPdfService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\PdfFixtures;
 use Tests\TestCase;
 
 final class EventMergedPosterPdfServiceTest extends TestCase
@@ -144,7 +143,7 @@ final class EventMergedPosterPdfServiceTest extends TestCase
         $attendance->save();
 
         $disk = config('filesystems.user_uploads_disk', 'public');
-        Storage::disk($disk)->put((string) $attendance->generated_path, $this->minimalPdfBytes());
+        Storage::disk($disk)->put((string) $attendance->generated_path, PdfFixtures::minimalPdfBytes());
 
         $files = $this->service->collectMergeFiles($event->fresh());
 
@@ -182,31 +181,8 @@ final class EventMergedPosterPdfServiceTest extends TestCase
         $poster->save();
 
         Storage::disk(config('filesystems.user_uploads_disk', 'public'))
-            ->put((string) $poster->generated_path, $this->minimalPdfBytes());
+            ->put((string) $poster->generated_path, PdfFixtures::minimalPdfBytes());
 
         return $poster;
-    }
-
-    private function minimalPdfBytes(): string
-    {
-        static $bytes = null;
-        if ($bytes !== null) {
-            return $bytes;
-        }
-
-        $players = Player::factory()->count(4)->create();
-        $bytes = (new PosterPdfService())->generateRankingFromScratch([
-            'player_ids' => $players->pluck('id_player')->all(),
-            'court_names' => ['Court 1'],
-            'time_start' => '14:00',
-            'time_end' => '17:00',
-            'opponents_per_player' => 3,
-            'repeat_partners' => 1,
-            'title' => 'Merge Fixture',
-            'organizer_id' => null,
-            'club_id' => null,
-        ])->bytes;
-
-        return $bytes;
     }
 }

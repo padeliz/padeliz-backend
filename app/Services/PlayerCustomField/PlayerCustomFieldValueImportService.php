@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Services\PlayerCustomField;
 
+use App\Enums\PlayerCustomFieldType;
 use App\Models\Player;
 use App\Models\PlayerCustomField;
-use App\Models\PlayerCustomFieldValue;
+use App\Models\PlayerCustomFieldOption;
+use App\Models\PlayerCustomFieldSubmission;
 use App\Models\PlayerCustomFieldValueImport;
 use App\Models\PlayerCustomFieldValueImportRow;
 use App\Services\PlayerCustomField\Formats\GoogleFormMiniTourWelcomeCsvFormat;
@@ -34,7 +36,7 @@ final class PlayerCustomFieldValueImportService
     public function __construct(
         private readonly PlayerCustomFieldValueCsvFormatRegistry $registry,
         private readonly PlayerImportMapper $mapper,
-        private readonly PlayerCustomFieldValueWriter $writer,
+        private readonly PlayerCustomFieldSubmissionWriter $writer,
     ) {
     }
 
@@ -192,23 +194,32 @@ final class PlayerCustomFieldValueImportService
                 $answersJson = [];
                 $player = Player::query()->findOrFail($row['player_id']);
 
+                $submission = PlayerCustomFieldSubmission::create([
+                    'player_id' => $player->id_player,
+                    'submitted_via' => PlayerCustomFieldSubmission::SUBMITTED_VIA_CSV,
+                    'submitted_by_player_id' => $importedByPlayerId,
+                ]);
+
                 foreach ($fields as $code => $field) {
                     $answer = $row['answers'][$code] ?? '';
                     if ($answer === '') {
                         continue;
                     }
 
-                    $outcome = $this->writer->write(
+                    $hadCurrent = $this->writer->currentValue(
                         (int) $player->id_player,
+                        (int) $field->id_player_custom_field
+                    ) !== null;
+
+                    $this->writer->write(
+                        $submission,
                         $field,
-                        $editionId,
-                        ['value' => $answer],
-                        PlayerCustomFieldValue::SUBMITTED_VIA_CSV,
+                        $this->inputFor($field, $answer),
                         $importedByPlayerId,
                         (int) $import->id_player_custom_field_value_import,
                     );
 
-                    if ($outcome === 'replaced') {
+                    if ($hadCurrent) {
                         $valuesReplaced++;
                     } else {
                         $valuesNew++;
@@ -237,6 +248,36 @@ final class PlayerCustomFieldValueImportService
 
             return $import->fresh(['rows', 'importedByPlayer', 'event']) ?? $import;
         });
+    }
+
+    /**
+     * Turns a CSV answer into the writer input for the field's type. Selects are matched on an
+     * active option's code or label (case-insensitive).
+     *
+     * @return array<string, mixed>
+     */
+    private function inputFor(PlayerCustomField $field, string $answer): array
+    {
+        if ($field->type !== PlayerCustomFieldType::SingleSelect) {
+            return ['value' => $answer];
+        }
+
+        $needle = mb_strtolower(trim($answer));
+        $option = PlayerCustomFieldOption::query()
+            ->where('player_custom_field_id', $field->id_player_custom_field)
+            ->where('is_active', true)
+            ->get()
+            ->first(static fn (PlayerCustomFieldOption $candidate): bool => mb_strtolower((string) $candidate->code) === $needle
+                || mb_strtolower((string) $candidate->label) === $needle);
+
+        if ($option === null) {
+            throw new PlayerCustomFieldValueImportFailedException(
+                'Validation failed',
+                ["answers.{$field->code}" => ["'{$answer}' is not a valid option for {$field->code}."]],
+            );
+        }
+
+        return ['option_id' => (int) $option->id_player_custom_field_option];
     }
 
     /**

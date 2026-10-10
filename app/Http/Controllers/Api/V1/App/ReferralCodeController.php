@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1\App;
 
-use App\Models\PadelEvent;
 use App\Models\EventReferralCode;
+use App\Models\PadelEvent;
 use App\Services\Referral\ReferralService;
 use Illuminate\Http\Request;
 use InvalidArgumentException;

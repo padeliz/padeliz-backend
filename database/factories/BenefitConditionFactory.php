@@ -17,17 +17,17 @@ class BenefitConditionFactory extends Factory
     {
         return [
             'benefit_definition_id' => BenefitDefinition::factory(),
-            'condition_type' => BenefitConditionType::EligibilityFlag,
-            'parameters' => ['flag' => 'being_student'],
+            'condition_type' => BenefitConditionType::StudentProofActive,
+            'parameters' => [],
             'inserted_at' => $this->faker->numberBetween(time() - (90 * 24 * 60 * 60), time()),
         ];
     }
 
-    public function eligibilityFlag(string $flag = 'being_student'): static
+    public function studentProofActive(): static
     {
         return $this->state(fn () => [
-            'condition_type' => BenefitConditionType::EligibilityFlag,
-            'parameters' => ['flag' => $flag],
+            'condition_type' => BenefitConditionType::StudentProofActive,
+            'parameters' => [],
         ]);
     }
 

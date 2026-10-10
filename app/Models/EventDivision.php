@@ -25,6 +25,8 @@ use InvalidArgumentException;
  *     @OA\Property(property="players_limit", type="integer", minimum=1, title="Players Limit", example=16),
  *     @OA\Property(property="entry_fee", type="integer", minimum=0, title="Entry Fee", description="Entry fee in RON", example=55),
  *     @OA\Property(property="skill_order", type="integer", minimum=0, title="Skill Order"),
+ *     @OA\Property(property="level_min", type="string", nullable=true, title="Level Min", example="4.99"),
+ *     @OA\Property(property="level_max", type="string", nullable=true, title="Level Max", example="4.67"),
  *     @OA\Property(
  *         property="playing_start_time",
  *         type="string",
@@ -64,6 +66,8 @@ class EventDivision extends Model
         'players_limit',
         'entry_fee',
         'skill_order',
+        'level_min',
+        'level_max',
     ];
 
     public static array $sortableFields = [
@@ -76,6 +80,8 @@ class EventDivision extends Model
         'skill_order',
         'playing_start_time',
         'playing_end_time',
+        'level_min',
+        'level_max',
         'inserted_at',
         'updated_at',
     ];
@@ -102,6 +108,8 @@ class EventDivision extends Model
         'skill_order',
         'playing_start_time',
         'playing_end_time',
+        'level_min',
+        'level_max',
     ];
 
     protected $casts = [
@@ -109,12 +117,46 @@ class EventDivision extends Model
         'updated_at' => 'integer',
         'skill_order' => 'integer',
         'entry_fee' => 'integer',
+        'level_min' => 'decimal:2',
+        'level_max' => 'decimal:2',
     ];
 
     protected $appends = [
         'formatted_playing_start_time',
         'formatted_playing_end_time',
     ];
+
+    protected static function booted(): void
+    {
+        static::creating(function (EventDivision $eventDivision): void {
+            $eventDivision->inheritLevelBandFromDivision();
+        });
+    }
+
+    /**
+     * Editions start from the catalog division band; callers may still override either bound.
+     */
+    public function inheritLevelBandFromDivision(): void
+    {
+        if ($this->level_min !== null && $this->level_max !== null) {
+            return;
+        }
+
+        if ($this->division_id === null) {
+            return;
+        }
+
+        $band = Division::query()
+            ->where('id_division', $this->division_id)
+            ->first(['level_min', 'level_max']);
+
+        if ($band === null) {
+            return;
+        }
+
+        $this->level_min ??= $band->level_min;
+        $this->level_max ??= $band->level_max;
+    }
 
     public function event(): BelongsTo
     {

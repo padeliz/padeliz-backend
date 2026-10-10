@@ -17,11 +17,20 @@ class RegistrationCheckoutController extends V1BaseController
     ) {
     }
 
+    /**
+     * Queue triage (`queue=`) is the default and required view. A player-scoped view
+     * (`filters[player_id]`, the Player > Checkouts tab) lists every checkout of that
+     * player instead: no queue is required and queue triage is skipped.
+     */
     public function index(Request $request)
     {
-        $validated = $request->validate([
-            'queue' => 'required|string|in:' . implode(',', CheckoutQueueService::allowedQueues()),
-        ]);
+        $playerId = $this->playerIdFilter($request);
+
+        if ($playerId === null) {
+            $validated = $request->validate([
+                'queue' => 'required|string|in:' . implode(',', CheckoutQueueService::allowedQueues()),
+            ]);
+        }
 
         $query = EventRegistrationCheckout::query()
             ->with([
@@ -33,11 +42,33 @@ class RegistrationCheckoutController extends V1BaseController
             ])
             ->orderByDesc('id_checkout');
 
-        $this->queueService->applyQueue($query, $validated['queue']);
+        if ($playerId !== null) {
+            $query->where('player_id', $playerId);
+        } else {
+            $this->queueService->applyQueue($query, $validated['queue']);
+        }
 
         return $this->resourceResponse(
             EventRegistrationCheckoutResource::collection($query->get()),
             'Registration checkouts retrieved'
         );
+    }
+
+    /**
+     * @throws \Illuminate\Validation\ValidationException
+     */
+    private function playerIdFilter(Request $request): ?int
+    {
+        $filters = $request->input('filters');
+
+        if (! is_array($filters) || ! array_key_exists('player_id', $filters) || $filters['player_id'] === '' || $filters['player_id'] === null) {
+            return null;
+        }
+
+        $request->validate([
+            'filters.player_id' => 'integer|min:1',
+        ]);
+
+        return (int) $filters['player_id'];
     }
 }

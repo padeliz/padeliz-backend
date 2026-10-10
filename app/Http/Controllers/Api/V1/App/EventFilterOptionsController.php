@@ -7,9 +7,9 @@ namespace App\Http\Controllers\Api\V1\App;
 use App\Enums\Registration\RegistrationPaymentStatus;
 use App\Http\Requests\App\EventDateRangeRequest;
 use App\Models\Club;
-use App\Models\PadelEvent;
 use App\Models\EventLotteryLucky;
 use App\Models\EventRegistration;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use Illuminate\Support\Facades\Auth;
 

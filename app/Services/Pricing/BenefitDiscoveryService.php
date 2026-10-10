@@ -13,6 +13,7 @@ use App\Models\BenefitDefinition;
 use App\Models\BenefitEntitlement;
 use App\Models\BenefitRedemption;
 use App\Models\EventRegistration;
+use App\Models\PlayerStudentProof;
 use Illuminate\Support\Collection;
 
 final class BenefitDiscoveryService
@@ -66,6 +67,7 @@ final class BenefitDiscoveryService
                     'entitlement' => $entitlement,
                     'auto' => ! $benefit->player_optional,
                 ]);
+
                 continue;
             }
 
@@ -138,11 +140,10 @@ final class BenefitDiscoveryService
             $params = is_array($condition->parameters) ? $condition->parameters : [];
 
             $ok = match ($type) {
-                BenefitConditionType::EligibilityFlag => (bool) data_get(
-                    $context->eligibility,
-                    (string) ($params['flag'] ?? 'being_student'),
-                    false
-                ),
+                BenefitConditionType::StudentProofActive => PlayerStudentProof::query()
+                    ->where('player_id', $context->player->id_player)
+                    ->active($context->now)
+                    ->exists(),
                 BenefitConditionType::DaysBeforeEditionDate => $context->daysBeforeEditionDate() >= (int) ($params['min_days'] ?? 0),
                 BenefitConditionType::ReferrerSelected => $context->hasReferrerSelected,
                 BenefitConditionType::NoPriorPaidRegistrationInEdition => ! $this->hasPriorPaidRegistration(
@@ -279,6 +280,7 @@ final class BenefitDiscoveryService
                 $applied[] = ['benefit' => $benefit, 'entitlement' => $c['entitlement'], 'amount_ron' => $amount];
                 $remaining = max(0, $remaining - $amount);
                 $globalExclusiveTaken = true;
+
                 continue;
             }
 

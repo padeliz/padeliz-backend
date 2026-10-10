@@ -10,6 +10,7 @@ use App\Services\Pdf\PdfInitialsPlaceholderImageService;
 use App\Services\Pdf\PdfPlayerPhotoForCacheResolver;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
+use Tests\Support\PdfFixtures;
 use Tests\TestCase;
 
 final class PdfInitialsAndPhotoResolverTest extends TestCase
@@ -112,14 +113,6 @@ final class PdfInitialsAndPhotoResolverTest extends TestCase
 
     private function solidPngBytes(): string
     {
-        $img = imagecreatetruecolor(40, 40);
-        $red = imagecolorallocate($img, 255, 0, 0);
-        imagefill($img, 0, 0, $red);
-        ob_start();
-        imagepng($img);
-        $bytes = (string) ob_get_clean();
-        imagedestroy($img);
-
-        return $bytes;
+        return PdfFixtures::solidRed40Bytes();
     }
 }

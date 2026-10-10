@@ -225,7 +225,6 @@ class PlayerImportControllerTest extends TestCase
         $existing = Player::factory()->create([
             'first_name' => 'Mara',
             'last_name' => 'Popescu',
-            'skill_division' => 4.5,
             'created_via' => 'manager',
         ]);
         $this->setContacts($existing, 'mara@example.test', '+40 712 000 000');
@@ -247,7 +246,6 @@ class PlayerImportControllerTest extends TestCase
         $response->assertCreated()->assertJsonPath('data.rows.0.action', 'attached');
         $existing->refresh();
         $this->assertSame('Mara', $existing->first_name);
-        $this->assertSame(4.5, (float) $existing->skill_division);
         $this->assertSame('manager', $existing->created_via);
         $this->assertNull($existing->created_via_format);
         $this->assertNull($existing->created_via_import_id);
@@ -527,8 +525,6 @@ class PlayerImportControllerTest extends TestCase
 
     private function setContacts(Player $player, string $email, string $phone): void
     {
-        $player->emails()->delete();
-        $player->phones()->delete();
         PlayerEmail::factory()->create([
             'player_id' => $player->id_player,
             'email' => $email,

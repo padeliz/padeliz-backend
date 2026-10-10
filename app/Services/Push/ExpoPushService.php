@@ -42,13 +42,13 @@ class ExpoPushService
         }
     }
 
-    public function notifyEligibilityStatus(int $playerId, string $reviewStatus): void
+    public function notifyLevelAssessmentStatus(int $playerId, string $reviewStatus): void
     {
         $this->sendToPlayer(
             $playerId,
-            'Eligibility update',
-            'Your eligibility status is now: ' . $reviewStatus,
-            ['type' => 'eligibility', 'review_status' => $reviewStatus]
+            'Level assessment update',
+            'Your level assessment status is now: ' . $reviewStatus,
+            ['type' => 'level_assessment', 'review_status' => $reviewStatus]
         );
     }
 

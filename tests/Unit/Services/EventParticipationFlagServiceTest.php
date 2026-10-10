@@ -4,11 +4,11 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services;
 
-use App\Models\PadelEvent;
 use App\Models\EventDivision;
 use App\Models\EventLotteryLucky;
 use App\Models\EventParticipation;
 use App\Models\EventRegistration;
+use App\Models\PadelEvent;
 use App\Models\Player;
 use App\Services\EventParticipationFlagService;
 use App\Services\EventParticipationLotteryGuard;
