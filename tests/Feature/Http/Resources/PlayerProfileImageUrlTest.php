@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Http\Resources;
 
-use App\Http\Resources\PlayerResource;
+use App\Http\Resources\UserResource;
 use App\Models\CachedPdfPlayerImage;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerProfileImage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\Request;
@@ -19,9 +19,9 @@ class PlayerProfileImageUrlTest extends TestCase
 
     public function test_profile_image_url_null_when_no_uploads(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
 
-        $payload = (new PlayerResource($player->fresh()))->toArray(Request::create('/'));
+        $payload = (new UserResource($player->fresh()))->toArray(Request::create('/'));
 
         $this->assertArrayHasKey('profile_image_url', $payload);
         $this->assertNull($payload['profile_image_url']);
@@ -29,27 +29,27 @@ class PlayerProfileImageUrlTest extends TestCase
 
     public function test_profile_image_url_prefers_pdf_primary(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $disk = config('filesystems.user_uploads_disk', 'public');
         Storage::fake($disk);
 
         $first = PlayerProfileImage::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'sort_order' => 0,
             'is_pdf_primary' => false,
-            'profile_path' => 'player-profile-images/' . $player->id_player . '/profile/a.png',
+            'profile_path' => 'player-profile-images/' . $player->id_user . '/profile/a.png',
         ]);
         Storage::disk($disk)->put($first->profile_path, 'a');
 
         $primary = PlayerProfileImage::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'sort_order' => 1,
             'is_pdf_primary' => true,
-            'profile_path' => 'player-profile-images/' . $player->id_player . '/profile/b.png',
+            'profile_path' => 'player-profile-images/' . $player->id_user . '/profile/b.png',
         ]);
         Storage::disk($disk)->put($primary->profile_path, 'b');
 
-        $payload = (new PlayerResource($player->fresh()))->toArray(Request::create('/'));
+        $payload = (new UserResource($player->fresh()))->toArray(Request::create('/'));
 
         $this->assertSame($primary->url, $payload['profile_image_url']);
         $this->assertNotSame($first->url, $payload['profile_image_url']);
@@ -57,52 +57,52 @@ class PlayerProfileImageUrlTest extends TestCase
 
     public function test_profile_image_url_falls_back_to_first_by_sort_order(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $disk = config('filesystems.user_uploads_disk', 'public');
         Storage::fake($disk);
 
         PlayerProfileImage::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'sort_order' => 1,
             'is_pdf_primary' => false,
-            'profile_path' => 'player-profile-images/' . $player->id_player . '/profile/later.png',
+            'profile_path' => 'player-profile-images/' . $player->id_user . '/profile/later.png',
         ]);
         $first = PlayerProfileImage::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'sort_order' => 0,
             'is_pdf_primary' => false,
-            'profile_path' => 'player-profile-images/' . $player->id_player . '/profile/first.png',
+            'profile_path' => 'player-profile-images/' . $player->id_user . '/profile/first.png',
         ]);
         Storage::disk($disk)->put($first->profile_path, 'x');
 
-        $payload = (new PlayerResource($player->fresh()))->toArray(Request::create('/'));
+        $payload = (new UserResource($player->fresh()))->toArray(Request::create('/'));
 
         $this->assertSame($first->url, $payload['profile_image_url']);
     }
 
     public function test_profile_image_url_independent_of_pdf_avatar_url(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $disk = config('filesystems.user_uploads_disk', 'public');
         Storage::fake($disk);
 
         $image = PlayerProfileImage::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'sort_order' => 0,
             'is_pdf_primary' => true,
-            'profile_path' => 'player-profile-images/' . $player->id_player . '/profile/p.png',
+            'profile_path' => 'player-profile-images/' . $player->id_user . '/profile/p.png',
         ]);
         Storage::disk($disk)->put($image->profile_path, 'p');
 
         CachedPdfPlayerImage::query()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'player_is_collecting_points' => true,
-            'picture_path' => 'cached-pdf/avatars/' . $player->id_player . '.png',
+            'picture_path' => 'cached-pdf/avatars/' . $player->id_user . '.png',
             'source_player_profile_image_id' => $image->id,
         ]);
 
         $fresh = $player->fresh()->load(['cachedPdfImages', 'profileImages']);
-        $payload = (new PlayerResource($fresh))->toArray(Request::create('/'));
+        $payload = (new UserResource($fresh))->toArray(Request::create('/'));
 
         $this->assertSame($image->url, $payload['profile_image_url']);
         $this->assertNotNull($payload['pdf_avatar_url']);

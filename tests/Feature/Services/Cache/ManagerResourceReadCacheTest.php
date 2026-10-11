@@ -96,12 +96,12 @@ final class ManagerResourceReadCacheTest extends TestCase
         $this->readCache->rememberIndex('players', $request, $allowedFilters, function () use (&$calls) {
             ++$calls;
 
-            return ['data' => [['id_player' => 1, 'event_id' => 5]]];
+            return ['data' => [['id_user' => 1, 'event_id' => 5]]];
         });
         $this->readCache->rememberIndex('players', $request, $allowedFilters, function () use (&$calls) {
             ++$calls;
 
-            return ['data' => [['id_player' => 99]]];
+            return ['data' => [['id_user' => 99]]];
         });
 
         $this->assertSame(1, $calls);
@@ -316,7 +316,7 @@ final class ManagerResourceReadCacheTest extends TestCase
         $this->readCache->rememberIndex('players', $request, $allowedFilters, function () use (&$calls) {
             ++$calls;
 
-            return ['data' => [['id_player' => 1]]];
+            return ['data' => [['id_user' => 1]]];
         });
         $this->assertTrue($this->cache->has($key, $tags));
 
@@ -325,7 +325,7 @@ final class ManagerResourceReadCacheTest extends TestCase
         $this->readCache->rememberIndex('players', $request, $allowedFilters, function () use (&$calls) {
             ++$calls;
 
-            return ['data' => [['id_player' => 2]]];
+            return ['data' => [['id_user' => 2]]];
         });
 
         $this->assertSame(2, $calls);

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Services\StudentProof;
 
 use App\Enums\PlayerLevel\AssessmentReviewStatus;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerStudentProof;
 use App\Models\PlayerStudentProofFile;
 use Illuminate\Http\UploadedFile;
@@ -22,7 +22,7 @@ final class StudentProofService
     public function getPending(int $playerId): ?PlayerStudentProof
     {
         return PlayerStudentProof::query()
-            ->where('player_id', $playerId)
+            ->where('player_user_id', $playerId)
             ->where('review_status', AssessmentReviewStatus::Pending->value)
             ->first();
     }
@@ -33,9 +33,9 @@ final class StudentProofService
      *
      * @param  list<UploadedFile>  $files
      */
-    public function createPending(Player $player, array $files, string $studentUntil): PlayerStudentProof
+    public function createPending(User $player, array $files, string $studentUntil): PlayerStudentProof
     {
-        if ($this->getPending((int) $player->id_player) !== null) {
+        if ($this->getPending((int) $player->id_user) !== null) {
             throw ValidationException::withMessages([
                 'student_proof' => ['A pending student proof already exists. Update it or discard it first.'],
             ]);
@@ -54,7 +54,7 @@ final class StudentProofService
         try {
             return DB::transaction(function () use ($player, $files, $studentUntil, &$storedPaths): PlayerStudentProof {
                 $proof = PlayerStudentProof::query()->create([
-                    'player_id' => $player->id_player,
+                    'player_user_id' => $player->id_user,
                     'student_until' => $studentUntil,
                     'sort_order' => 0,
                     'ready_for_review' => false,

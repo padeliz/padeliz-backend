@@ -17,18 +17,19 @@ use App\Models\EventRegistration;
 use App\Models\EventRegistrationCheckout;
 use App\Models\EventRegistrationCheckoutItem;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
 
 class BenefitPricingAndAdjustmentControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
-    private Player $player;
+    private User $player;
 
     private PadelEvent $event;
 
@@ -38,12 +39,12 @@ class BenefitPricingAndAdjustmentControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
-        $this->player = Player::factory()->create();
+        $this->player = User::factory()->create();
         $this->event = PadelEvent::factory()->create([
-            'date' => now()->addDays(30)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(now()->addDays(30)->format('Y-m-d')),
         ]);
         $division = Division::factory()->create();
         $this->eventDivision = EventDivision::factory()->create([
@@ -85,7 +86,7 @@ class BenefitPricingAndAdjustmentControllerTest extends TestCase
         ]);
 
         $response = $this->postJson('/api/v1/manager/pricing/preview', [
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_id' => $this->event->id_event,
             'event_division_id' => $this->eventDivision->id_event_division,
         ]);
@@ -108,7 +109,7 @@ class BenefitPricingAndAdjustmentControllerTest extends TestCase
 
         $registration = EventRegistration::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
             'payment' => 55,
             'lifecycle_status' => RegistrationLifecycleStatus::Active,
@@ -118,7 +119,7 @@ class BenefitPricingAndAdjustmentControllerTest extends TestCase
 
         $checkout = EventRegistrationCheckout::query()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'status' => CheckoutStatus::Open,
             'total_amount' => 55,
         ]);
@@ -140,7 +141,7 @@ class BenefitPricingAndAdjustmentControllerTest extends TestCase
 
         $paid = EventRegistration::factory()->paid()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => Player::factory()->create()->id_player,
+            'player_user_id' => User::factory()->create()->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
             'payment' => 55,
         ]);
@@ -156,12 +157,13 @@ class BenefitPricingAndAdjustmentControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
         $division = Division::factory()->create();
 
+        $window = \Tests\Support\UnixEventFactory::playingBounds($this->event, '10:00', '18:00');
+
         $this->postJson('/api/v1/manager/event-divisions', [
             'event_id' => $this->event->id_event,
             'division_id' => $division->id_division,
             'players_limit' => 16,
-            'playing_start_time' => '10:00',
-            'playing_end_time' => '18:00',
+            ...$window,
         ])->assertStatus(422)
             ->assertJsonValidationErrors(['entry_fee']);
 
@@ -170,8 +172,7 @@ class BenefitPricingAndAdjustmentControllerTest extends TestCase
             'division_id' => $division->id_division,
             'players_limit' => 16,
             'entry_fee' => 60,
-            'playing_start_time' => '10:00',
-            'playing_end_time' => '18:00',
+            ...$window,
         ])->assertStatus(201)
             ->assertJsonPath('data.entry_fee', 60);
     }

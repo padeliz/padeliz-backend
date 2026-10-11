@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Manager;
 
-use App\Models\Player;
+use App\Models\User;
 use App\Models\Prize;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -18,13 +18,13 @@ final class ManagerUploadEndpointsTest extends TestCase
     use RefreshDatabase;
     use FileUploadTestHelper;
 
-    private Player $manager;
+    private User $manager;
 
     protected function setUp(): void
     {
         parent::setUp();
         Storage::fake(config('filesystems.user_uploads_disk', 'public'));
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         Sanctum::actingAs($this->manager);
@@ -32,11 +32,11 @@ final class ManagerUploadEndpointsTest extends TestCase
 
     public function test_manager_can_upload_and_delete_player_profile_image(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $file = $this->createFakeImage('face.png');
 
         $upload = $this->post(
-            "/api/v1/manager/players/{$player->id_player}/profile-images",
+            "/api/v1/manager/players/{$player->id_user}/profile-images",
             ['image' => $file],
             ['Accept' => 'application/json']
         );
@@ -45,7 +45,7 @@ final class ManagerUploadEndpointsTest extends TestCase
         $childId = $upload->json('data.uploaded_profile_images.0.id');
 
         $delete = $this->deleteJson(
-            "/api/v1/manager/players/{$player->id_player}/profile-images/{$childId}"
+            "/api/v1/manager/players/{$player->id_user}/profile-images/{$childId}"
         );
         $delete->assertOk();
         $this->assertCount(0, $delete->json('data.uploaded_profile_images'));
@@ -53,12 +53,12 @@ final class ManagerUploadEndpointsTest extends TestCase
 
     public function test_manager_cannot_create_student_proofs(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $file = $this->createFakeImage('proof.png');
 
         $this->post(
             '/api/v1/manager/player-student-proofs',
-            ['file' => $file, 'player_id' => $player->id_player, 'student_until' => now()->addMonth()->format('Y-m-d')],
+            ['file' => $file, 'player_user_id' => $player->id_user, 'student_until' => now()->addMonth()->format('Y-m-d')],
             ['Accept' => 'application/json']
         )->assertStatus(405);
 

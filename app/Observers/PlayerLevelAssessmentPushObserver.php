@@ -30,7 +30,7 @@ class PlayerLevelAssessmentPushObserver
         }
 
         $this->expoPushService->notifyLevelAssessmentStatus(
-            (int) $assessment->player_id,
+            (int) $assessment->player_user_id,
             $status->value
         );
     }

@@ -4,8 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Manager;
 
+use App\Models\EventCoverImage;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Database\QueryException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -20,7 +21,7 @@ final class EventCoverControllerTest extends TestCase
     use RefreshDatabase;
     use FileUploadTestHelper;
 
-    private Player $manager;
+    private User $manager;
 
     private PadelEvent $event;
 
@@ -33,59 +34,92 @@ final class EventCoverControllerTest extends TestCase
         $this->disk = config('filesystems.user_uploads_disk', 'public');
         Storage::fake($this->disk);
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
-        $this->event = PadelEvent::factory()->create(['cover_path' => null]);
+        $this->event = PadelEvent::factory()->create();
     }
 
     public function test_edition_cover_upload_requires_manager_authentication(): void
     {
         $this->post(
-            "/api/v1/manager/events/{$this->event->id_event}/cover",
+            "/api/v1/manager/events/{$this->event->id_event}/cover-images",
             ['file' => $this->createFakeImage('cover.png')],
             ['Accept' => 'application/json']
         )->assertStatus(401);
     }
 
-    public function test_manager_can_upload_and_replace_edition_cover(): void
+    public function test_manager_can_upload_cover_via_legacy_alias_and_cover_images_route(): void
     {
         Sanctum::actingAs($this->manager);
 
-        $upload = $this->post(
+        $legacy = $this->post(
             "/api/v1/manager/events/{$this->event->id_event}/cover",
-            ['file' => $this->createFakeImage('cover.png')],
+            ['file' => $this->createFakeImage('cover.png', 150, 100)],
             ['Accept' => 'application/json']
         );
 
-        $upload->assertStatus(200)
-            ->assertJson(['message' => 'PadelEvent cover uploaded successfully']);
+        $legacy->assertStatus(200)
+            ->assertJson(['message' => 'PadelEvent cover uploaded successfully'])
+            ->assertJsonPath('data.cover_images.0.aspect_ratio', 1.5);
 
-        $this->assertNotEmpty($upload->json('data.cover_url'));
-
-        $dbPath = $this->event->fresh()->cover_path;
-        $this->assertNotEmpty($dbPath);
-        $this->assertStringStartsWith('events/' . $this->event->id_event . '/cover/', $dbPath);
-        Storage::disk($this->disk)->assertExists($dbPath);
+        $this->assertNotEmpty($legacy->json('data.cover_url'));
+        $this->assertCount(1, $this->event->fresh()->coverImages);
 
         $second = $this->post(
-            "/api/v1/manager/events/{$this->event->id_event}/cover",
-            ['file' => $this->createFakeImage('cover-two.png')],
+            "/api/v1/manager/events/{$this->event->id_event}/cover-images",
+            ['file' => $this->createFakeImage('cover-two.png', 200, 100)],
             ['Accept' => 'application/json']
         )->assertStatus(200);
 
-        $secondPath = $this->event->fresh()->cover_path;
-        $this->assertNotSame($dbPath, $secondPath);
-        Storage::disk($this->disk)->assertMissing($dbPath);
-        Storage::disk($this->disk)->assertExists($secondPath);
+        $second->assertJsonCount(2, 'data.cover_images');
+        $this->assertSame(2.0, (float) $second->json('data.cover_images.1.aspect_ratio'));
+        $this->assertCount(2, $this->event->fresh()->coverImages);
     }
 
-    public function test_edition_cover_delete_route_is_not_registered(): void
+    public function test_manager_cannot_upload_more_than_two_cover_images(): void
     {
         Sanctum::actingAs($this->manager);
 
-        $this->deleteJson("/api/v1/manager/events/{$this->event->id_event}/cover")
-            ->assertStatus(405);
+        EventCoverImage::factory()->create([
+            'event_id' => $this->event->id_event,
+            'sort_order' => 0,
+        ]);
+        EventCoverImage::factory()->create([
+            'event_id' => $this->event->id_event,
+            'sort_order' => 1,
+        ]);
+
+        $this->post(
+            "/api/v1/manager/events/{$this->event->id_event}/cover-images",
+            ['file' => $this->createFakeImage('cover-three.png')],
+            ['Accept' => 'application/json']
+        )->assertStatus(422)
+            ->assertJsonValidationErrors(['file']);
+    }
+
+    public function test_manager_can_delete_cover_but_not_the_last_one(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $first = EventCoverImage::factory()->create([
+            'event_id' => $this->event->id_event,
+            'sort_order' => 0,
+        ]);
+        $second = EventCoverImage::factory()->create([
+            'event_id' => $this->event->id_event,
+            'sort_order' => 1,
+        ]);
+
+        $this->deleteJson(
+            "/api/v1/manager/events/{$this->event->id_event}/cover-images/{$first->id_event_cover_image}"
+        )->assertStatus(200)
+            ->assertJsonCount(1, 'data.cover_images');
+
+        $this->deleteJson(
+            "/api/v1/manager/events/{$this->event->id_event}/cover-images/{$second->id_event_cover_image}"
+        )->assertStatus(422)
+            ->assertJsonValidationErrors(['cover_images']);
     }
 
     public function test_edition_cover_upload_rejects_non_image(): void
@@ -93,7 +127,7 @@ final class EventCoverControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $this->post(
-            "/api/v1/manager/events/{$this->event->id_event}/cover",
+            "/api/v1/manager/events/{$this->event->id_event}/cover-images",
             ['file' => UploadedFile::fake()->create('notes.txt', 10, 'text/plain')],
             ['Accept' => 'application/json']
         )->assertStatus(422)
@@ -104,17 +138,17 @@ final class EventCoverControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        PadelEvent::saving(function () {
+        EventCoverImage::saving(function () {
             throw new QueryException(
                 'mysql',
-                'update pm_events set cover_path = ?',
-                ['events/39/cover/x.png'],
-                new PDOException('SQLSTATE[42S22]: Column not found: 1054 Unknown column \'cover_path\'')
+                'insert into pm_event_cover_images',
+                [],
+                new PDOException('SQLSTATE[42S22]: Column not found')
             );
         });
 
         $response = $this->post(
-            "/api/v1/manager/events/{$this->event->id_event}/cover",
+            "/api/v1/manager/events/{$this->event->id_event}/cover-images",
             ['file' => $this->createFakeImage('cover.png')],
             ['Accept' => 'application/json']
         );
@@ -128,7 +162,7 @@ final class EventCoverControllerTest extends TestCase
             'different file',
             (string) $response->json('message')
         );
-        $this->assertNull($this->event->fresh()->cover_path);
+        $this->assertSame(0, $this->event->fresh()->coverImages()->count());
     }
 
     public function test_edition_cover_storage_failure_returns_422_file_message(): void
@@ -140,7 +174,7 @@ final class EventCoverControllerTest extends TestCase
         Storage::shouldReceive('delete')->andReturn(true);
 
         $this->post(
-            "/api/v1/manager/events/{$this->event->id_event}/cover",
+            "/api/v1/manager/events/{$this->event->id_event}/cover-images",
             ['file' => $this->createFakeImage('cover.png')],
             ['Accept' => 'application/json']
         )->assertStatus(422)

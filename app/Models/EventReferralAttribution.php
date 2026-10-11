@@ -28,8 +28,8 @@ class EventReferralAttribution extends Model
 
     protected $fillable = [
         'event_id',
-        'referred_player_id',
-        'referrer_player_id',
+        'referred_player_user_id',
+        'referrer_player_user_id',
         'referral_code_id',
         'checkout_id',
         'status',
@@ -37,8 +37,8 @@ class EventReferralAttribution extends Model
 
     protected $casts = [
         'event_id' => 'integer',
-        'referred_player_id' => 'integer',
-        'referrer_player_id' => 'integer',
+        'referred_player_user_id' => 'integer',
+        'referrer_player_user_id' => 'integer',
         'referral_code_id' => 'integer',
         'checkout_id' => 'integer',
         'status' => ReferralAttributionStatus::class,
@@ -53,12 +53,12 @@ class EventReferralAttribution extends Model
 
     public function referredPlayer(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'referred_player_id', 'id_player');
+        return $this->belongsTo(User::class, 'referred_player_user_id', 'id_user');
     }
 
     public function referrerPlayer(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'referrer_player_id', 'id_player');
+        return $this->belongsTo(User::class, 'referrer_player_user_id', 'id_user');
     }
 
     public function referralCode(): BelongsTo

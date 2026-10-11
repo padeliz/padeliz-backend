@@ -11,15 +11,18 @@ use App\Models\EventDivisionPoster;
 use App\Models\Location;
 use App\Models\Organizer;
 use App\Models\PadelEvent;
-use App\Models\Player;
-use App\Services\EventDeadlineTimestamps;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\Helpers\EventUnixTestHelper;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
+use Carbon\Carbon;
 
 class EventControllerTest extends TestCase
 {
     use RefreshDatabase;
+    use EventUnixTestHelper;
 
     private $manager;
 
@@ -35,7 +38,7 @@ class EventControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'first_name' => 'Test', 'middle_name' => null, 'last_name' => 'Manager',
             'user_types' => ['player', 'manager'],
         ]);
@@ -54,8 +57,9 @@ class EventControllerTest extends TestCase
         $this->event = PadelEvent::factory()->create([
             'location_id' => $this->location->id_location,
             'name' => 'Test PadelEvent',
-            'date' => now()->addDays(30),
+            ...UnixEventFactory::eventBounds(now()->addDays(30)->format('Y-m-d')),
         ]);
+        $this->attachCover($this->event);
 
         $this->division = Division::factory()->create([
             'name' => 'Test Division',
@@ -63,21 +67,10 @@ class EventControllerTest extends TestCase
         ]);
     }
 
-    private function deadlineFieldsForDate(string $dateYmd): array
-    {
-        $deadline = EventDeadlineTimestamps::defaultDeadline($dateYmd);
-
-        return [
-            'registration_allowed_until' => $deadline,
-            'cancellation_allowed_until' => $deadline,
-        ];
-    }
-
     public function test_manager_can_view_events()
     {
         Sanctum::actingAs($this->manager);
 
-        // Clear editions without violating divisions.its_first_event_id FK
         Division::query()->delete();
         PadelEvent::query()->delete();
         PadelEvent::factory()->count(5)->create();
@@ -91,9 +84,10 @@ class EventControllerTest extends TestCase
                         'id_event',
                         'location_id',
                         'name',
-                        'date',
-                        'arriving_time',
-                        'closing_time',
+                        'event_starts_at',
+                        'event_ends_at',
+                        'event_nr_of_days',
+                        'cover_images',
                         'inserted_at',
                         'updated_at',
                     ],
@@ -132,9 +126,10 @@ class EventControllerTest extends TestCase
                     'id_event',
                     'location_id',
                     'name',
-                    'date',
-                    'arriving_time',
-                    'closing_time',
+                    'event_starts_at',
+                    'event_ends_at',
+                    'cover_images',
+                    'event_nr_of_days',
                     'inserted_at',
                     'updated_at',
                 ],
@@ -158,7 +153,7 @@ class EventControllerTest extends TestCase
 
     public function test_regular_player_cannot_access_edition_management()
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
 
         $response = $this->getJson('/api/v1/manager/events');
@@ -191,17 +186,18 @@ class EventControllerTest extends TestCase
         $event = PadelEvent::factory()->create([
             'location_id' => $this->location->id_location,
             'name' => 'Original PadelEvent',
-            'date' => now()->addDays(30),
+            ...UnixEventFactory::eventBounds(now()->addDays(30)->format('Y-m-d')),
         ]);
+        $this->attachCover($event);
 
+        $ymd = now()->addDays(60)->format('Y-m-d');
+        $window = $this->eventWindow($ymd);
         $updateData = [
             'name' => 'Updated PadelEvent',
             'description' => '<p>Updated description.</p>',
-            'date' => now()->addDays(60)->format('Y-m-d'),
             'location_id' => $this->location->id_location,
-            'arriving_time' => '09:00:00',
-            'closing_time' => '18:00:00',
-            ...$this->deadlineFieldsForDate(now()->addDays(60)->format('Y-m-d')),
+            ...$window,
+            ...$this->deadlineFieldsForStartsAt($window['event_starts_at']),
         ];
 
         $response = $this->putJson("/api/v1/manager/events/{$event->id_event}", $updateData);
@@ -224,10 +220,10 @@ class EventControllerTest extends TestCase
         $event = PadelEvent::factory()->create([
             'location_id' => $this->location->id_location,
             'name' => 'Original PadelEvent',
-            'date' => now()->addDays(30),
+            ...UnixEventFactory::eventBounds(now()->addDays(30)->format('Y-m-d')),
         ]);
+        $this->attachCover($event);
 
-        // Test partial update with only name
         $response = $this->patchJson("/api/v1/manager/events/{$event->id_event}", [
             'name' => 'Partial Update',
         ]);
@@ -241,9 +237,11 @@ class EventControllerTest extends TestCase
                 ],
             ]);
 
-        // Test partial update with only date
+        $ymd = now()->addDays(60)->format('Y-m-d');
+        $window = $this->eventWindow($ymd);
         $response = $this->patchJson("/api/v1/manager/events/{$event->id_event}", [
-            'date' => now()->addDays(60)->format('Y-m-d'),
+            ...$window,
+            ...$this->deadlineFieldsForStartsAt($window['event_starts_at']),
         ]);
 
         $response->assertStatus(200)
@@ -251,7 +249,7 @@ class EventControllerTest extends TestCase
                 'success' => true,
                 'message' => 'PadelEvent partially updated successfully',
                 'data' => [
-                    'name' => 'Partial Update', // Should remain from previous update
+                    'name' => 'Partial Update',
                 ],
             ]);
     }
@@ -263,38 +261,39 @@ class EventControllerTest extends TestCase
         $event = PadelEvent::factory()->create([
             'location_id' => $this->location->id_location,
         ]);
+        $this->attachCover($event);
 
-        // Test PUT without required fields
         $response = $this->putJson("/api/v1/manager/events/{$event->id_event}", [
-            'date' => now()->addDays(30)->format('Y-m-d'),
+            'event_starts_at' => $event->event_starts_at,
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['name', 'description']);
+            ->assertJsonValidationErrors(['name', 'description', 'event_ends_at']);
 
-        // Test PUT with empty required fields
         $response = $this->putJson("/api/v1/manager/events/{$event->id_event}", [
             'name' => '',
             'description' => '',
-            'date' => '',
+            'event_starts_at' => '',
+            'event_ends_at' => '',
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['name', 'description', 'date']);
+            ->assertJsonValidationErrors(['name', 'description', 'event_starts_at', 'event_ends_at']);
     }
 
     public function test_edition_creation_defaults_branding(): void
     {
         Sanctum::actingAs($this->manager);
 
+        $ymd = now()->addDays(5)->format('Y-m-d');
+        $window = $this->eventWindow($ymd);
+
         $response = $this->postJson('/api/v1/manager/events', [
             'name' => 'Branding Defaults',
             'description' => '<p>Branding defaults description.</p>',
-            'date' => now()->addDays(5)->format('Y-m-d'),
             'location_id' => $this->location->id_location,
-            'arriving_time' => '09:00:00',
-            'closing_time' => '18:00:00',
-            ...$this->deadlineFieldsForDate(now()->addDays(5)->format('Y-m-d')),
+            ...$window,
+            ...$this->deadlineFieldsForStartsAt($window['event_starts_at']),
         ]);
 
         $response->assertStatus(201)
@@ -313,17 +312,17 @@ class EventControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $organizer = Organizer::factory()->create(['name' => 'Branding Tour']);
+        $ymd = now()->addDays(5)->format('Y-m-d');
+        $window = $this->eventWindow($ymd);
 
         $response = $this->postJson('/api/v1/manager/events', [
             'name' => 'Branded PadelEvent',
             'description' => '<p>Branded edition description.</p>',
-            'date' => now()->addDays(5)->format('Y-m-d'),
             'location_id' => $this->location->id_location,
             'organizer_id' => $organizer->id_organizer,
             'include_club_host_on_pdf' => false,
-            'arriving_time' => '09:00:00',
-            'closing_time' => '18:00:00',
-            ...$this->deadlineFieldsForDate(now()->addDays(5)->format('Y-m-d')),
+            ...$window,
+            ...$this->deadlineFieldsForStartsAt($window['event_starts_at']),
         ]);
 
         $response->assertStatus(201)
@@ -377,6 +376,7 @@ class EventControllerTest extends TestCase
             'location_id' => $this->location->id_location,
             'finalized_at' => time(),
         ]);
+        $this->attachCover($event);
 
         $this->patchJson("/api/v1/manager/events/{$event->id_event}", [
             'organizer_id' => $organizer->id_organizer,
@@ -415,107 +415,110 @@ class EventControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
+        $ymd = now()->addDays(10)->format('Y-m-d');
+        $window = $this->eventWindow($ymd, '18:00:00', '00:00:00');
+
         $response = $this->postJson('/api/v1/manager/events', [
             'name' => 'Night PadelEvent',
             'description' => '<p>Night edition description.</p>',
-            'date' => now()->addDays(10)->format('Y-m-d'),
             'location_id' => $this->location->id_location,
-            'arriving_time' => '18:00:00',
-            'closing_time' => '00:00:00',
-            ...$this->deadlineFieldsForDate(now()->addDays(10)->format('Y-m-d')),
+            ...$window,
+            ...$this->deadlineFieldsForStartsAt($window['event_starts_at']),
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('data.arriving_time', '18:00:00')
-            ->assertJsonPath('data.closing_time', '00:00:00');
+            ->assertJsonPath('data.event_starts_at', $window['event_starts_at'])
+            ->assertJsonPath('data.event_ends_at', $window['event_ends_at'])
+            ->assertJsonPath('data.event_nr_of_days', 2);
 
+        $overnightYmd = now()->addDays(11)->format('Y-m-d');
+        $overnightWindow = $this->eventWindow($overnightYmd, '22:00:00', '02:00:00');
         $overnight = $this->postJson('/api/v1/manager/events', [
             'name' => 'Overnight Ed',
             'description' => '<p>Overnight edition description.</p>',
-            'date' => now()->addDays(11)->format('Y-m-d'),
             'location_id' => $this->location->id_location,
-            'arriving_time' => '22:00:00',
-            'closing_time' => '02:00:00',
-            ...$this->deadlineFieldsForDate(now()->addDays(11)->format('Y-m-d')),
+            ...$overnightWindow,
+            ...$this->deadlineFieldsForStartsAt($overnightWindow['event_starts_at']),
         ]);
 
         $overnight->assertStatus(201)
-            ->assertJsonPath('data.closing_time', '02:00:00');
+            ->assertJsonPath('data.event_ends_at', $overnightWindow['event_ends_at'])
+            ->assertJsonPath('data.event_nr_of_days', 2);
 
+        $fullDayYmd = now()->addDays(12)->format('Y-m-d');
+        $fullDayWindow = $this->eventWindow($fullDayYmd, '00:00:00', '23:59:59');
         $fullDay = $this->postJson('/api/v1/manager/events', [
             'name' => 'Full Day Ed',
             'description' => '<p>Full day edition description.</p>',
-            'date' => now()->addDays(12)->format('Y-m-d'),
             'location_id' => $this->location->id_location,
-            'arriving_time' => '00:00:00',
-            'closing_time' => '23:59:59',
-            ...$this->deadlineFieldsForDate(now()->addDays(12)->format('Y-m-d')),
+            ...$fullDayWindow,
+            ...$this->deadlineFieldsForStartsAt($fullDayWindow['event_starts_at']),
         ]);
 
         $fullDay->assertStatus(201)
-            ->assertJsonPath('data.closing_time', '23:59:59');
+            ->assertJsonPath('data.event_ends_at', $fullDayWindow['event_ends_at'])
+            ->assertJsonPath('data.event_nr_of_days', 1);
     }
 
-    public function test_manager_cannot_create_edition_with_24_00_or_equal_clocks(): void
+    public function test_manager_cannot_create_edition_with_equal_or_inverted_bounds(): void
     {
         Sanctum::actingAs($this->manager);
+
+        $ymd = now()->addDays(10)->format('Y-m-d');
+        $startsAt = (int) Carbon::parse($ymd . ' 18:00:00', config('app.timezone'))->timestamp;
 
         $this->postJson('/api/v1/manager/events', [
             'name' => 'Bad End',
             'description' => '<p>Bad end.</p>',
-            'date' => now()->addDays(10)->format('Y-m-d'),
             'location_id' => $this->location->id_location,
-            'arriving_time' => '18:00:00',
-            'closing_time' => '24:00:00',
-            ...$this->deadlineFieldsForDate(now()->addDays(10)->format('Y-m-d')),
+            'event_starts_at' => $startsAt,
+            'event_ends_at' => $startsAt,
+            ...$this->deadlineFieldsForStartsAt($startsAt),
         ])->assertStatus(422)
-            ->assertJsonValidationErrors(['closing_time']);
+            ->assertJsonValidationErrors(['event_ends_at']);
 
         $this->postJson('/api/v1/manager/events', [
             'name' => 'Equal Clocks',
             'description' => '<p>Equal clocks.</p>',
-            'date' => now()->addDays(10)->format('Y-m-d'),
             'location_id' => $this->location->id_location,
-            'arriving_time' => '12:00:00',
-            'closing_time' => '12:00:00',
-            ...$this->deadlineFieldsForDate(now()->addDays(10)->format('Y-m-d')),
+            'event_starts_at' => $startsAt,
+            'event_ends_at' => $startsAt - 60,
+            ...$this->deadlineFieldsForStartsAt($startsAt),
         ])->assertStatus(422)
-            ->assertJsonValidationErrors(['closing_time']);
+            ->assertJsonValidationErrors(['event_ends_at']);
     }
 
     public function test_store_requires_non_empty_description_and_sanitizes_html(): void
     {
         Sanctum::actingAs($this->manager);
 
+        $ymd = now()->addDays(5)->format('Y-m-d');
+        $window = $this->eventWindow($ymd);
+        $deadlines = $this->deadlineFieldsForStartsAt($window['event_starts_at']);
+
         $this->postJson('/api/v1/manager/events', [
             'name' => 'No Desc',
-            'date' => now()->addDays(5)->format('Y-m-d'),
             'location_id' => $this->location->id_location,
-            'arriving_time' => '09:00:00',
-            'closing_time' => '18:00:00',
-            ...$this->deadlineFieldsForDate(now()->addDays(5)->format('Y-m-d')),
+            ...$window,
+            ...$deadlines,
         ])->assertStatus(422)
             ->assertJsonValidationErrors(['description']);
 
         $this->postJson('/api/v1/manager/events', [
             'name' => 'Empty Desc',
             'description' => '<p></p><script>alert(1)</script>',
-            'date' => now()->addDays(5)->format('Y-m-d'),
             'location_id' => $this->location->id_location,
-            'arriving_time' => '09:00:00',
-            'closing_time' => '18:00:00',
-            ...$this->deadlineFieldsForDate(now()->addDays(5)->format('Y-m-d')),
+            ...$window,
+            ...$deadlines,
         ])->assertStatus(422)
             ->assertJsonValidationErrors(['description']);
 
         $response = $this->postJson('/api/v1/manager/events', [
             'name' => 'Rich Desc',
             'description' => '<p>Hello <strong>world</strong><script>alert(1)</script></p><a href="https://padeliz.ro" onclick="x()">link</a><img src="x">',
-            'date' => now()->addDays(5)->format('Y-m-d'),
             'location_id' => $this->location->id_location,
-            'arriving_time' => '09:00:00',
-            'closing_time' => '18:00:00',
-            ...$this->deadlineFieldsForDate(now()->addDays(5)->format('Y-m-d')),
+            ...$window,
+            ...$deadlines,
         ]);
 
         $response->assertStatus(201);
@@ -527,43 +530,42 @@ class EventControllerTest extends TestCase
         $this->assertStringNotContainsString('onclick', $description);
         $this->assertStringNotContainsString('<img', $description);
         $this->assertNull($response->json('data.cover_url'));
+        $this->assertSame([], $response->json('data.cover_images'));
     }
 
-    public function test_update_and_patch_require_cover_path(): void
+    public function test_update_and_patch_require_cover_images(): void
     {
         Sanctum::actingAs($this->manager);
 
         $event = PadelEvent::factory()->create([
             'location_id' => $this->location->id_location,
-            'cover_path' => null,
         ]);
 
-        $this->putJson("/api/v1/manager/events/{$event->id_event}", [
+        $ymd = now()->addDays(10)->format('Y-m-d');
+        $window = $this->eventWindow($ymd);
+        $payload = [
             'name' => 'Needs Cover',
             'description' => '<p>Needs cover.</p>',
-            'date' => now()->addDays(10)->format('Y-m-d'),
             'location_id' => $this->location->id_location,
-            'arriving_time' => '09:00:00',
-            'closing_time' => '18:00:00',
-            ...$this->deadlineFieldsForDate(now()->addDays(10)->format('Y-m-d')),
-        ])->assertStatus(422)
-            ->assertJsonValidationErrors(['cover_path']);
+            ...$window,
+            ...$this->deadlineFieldsForStartsAt($window['event_starts_at']),
+        ];
+
+        $this->putJson("/api/v1/manager/events/{$event->id_event}", $payload)
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['cover_images']);
 
         $this->patchJson("/api/v1/manager/events/{$event->id_event}", [
             'name' => 'Still Needs Cover',
         ])->assertStatus(422)
-            ->assertJsonValidationErrors(['cover_path']);
+            ->assertJsonValidationErrors(['cover_images']);
 
-        $event->update(['cover_path' => 'events/' . $event->id_event . '/cover/test.png']);
+        $this->attachCover($event);
 
         $this->putJson("/api/v1/manager/events/{$event->id_event}", [
+            ...$payload,
             'name' => 'Has Cover',
             'description' => '<p>Has cover.</p>',
-            'date' => now()->addDays(10)->format('Y-m-d'),
-            'location_id' => $this->location->id_location,
-            'arriving_time' => '09:00:00',
-            'closing_time' => '18:00:00',
-            ...$this->deadlineFieldsForDate(now()->addDays(10)->format('Y-m-d')),
         ])->assertStatus(200)
             ->assertJsonPath('data.name', 'Has Cover');
 

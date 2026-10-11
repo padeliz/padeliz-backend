@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\CachedPdfPairImage;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerProfileImage;
 use App\Services\Pdf\PdfCachedImageGenerator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -28,19 +28,19 @@ final class CachedPdfPairImageControllerTest extends TestCase
 
     private function actAsManager(): void
     {
-        Sanctum::actingAs(Player::factory()->manager()->create([
+        Sanctum::actingAs(User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]));
     }
 
-    private function attachProfile(Player $player): PlayerProfileImage
+    private function attachProfile(User $player): PlayerProfileImage
     {
-        $relative = 'player-profile-images/' . $player->id_player . '/profile/avatar.png';
+        $relative = 'player-profile-images/' . $player->id_user . '/profile/avatar.png';
         Storage::disk(config('filesystems.user_uploads_disk', 'public'))
             ->put($relative, PdfFixtures::solidBlue80Bytes());
 
         return PlayerProfileImage::query()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'profile_path' => $relative,
             'sort_order' => 0,
             'inserted_at' => time(),
@@ -49,12 +49,12 @@ final class CachedPdfPairImageControllerTest extends TestCase
 
     public function test_unauthenticated_returns_401(): void
     {
-        $p1 = Player::factory()->create();
-        $p2 = Player::factory()->create();
+        $p1 = User::factory()->create();
+        $p2 = User::factory()->create();
 
         $this->postJson(self::ENDPOINT, [
-            'player_1_id' => $p1->id_player,
-            'player_2_id' => $p2->id_player,
+            'player_1_user_id' => $p1->id_user,
+            'player_2_user_id' => $p2->id_user,
             'player_1_is_collecting_points' => true,
             'player_2_is_collecting_points' => true,
         ])->assertStatus(401);
@@ -62,13 +62,13 @@ final class CachedPdfPairImageControllerTest extends TestCase
 
     public function test_non_manager_returns_403(): void
     {
-        $p1 = Player::factory()->create();
-        $p2 = Player::factory()->create();
-        Sanctum::actingAs(Player::factory()->create(['user_types' => ['player']]));
+        $p1 = User::factory()->create();
+        $p2 = User::factory()->create();
+        Sanctum::actingAs(User::factory()->create(['user_types' => ['player']]));
 
         $this->postJson(self::ENDPOINT, [
-            'player_1_id' => $p1->id_player,
-            'player_2_id' => $p2->id_player,
+            'player_1_user_id' => $p1->id_user,
+            'player_2_user_id' => $p2->id_user,
             'player_1_is_collecting_points' => true,
             'player_2_is_collecting_points' => true,
         ])->assertStatus(403);
@@ -77,20 +77,20 @@ final class CachedPdfPairImageControllerTest extends TestCase
     public function test_validation_errors(): void
     {
         $this->actAsManager();
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
 
         $this->postJson(self::ENDPOINT, [])->assertStatus(422);
 
         $this->postJson(self::ENDPOINT, [
-            'player_1_id' => $player->id_player,
-            'player_2_id' => $player->id_player,
+            'player_1_user_id' => $player->id_user,
+            'player_2_user_id' => $player->id_user,
             'player_1_is_collecting_points' => true,
             'player_2_is_collecting_points' => true,
         ])->assertStatus(422);
 
         $this->postJson(self::ENDPOINT, [
-            'player_1_id' => $player->id_player,
-            'player_2_id' => 999999,
+            'player_1_user_id' => $player->id_user,
+            'player_2_user_id' => 999999,
             'player_1_is_collecting_points' => true,
             'player_2_is_collecting_points' => true,
         ])->assertStatus(422);
@@ -99,8 +99,8 @@ final class CachedPdfPairImageControllerTest extends TestCase
     public function test_generates_pair_image_with_profiles(): void
     {
         $this->actAsManager();
-        $p1 = Player::factory()->create();
-        $p2 = Player::factory()->create();
+        $p1 = User::factory()->create();
+        $p2 = User::factory()->create();
         $profile1 = $this->attachProfile($p1);
         $profile2 = $this->attachProfile($p2);
 
@@ -108,13 +108,13 @@ final class CachedPdfPairImageControllerTest extends TestCase
             $mock->shouldReceive('generatePairImageUrl')
                 ->once()
                 ->andReturnUsing(function () use ($p1, $p2, $profile1, $profile2): string {
-                    $left = min((int) $p1->id_player, (int) $p2->id_player);
-                    $right = max((int) $p1->id_player, (int) $p2->id_player);
+                    $left = min((int) $p1->id_user, (int) $p2->id_user);
+                    $right = max((int) $p1->id_user, (int) $p2->id_user);
                     $ids = [(int) $profile1->id, (int) $profile2->id];
                     sort($ids);
                     $row = CachedPdfPairImage::query()->create([
-                        'player_1_id' => $left,
-                        'player_2_id' => $right,
+                        'player_1_user_id' => $left,
+                        'player_2_user_id' => $right,
                         'player_1_is_collecting_points' => true,
                         'player_2_is_collecting_points' => true,
                         'picture_path' => null,
@@ -133,8 +133,8 @@ final class CachedPdfPairImageControllerTest extends TestCase
         });
 
         $res = $this->postJson(self::ENDPOINT, [
-            'player_1_id' => $p1->id_player,
-            'player_2_id' => $p2->id_player,
+            'player_1_user_id' => $p1->id_user,
+            'player_2_user_id' => $p2->id_user,
             'player_1_is_collecting_points' => true,
             'player_2_is_collecting_points' => true,
         ]);
@@ -157,18 +157,18 @@ final class CachedPdfPairImageControllerTest extends TestCase
     public function test_generates_pair_image_when_players_have_no_profiles(): void
     {
         $this->actAsManager();
-        $p1 = Player::factory()->create();
-        $p2 = Player::factory()->create();
+        $p1 = User::factory()->create();
+        $p2 = User::factory()->create();
 
         $this->mock(PdfCachedImageGenerator::class, function ($mock) use ($p1, $p2): void {
             $mock->shouldReceive('generatePairImageUrl')
                 ->once()
                 ->andReturnUsing(function () use ($p1, $p2): string {
-                    $left = min((int) $p1->id_player, (int) $p2->id_player);
-                    $right = max((int) $p1->id_player, (int) $p2->id_player);
+                    $left = min((int) $p1->id_user, (int) $p2->id_user);
+                    $right = max((int) $p1->id_user, (int) $p2->id_user);
                     $row = CachedPdfPairImage::query()->create([
-                        'player_1_id' => $left,
-                        'player_2_id' => $right,
+                        'player_1_user_id' => $left,
+                        'player_2_user_id' => $right,
                         'player_1_is_collecting_points' => true,
                         'player_2_is_collecting_points' => false,
                         'picture_path' => null,
@@ -187,8 +187,8 @@ final class CachedPdfPairImageControllerTest extends TestCase
         });
 
         $res = $this->postJson(self::ENDPOINT, [
-            'player_1_id' => $p1->id_player,
-            'player_2_id' => $p2->id_player,
+            'player_1_user_id' => $p1->id_user,
+            'player_2_user_id' => $p2->id_user,
             'player_1_is_collecting_points' => true,
             'player_2_is_collecting_points' => false,
         ]);
@@ -204,10 +204,10 @@ final class CachedPdfPairImageControllerTest extends TestCase
     public function test_reversed_player_order_reuses_same_cache_row(): void
     {
         $this->actAsManager();
-        $p1 = Player::factory()->create();
-        $p2 = Player::factory()->create();
-        $low = min((int) $p1->id_player, (int) $p2->id_player);
-        $high = max((int) $p1->id_player, (int) $p2->id_player);
+        $p1 = User::factory()->create();
+        $p2 = User::factory()->create();
+        $low = min((int) $p1->id_user, (int) $p2->id_user);
+        $high = max((int) $p1->id_user, (int) $p2->id_user);
 
         $this->mock(PdfCachedImageGenerator::class, function ($mock) use ($low, $high): void {
             $mock->shouldReceive('generatePairImageUrl')
@@ -215,8 +215,8 @@ final class CachedPdfPairImageControllerTest extends TestCase
                 ->andReturnUsing(function () use ($low, $high): string {
                     CachedPdfPairImage::query()->firstOrCreate(
                         [
-                            'player_1_id' => $low,
-                            'player_2_id' => $high,
+                            'player_1_user_id' => $low,
+                            'player_2_user_id' => $high,
                             'player_1_is_collecting_points' => true,
                             'player_2_is_collecting_points' => true,
                         ],
@@ -231,15 +231,15 @@ final class CachedPdfPairImageControllerTest extends TestCase
         });
 
         $this->postJson(self::ENDPOINT, [
-            'player_1_id' => $low,
-            'player_2_id' => $high,
+            'player_1_user_id' => $low,
+            'player_2_user_id' => $high,
             'player_1_is_collecting_points' => true,
             'player_2_is_collecting_points' => true,
         ])->assertOk();
 
         $this->postJson(self::ENDPOINT, [
-            'player_1_id' => $high,
-            'player_2_id' => $low,
+            'player_1_user_id' => $high,
+            'player_2_user_id' => $low,
             'player_1_is_collecting_points' => true,
             'player_2_is_collecting_points' => true,
         ])->assertOk();
@@ -250,15 +250,15 @@ final class CachedPdfPairImageControllerTest extends TestCase
     public function test_collecting_combination_creates_distinct_rows(): void
     {
         $this->actAsManager();
-        $p1 = Player::factory()->create();
-        $p2 = Player::factory()->create();
+        $p1 = User::factory()->create();
+        $p2 = User::factory()->create();
 
         $this->mock(PdfCachedImageGenerator::class, function ($mock) use ($p1, $p2): void {
             $mock->shouldReceive('generatePairImageUrl')
                 ->twice()
-                ->andReturnUsing(function (Player $a, Player $b, bool $c1, bool $c2): string {
-                    $idA = (int) $a->id_player;
-                    $idB = (int) $b->id_player;
+                ->andReturnUsing(function (User $a, User $b, bool $c1, bool $c2): string {
+                    $idA = (int) $a->id_user;
+                    $idB = (int) $b->id_user;
                     if ($idA <= $idB) {
                         $left = $idA;
                         $right = $idB;
@@ -272,8 +272,8 @@ final class CachedPdfPairImageControllerTest extends TestCase
                     }
                     CachedPdfPairImage::query()->firstOrCreate(
                         [
-                            'player_1_id' => $left,
-                            'player_2_id' => $right,
+                            'player_1_user_id' => $left,
+                            'player_2_user_id' => $right,
                             'player_1_is_collecting_points' => $leftC,
                             'player_2_is_collecting_points' => $rightC,
                         ],
@@ -288,15 +288,15 @@ final class CachedPdfPairImageControllerTest extends TestCase
         });
 
         $this->postJson(self::ENDPOINT, [
-            'player_1_id' => $p1->id_player,
-            'player_2_id' => $p2->id_player,
+            'player_1_user_id' => $p1->id_user,
+            'player_2_user_id' => $p2->id_user,
             'player_1_is_collecting_points' => true,
             'player_2_is_collecting_points' => true,
         ])->assertOk();
 
         $this->postJson(self::ENDPOINT, [
-            'player_1_id' => $p1->id_player,
-            'player_2_id' => $p2->id_player,
+            'player_1_user_id' => $p1->id_user,
+            'player_2_user_id' => $p2->id_user,
             'player_1_is_collecting_points' => false,
             'player_2_is_collecting_points' => true,
         ])->assertOk();

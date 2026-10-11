@@ -9,7 +9,7 @@ use App\Models\EventLotteryLucky;
 use App\Models\EventParticipation;
 use App\Models\EventRegistration;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Services\EventParticipationFlagService;
 use App\Services\EventParticipationLotteryGuard;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -32,13 +32,13 @@ final class EventParticipationFlagServiceTest extends TestCase
         $event = PadelEvent::factory()->create();
         $edA = EventDivision::factory()->create(['event_id' => $event->id_event]);
         $edB = EventDivision::factory()->create(['event_id' => $event->id_event]);
-        $registered = Player::factory()->create();
-        $unregistered = Player::factory()->create();
+        $registered = User::factory()->create();
+        $unregistered = User::factory()->create();
 
         EventRegistration::factory()->create([
             'event_id' => $event->id_event,
             'event_division_id' => $edA->id_event_division,
-            'player_id' => $registered->id_player,
+            'player_user_id' => $registered->id_user,
             'is_student' => false,
             'payment' => 50,
         ]);
@@ -46,17 +46,17 @@ final class EventParticipationFlagServiceTest extends TestCase
         $p1 = EventParticipation::factory()->create([
             'event_id' => $event->id_event,
             'event_division_id' => $edA->id_event_division,
-            'player_id' => $registered->id_player,
+            'player_user_id' => $registered->id_user,
         ]);
         $p2 = EventParticipation::factory()->create([
             'event_id' => $event->id_event,
             'event_division_id' => $edB->id_event_division,
-            'player_id' => $registered->id_player,
+            'player_user_id' => $registered->id_user,
         ]);
         $p3 = EventParticipation::factory()->create([
             'event_id' => $event->id_event,
             'event_division_id' => $edA->id_event_division,
-            'player_id' => $unregistered->id_player,
+            'player_user_id' => $unregistered->id_user,
         ]);
 
         $payload = $this->service->forEventParticipations(
@@ -73,20 +73,20 @@ final class EventParticipationFlagServiceTest extends TestCase
     {
         $event = PadelEvent::factory()->create();
         $ed = EventDivision::factory()->create(['event_id' => $event->id_event]);
-        $registeredOnly = Player::factory()->create();
-        $participating = Player::factory()->create();
+        $registeredOnly = User::factory()->create();
+        $participating = User::factory()->create();
 
         EventRegistration::factory()->create([
             'event_id' => $event->id_event,
             'event_division_id' => $ed->id_event_division,
-            'player_id' => $registeredOnly->id_player,
+            'player_user_id' => $registeredOnly->id_user,
             'is_student' => false,
             'payment' => 50,
         ]);
         EventRegistration::factory()->create([
             'event_id' => $event->id_event,
             'event_division_id' => $ed->id_event_division,
-            'player_id' => $participating->id_player,
+            'player_user_id' => $participating->id_user,
             'is_student' => false,
             'payment' => 50,
         ]);
@@ -94,7 +94,7 @@ final class EventParticipationFlagServiceTest extends TestCase
         $participation = EventParticipation::factory()->create([
             'event_id' => $event->id_event,
             'event_division_id' => $ed->id_event_division,
-            'player_id' => $participating->id_player,
+            'player_user_id' => $participating->id_user,
         ]);
 
         EventLotteryLucky::factory()->create([

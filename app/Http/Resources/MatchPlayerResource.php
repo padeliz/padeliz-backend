@@ -19,14 +19,14 @@ class MatchPlayerResource extends JsonResource
             'match_side_id' => $this->match_side_id,
             'slot' => $this->slot,
             'participation_id' => $this->participation_id,
-            'player_id' => $this->player_id,
+            'player_user_id' => $this->player_user_id,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
             'participation' => $this->whenLoaded('participation', function () {
                 return new EventParticipationResource($this->participation);
             }),
             'player' => $this->whenLoaded('player', function () {
-                return new PlayerResource($this->player);
+                return new UserSummaryResource($this->player);
             }),
         ];
     }

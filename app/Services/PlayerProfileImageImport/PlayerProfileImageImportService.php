@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\PlayerProfileImageImport;
 
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerProfileImage;
 use App\Models\PlayerProfileImageImport;
 use App\Models\PlayerProfileImageImportRow;
@@ -73,7 +73,7 @@ final class PlayerProfileImageImportService
 
         return DB::transaction(function () use ($rows, $filesByIndex, $label, $importedByPlayerId): PlayerProfileImageImport {
             $import = PlayerProfileImageImport::create([
-                'imported_by_player_id' => $importedByPlayerId,
+                'imported_by_manager_user_id' => $importedByPlayerId,
                 'original_filename' => $label,
                 'included_count' => count($rows),
                 'uploaded_count' => 0,
@@ -84,8 +84,8 @@ final class PlayerProfileImageImportService
 
             foreach ($rows as $row) {
                 $index = (int) $row['index'];
-                $playerId = (int) $row['player_id'];
-                $player = Player::query()->findOrFail($playerId);
+                $playerId = (int) $row['player_user_id'];
+                $player = User::query()->findOrFail($playerId);
                 $file = $filesByIndex[$index] ?? null;
                 if (! $file instanceof UploadedFile) {
                     throw new PlayerProfileImageImportFailedException(
@@ -113,7 +113,7 @@ final class PlayerProfileImageImportService
                     'player_profile_image_import_id' => $import->id_player_profile_image_import,
                     'row_index' => $index,
                     'original_filename' => (string) $row['filename'],
-                    'player_id' => $playerId,
+                    'player_user_id' => $playerId,
                     'player_profile_image_id' => $image->id,
                     'is_pdf_primary' => (bool) ($row['is_pdf_primary'] ?? false),
                     'action' => 'uploaded',
@@ -129,7 +129,7 @@ final class PlayerProfileImageImportService
 
             $import->update(['uploaded_count' => $uploadedCount]);
 
-            return $import->fresh(['rows', 'importedByPlayer']) ?? $import;
+            return $import->fresh(['rows', 'importedByManager']) ?? $import;
         });
     }
 
@@ -180,7 +180,7 @@ final class PlayerProfileImageImportService
 
         foreach ($rows as $row) {
             $index = (int) ($row['index'] ?? -1);
-            $playerId = (int) ($row['player_id'] ?? 0);
+            $playerId = (int) ($row['player_user_id'] ?? 0);
             $filename = trim((string) ($row['filename'] ?? ''));
 
             if ($playerId <= 0) {
@@ -210,7 +210,7 @@ final class PlayerProfileImageImportService
                 $playerRows,
                 static fn (array $r): bool => $r['is_pdf_primary']
             ));
-            $existing = PlayerProfileImage::query()->where('player_id', $playerId)->count();
+            $existing = PlayerProfileImage::query()->where('player_user_id', $playerId)->count();
             $batchCount = count($playerRows);
 
             if ($existing + $batchCount > PlayerProfileImage::MAX_PER_PLAYER) {
@@ -249,13 +249,13 @@ final class PlayerProfileImageImportService
     private function existingImageCountsForRows(array $rows): array
     {
         $playerIds = array_unique(array_map(
-            static fn (array $row): int => (int) $row['player_id'],
+            static fn (array $row): int => (int) $row['player_user_id'],
             $rows
         ));
 
         $counts = [];
         foreach ($playerIds as $playerId) {
-            $counts[$playerId] = PlayerProfileImage::query()->where('player_id', $playerId)->count();
+            $counts[$playerId] = PlayerProfileImage::query()->where('player_user_id', $playerId)->count();
         }
 
         return $counts;

@@ -15,9 +15,9 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 /**
  * @OA\Schema(
  *     schema="PlayerLevelAssessment",
- *     required={"player_id", "player_custom_field_submission_id", "review_status"},
+ *     required={"player_user_id", "player_custom_field_submission_id", "review_status"},
  *     @OA\Property(property="id_player_level_assessment", type="integer", format="int64", readOnly=true, title="ID"),
- *     @OA\Property(property="player_id", type="integer", format="int64", title="Player"),
+ *     @OA\Property(property="player_user_id", type="integer", format="int64", title="Player"),
  *     @OA\Property(property="player_custom_field_submission_id", type="integer", format="int64", title="Submission"),
  *     @OA\Property(property="submitted_at", type="integer", format="timestamp", nullable=true, title="Submitted At"),
  *     @OA\Property(property="resubmitted_at", type="integer", format="timestamp", nullable=true, title="Resubmitted At"),
@@ -39,14 +39,14 @@ class PlayerLevelAssessment extends Model
     ];
 
     public static array $filterableFields = [
-        'player_id',
+        'player_user_id',
         'review_status',
         'ready_for_review',
     ];
 
     public static array $sortableFields = [
         'id_player_level_assessment',
-        'player_id',
+        'player_user_id',
         'review_status',
         'ready_for_review',
         'submitted_at',
@@ -71,10 +71,10 @@ class PlayerLevelAssessment extends Model
     public const UPDATED_AT = 'updated_at';
 
     /**
-     * `pending_player_id` is a generated column enforcing one pending row per player; never written.
+     * `pending_player_user_id` is a generated column enforcing one pending row per player; never written.
      */
     protected $fillable = [
-        'player_id',
+        'player_user_id',
         'player_custom_field_submission_id',
         'submitted_at',
         'resubmitted_at',
@@ -85,7 +85,7 @@ class PlayerLevelAssessment extends Model
     ];
 
     protected $casts = [
-        'player_id' => 'integer',
+        'player_user_id' => 'integer',
         'player_custom_field_submission_id' => 'integer',
         'submitted_at' => 'integer',
         'resubmitted_at' => 'integer',
@@ -118,7 +118,7 @@ class PlayerLevelAssessment extends Model
 
     public function player(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'player_id', 'id_player');
+        return $this->belongsTo(User::class, 'player_user_id', 'id_user');
     }
 
     public function submission(): BelongsTo

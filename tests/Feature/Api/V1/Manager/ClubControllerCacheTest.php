@@ -6,7 +6,7 @@ namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Club;
 use App\Models\Location;
-use App\Models\Player;
+use App\Models\User;
 use App\Services\Cache\PadelizCache;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -18,7 +18,7 @@ final class ClubControllerCacheTest extends TestCase
     use RefreshDatabase;
     use UsesRedisTaggedCache;
 
-    private Player $manager;
+    private User $manager;
 
     protected function setUp(): void
     {
@@ -27,7 +27,7 @@ final class ClubControllerCacheTest extends TestCase
 
         app(PadelizCache::class)->flushApplicationTags();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'first_name' => 'Cache',
             'middle_name' => null,
             'last_name' => 'Tester',

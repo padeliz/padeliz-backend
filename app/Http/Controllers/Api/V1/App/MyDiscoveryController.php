@@ -7,7 +7,7 @@ namespace App\Http\Controllers\Api\V1\App;
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
 use App\Http\Resources\MediaSourceResource;
 use App\Http\Resources\PlayerFriendsSourceResource;
-use App\Models\Player;
+use App\Models\User;
 use App\Services\Discovery\PlayerDiscoveryService;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -39,7 +39,7 @@ class MyDiscoveryController extends V1BaseController
      */
     public function summary(Request $request): JsonResponse
     {
-        /** @var Player $player */
+        /** @var User $player */
         $player = $request->user();
 
         $media = $this->discovery->selectedMedia($player);
@@ -136,7 +136,7 @@ class MyDiscoveryController extends V1BaseController
      * @OA\Put(
      *     path="/api/v1/app/my/discovery/friends",
      *     summary="Replace my friends sources (max 3)",
-     *     description="Full replace; each friend needs at least one of friend_player_id, full_name, email or phone. An empty array clears the list.",
+     *     description="Full replace; each friend needs at least one of friend_player_user_id, full_name, email or phone. An empty array clears the list.",
      *     tags={"🐥 App: My Discovery"},
      *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
@@ -148,7 +148,7 @@ class MyDiscoveryController extends V1BaseController
      *                 type="array",
      *                 maxItems=3,
      *                 @OA\Items(
-     *                     @OA\Property(property="friend_player_id", type="integer", nullable=true),
+     *                     @OA\Property(property="friend_player_user_id", type="integer", nullable=true),
      *                     @OA\Property(property="full_name", type="string", maxLength=120, nullable=true),
      *                     @OA\Property(property="email", type="string", maxLength=255, nullable=true),
      *                     @OA\Property(property="phone", type="string", maxLength=30, nullable=true)
@@ -162,13 +162,13 @@ class MyDiscoveryController extends V1BaseController
      */
     public function replaceFriends(Request $request): JsonResponse
     {
-        /** @var Player $player */
+        /** @var User $player */
         $player = $request->user();
 
         $validator = Validator::make($request->all(), [
             'friends' => ['present', 'array', 'max:' . PlayerDiscoveryService::MAX_FRIENDS],
             'friends.*' => ['array'],
-            'friends.*.friend_player_id' => ['nullable', 'integer', 'exists:players,id_player', 'not_in:' . $player->id_player],
+            'friends.*.friend_player_user_id' => ['nullable', 'integer', 'exists:users,id_user', 'not_in:' . $player->id_user],
             'friends.*.full_name' => ['nullable', 'string', 'max:120'],
             'friends.*.email' => ['nullable', 'string', 'email', 'max:255'],
             'friends.*.phone' => ['nullable', 'string', 'max:30'],
@@ -181,7 +181,7 @@ class MyDiscoveryController extends V1BaseController
                 }
 
                 $hasIdentifier = false;
-                foreach (['friend_player_id', 'full_name', 'email', 'phone'] as $key) {
+                foreach (['friend_player_user_id', 'full_name', 'email', 'phone'] as $key) {
                     $value = $friend[$key] ?? null;
                     if ($value !== null && trim((string) $value) !== '') {
                         $hasIdentifier = true;
@@ -193,7 +193,7 @@ class MyDiscoveryController extends V1BaseController
                 if (! $hasIdentifier) {
                     $validator->errors()->add(
                         "friends.{$index}",
-                        'Each friend needs at least one of friend_player_id, full_name, email or phone.'
+                        'Each friend needs at least one of friend_player_user_id, full_name, email or phone.'
                     );
                 }
             }
@@ -244,7 +244,7 @@ class MyDiscoveryController extends V1BaseController
      *                 property="data",
      *                 type="array",
      *                 @OA\Items(
-     *                     @OA\Property(property="id_player", type="integer"),
+     *                     @OA\Property(property="id_user", type="integer"),
      *                     @OA\Property(property="name", type="string"),
      *                     @OA\Property(property="email_masked", type="string", nullable=true),
      *                     @OA\Property(property="phone_masked", type="string", nullable=true),

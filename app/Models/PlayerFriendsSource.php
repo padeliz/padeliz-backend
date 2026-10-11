@@ -12,10 +12,10 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @OA\Schema(
  *     schema="PlayerFriendsSource",
- *     required={"player_id"},
+ *     required={"player_user_id"},
  *     @OA\Property(property="id_player_friends_source", type="integer", format="int64", readOnly=true, title="ID"),
- *     @OA\Property(property="player_id", type="integer", format="int64", title="Player"),
- *     @OA\Property(property="friend_player_id", type="integer", format="int64", nullable=true, title="Friend"),
+ *     @OA\Property(property="player_user_id", type="integer", format="int64", title="Player"),
+ *     @OA\Property(property="friend_player_user_id", type="integer", format="int64", nullable=true, title="Friend"),
  *     @OA\Property(property="full_name", type="string", maxLength=120, nullable=true, title="Full Name"),
  *     @OA\Property(property="email", type="string", maxLength=255, nullable=true, title="Email"),
  *     @OA\Property(property="phone", type="string", maxLength=30, nullable=true, title="Phone"),
@@ -35,14 +35,14 @@ class PlayerFriendsSource extends Model
     ];
 
     public static array $filterableFields = [
-        'player_id',
-        'friend_player_id',
+        'player_user_id',
+        'friend_player_user_id',
     ];
 
     public static array $sortableFields = [
         'id_player_friends_source',
-        'player_id',
-        'friend_player_id',
+        'player_user_id',
+        'friend_player_user_id',
         'full_name',
         'inserted_at',
         'updated_at',
@@ -63,27 +63,27 @@ class PlayerFriendsSource extends Model
     public const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
-        'player_id',
-        'friend_player_id',
+        'player_user_id',
+        'friend_player_user_id',
         'full_name',
         'email',
         'phone',
     ];
 
     protected $casts = [
-        'player_id' => 'integer',
-        'friend_player_id' => 'integer',
+        'player_user_id' => 'integer',
+        'friend_player_user_id' => 'integer',
         'inserted_at' => 'integer',
         'updated_at' => 'integer',
     ];
 
     public function player(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'player_id', 'id_player');
+        return $this->belongsTo(User::class, 'player_user_id', 'id_user');
     }
 
-    public function friend(): BelongsTo
+    public function friendPlayer(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'friend_player_id', 'id_player');
+        return $this->belongsTo(User::class, 'friend_player_user_id', 'id_user');
     }
 }

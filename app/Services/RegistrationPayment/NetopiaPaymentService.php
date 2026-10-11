@@ -168,7 +168,7 @@ class NetopiaPaymentService
         $checkout = $this->checkoutService->openCheckoutForRegistration($registration)
             ?? $this->checkoutService->openOrRefreshForUnpaid(
                 (int) $registration->event_id,
-                (int) $registration->player_id
+                (int) $registration->player_user_id
             );
 
         return $this->startForCheckout($checkout);

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Requests\Manager\ManagerPlayerProfileImageUploadRequest;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerProfileImage;
 use App\Services\PlayerProfileImage\PlayerProfileImagePrimaryService;
 use App\Services\PlayerProfileImage\PlayerProfileImageUploadService;
@@ -26,7 +26,7 @@ class PlayerProfileImageController extends \App\Http\Controllers\BaseVersions\V1
     ) {
     }
 
-    public function store(ManagerPlayerProfileImageUploadRequest $request, Player $player): JsonResponse
+    public function store(ManagerPlayerProfileImageUploadRequest $request, User $player): JsonResponse
     {
         try {
             $this->uploadService->upload($player, $request->file('image'), [
@@ -35,7 +35,7 @@ class PlayerProfileImageController extends \App\Http\Controllers\BaseVersions\V1
             ]);
         } catch (\Throwable $e) {
             Log::error('Manager PlayerProfileImageController::store failed', [
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'error' => $e->getMessage(),
             ]);
 
@@ -55,9 +55,9 @@ class PlayerProfileImageController extends \App\Http\Controllers\BaseVersions\V1
         ], 'Image uploaded successfully', 201);
     }
 
-    public function destroy(Player $player, PlayerProfileImage $playerProfileImage): JsonResponse
+    public function destroy(User $player, PlayerProfileImage $playerProfileImage): JsonResponse
     {
-        if ((int) $playerProfileImage->player_id !== (int) $player->id_player) {
+        if ((int) $playerProfileImage->player_user_id !== (int) $player->id_user) {
             return $this->errorResponse('Profile image does not belong to this player.', 404);
         }
 
@@ -88,9 +88,9 @@ class PlayerProfileImageController extends \App\Http\Controllers\BaseVersions\V1
      *     @OA\Response(response=200, description="Updated images")
      * )
      */
-    public function setPdfPrimary(Player $player, PlayerProfileImage $playerProfileImage): JsonResponse
+    public function setPdfPrimary(User $player, PlayerProfileImage $playerProfileImage): JsonResponse
     {
-        if ((int) $playerProfileImage->player_id !== (int) $player->id_player) {
+        if ((int) $playerProfileImage->player_user_id !== (int) $player->id_user) {
             return $this->errorResponse('Profile image does not belong to this player.', 404);
         }
 

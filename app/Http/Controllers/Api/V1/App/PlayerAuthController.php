@@ -5,17 +5,17 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1\App;
 
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
-use App\Http\Resources\AppPlayerResource;
-use App\Models\Player;
-use App\Models\PlayerEmail;
-use App\Models\PlayerIdentity;
+use App\Http\Resources\AppUserResource;
+use App\Models\User;
+use App\Models\UserEmail;
+use App\Models\UserIdentity;
 use App\Models\PlayerInvite;
 use App\Models\PlayerInviteEvent;
 use App\Services\AuthLogger;
-use App\Services\PlayerIdentity\ContactConflictException;
-use App\Services\PlayerIdentity\GoogleIdTokenVerifier;
-use App\Services\PlayerIdentity\IdentityConflictException;
-use App\Services\PlayerIdentity\PlayerIdentityLinker;
+use App\Services\UserIdentity\ContactConflictException;
+use App\Services\UserIdentity\GoogleIdTokenVerifier;
+use App\Services\UserIdentity\IdentityConflictException;
+use App\Services\UserIdentity\UserIdentityLinker;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -58,7 +58,7 @@ class PlayerAuthController extends V1BaseController
     public function redeemInvite(
         Request $request,
         GoogleIdTokenVerifier $tokenVerifier,
-        PlayerIdentityLinker $identityLinker,
+        UserIdentityLinker $identityLinker,
     ) {
         $request->validate([
             'invite_token' => 'required|string',
@@ -68,7 +68,7 @@ class PlayerAuthController extends V1BaseController
 
         $provider = strtolower($request->string('provider')->toString());
 
-        if ($provider !== PlayerIdentity::PROVIDER_GOOGLE) {
+        if ($provider !== UserIdentity::PROVIDER_GOOGLE) {
             PlayerInviteEvent::log(
                 event: PlayerInviteEvent::EVENT_REDEEM_FAILED,
                 request: $request,
@@ -90,7 +90,7 @@ class PlayerAuthController extends V1BaseController
                 request: $request,
                 resultCode: 'invite_inactive',
                 provider: $provider,
-                playerId: $invite?->player_id,
+                playerId: $invite?->player_user_id,
             );
 
             return $this->errorResponse('Invite not found or no longer active.', 404);
@@ -101,6 +101,7 @@ class PlayerAuthController extends V1BaseController
             invite: $invite,
             request: $request,
             provider: $provider,
+            actorPlayerUserId: (int) $invite->player_user_id,
         );
 
         try {
@@ -114,7 +115,7 @@ class PlayerAuthController extends V1BaseController
             try {
                 $linkResult = $identityLinker->link(
                     player: $player,
-                    provider: PlayerIdentity::PROVIDER_GOOGLE,
+                    provider: UserIdentity::PROVIDER_GOOGLE,
                     subject: $subject,
                     email: $email,
                     displayName: $displayName,
@@ -131,6 +132,7 @@ class PlayerAuthController extends V1BaseController
                     providerSubject: $subject,
                     contactKind: $email ? 'email' : null,
                     contactValue: $email,
+                    actorPlayerUserId: (int) $invite->player_user_id,
                 );
 
                 return $this->errorResponse($e->getMessage(), 409);
@@ -144,13 +146,14 @@ class PlayerAuthController extends V1BaseController
                     providerSubject: $subject,
                     contactKind: 'email',
                     contactValue: $email,
+                    actorPlayerUserId: (int) $invite->player_user_id,
                 );
 
                 return $this->errorResponse($e->getMessage(), 409);
             }
 
             if ($linkResult->wasAlreadyLinked()) {
-                $linkedPlayer = $linkResult->identity->player;
+                $linkedPlayer = $linkResult->identity->user;
 
                 if (! $linkedPlayer->hasUserType('player')) {
                     PlayerInviteEvent::log(
@@ -160,6 +163,7 @@ class PlayerAuthController extends V1BaseController
                         resultCode: 'missing_player_privileges',
                         provider: $provider,
                         providerSubject: $subject,
+                        actorPlayerUserId: (int) $linkedPlayer->id_user,
                     );
 
                     return $this->errorResponse('User does not have player privileges.', 403);
@@ -176,11 +180,12 @@ class PlayerAuthController extends V1BaseController
                     providerSubject: $subject,
                     contactKind: $email ? 'email' : null,
                     contactValue: $email,
+                    actorPlayerUserId: (int) $linkedPlayer->id_user,
                 );
 
                 return $this->successResponse([
                     'token' => $token,
-                    'player' => new AppPlayerResource($linkedPlayer->loadMissing(['identities.email'])),
+                    'user' => new AppUserResource($linkedPlayer->loadMissing(['identities.email'])),
                     'user_type' => 'player',
                 ], 'Player authenticated successfully');
             }
@@ -203,11 +208,12 @@ class PlayerAuthController extends V1BaseController
                 providerSubject: $subject,
                 contactKind: $email ? 'email' : null,
                 contactValue: $email,
+                actorPlayerUserId: (int) $player->id_user,
             );
 
             return $this->successResponse([
                 'token' => $token,
-                'player' => new AppPlayerResource($player->fresh()->loadMissing(['identities.email'])),
+                'user' => new AppUserResource($player->fresh()->loadMissing(['identities.email'])),
                 'user_type' => 'player',
             ], 'Invite redeemed successfully');
         } catch (\Exception $e) {
@@ -217,6 +223,7 @@ class PlayerAuthController extends V1BaseController
                 request: $request,
                 resultCode: 'auth_error',
                 provider: $provider,
+                actorPlayerUserId: (int) $invite->player_user_id,
             );
 
             $this->authLogger->logError($e, [
@@ -252,7 +259,7 @@ class PlayerAuthController extends V1BaseController
      *                 @OA\Schema(
      *                     @OA\Property(property="data", type="object",
      *                         @OA\Property(property="token", type="string"),
-     *                         @OA\Property(property="player", ref="#/components/schemas/Player"),
+     *                         @OA\Property(property="user", ref="#/components/schemas/User"),
      *                         @OA\Property(property="user_type", type="string", example="player")
      *                     )
      *                 )
@@ -269,7 +276,7 @@ class PlayerAuthController extends V1BaseController
     public function googleCallback(
         Request $request,
         GoogleIdTokenVerifier $tokenVerifier,
-        PlayerIdentityLinker $identityLinker,
+        UserIdentityLinker $identityLinker,
     ) {
         $request->validate([
             'id_token' => 'required|string',
@@ -278,8 +285,8 @@ class PlayerAuthController extends V1BaseController
         try {
             $claims = $tokenVerifier->verify($request->string('id_token')->toString());
 
-            $identity = PlayerIdentity::query()
-                ->where('provider', PlayerIdentity::PROVIDER_GOOGLE)
+            $identity = UserIdentity::query()
+                ->where('provider', UserIdentity::PROVIDER_GOOGLE)
                 ->where('provider_subject', $claims['sub'])
                 ->first();
 
@@ -287,7 +294,7 @@ class PlayerAuthController extends V1BaseController
                 return $this->errorResponse('User not found. Please register first.', 404);
             }
 
-            $player = $identity->player;
+            $player = $identity->user;
 
             if (! $player->hasUserType('player')) {
                 return $this->errorResponse('User does not have player privileges.', 403);
@@ -300,7 +307,7 @@ class PlayerAuthController extends V1BaseController
 
             return $this->successResponse([
                 'token' => $token,
-                'player' => new AppPlayerResource($player->loadMissing(['identities.email'])),
+                'user' => new AppUserResource($player->loadMissing(['identities.email'])),
                 'user_type' => 'player',
             ], 'Player authenticated successfully');
         } catch (\Exception $e) {
@@ -348,7 +355,7 @@ class PlayerAuthController extends V1BaseController
      *             allOf={
      *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
      *                 @OA\Schema(
-     *                     @OA\Property(property="data", ref="#/components/schemas/Player")
+     *                     @OA\Property(property="data", ref="#/components/schemas/User")
      *                 )
      *             }
      *         )
@@ -360,7 +367,7 @@ class PlayerAuthController extends V1BaseController
         $player = $request->user()->loadMissing(['identities.email']);
 
         return $this->resourceResponse(
-            new AppPlayerResource($player),
+            new AppUserResource($player),
             'Player profile retrieved successfully'
         );
     }
@@ -386,7 +393,7 @@ class PlayerAuthController extends V1BaseController
      *                 @OA\Schema(
      *                     @OA\Property(property="data", type="object",
      *                         @OA\Property(property="token", type="string"),
-     *                         @OA\Property(property="player", ref="#/components/schemas/Player"),
+     *                         @OA\Property(property="user", ref="#/components/schemas/User"),
      *                         @OA\Property(property="user_type", type="string", example="player")
      *                     )
      *                 )
@@ -412,13 +419,13 @@ class PlayerAuthController extends V1BaseController
 
         $email = strtolower(trim($request->string('email')->toString()));
 
-        $player = Player::query()
+        $player = User::query()
             ->whereHas('emails', fn ($q) => $q->where('email', $email))
             ->first();
 
         if (! $player) {
             $player = DB::transaction(function () use ($email) {
-                $created = Player::create([
+                $created = User::create([
                     'first_name' => 'Dev',
                     'last_name' => 'Player',
                     'user_types' => ['player'],
@@ -426,19 +433,19 @@ class PlayerAuthController extends V1BaseController
                     'created_via_format' => 'devLogin',
                 ]);
 
-                $emailRow = PlayerEmail::create([
-                    'player_id' => $created->id_player,
+                $emailRow = UserEmail::create([
+                    'user_id' => $created->id_user,
                     'email' => $email,
                     'purposes' => ['contact', 'login'],
                     'is_primary' => true,
                     'verified_at' => time(),
                 ]);
 
-                PlayerIdentity::create([
-                    'player_id' => $created->id_player,
-                    'provider' => PlayerIdentity::PROVIDER_DEV,
+                UserIdentity::create([
+                    'user_id' => $created->id_user,
+                    'provider' => UserIdentity::PROVIDER_DEV,
                     'provider_subject' => 'dev:' . $email,
-                    'email_id' => $emailRow->id_player_email,
+                    'email_id' => $emailRow->id_user_email,
                     'display_name' => 'Dev Player',
                     'linked_at' => time(),
                     'last_login_at' => time(),
@@ -456,7 +463,7 @@ class PlayerAuthController extends V1BaseController
 
         return $this->successResponse([
             'token' => $token,
-            'player' => new AppPlayerResource($player->fresh()->loadMissing(['identities.email'])),
+            'user' => new AppUserResource($player->fresh()->loadMissing(['identities.email'])),
             'user_type' => 'player',
         ], 'Player logged in successfully');
     }

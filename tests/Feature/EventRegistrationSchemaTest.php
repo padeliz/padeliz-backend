@@ -51,7 +51,7 @@ class EventRegistrationSchemaTest extends TestCase
 
             return (bool) ($index['unique'] ?? false)
                 && in_array('event_division_id', $columns, true)
-                && in_array('active_player_for_division', $columns, true);
+                && in_array('active_player_user_for_division', $columns, true);
         });
         $this->assertNotNull($activeDivisionUnique);
     }

@@ -13,14 +13,14 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @OA\Schema(
  *     schema="PlayerInvite",
- *     required={"player_id", "token_hash", "expires_at"},
+ *     required={"player_user_id", "token_hash", "expires_at"},
  *     @OA\Property(property="id_invite", type="integer", format="int64", readOnly=true),
- *     @OA\Property(property="player_id", type="integer", format="int64"),
+ *     @OA\Property(property="player_user_id", type="integer", format="int64"),
  *     @OA\Property(property="token_hash", type="string", maxLength=64),
  *     @OA\Property(property="expires_at", type="integer", format="timestamp"),
  *     @OA\Property(property="accepted_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(property="revoked_at", type="integer", format="timestamp", nullable=true),
- *     @OA\Property(property="created_by_player_id", type="integer", format="int64", nullable=true),
+ *     @OA\Property(property="created_by_manager_user_id", type="integer", format="int64", nullable=true),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true)
  * )
@@ -41,12 +41,12 @@ class PlayerInvite extends Model
     public const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
-        'player_id',
+        'player_user_id',
         'token_hash',
         'expires_at',
         'accepted_at',
         'revoked_at',
-        'created_by_player_id',
+        'created_by_manager_user_id',
     ];
 
     protected $casts = [
@@ -59,12 +59,12 @@ class PlayerInvite extends Model
 
     public function player(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'player_id', 'id_player');
+        return $this->belongsTo(User::class, 'player_user_id', 'id_user');
     }
 
-    public function createdByPlayer(): BelongsTo
+    public function createdByManager(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'created_by_player_id', 'id_player');
+        return $this->belongsTo(User::class, 'created_by_manager_user_id', 'id_user');
     }
 
     public function events(): HasMany

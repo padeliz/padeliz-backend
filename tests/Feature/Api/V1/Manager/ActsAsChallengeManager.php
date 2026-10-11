@@ -4,14 +4,14 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Manager;
 
-use App\Models\Player;
+use App\Models\User;
 use Laravel\Sanctum\Sanctum;
 
 trait ActsAsChallengeManager
 {
-    protected function actingAsManager(): Player
+    protected function actingAsManager(): User
     {
-        $manager = Player::factory()->manager()->create([
+        $manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         Sanctum::actingAs($manager);

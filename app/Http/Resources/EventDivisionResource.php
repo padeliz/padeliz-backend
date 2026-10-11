@@ -28,8 +28,9 @@ class EventDivisionResource extends JsonResource
                 array_key_exists('is_eligible', $this->resource->getAttributes()),
                 fn () => $this->is_eligible
             ),
-            'playing_start_time' => $this->formatted_playing_start_time,
-            'playing_end_time' => $this->formatted_playing_end_time,
+            'check_in_at' => $this->check_in_at,
+            'playing_starts_at' => $this->playing_starts_at,
+            'playing_ends_at' => $this->playing_ends_at,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
             'event' => $this->whenLoaded('event', function () {

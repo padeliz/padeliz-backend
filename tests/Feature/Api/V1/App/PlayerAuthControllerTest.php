@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\App;
 
-use App\Models\Player;
-use App\Models\PlayerEmail;
-use App\Models\PlayerIdentity;
+use App\Models\User;
+use App\Models\UserEmail;
+use App\Models\UserIdentity;
 use App\Models\PlayerInvite;
 use App\Models\PlayerInviteEvent;
 use Illuminate\Database\Eloquent\Factories\Sequence;
@@ -18,20 +18,20 @@ class PlayerAuthControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected Player $player;
+    protected User $player;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->player = Player::factory()->playerOnly()->create([
+        $this->player = User::factory()->playerOnly()->create([
             'first_name' => 'Test', 'middle_name' => null, 'last_name' => 'Player',
             'user_types' => ['player'],
         ]);
 
-        PlayerIdentity::create([
-            'player_id' => $this->player->id_player,
-            'provider' => PlayerIdentity::PROVIDER_GOOGLE,
+        UserIdentity::create([
+            'user_id' => $this->player->id_user,
+            'provider' => UserIdentity::PROVIDER_GOOGLE,
             'provider_subject' => 'google_player_123',
             'display_name' => 'Test Player',
             'avatar_url' => 'https://example.com/player-avatar.jpg',
@@ -85,8 +85,8 @@ class PlayerAuthControllerTest extends TestCase
                 'message',
                 'data' => [
                     'token',
-                    'player' => [
-                        'id_player',
+                    'user' => [
+                        'id_user',
                         'name',
                     ],
                     'user_type',
@@ -96,8 +96,8 @@ class PlayerAuthControllerTest extends TestCase
                 'success' => true,
                 'message' => 'Player authenticated successfully',
                 'data' => [
-                    'player' => [
-                        'id_player' => $this->player->id_player,
+                    'user' => [
+                        'id_user' => $this->player->id_user,
                         'name' => 'Test Player',
                     ],
                     'user_type' => 'player',
@@ -105,7 +105,7 @@ class PlayerAuthControllerTest extends TestCase
             ]);
 
         $this->assertNotNull(
-            PlayerIdentity::query()
+            UserIdentity::query()
                 ->where('provider', 'google')
                 ->where('provider_subject', 'google_player_123')
                 ->value('last_login_at')
@@ -126,9 +126,9 @@ class PlayerAuthControllerTest extends TestCase
 
         $this->postJson('/api/v1/app/auth/google', ['id_token' => 'valid.token'])
             ->assertStatus(200)
-            ->assertJsonPath('data.player.avatar_url', 'https://example.com/new-avatar.jpg');
+            ->assertJsonPath('data.user.avatar_url', 'https://example.com/new-avatar.jpg');
 
-        $this->assertDatabaseHas('player_identities', [
+        $this->assertDatabaseHas('user_identities', [
             'provider_subject' => 'google_player_123',
             'avatar_url' => 'https://example.com/new-avatar.jpg',
         ]);
@@ -148,7 +148,7 @@ class PlayerAuthControllerTest extends TestCase
         $this->postJson('/api/v1/app/auth/google', ['id_token' => 'valid.token'])
             ->assertStatus(200);
 
-        $this->assertDatabaseHas('player_identities', [
+        $this->assertDatabaseHas('user_identities', [
             'provider_subject' => 'google_player_123',
             'avatar_url' => 'https://example.com/player-avatar.jpg',
         ]);
@@ -156,13 +156,13 @@ class PlayerAuthControllerTest extends TestCase
 
     public function test_google_callback_returns_403_for_manager_without_player_privileges()
     {
-        $manager = Player::factory()->managerOnly()->create([
+        $manager = User::factory()->managerOnly()->create([
             'first_name' => 'Manager', 'middle_name' => null, 'last_name' => 'Only',
         ]);
 
-        PlayerIdentity::create([
-            'player_id' => $manager->id_player,
-            'provider' => PlayerIdentity::PROVIDER_GOOGLE,
+        UserIdentity::create([
+            'user_id' => $manager->id_user,
+            'provider' => UserIdentity::PROVIDER_GOOGLE,
             'provider_subject' => 'google_manager_123',
             'linked_at' => time(),
         ]);
@@ -220,7 +220,7 @@ class PlayerAuthControllerTest extends TestCase
                 'success',
                 'message',
                 'data' => [
-                    'id_player',
+                    'id_user',
                     'name',
                     'uploaded_profile_images',
                 ],
@@ -229,7 +229,7 @@ class PlayerAuthControllerTest extends TestCase
                 'success' => true,
                 'message' => 'Player profile retrieved successfully',
                 'data' => [
-                    'id_player' => $this->player->id_player,
+                    'id_user' => $this->player->id_user,
                     'name' => 'Test Player',
                 ],
             ]);
@@ -293,35 +293,35 @@ class PlayerAuthControllerTest extends TestCase
                 'message',
                 'data' => [
                     'token',
-                    'player' => [
-                        'id_player',
+                    'user' => [
+                        'id_user',
                         'name',
                     ],
                     'user_type',
                 ],
             ]);
 
-        $this->assertDatabaseHas('player_emails', [
+        $this->assertDatabaseHas('user_emails', [
             'email' => 'dev@example.com',
         ]);
 
-        $this->assertDatabaseHas('player_identities', [
+        $this->assertDatabaseHas('user_identities', [
             'provider' => 'dev',
             'provider_subject' => 'dev:dev@example.com',
         ]);
 
-        $this->assertDatabaseHas('players', [
+        $this->assertDatabaseHas('users', [
             'first_name' => 'Dev',
             'last_name' => 'Player',
             'created_via' => 'app',
             'created_via_format' => 'devLogin',
-            'created_via_import_id' => null,
+            'created_via_user_import_id' => null,
         ]);
     }
 
     public function test_google_callback_performance_with_large_dataset()
     {
-        Player::factory()
+        User::factory()
             ->count(100)
             ->state(new Sequence(
                 fn (Sequence $sequence) => [
@@ -406,7 +406,7 @@ class PlayerAuthControllerTest extends TestCase
         ];
 
         foreach ($userTypes as $types) {
-            $player = Player::factory()->create(['user_types' => $types]);
+            $player = User::factory()->create(['user_types' => $types]);
             Sanctum::actingAs($player);
 
             $response = $this->getJson('/api/v1/app/auth/me');
@@ -421,9 +421,9 @@ class PlayerAuthControllerTest extends TestCase
 
     public function test_google_login_uses_identity_not_email()
     {
-        $other = Player::factory()->create(['first_name' => 'Other', 'middle_name' => null, 'last_name' => 'Player']);
-        PlayerEmail::create([
-            'player_id' => $other->id_player,
+        $other = User::factory()->create(['first_name' => 'Other', 'middle_name' => null, 'last_name' => 'Player']);
+        UserEmail::create([
+            'user_id' => $other->id_user,
             'email' => 'player@example.com',
             'purposes' => ['contact'],
             'is_primary' => true,
@@ -447,8 +447,8 @@ class PlayerAuthControllerTest extends TestCase
         $response->assertStatus(200)
             ->assertJson([
                 'data' => [
-                    'player' => [
-                        'id_player' => $this->player->id_player,
+                    'user' => [
+                        'id_user' => $this->player->id_user,
                     ],
                 ],
             ]);
@@ -456,10 +456,10 @@ class PlayerAuthControllerTest extends TestCase
 
     public function test_invite_redeem_links_identity_and_consumes_invite()
     {
-        $invitee = Player::factory()->create(['first_name' => 'Invitee', 'middle_name' => null, 'last_name' => 'Player']);
+        $invitee = User::factory()->create(['first_name' => 'Invitee', 'middle_name' => null, 'last_name' => 'Player']);
         $rawToken = 'invite-token-redeem-1';
         $invite = PlayerInvite::create([
-            'player_id' => $invitee->id_player,
+            'player_user_id' => $invitee->id_user,
             'token_hash' => PlayerInvite::hashToken($rawToken),
             'expires_at' => time() + 3600,
         ]);
@@ -484,27 +484,29 @@ class PlayerAuthControllerTest extends TestCase
             ->assertJson([
                 'success' => true,
                 'data' => [
-                    'player' => [
-                        'id_player' => $invitee->id_player,
+                    'user' => [
+                        'id_user' => $invitee->id_user,
                     ],
                     'user_type' => 'player',
                 ],
             ]);
 
         $this->assertNotNull($invite->fresh()->accepted_at);
-        $this->assertDatabaseHas('player_identities', [
-            'player_id' => $invitee->id_player,
+        $this->assertDatabaseHas('user_identities', [
+            'user_id' => $invitee->id_user,
             'provider' => 'google',
             'provider_subject' => 'google_new_invitee',
         ]);
-        $this->assertDatabaseHas('player_emails', [
-            'player_id' => $invitee->id_player,
+        $this->assertDatabaseHas('user_emails', [
+            'user_id' => $invitee->id_user,
             'email' => 'invitee@example.com',
         ]);
         $this->assertDatabaseHas('player_invite_events', [
             'invite_id' => $invite->id_invite,
             'event' => PlayerInviteEvent::EVENT_REDEEM_SUCCEEDED,
             'result_code' => 'linked',
+            'actor_player_user_id' => $invitee->id_user,
+            'actor_manager_user_id' => null,
         ]);
     }
 
@@ -512,7 +514,7 @@ class PlayerAuthControllerTest extends TestCase
     {
         $rawToken = 'invite-token-already-linked';
         $invite = PlayerInvite::create([
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'token_hash' => PlayerInvite::hashToken($rawToken),
             'expires_at' => time() + 3600,
         ]);
@@ -545,7 +547,7 @@ class PlayerAuthControllerTest extends TestCase
     {
         $rawToken = 'invite-token-avatar-refresh';
         PlayerInvite::create([
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'token_hash' => PlayerInvite::hashToken($rawToken),
             'expires_at' => time() + 3600,
         ]);
@@ -566,7 +568,7 @@ class PlayerAuthControllerTest extends TestCase
             'id_token' => 'valid.token',
         ])->assertStatus(200);
 
-        $this->assertDatabaseHas('player_identities', [
+        $this->assertDatabaseHas('user_identities', [
             'provider_subject' => 'google_player_123',
             'avatar_url' => 'https://example.com/redeem-avatar.jpg',
         ]);
@@ -574,10 +576,10 @@ class PlayerAuthControllerTest extends TestCase
 
     public function test_invite_redeem_rejects_identity_linked_to_another_player()
     {
-        $invitee = Player::factory()->create(['first_name' => 'Another', 'middle_name' => null, 'last_name' => 'Invitee']);
+        $invitee = User::factory()->create(['first_name' => 'Another', 'middle_name' => null, 'last_name' => 'Invitee']);
         $rawToken = 'invite-token-conflict-identity';
         $invite = PlayerInvite::create([
-            'player_id' => $invitee->id_player,
+            'player_user_id' => $invitee->id_user,
             'token_hash' => PlayerInvite::hashToken($rawToken),
             'expires_at' => time() + 3600,
         ]);
@@ -607,18 +609,18 @@ class PlayerAuthControllerTest extends TestCase
 
     public function test_invite_redeem_rejects_contact_conflict()
     {
-        $owner = Player::factory()->create(['first_name' => 'Email', 'middle_name' => null, 'last_name' => 'Owner']);
-        PlayerEmail::create([
-            'player_id' => $owner->id_player,
+        $owner = User::factory()->create(['first_name' => 'Email', 'middle_name' => null, 'last_name' => 'Owner']);
+        UserEmail::create([
+            'user_id' => $owner->id_user,
             'email' => 'taken@example.com',
             'purposes' => ['contact'],
             'is_primary' => true,
         ]);
 
-        $invitee = Player::factory()->create(['first_name' => 'Conflict', 'middle_name' => null, 'last_name' => 'Invitee']);
+        $invitee = User::factory()->create(['first_name' => 'Conflict', 'middle_name' => null, 'last_name' => 'Invitee']);
         $rawToken = 'invite-token-contact-conflict';
         $invite = PlayerInvite::create([
-            'player_id' => $invitee->id_player,
+            'player_user_id' => $invitee->id_user,
             'token_hash' => PlayerInvite::hashToken($rawToken),
             'expires_at' => time() + 3600,
         ]);
@@ -647,10 +649,10 @@ class PlayerAuthControllerTest extends TestCase
 
     public function test_invite_redeem_rejects_unsupported_provider()
     {
-        $invitee = Player::factory()->create(['first_name' => 'Apple', 'middle_name' => null, 'last_name' => 'Invitee']);
+        $invitee = User::factory()->create(['first_name' => 'Apple', 'middle_name' => null, 'last_name' => 'Invitee']);
         $rawToken = 'invite-token-apple';
         PlayerInvite::create([
-            'player_id' => $invitee->id_player,
+            'player_user_id' => $invitee->id_user,
             'token_hash' => PlayerInvite::hashToken($rawToken),
             'expires_at' => time() + 3600,
         ]);
@@ -666,10 +668,10 @@ class PlayerAuthControllerTest extends TestCase
 
     public function test_invite_redeem_rejects_inactive_invite()
     {
-        $invitee = Player::factory()->create(['first_name' => 'Expired', 'middle_name' => null, 'last_name' => 'Invitee']);
+        $invitee = User::factory()->create(['first_name' => 'Expired', 'middle_name' => null, 'last_name' => 'Invitee']);
         $rawToken = 'invite-token-expired';
         PlayerInvite::create([
-            'player_id' => $invitee->id_player,
+            'player_user_id' => $invitee->id_user,
             'token_hash' => PlayerInvite::hashToken($rawToken),
             'expires_at' => time() - 10,
         ]);

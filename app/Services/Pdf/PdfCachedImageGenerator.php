@@ -6,7 +6,7 @@ namespace App\Services\Pdf;
 
 use App\Models\CachedPdfPairImage;
 use App\Models\CachedPdfPlayerImage;
-use App\Models\Player;
+use App\Models\User;
 
 /**
  * Shared resolve → compose → cleanup for PDF cached player/pair images.
@@ -24,7 +24,7 @@ class PdfCachedImageGenerator
      * @return string Absolute path of composed player avatar (Mode A persisted or Mode B temp)
      */
     public function generatePlayerAvatar(
-        Player $player,
+        User $player,
         bool $collecting,
         bool $persist = true,
     ): string {
@@ -33,7 +33,7 @@ class PdfCachedImageGenerator
 
         try {
             return $this->playerImages->resolvePath(
-                (int) $player->id_player,
+                (int) $player->id_user,
                 $resolved->absolutePath,
                 $collecting,
                 $persist,
@@ -48,12 +48,12 @@ class PdfCachedImageGenerator
     /**
      * Persist Mode A player avatar and return public URL.
      */
-    public function generatePlayerAvatarUrl(Player $player, bool $collecting): ?string
+    public function generatePlayerAvatarUrl(User $player, bool $collecting): ?string
     {
         $this->generatePlayerAvatar($player, $collecting, true);
 
         $cached = CachedPdfPlayerImage::query()
-            ->where('player_id', (int) $player->id_player)
+            ->where('player_user_id', (int) $player->id_user)
             ->where('player_is_collecting_points', $collecting)
             ->first();
 
@@ -64,8 +64,8 @@ class PdfCachedImageGenerator
      * @return string Absolute path of composed pair image
      */
     public function generatePairImage(
-        Player $player1,
-        Player $player2,
+        User $player1,
+        User $player2,
         bool $player1Collecting,
         bool $player2Collecting,
         bool $persist = true,
@@ -82,8 +82,8 @@ class PdfCachedImageGenerator
 
         try {
             return $this->pairImages->resolvePath(
-                (int) $player1->id_player,
-                (int) $player2->id_player,
+                (int) $player1->id_user,
+                (int) $player2->id_user,
                 $resolved1->absolutePath,
                 $resolved2->absolutePath,
                 $player1Collecting,
@@ -103,8 +103,8 @@ class PdfCachedImageGenerator
      * Persist Mode A pair image and return public URL.
      */
     public function generatePairImageUrl(
-        Player $player1,
-        Player $player2,
+        User $player1,
+        User $player2,
         bool $player1Collecting,
         bool $player2Collecting,
     ): ?string {
@@ -112,8 +112,8 @@ class PdfCachedImageGenerator
         $composed = $this->generatePairImage($player1, $player2, $player1Collecting, $player2Collecting, true);
         $this->unlinkIfTemp($composed);
 
-        $idA = (int) $player1->id_player;
-        $idB = (int) $player2->id_player;
+        $idA = (int) $player1->id_user;
+        $idB = (int) $player2->id_user;
         if ($idA <= $idB) {
             $p1 = $idA;
             $p2 = $idB;
@@ -127,8 +127,8 @@ class PdfCachedImageGenerator
         }
 
         $cached = CachedPdfPairImage::query()
-            ->where('player_1_id', $p1)
-            ->where('player_2_id', $p2)
+            ->where('player_1_user_id', $p1)
+            ->where('player_2_user_id', $p2)
             ->where('player_1_is_collecting_points', $c1)
             ->where('player_2_is_collecting_points', $c2)
             ->first();
@@ -142,7 +142,7 @@ class PdfCachedImageGenerator
      * @param  list<string>  $ephemeralTemps
      * @return array{absolute_path: string, source_player_profile_image_id: ?int}
      */
-    public function resolvePhotoForPoster(Player $player, array &$ephemeralTemps): array
+    public function resolvePhotoForPoster(User $player, array &$ephemeralTemps): array
     {
         $resolved = $this->photoResolver->resolve($player);
         if ($resolved->isEphemeral()) {
@@ -174,7 +174,7 @@ class PdfCachedImageGenerator
         }
     }
 
-    private function playerUpdatedAt(Player $player): ?int
+    private function playerUpdatedAt(User $player): ?int
     {
         $value = $player->updated_at;
         if ($value === null || $value === '') {

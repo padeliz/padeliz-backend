@@ -14,7 +14,7 @@ use App\Models\EventDivision;
 use App\Models\EventRegistrationPaymentAttempt;
 use App\Models\EventRegistrationPaymentProof;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerLevel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -22,12 +22,13 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
 
 class PaymentCoverageAndCheckoutReadTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $player;
+    private User $player;
 
     private PadelEvent $event;
 
@@ -68,9 +69,9 @@ class PaymentCoverageAndCheckoutReadTest extends TestCase
             'netopia.return_url' => 'https://example.test/api/v1/payments/netopia/return',
         ]);
 
-        $this->player = Player::factory()->playerOnly()->create();
+        $this->player = User::factory()->playerOnly()->create();
         $this->event = PadelEvent::factory()->create([
-            'date' => now()->addDays(30)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(now()->addDays(30)->format('Y-m-d')),
             'registration_allowed_until' => time() + 86400,
             'cancellation_allowed_until' => time() + 86400,
         ]);
@@ -96,7 +97,7 @@ class PaymentCoverageAndCheckoutReadTest extends TestCase
             'players_limit' => 10,
             'entry_fee' => 50,
         ]);
-        PlayerLevel::factory()->level('4.50')->create(['player_id' => $this->player->id_player]);
+        PlayerLevel::factory()->level('4.50')->create(['player_user_id' => $this->player->id_user]);
         BankTransferSettings::factory()->create();
     }
 
@@ -164,7 +165,7 @@ class PaymentCoverageAndCheckoutReadTest extends TestCase
             ->assertStatus(200)
             ->assertJsonPath('data.id_checkout', $checkoutId);
 
-        $other = Player::factory()->playerOnly()->create();
+        $other = User::factory()->playerOnly()->create();
         Sanctum::actingAs($other);
 
         $this->getJson("/api/v1/app/events/{$this->event->id_event}/registration-checkouts")

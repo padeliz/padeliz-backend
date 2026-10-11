@@ -19,7 +19,7 @@ class EventParticipationResource extends JsonResource
         return [
             'id_participation' => $this->id_participation,
             'event_id' => $this->event_id,
-            'player_id' => $this->player_id,
+            'player_user_id' => $this->player_user_id,
             'event_division_id' => $this->event_division_id,
             'sort_order' => $this->sort_order,
             'is_collecting_points' => $this->is_collecting_points,
@@ -34,7 +34,7 @@ class EventParticipationResource extends JsonResource
                 return new EventResource($this->event);
             }),
             'player' => $this->whenLoaded('player', function () {
-                return new PlayerResource($this->player);
+                return new UserSummaryResource($this->player);
             }),
             'event_division' => $this->whenLoaded('eventDivision', function () {
                 return new EventDivisionResource($this->eventDivision);

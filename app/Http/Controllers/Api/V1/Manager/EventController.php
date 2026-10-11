@@ -11,7 +11,6 @@ use App\Services\EventDeadlineValidator;
 use App\Services\EventDescriptionSanitizer;
 use App\Services\EventSlug\EventSlugSync;
 use App\Services\Pdf\EventDivisionPosterInvalidator;
-use App\Services\Schedule\PlayingWindow;
 use App\Traits\CachesManagerResourceReads;
 use Illuminate\Http\Request;
 use Illuminate\Validation\ValidationException;
@@ -79,10 +78,13 @@ class EventController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *             additionalProperties=false,
      *             @OA\Property(property="id_event", type="string", enum={"asc", "desc"}, description="Sort by edition ID"),
      *             @OA\Property(property="name", type="string", enum={"asc", "desc"}, description="Sort by name"),
-     *             @OA\Property(property="date", type="string", enum={"asc", "desc"}, description="Sort by date"),
+     *             @OA\Property(property="event_starts_at", type="string", enum={"asc", "desc"}, description="Sort by event start"),
+     *             @OA\Property(property="event_ends_at", type="string", enum={"asc", "desc"}, description="Sort by event end"),
      *             @OA\Property(property="location_id", type="string", enum={"asc", "desc"}, description="Sort by location ID"),
-     *             @OA\Property(property="arriving_time", type="string", enum={"asc", "desc"}, description="Sort by arriving time"),
-     *             @OA\Property(property="closing_time", type="string", enum={"asc", "desc"}, description="Sort by closing time"),
+     *             @OA\Property(property="organizer_id", type="string", enum={"asc", "desc"}, description="Sort by organizer ID"),
+     *             @OA\Property(property="finalized_at", type="string", enum={"asc", "desc"}, description="Sort by finalize time"),
+     *             @OA\Property(property="registration_allowed_until", type="string", enum={"asc", "desc"}, description="Sort by registration deadline"),
+     *             @OA\Property(property="cancellation_allowed_until", type="string", enum={"asc", "desc"}, description="Sort by cancellation deadline"),
      *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}, description="Sort by creation date"),
      *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"}, description="Sort by update date")
      *         )
@@ -193,15 +195,14 @@ class EventController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"name", "date", "location_id", "description", "registration_allowed_until", "cancellation_allowed_until"},
+     *             required={"name", "event_starts_at", "event_ends_at", "location_id", "description", "registration_allowed_until", "cancellation_allowed_until"},
      *             @OA\Property(property="name", type="string", maxLength=25, description="PadelEvent name"),
      *             @OA\Property(property="description", type="string", description="Rich HTML description"),
-     *             @OA\Property(property="date", type="string", format="date", description="PadelEvent date"),
+     *             @OA\Property(property="event_starts_at", type="integer", format="timestamp", description="Unix timestamp when the edition starts"),
+     *             @OA\Property(property="event_ends_at", type="integer", format="timestamp", description="Unix timestamp when the edition ends"),
      *             @OA\Property(property="location_id", type="integer", description="Location ID"),
      *             @OA\Property(property="organizer_id", type="integer", nullable=true, description="Organizer branding owner"),
      *             @OA\Property(property="include_club_host_on_pdf", type="boolean", description="Whether posters show the hosting club logo", default=true),
-     *             @OA\Property(property="arriving_time", type="string", format="time", description="Arriving time"),
-     *             @OA\Property(property="closing_time", type="string", format="time", description="Closing time"),
      *             @OA\Property(property="registration_allowed_until", type="integer", format="timestamp", description="Unix timestamp until which players may register"),
      *             @OA\Property(property="cancellation_allowed_until", type="integer", format="timestamp", description="Unix timestamp until which players may self-cancel")
      *         )
@@ -245,31 +246,32 @@ class EventController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
         $request->validate([
             'name' => ['required', 'string', 'max:25', new EventNameSlugable()],
             'description' => 'required|string',
-            'date' => 'required|date',
+            'event_starts_at' => 'required|integer|min:0',
+            'event_ends_at' => 'required|integer|min:0',
             'location_id' => 'required|exists:locations,id_location',
             'organizer_id' => 'nullable|integer|exists:organizers,id_organizer',
             'include_club_host_on_pdf' => 'sometimes|boolean',
             'registration_allowed_until' => 'required|integer|min:0',
             'cancellation_allowed_until' => 'required|integer|min:0',
-            'arriving_time' => ['required', PlayingWindow::clockRegexRule()],
-            'closing_time' => ['required', PlayingWindow::clockRegexRule()],
+            'date' => 'prohibited',
+            'arriving_time' => 'prohibited',
+            'closing_time' => 'prohibited',
+            'cover_path' => 'prohibited',
         ]);
 
         $payload = $request->all();
         $payload['description'] = $this->sanitizeDescriptionOrFail((string) $payload['description']);
-        $payload['arriving_time'] = PlayingWindow::normalizeStoredTime((string) $payload['arriving_time']);
-        $payload['closing_time'] = PlayingWindow::normalizeStoredTime((string) $payload['closing_time']);
-        $this->assertDistinctArrivingClosingWindow(
-            (string) $payload['arriving_time'],
-            (string) $payload['closing_time']
+        $this->assertEventWindowOrdering(
+            (int) $payload['event_starts_at'],
+            (int) $payload['event_ends_at']
         );
         $payload['include_club_host_on_pdf'] = $request->has('include_club_host_on_pdf')
             ? $request->boolean('include_club_host_on_pdf')
             : true;
-        unset($payload['cover_path'], $payload['cover_url'], $payload['slug']);
+        unset($payload['cover_path'], $payload['cover_url'], $payload['cover_images'], $payload['slug']);
 
         EventDeadlineValidator::assertOrdering([
-            'date' => $payload['date'],
+            'event_starts_at' => $payload['event_starts_at'],
             'registration_allowed_until' => $payload['registration_allowed_until'],
             'cancellation_allowed_until' => $payload['cancellation_allowed_until'],
         ]);
@@ -300,15 +302,14 @@ class EventController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"name", "date", "location_id", "description", "registration_allowed_until", "cancellation_allowed_until"},
+     *             required={"name", "event_starts_at", "event_ends_at", "location_id", "description", "registration_allowed_until", "cancellation_allowed_until"},
      *             @OA\Property(property="name", type="string", maxLength=25, description="PadelEvent name"),
      *             @OA\Property(property="description", type="string", description="Rich HTML description"),
-     *             @OA\Property(property="date", type="string", format="date", description="PadelEvent date"),
+     *             @OA\Property(property="event_starts_at", type="integer", format="timestamp", description="Unix timestamp when the edition starts"),
+     *             @OA\Property(property="event_ends_at", type="integer", format="timestamp", description="Unix timestamp when the edition ends"),
      *             @OA\Property(property="location_id", type="integer", description="Location ID"),
      *             @OA\Property(property="organizer_id", type="integer", nullable=true, description="Organizer branding owner"),
      *             @OA\Property(property="include_club_host_on_pdf", type="boolean", description="Whether posters show the hosting club logo"),
-     *             @OA\Property(property="arriving_time", type="string", format="time", description="Arriving time"),
-     *             @OA\Property(property="closing_time", type="string", format="time", description="Closing time"),
      *             @OA\Property(property="registration_allowed_until", type="integer", format="timestamp", description="Unix timestamp until which players may register"),
      *             @OA\Property(property="cancellation_allowed_until", type="integer", format="timestamp", description="Unix timestamp until which players may self-cancel")
      *         )
@@ -359,31 +360,32 @@ class EventController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
         $request->validate([
             'name' => ['required', 'string', 'max:25', new EventNameSlugable()],
             'description' => 'required|string',
-            'date' => 'required|date',
+            'event_starts_at' => 'required|integer|min:0',
+            'event_ends_at' => 'required|integer|min:0',
             'location_id' => 'required|exists:locations,id_location',
             'organizer_id' => 'nullable|integer|exists:organizers,id_organizer',
             'include_club_host_on_pdf' => 'sometimes|boolean',
             'registration_allowed_until' => 'required|integer|min:0',
             'cancellation_allowed_until' => 'required|integer|min:0',
-            'arriving_time' => ['required', PlayingWindow::clockRegexRule()],
-            'closing_time' => ['required', PlayingWindow::clockRegexRule()],
+            'date' => 'prohibited',
+            'arriving_time' => 'prohibited',
+            'closing_time' => 'prohibited',
+            'cover_path' => 'prohibited',
         ]);
 
         $payload = $request->all();
         $payload['description'] = $this->sanitizeDescriptionOrFail((string) $payload['description']);
-        $payload['arriving_time'] = PlayingWindow::normalizeStoredTime((string) $payload['arriving_time']);
-        $payload['closing_time'] = PlayingWindow::normalizeStoredTime((string) $payload['closing_time']);
-        $this->assertDistinctArrivingClosingWindow(
-            (string) $payload['arriving_time'],
-            (string) $payload['closing_time']
+        $this->assertEventWindowOrdering(
+            (int) $payload['event_starts_at'],
+            (int) $payload['event_ends_at']
         );
         if ($request->has('include_club_host_on_pdf')) {
             $payload['include_club_host_on_pdf'] = $request->boolean('include_club_host_on_pdf');
         }
-        unset($payload['cover_path'], $payload['cover_url'], $payload['slug']);
+        unset($payload['cover_path'], $payload['cover_url'], $payload['cover_images'], $payload['slug']);
 
         EventDeadlineValidator::assertOrdering([
-            'date' => $payload['date'],
+            'event_starts_at' => $payload['event_starts_at'],
             'registration_allowed_until' => $payload['registration_allowed_until'],
             'cancellation_allowed_until' => $payload['cancellation_allowed_until'],
         ]);
@@ -422,12 +424,11 @@ class EventController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *         @OA\JsonContent(
      *             @OA\Property(property="name", type="string", maxLength=25, description="PadelEvent name"),
      *             @OA\Property(property="description", type="string", description="Rich HTML description"),
-     *             @OA\Property(property="date", type="string", format="date", description="PadelEvent date"),
+     *             @OA\Property(property="event_starts_at", type="integer", format="timestamp", description="Unix timestamp when the edition starts"),
+     *             @OA\Property(property="event_ends_at", type="integer", format="timestamp", description="Unix timestamp when the edition ends"),
      *             @OA\Property(property="location_id", type="integer", description="Location ID"),
      *             @OA\Property(property="organizer_id", type="integer", nullable=true, description="Organizer branding owner"),
      *             @OA\Property(property="include_club_host_on_pdf", type="boolean", description="Whether posters show the hosting club logo"),
-     *             @OA\Property(property="arriving_time", type="string", format="time", description="Arriving time"),
-     *             @OA\Property(property="closing_time", type="string", format="time", description="Closing time"),
      *             @OA\Property(property="registration_allowed_until", type="integer", format="timestamp", description="Unix timestamp until which players may register"),
      *             @OA\Property(property="cancellation_allowed_until", type="integer", format="timestamp", description="Unix timestamp until which players may self-cancel")
      *         )
@@ -478,45 +479,39 @@ class EventController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
         $request->validate([
             'name' => ['sometimes', 'string', 'max:25', new EventNameSlugable()],
             'description' => 'sometimes|string',
-            'date' => 'sometimes|date',
-            'location_id' => 'nullable|exists:locations,id',
+            'event_starts_at' => 'sometimes|integer|min:0',
+            'event_ends_at' => 'sometimes|integer|min:0',
+            'location_id' => 'nullable|exists:locations,id_location',
             'organizer_id' => 'nullable|integer|exists:organizers,id_organizer',
             'include_club_host_on_pdf' => 'sometimes|boolean',
             'registration_allowed_until' => 'sometimes|integer|min:0',
             'cancellation_allowed_until' => 'sometimes|integer|min:0',
-            'arriving_time' => ['nullable', PlayingWindow::clockRegexRule()],
-            'closing_time' => ['nullable', PlayingWindow::clockRegexRule()],
+            'date' => 'prohibited',
+            'arriving_time' => 'prohibited',
+            'closing_time' => 'prohibited',
+            'cover_path' => 'prohibited',
         ]);
 
         $payload = $request->all();
         if (array_key_exists('description', $payload)) {
             $payload['description'] = $this->sanitizeDescriptionOrFail((string) $payload['description']);
         }
-        if (array_key_exists('arriving_time', $payload) && $payload['arriving_time'] !== null && $payload['arriving_time'] !== '') {
-            $payload['arriving_time'] = PlayingWindow::normalizeStoredTime((string) $payload['arriving_time']);
-        }
-        if (array_key_exists('closing_time', $payload) && $payload['closing_time'] !== null && $payload['closing_time'] !== '') {
-            $payload['closing_time'] = PlayingWindow::normalizeStoredTime((string) $payload['closing_time']);
-        }
-        if (
-            (array_key_exists('arriving_time', $payload) && $payload['arriving_time'] !== null && $payload['arriving_time'] !== '')
-            || (array_key_exists('closing_time', $payload) && $payload['closing_time'] !== null && $payload['closing_time'] !== '')
-        ) {
-            $this->assertDistinctArrivingClosingWindow(
-                (string) ($payload['arriving_time'] ?? $event->getAttributes()['arriving_time']),
-                (string) ($payload['closing_time'] ?? $event->getAttributes()['closing_time'])
+        if (array_key_exists('event_starts_at', $payload) || array_key_exists('event_ends_at', $payload)) {
+            $this->assertEventWindowOrdering(
+                (int) ($payload['event_starts_at'] ?? $event->event_starts_at),
+                (int) ($payload['event_ends_at'] ?? $event->event_ends_at)
             );
         }
         if ($request->has('include_club_host_on_pdf')) {
             $payload['include_club_host_on_pdf'] = $request->boolean('include_club_host_on_pdf');
         }
-        unset($payload['cover_path'], $payload['cover_url'], $payload['slug']);
+        unset($payload['cover_path'], $payload['cover_url'], $payload['cover_images'], $payload['slug']);
 
-        if (array_key_exists('date', $payload)
+        if (array_key_exists('event_starts_at', $payload)
             || array_key_exists('registration_allowed_until', $payload)
             || array_key_exists('cancellation_allowed_until', $payload)) {
             EventDeadlineValidator::assertOrdering([
-                'date' => $payload['date'] ?? $event->date?->format('Y-m-d'),
+                'event_starts_at' => $payload['event_starts_at'] ?? $event->event_starts_at,
                 'registration_allowed_until' => $payload['registration_allowed_until'] ?? $event->registration_allowed_until,
                 'cancellation_allowed_until' => $payload['cancellation_allowed_until'] ?? $event->cancellation_allowed_until,
             ]);
@@ -700,14 +695,14 @@ class EventController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
         );
     }
 
-    private function assertDistinctArrivingClosingWindow(string $start, string $end): void
+    private function assertEventWindowOrdering(int $startsAt, int $endsAt): void
     {
-        if (PlayingWindow::windowsAreDistinct($start, $end)) {
+        if ($startsAt < $endsAt) {
             return;
         }
 
         throw ValidationException::withMessages([
-            'closing_time' => ['Arriving time and closing time must differ.'],
+            'event_ends_at' => ['Event start must be before event end.'],
         ]);
     }
 
@@ -716,20 +711,12 @@ class EventController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      */
     private function attendanceHeaderChanged(PadelEvent $event, array $payload): bool
     {
-        foreach (['name', 'date', 'arriving_time', 'closing_time', 'organizer_id'] as $field) {
+        foreach (['name', 'event_starts_at', 'event_ends_at', 'organizer_id'] as $field) {
             if (! array_key_exists($field, $payload)) {
                 continue;
             }
 
-            $incoming = $payload[$field];
-            $current = $event->getAttribute($field);
-
-            if ($field === 'arriving_time' || $field === 'closing_time') {
-                $incoming = PlayingWindow::toClockString($incoming);
-                $current = PlayingWindow::toClockString($current);
-            }
-
-            if ((string) $incoming !== (string) $current) {
+            if ((string) $payload[$field] !== (string) $event->getAttribute($field)) {
                 return true;
             }
         }
@@ -739,12 +726,12 @@ class EventController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
 
     private function ensureCoverPresent(PadelEvent $event): void
     {
-        if ($event->cover_path !== null && $event->cover_path !== '') {
+        if ($event->coverImages()->exists()) {
             return;
         }
 
         throw ValidationException::withMessages([
-            'cover_path' => ['A cover image is required before updating this edition.'],
+            'cover_images' => ['A cover image is required before updating this edition.'],
         ]);
     }
 

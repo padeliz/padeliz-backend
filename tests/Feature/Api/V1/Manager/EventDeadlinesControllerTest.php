@@ -7,19 +7,21 @@ namespace Tests\Feature\Api\V1\Manager;
 use App\Models\Club;
 use App\Models\Location;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Services\EventDeadlineTimestamps;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Schema;
 use Laravel\Sanctum\Sanctum;
+use Tests\Helpers\EventUnixTestHelper;
 use Tests\TestCase;
 
 class EventDeadlinesControllerTest extends TestCase
 {
     use RefreshDatabase;
+    use EventUnixTestHelper;
 
-    private Player $manager;
+    private User $manager;
 
     private Location $location;
 
@@ -27,7 +29,7 @@ class EventDeadlinesControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         $club = Club::factory()->create();
@@ -50,29 +52,27 @@ class EventDeadlinesControllerTest extends TestCase
 
     public function test_factory_sets_both_deadlines_with_valid_ordering(): void
     {
+        $window = $this->eventWindow('2026-12-01');
         $event = PadelEvent::factory()->create([
             'location_id' => $this->location->id_location,
-            'date' => '2026-12-01',
-            'registration_allowed_until' => EventDeadlineTimestamps::defaultDeadline('2026-12-01'),
-            'cancellation_allowed_until' => EventDeadlineTimestamps::defaultDeadline('2026-12-01'),
+            ...$window,
+            ...$this->deadlineFieldsForStartsAt($window['event_starts_at']),
         ]);
 
-        $start = EventDeadlineTimestamps::startOfEditionDay('2026-12-01');
-        $this->assertLessThanOrEqual($start, $event->registration_allowed_until);
+        $this->assertLessThan($event->event_starts_at, $event->registration_allowed_until);
         $this->assertLessThanOrEqual($event->registration_allowed_until, $event->cancellation_allowed_until);
     }
 
     public function test_store_requires_both_deadlines(): void
     {
         Sanctum::actingAs($this->manager);
+        $window = $this->eventWindow($this->futureEventYmd(10));
 
         $this->postJson('/api/v1/manager/events', [
             'name' => 'Needs Deadlines',
             'description' => '<p>Desc</p>',
-            'date' => now()->addDays(10)->format('Y-m-d'),
             'location_id' => $this->location->id_location,
-            'arriving_time' => '09:00:00',
-            'closing_time' => '18:00:00',
+            ...$window,
         ])->assertStatus(422)
             ->assertJsonValidationErrors(['registration_allowed_until', 'cancellation_allowed_until']);
     }
@@ -80,71 +80,64 @@ class EventDeadlinesControllerTest extends TestCase
     public function test_store_rejects_cancellation_after_registration(): void
     {
         Sanctum::actingAs($this->manager);
-        $date = now()->addDays(10)->format('Y-m-d');
-        $start = EventDeadlineTimestamps::startOfEditionDay($date);
+        $window = $this->eventWindow($this->futureEventYmd(10));
 
         $this->postJson('/api/v1/manager/events', [
             'name' => 'Bad Order',
             'description' => '<p>Desc</p>',
-            'date' => $date,
             'location_id' => $this->location->id_location,
-            'arriving_time' => '09:00:00',
-            'closing_time' => '18:00:00',
-            'registration_allowed_until' => $start - 10_000,
-            'cancellation_allowed_until' => $start - 1000,
+            ...$window,
+            'registration_allowed_until' => $window['event_starts_at'] - 10_000,
+            'cancellation_allowed_until' => $window['event_starts_at'] - 1000,
         ])->assertStatus(422)
             ->assertJsonValidationErrors(['cancellation_allowed_until']);
     }
 
-    public function test_store_rejects_registration_after_start_of_edition_day(): void
+    public function test_store_rejects_registration_at_or_after_event_starts_at(): void
     {
         Sanctum::actingAs($this->manager);
-        $date = now()->addDays(10)->format('Y-m-d');
-        $start = EventDeadlineTimestamps::startOfEditionDay($date);
+        $window = $this->eventWindow($this->futureEventYmd(10));
 
         $this->postJson('/api/v1/manager/events', [
             'name' => 'Too Late',
             'description' => '<p>Desc</p>',
-            'date' => $date,
             'location_id' => $this->location->id_location,
-            'arriving_time' => '09:00:00',
-            'closing_time' => '18:00:00',
-            'registration_allowed_until' => $start + 60,
-            'cancellation_allowed_until' => $start - 60,
+            ...$window,
+            'registration_allowed_until' => $window['event_starts_at'],
+            'cancellation_allowed_until' => $window['event_starts_at'] - 60,
         ])->assertStatus(422)
             ->assertJsonValidationErrors(['registration_allowed_until']);
     }
 
-    public function test_patch_omit_deadlines_ok_and_date_move_validates(): void
+    public function test_patch_omit_deadlines_ok_and_start_move_validates(): void
     {
         Sanctum::actingAs($this->manager);
-        $date = now()->addDays(20)->format('Y-m-d');
-        $deadline = EventDeadlineTimestamps::defaultDeadline($date);
+        $window = $this->eventWindow($this->futureEventYmd(20));
         $event = PadelEvent::factory()->create([
             'location_id' => $this->location->id_location,
-            'date' => $date,
-            'registration_allowed_until' => $deadline,
-            'cancellation_allowed_until' => $deadline,
+            ...$window,
+            ...$this->deadlineFieldsForStartsAt($window['event_starts_at']),
         ]);
+        $this->attachCover($event);
 
         $this->patchJson("/api/v1/manager/events/{$event->id_event}", [
             'name' => 'Renamed',
         ])->assertStatus(200);
 
-        $earlyDate = now()->addDays(1)->format('Y-m-d');
+        $earlyWindow = $this->eventWindow($this->futureEventYmd(1));
         $this->patchJson("/api/v1/manager/events/{$event->id_event}", [
-            'date' => $earlyDate,
+            ...$earlyWindow,
         ])->assertStatus(422);
     }
 
     public function test_resource_exposes_both_deadline_fields(): void
     {
         Sanctum::actingAs($this->manager);
-        $date = now()->addDays(12)->format('Y-m-d');
-        $deadline = EventDeadlineTimestamps::defaultDeadline($date);
+        $window = $this->eventWindow($this->futureEventYmd(12));
+        $deadline = EventDeadlineTimestamps::defaultDeadline($window['event_starts_at']);
         $event = PadelEvent::factory()->create([
             'location_id' => $this->location->id_location,
-            'date' => $date,
+            ...$window,
             'registration_allowed_until' => $deadline,
             'cancellation_allowed_until' => $deadline - 100,
         ]);

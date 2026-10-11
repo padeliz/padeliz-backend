@@ -125,7 +125,7 @@ final class ScheduleGenerationService
         );
 
         return [
-            'player_ids' => $playerIds,
+            'player_user_ids' => $playerIds,
             'opponents_per_player' => $opponentsPerPlayer,
             'repeat_partners' => $repeatPartners,
             'court_names' => $courtNames,

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
-use App\Models\Player;
+use App\Models\User;
 use App\Services\Pdf\PdfCachedImageGenerator;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -33,9 +33,9 @@ class CachedPdfPairImageController extends V1BaseController
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"player_1_id", "player_2_id", "player_1_is_collecting_points", "player_2_is_collecting_points"},
-     *             @OA\Property(property="player_1_id", type="integer"),
-     *             @OA\Property(property="player_2_id", type="integer"),
+     *             required={"player_1_user_id", "player_2_user_id", "player_1_is_collecting_points", "player_2_is_collecting_points"},
+     *             @OA\Property(property="player_1_user_id", type="integer"),
+     *             @OA\Property(property="player_2_user_id", type="integer"),
      *             @OA\Property(property="player_1_is_collecting_points", type="boolean"),
      *             @OA\Property(property="player_2_is_collecting_points", type="boolean")
      *         )
@@ -49,14 +49,14 @@ class CachedPdfPairImageController extends V1BaseController
     public function store(Request $request): JsonResponse
     {
         $validated = $request->validate([
-            'player_1_id' => ['required', 'integer', 'different:player_2_id', 'exists:players,id_player'],
-            'player_2_id' => ['required', 'integer', 'exists:players,id_player'],
+            'player_1_user_id' => ['required', 'integer', 'different:player_2_user_id', 'exists:users,id_user'],
+            'player_2_user_id' => ['required', 'integer', 'exists:users,id_user'],
             'player_1_is_collecting_points' => ['required', 'boolean'],
             'player_2_is_collecting_points' => ['required', 'boolean'],
         ]);
 
-        $player1 = Player::query()->findOrFail((int) $validated['player_1_id']);
-        $player2 = Player::query()->findOrFail((int) $validated['player_2_id']);
+        $player1 = User::query()->findOrFail((int) $validated['player_1_user_id']);
+        $player2 = User::query()->findOrFail((int) $validated['player_2_user_id']);
 
         try {
             $url = $this->pdfCachedImageGenerator->generatePairImageUrl(
@@ -68,7 +68,7 @@ class CachedPdfPairImageController extends V1BaseController
         } catch (\Throwable $e) {
             return response()->json([
                 'message' => $e->getMessage() !== '' ? $e->getMessage() : 'Failed to generate PDF pair image.',
-                'player_ids' => [(int) $player1->id_player, (int) $player2->id_player],
+                'player_user_ids' => [(int) $player1->id_user, (int) $player2->id_user],
                 'code' => 'pdf_pair_image_failed',
             ], 422);
         }

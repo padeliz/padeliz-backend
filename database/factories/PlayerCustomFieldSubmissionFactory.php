@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerCustomFieldSubmission;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -18,9 +18,9 @@ class PlayerCustomFieldSubmissionFactory extends Factory
     public function definition(): array
     {
         return [
-            'player_id' => Player::factory(),
+            'player_user_id' => User::factory(),
             'submitted_via' => PlayerCustomFieldSubmission::SUBMITTED_VIA_APP,
-            'submitted_by_player_id' => null,
+            'submitted_by_player_user_id' => null,
             'inserted_at' => time(),
             'updated_at' => null,
         ];
@@ -30,7 +30,7 @@ class PlayerCustomFieldSubmissionFactory extends Factory
     {
         return $this->state(fn (): array => [
             'submitted_via' => PlayerCustomFieldSubmission::SUBMITTED_VIA_MANAGER,
-            'submitted_by_player_id' => $submittedByPlayerId,
+            'submitted_by_manager_user_id' => $submittedByPlayerId,
         ]);
     }
 

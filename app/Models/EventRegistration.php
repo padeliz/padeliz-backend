@@ -20,7 +20,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @OA\Schema(
  *     schema="EventRegistration",
- *     required={"event_id", "player_id", "is_minor", "is_student", "payment"},
+ *     required={"event_id", "player_user_id", "is_minor", "is_student", "payment"},
  *     @OA\Property(
  *         property="id_registration",
  *         type="integer",
@@ -38,7 +38,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *         description="Foreign key - References PadelEvent.id_event"
  *     ),
  *     @OA\Property(
- *         property="player_id",
+ *         property="player_user_id",
  *         type="integer",
  *         format="int64",
  *         minimum=1,
@@ -108,7 +108,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *     ),
  *     @OA\Property(
  *         property="player",
- *         ref="#/components/schemas/Player",
+ *         ref="#/components/schemas/User",
  *         title="Player",
  *         description="Related player object",
  *         nullable=true
@@ -131,7 +131,7 @@ class EventRegistration extends Model
 
     public static array $filterableFields = [
         'event_id',
-        'player_id',
+        'player_user_id',
         'event_division_id',
         'is_minor',
         'is_student',
@@ -144,7 +144,7 @@ class EventRegistration extends Model
     public static array $sortableFields = [
         'id_registration',
         'event_id',
-        'player_id',
+        'player_user_id',
         'event_division_id',
         'is_minor',
         'is_student',
@@ -166,7 +166,7 @@ class EventRegistration extends Model
      */
     public static array $listFields = [
         'player.profile_image_url',
-        'player_id',
+        'player_user_id',
         'event_division_id',
     ];
 
@@ -183,7 +183,7 @@ class EventRegistration extends Model
 
     protected $fillable = [
         'event_id',
-        'player_id',
+        'player_user_id',
         'event_division_id',
         'is_minor',
         'is_student',
@@ -222,7 +222,7 @@ class EventRegistration extends Model
 
     public function player(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'player_id');
+        return $this->belongsTo(User::class, 'player_user_id');
     }
 
     public function eventDivision(): BelongsTo
@@ -325,14 +325,14 @@ class EventRegistration extends Model
     {
         return static::query()
             ->where('event_id', $editionId)
-            ->where('player_id', $playerId)
+            ->where('player_user_id', $playerId)
             ->where('lifecycle_status', RegistrationLifecycleStatus::Declined->value)
             ->exists();
     }
 
     /**
      * XOR uniqueness among active rows: either one NULL event_division_id row,
-     * or one or more specific edition divisions, not both, per (event_id, player_id).
+     * or one or more specific edition divisions, not both, per (event_id, player_user_id).
      *
      * @return null|array<string, array<int, string>>
      */
@@ -353,7 +353,7 @@ class EventRegistration extends Model
         $query = static::query()
             ->active()
             ->where('event_id', $editionId)
-            ->where('player_id', $playerId);
+            ->where('player_user_id', $playerId);
 
         if ($ignoreRegistrationId !== null) {
             $query->where('id_registration', '!=', $ignoreRegistrationId);

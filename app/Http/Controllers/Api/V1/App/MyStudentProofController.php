@@ -9,7 +9,7 @@ use App\Http\Requests\App\PlayerStudentProofFileRequest;
 use App\Http\Requests\App\PlayerStudentProofUpdateRequest;
 use App\Http\Requests\App\PlayerStudentProofUploadRequest;
 use App\Http\Resources\PlayerStudentProofResource;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerStudentProof;
 use App\Services\StudentProof\StudentProofService;
 use Illuminate\Http\JsonResponse;
@@ -42,17 +42,17 @@ class MyStudentProofController extends V1BaseController
      */
     public function index(Request $request): JsonResponse
     {
-        /** @var Player $player */
+        /** @var User $player */
         $player = $request->user();
 
         $proofs = PlayerStudentProof::query()
-            ->where('player_id', $player->id_player)
+            ->where('player_user_id', $player->id_user)
             ->orderByDesc('inserted_at')
             ->orderByDesc('id_player_student_proof')
             ->with('files')
             ->get();
 
-        $pending = $this->proofs->getPending((int) $player->id_player)?->load('files');
+        $pending = $this->proofs->getPending((int) $player->id_user)?->load('files');
 
         return $this->successResponse([
             'has_active' => PlayerStudentProof::hasActiveFor($player),
@@ -73,7 +73,7 @@ class MyStudentProofController extends V1BaseController
      */
     public function showPending(Request $request): JsonResponse
     {
-        $pending = $this->proofs->getPending((int) $request->user()->id_player);
+        $pending = $this->proofs->getPending((int) $request->user()->id_user);
 
         if ($pending === null) {
             return $this->notFoundResponse('No pending student proof found');
@@ -106,7 +106,7 @@ class MyStudentProofController extends V1BaseController
      */
     public function store(PlayerStudentProofUploadRequest $request): JsonResponse
     {
-        /** @var Player $player */
+        /** @var User $player */
         $player = $request->user();
 
         try {
@@ -119,7 +119,7 @@ class MyStudentProofController extends V1BaseController
             throw $e;
         } catch (\Throwable $e) {
             Log::error('MyStudentProofController::store - Error storing student proof', [
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'error' => $e->getMessage(),
             ]);
 
@@ -150,7 +150,7 @@ class MyStudentProofController extends V1BaseController
      */
     public function updatePending(PlayerStudentProofUpdateRequest $request): JsonResponse
     {
-        $pending = $this->proofs->getPending((int) $request->user()->id_player);
+        $pending = $this->proofs->getPending((int) $request->user()->id_user);
 
         if ($pending === null) {
             return $this->notFoundResponse('No pending student proof found');
@@ -182,7 +182,7 @@ class MyStudentProofController extends V1BaseController
     public function addFile(PlayerStudentProofFileRequest $request): JsonResponse
     {
         $player = $request->user();
-        $pending = $this->proofs->getPending((int) $player->id_player);
+        $pending = $this->proofs->getPending((int) $player->id_user);
 
         if ($pending === null) {
             return $this->notFoundResponse('No pending student proof found');
@@ -194,7 +194,7 @@ class MyStudentProofController extends V1BaseController
             throw $e;
         } catch (\Throwable $e) {
             Log::error('MyStudentProofController::addFile - Error storing student proof file', [
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'error' => $e->getMessage(),
             ]);
 
@@ -221,7 +221,7 @@ class MyStudentProofController extends V1BaseController
      */
     public function removeFile(Request $request, int $file): JsonResponse
     {
-        $pending = $this->proofs->getPending((int) $request->user()->id_player);
+        $pending = $this->proofs->getPending((int) $request->user()->id_user);
 
         if ($pending === null) {
             return $this->notFoundResponse('No pending student proof found');
@@ -250,7 +250,7 @@ class MyStudentProofController extends V1BaseController
      */
     public function markReady(Request $request): JsonResponse
     {
-        $pending = $this->proofs->getPending((int) $request->user()->id_player);
+        $pending = $this->proofs->getPending((int) $request->user()->id_user);
 
         if ($pending === null) {
             return $this->notFoundResponse('No pending student proof found');
@@ -273,7 +273,7 @@ class MyStudentProofController extends V1BaseController
      */
     public function reopen(Request $request): JsonResponse
     {
-        $pending = $this->proofs->getPending((int) $request->user()->id_player);
+        $pending = $this->proofs->getPending((int) $request->user()->id_user);
 
         if ($pending === null) {
             return $this->notFoundResponse('No pending student proof found');
@@ -295,7 +295,7 @@ class MyStudentProofController extends V1BaseController
      */
     public function discard(Request $request): JsonResponse
     {
-        $pending = $this->proofs->getPending((int) $request->user()->id_player);
+        $pending = $this->proofs->getPending((int) $request->user()->id_user);
 
         if ($pending === null) {
             return $this->successResponse(null, 'No pending student proof to discard');

@@ -25,13 +25,13 @@ final class CachedPdfAvatarAttacher
             if (! is_array($row)) {
                 continue;
             }
-            $playerId = (int) ($row['player_id'] ?? 0);
+            $playerId = (int) ($row['player_user_id'] ?? 0);
             if ($playerId < 1) {
                 continue;
             }
             $collecting = (bool) ($row['is_collecting_points'] ?? false);
             $pairs[$playerId . ':' . ($collecting ? '1' : '0')] = [
-                'player_id' => $playerId,
+                'player_user_id' => $playerId,
                 'collecting' => $collecting,
             ];
         }
@@ -42,7 +42,7 @@ final class CachedPdfAvatarAttacher
             if (! is_array($row)) {
                 continue;
             }
-            $playerId = (int) ($row['player_id'] ?? 0);
+            $playerId = (int) ($row['player_user_id'] ?? 0);
             if ($playerId < 1) {
                 $row['pdf_avatar_url'] = null;
 
@@ -73,13 +73,13 @@ final class CachedPdfAvatarAttacher
             if (! $participation instanceof EventParticipation) {
                 continue;
             }
-            $playerId = (int) $participation->player_id;
+            $playerId = (int) $participation->player_user_id;
             if ($playerId < 1) {
                 continue;
             }
             $collecting = (bool) $participation->is_collecting_points;
             $pairs[$playerId . ':' . ($collecting ? '1' : '0')] = [
-                'player_id' => $playerId,
+                'player_user_id' => $playerId,
                 'collecting' => $collecting,
             ];
         }
@@ -90,7 +90,7 @@ final class CachedPdfAvatarAttacher
             if (! $participation instanceof EventParticipation) {
                 continue;
             }
-            $playerId = (int) $participation->player_id;
+            $playerId = (int) $participation->player_user_id;
             if ($playerId < 1) {
                 $participation->setAttribute('pdf_avatar_url', null);
 
@@ -119,7 +119,7 @@ final class CachedPdfAvatarAttacher
             if (! is_array($row)) {
                 continue;
             }
-            $id = (int) ($row['id_player'] ?? 0);
+            $id = (int) ($row['id_user'] ?? 0);
             if ($id > 0) {
                 $playerIds[$id] = $id;
             }
@@ -135,7 +135,7 @@ final class CachedPdfAvatarAttacher
             if (! is_array($row)) {
                 continue;
             }
-            $id = (int) ($row['id_player'] ?? 0);
+            $id = (int) ($row['id_user'] ?? 0);
             $row['pdf_avatar_url'] = $id > 0 ? ($urls[$id] ?? null) : null;
         }
         unset($row);
@@ -148,7 +148,7 @@ final class CachedPdfAvatarAttacher
      */
     public function overlayPlayerOnArray(array &$player): void
     {
-        $id = (int) ($player['id_player'] ?? 0);
+        $id = (int) ($player['id_user'] ?? 0);
         $player['pdf_avatar_url'] = $id > 0
             ? CachedPdfPlayerImage::urlForPlayerPreferCollecting($id)
             : null;
@@ -165,7 +165,7 @@ final class CachedPdfAvatarAttacher
     private function cachedImagesPayload(int $playerId): array
     {
         return CachedPdfPlayerImage::query()
-            ->where('player_id', $playerId)
+            ->where('player_user_id', $playerId)
             ->orderByDesc('player_is_collecting_points')
             ->get()
             ->map(static fn (CachedPdfPlayerImage $image): array => [
@@ -186,8 +186,8 @@ final class CachedPdfAvatarAttacher
     {
         $pairs = [];
         foreach ($playerIds as $playerId) {
-            $pairs[] = ['player_id' => $playerId, 'collecting' => true];
-            $pairs[] = ['player_id' => $playerId, 'collecting' => false];
+            $pairs[] = ['player_user_id' => $playerId, 'collecting' => true];
+            $pairs[] = ['player_user_id' => $playerId, 'collecting' => false];
         }
 
         $byKey = CachedPdfPlayerImage::urlsByPlayerCollectingPairs($pairs);

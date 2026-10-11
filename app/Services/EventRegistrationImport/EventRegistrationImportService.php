@@ -9,9 +9,9 @@ use App\Enums\Registration\RegistrationPaymentStatus;
 use App\Models\EventDivision;
 use App\Models\EventRegistration;
 use App\Models\PadelEvent;
-use App\Models\Player;
-use App\Services\PlayerImport\PlayerCsvFormatRegistry;
-use App\Services\PlayerImport\PlayerImportMapper;
+use App\Models\User;
+use App\Services\UserImport\UserCsvFormatRegistry;
+use App\Services\UserImport\UserImportMapper;
 use App\Support\PlayerNameSplitter;
 use App\Support\PlayerPhoneNormalizer;
 use Illuminate\Http\UploadedFile;
@@ -33,8 +33,8 @@ final class EventRegistrationImportService
     ];
 
     public function __construct(
-        private readonly PlayerCsvFormatRegistry $registry,
-        private readonly PlayerImportMapper $mapper,
+        private readonly UserCsvFormatRegistry $registry,
+        private readonly UserImportMapper $mapper,
     ) {
     }
 
@@ -74,8 +74,8 @@ final class EventRegistrationImportService
         $mappedPlayerIds = [];
         foreach ($mapped as $row) {
             $player = $row['mapping']['player'] ?? null;
-            if ($row['mapping']['status'] === 'mapped' && $player instanceof Player) {
-                $mappedPlayerIds[(int) $player->id_player] = true;
+            if ($row['mapping']['status'] === 'mapped' && $player instanceof User) {
+                $mappedPlayerIds[(int) $player->id_user] = true;
             }
         }
 
@@ -84,8 +84,8 @@ final class EventRegistrationImportService
             $alreadyRegistered = EventRegistration::query()
                 ->active()
                 ->where('event_id', $event->id_event)
-                ->whereIn('player_id', array_keys($mappedPlayerIds))
-                ->pluck('player_id')
+                ->whereIn('player_user_id', array_keys($mappedPlayerIds))
+                ->pluck('player_user_id')
                 ->map(static fn ($id): int => (int) $id)
                 ->unique()
                 ->flip()
@@ -96,8 +96,8 @@ final class EventRegistrationImportService
         foreach ($mapped as $row) {
             $player = $row['mapping']['player'] ?? null;
             $already = false;
-            if ($row['mapping']['status'] === 'mapped' && $player instanceof Player) {
-                $already = isset($alreadyRegistered[(int) $player->id_player]);
+            if ($row['mapping']['status'] === 'mapped' && $player instanceof User) {
+                $already = isset($alreadyRegistered[(int) $player->id_user]);
             }
 
             $rows[] = [
@@ -125,7 +125,7 @@ final class EventRegistrationImportService
      *     skipped_already_registered: int,
      *     skipped_unmapped: int,
      *     skipped_conflict: int,
-     *     rows: list<array{index: int, player_id: ?int, action: string, registration_id: ?int}>
+     *     rows: list<array{index: int, player_user_id: ?int, action: string, registration_id: ?int}>
      * }
      */
     public function save(PadelEvent $event, array $payload): array
@@ -193,7 +193,7 @@ final class EventRegistrationImportService
             $seenPlayerIds = EventRegistration::query()
                 ->active()
                 ->where('event_id', $editionId)
-                ->pluck('player_id')
+                ->pluck('player_user_id')
                 ->map(static fn ($id): int => (int) $id)
                 ->flip()
                 ->all();
@@ -206,14 +206,14 @@ final class EventRegistrationImportService
 
             foreach ($prepared as $row) {
                 $index = $row['index'];
-                $playerId = $row['player_id'];
+                $playerId = $row['player_user_id'];
                 $status = $row['status'];
 
                 if ($status === 'unmapped' || $playerId === null) {
                     $skippedUnmapped++;
                     $outRows[] = [
                         'index' => $index,
-                        'player_id' => $playerId,
+                        'player_user_id' => $playerId,
                         'action' => 'skipped_unmapped',
                         'registration_id' => null,
                     ];
@@ -225,7 +225,7 @@ final class EventRegistrationImportService
                     $skippedConflict++;
                     $outRows[] = [
                         'index' => $index,
-                        'player_id' => $playerId,
+                        'player_user_id' => $playerId,
                         'action' => 'skipped_conflict',
                         'registration_id' => null,
                     ];
@@ -237,7 +237,7 @@ final class EventRegistrationImportService
                     $skippedAlready++;
                     $outRows[] = [
                         'index' => $index,
-                        'player_id' => $playerId,
+                        'player_user_id' => $playerId,
                         'action' => 'skipped_already_registered',
                         'registration_id' => null,
                     ];
@@ -249,7 +249,7 @@ final class EventRegistrationImportService
                     $skippedConflict++;
                     $outRows[] = [
                         'index' => $index,
-                        'player_id' => $playerId,
+                        'player_user_id' => $playerId,
                         'action' => 'skipped_conflict',
                         'registration_id' => null,
                     ];
@@ -259,7 +259,7 @@ final class EventRegistrationImportService
 
                 $registration = EventRegistration::create([
                     'event_id' => $editionId,
-                    'player_id' => $playerId,
+                    'player_user_id' => $playerId,
                     'event_division_id' => $eventDivisionId,
                     'is_minor' => false,
                     'is_student' => false,
@@ -273,7 +273,7 @@ final class EventRegistrationImportService
                 $registered++;
                 $outRows[] = [
                     'index' => $index,
-                    'player_id' => $playerId,
+                    'player_user_id' => $playerId,
                     'action' => 'registered',
                     'registration_id' => (int) $registration->id_registration,
                 ];
@@ -400,7 +400,7 @@ final class EventRegistrationImportService
      *     last_name: ?string,
      *     email: string,
      *     phone: string,
-     *     player_id: ?int,
+     *     player_user_id: ?int,
      *     status: string
      * }
      */
@@ -418,7 +418,7 @@ final class EventRegistrationImportService
             ? trim((string) $row['last_name'])
             : '';
 
-        $playerId = $row['player_id'] ?? null;
+        $playerId = $row['player_user_id'] ?? null;
         if ($playerId === '' || $playerId === false) {
             $playerId = null;
         }
@@ -435,7 +435,7 @@ final class EventRegistrationImportService
             'last_name' => $last === '' ? null : $last,
             'email' => $email,
             'phone' => $phone,
-            'player_id' => $playerId,
+            'player_user_id' => $playerId,
             'status' => $status,
         ];
     }
@@ -448,7 +448,7 @@ final class EventRegistrationImportService
      *     last_name: ?string,
      *     email: string,
      *     phone: string,
-     *     player_id: ?int,
+     *     player_user_id: ?int,
      *     status: string
      * }>  $rows
      */
@@ -460,12 +460,12 @@ final class EventRegistrationImportService
             $index = $row['index'];
             $prefix = 'rows.' . $index;
 
-            if ($row['status'] === 'unmapped' || $row['player_id'] === null || $row['status'] === 'conflict') {
+            if ($row['status'] === 'unmapped' || $row['player_user_id'] === null || $row['status'] === 'conflict') {
                 continue;
             }
 
-            if (! Player::query()->whereKey($row['player_id'])->exists()) {
-                $errors[$prefix . '.player_id'][] = 'The selected player does not exist.';
+            if (! User::query()->whereKey($row['player_user_id'])->exists()) {
+                $errors[$prefix . '.player_user_id'][] = 'The selected player does not exist.';
             }
         }
 

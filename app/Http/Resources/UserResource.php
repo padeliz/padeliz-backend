@@ -1,0 +1,89 @@
+<?php
+
+declare(strict_types=1);
+
+namespace App\Http\Resources;
+
+use App\Models\PlayerProfileImage;
+use App\Services\PlayerProfileImage\PlayerProfileImageResolver;
+use Illuminate\Http\Request;
+use Illuminate\Http\Resources\Json\JsonResource;
+
+class UserResource extends JsonResource
+{
+    /**
+     * Transform the resource into an array.
+     *
+     * @return array<string, mixed>
+     */
+    public function toArray(Request $request): array
+    {
+        return [
+            'id_user' => $this->id_user,
+            'name' => $this->name,
+            'first_name' => $this->first_name,
+            'middle_name' => $this->middle_name,
+            'last_name' => $this->last_name,
+            'user_types' => $this->user_types,
+            'created_via' => $this->created_via,
+            'created_via_format' => $this->created_via_format,
+            'created_via_user_import_id' => $this->created_via_user_import_id,
+            'pdf_avatar_url' => $this->pdfAvatarUrl(),
+            'profile_image_url' => $this->profileImageUrl(),
+            'inserted_at' => $this->inserted_at,
+            'updated_at' => $this->updated_at,
+            'emails' => $this->whenLoaded('emails', function () {
+                return $this->emails->map(static fn ($email) => [
+                    'id_user_email' => $email->id_user_email,
+                    'email' => $email->email,
+                    'purposes' => $email->purposes,
+                    'is_primary' => $email->is_primary,
+                    'verified_at' => $email->verified_at,
+                ])->values()->all();
+            }),
+            'phones' => $this->whenLoaded('phones', function () {
+                return $this->phones->map(static fn ($phone) => [
+                    'id_user_phone' => $phone->id_user_phone,
+                    'phone' => $phone->phone,
+                    'purposes' => $phone->purposes,
+                    'is_primary' => $phone->is_primary,
+                    'verified_at' => $phone->verified_at,
+                ])->values()->all();
+            }),
+            'identities' => $this->whenLoaded('identities', function () {
+                return UserIdentityResource::collection(
+                    $this->identities->sortBy([
+                        ['linked_at', 'asc'],
+                        ['id_user_identity', 'asc'],
+                    ])->values()
+                )->resolve();
+            }),
+            'uploaded_profile_images' => $this->profileImages
+                ->map(static fn (PlayerProfileImage $img) => $img->toApiArray())
+                ->values()
+                ->all(),
+            'participations' => $this->whenLoaded('participations', function () {
+                return EventParticipationResource::collection($this->participations);
+            }),
+        ];
+    }
+
+    private function pdfAvatarUrl(): ?string
+    {
+        if (! $this->relationLoaded('cachedPdfImages')) {
+            return null;
+        }
+
+        $preferred = $this->cachedPdfImages->firstWhere('player_is_collecting_points', true)
+            ?? $this->cachedPdfImages->first();
+
+        return $preferred?->url;
+    }
+
+    private function profileImageUrl(): ?string
+    {
+        $resolved = app(PlayerProfileImageResolver::class)->resolveForPdf($this->resource);
+
+        return $resolved?->url;
+    }
+}

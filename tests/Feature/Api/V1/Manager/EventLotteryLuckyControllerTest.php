@@ -11,7 +11,7 @@ use App\Models\EventLotteryPrize;
 use App\Models\EventLotteryRule;
 use App\Models\EventParticipation;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\Prize;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -21,7 +21,7 @@ class EventLotteryLuckyControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
     private EventLotteryRule $lotteryRule;
 
@@ -31,7 +31,7 @@ class EventLotteryLuckyControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'first_name' => 'Test', 'middle_name' => null, 'last_name' => 'Manager',
             'user_types' => ['player', 'manager'],
         ]);
@@ -40,7 +40,7 @@ class EventLotteryLuckyControllerTest extends TestCase
         $eventDivision = EventDivision::factory()->create([
             'event_id' => $event->id_event,
         ]);
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
 
         $prize = Prize::factory()->create(['name' => 'Towel']);
         $lottery = EventLottery::factory()->create([
@@ -60,7 +60,7 @@ class EventLotteryLuckyControllerTest extends TestCase
 
         $this->participation = EventParticipation::factory()->create([
             'event_id' => $event->id_event,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_division_id' => $eventDivision->id_event_division,
         ]);
     }
@@ -112,9 +112,9 @@ class EventLotteryLuckyControllerTest extends TestCase
         $player->refresh();
 
         \App\Models\CachedPdfPlayerImage::query()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'player_is_collecting_points' => true,
-            'picture_path' => 'cached-pdf-player-images/' . $player->id_player . '/picture/avatar.png',
+            'picture_path' => 'cached-pdf-player-images/' . $player->id_user . '/picture/avatar.png',
         ]);
 
         $lucky = EventLotteryLucky::factory()->create([

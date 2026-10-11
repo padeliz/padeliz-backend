@@ -13,7 +13,7 @@ class ExpoPushService
     public function sendToPlayer(int $playerId, string $title, string $body, array $data = []): void
     {
         $tokens = PlayerDeviceToken::query()
-            ->where('player_id', $playerId)
+            ->where('player_user_id', $playerId)
             ->pluck('token')
             ->filter()
             ->values()
@@ -36,7 +36,7 @@ class ExpoPushService
                 ->post('https://exp.host/--/api/v2/push/send', $messages);
         } catch (\Throwable $e) {
             Log::warning('Expo push send failed', [
-                'player_id' => $playerId,
+                'player_user_id' => $playerId,
                 'error' => $e->getMessage(),
             ]);
         }

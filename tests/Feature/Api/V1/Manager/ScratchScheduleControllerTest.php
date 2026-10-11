@@ -8,7 +8,7 @@ use App\Models\EventDivisionStanding;
 use App\Models\GameMatch;
 use App\Models\MatchPlayer;
 use App\Models\MatchSide;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -17,7 +17,7 @@ class ScratchScheduleControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
     /** @var list<int> */
     private array $playerIds = [];
@@ -26,12 +26,12 @@ class ScratchScheduleControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
 
         for ($i = 0; $i < 8; $i++) {
-            $this->playerIds[] = Player::factory()->create()->id_player;
+            $this->playerIds[] = User::factory()->create()->id_user;
         }
     }
 
@@ -45,7 +45,7 @@ class ScratchScheduleControllerTest extends TestCase
         $standingsBefore = EventDivisionStanding::query()->count();
 
         $response = $this->postJson('/api/v1/manager/tools/schedule/preview', [
-            'player_ids' => $this->playerIds,
+            'player_user_ids' => $this->playerIds,
             'court_names' => ['Court A'],
             'player_opponents_nr' => 4,
             'player_matches_repeat' => 1,
@@ -59,7 +59,7 @@ class ScratchScheduleControllerTest extends TestCase
             ->assertJsonPath('success', true)
             ->assertJsonStructure([
                 'data' => [
-                    'player_ids',
+                    'player_user_ids',
                     'opponents_per_player',
                     'repeat_partners',
                     'court_names',
@@ -72,7 +72,7 @@ class ScratchScheduleControllerTest extends TestCase
                 ],
             ]);
 
-        $this->assertSame($this->playerIds, $response->json('data.player_ids'));
+        $this->assertSame($this->playerIds, $response->json('data.player_user_ids'));
         $this->assertSame(4, (int) $response->json('data.opponents_per_player'));
         $this->assertGreaterThan(0, (int) $response->json('data.matches_count'));
         $this->assertNotEmpty($response->json('data.matches_by_court'));
@@ -98,7 +98,7 @@ class ScratchScheduleControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $base = $this->postJson('/api/v1/manager/tools/schedule/preview', [
-            'player_ids' => $this->playerIds,
+            'player_user_ids' => $this->playerIds,
             'court_names' => ['Court A'],
             'opponents_per_player' => 4,
             'repeat_partners' => 1,
@@ -110,7 +110,7 @@ class ScratchScheduleControllerTest extends TestCase
         $basePpm = (int) $base->json('data.points_per_match');
 
         $adjusted = $this->postJson('/api/v1/manager/tools/schedule/preview', [
-            'player_ids' => $this->playerIds,
+            'player_user_ids' => $this->playerIds,
             'court_names' => ['Court A'],
             'opponents_per_player' => 4,
             'repeat_partners' => 1,
@@ -133,7 +133,7 @@ class ScratchScheduleControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $response = $this->postJson('/api/v1/manager/tools/schedule/preview', [
-            'player_ids' => $this->playerIds,
+            'player_user_ids' => $this->playerIds,
             'court_names' => ['Court A'],
             'opponents_per_player' => 4,
             'repeat_partners' => 1,
@@ -150,7 +150,7 @@ class ScratchScheduleControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $this->postJson('/api/v1/manager/tools/schedule/preview', [
-            'player_ids' => $this->playerIds,
+            'player_user_ids' => $this->playerIds,
             'court_names' => ['Court A'],
             'opponents_per_player' => 4,
             'repeat_partners' => 1,
@@ -166,7 +166,7 @@ class ScratchScheduleControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $response = $this->postJson('/api/v1/manager/tools/schedule/preview', [
-            'player_ids' => $this->playerIds,
+            'player_user_ids' => $this->playerIds,
             'court_names' => ['Court A'],
             'opponents_per_player' => 4,
             'repeat_partners' => 1,
@@ -188,7 +188,7 @@ class ScratchScheduleControllerTest extends TestCase
     public function test_preview_requires_authentication(): void
     {
         $this->postJson('/api/v1/manager/tools/schedule/preview', [
-            'player_ids' => $this->playerIds,
+            'player_user_ids' => $this->playerIds,
             'court_names' => ['Court A'],
             'player_opponents_nr' => 4,
             'playing_start_time' => '14:00:00',
@@ -202,10 +202,10 @@ class ScratchScheduleControllerTest extends TestCase
 
         $this->postJson('/api/v1/manager/tools/schedule/preview', [])
             ->assertStatus(422)
-            ->assertJsonValidationErrors(['player_ids', 'court_names']);
+            ->assertJsonValidationErrors(['player_user_ids', 'court_names']);
 
         $this->postJson('/api/v1/manager/tools/schedule/preview', [
-            'player_ids' => $this->playerIds,
+            'player_user_ids' => $this->playerIds,
             'court_names' => ['Court A'],
             'player_opponents_nr' => 4,
         ])->assertStatus(422);

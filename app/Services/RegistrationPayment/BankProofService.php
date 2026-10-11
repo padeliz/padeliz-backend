@@ -53,7 +53,7 @@ class BankProofService
             $this->checkoutService->markPayableItemsAwaitingProof($checkout);
 
             $this->expoPushService->notifyRegistrationStatus(
-                (int) $checkout->player_id,
+                (int) $checkout->player_user_id,
                 'awaiting_proof_review',
                 ['checkout_id' => $checkout->id_checkout]
             );
@@ -68,7 +68,7 @@ class BankProofService
         $checkout = $this->checkoutService->openCheckoutForRegistration($registration)
             ?? $this->checkoutService->openOrRefreshForUnpaid(
                 (int) $registration->event_id,
-                (int) $registration->player_id
+                (int) $registration->player_user_id
             );
 
         return $this->uploadForCheckout($checkout, $file);
@@ -86,7 +86,7 @@ class BankProofService
 
             $proof->review_status = PaymentProofReviewStatus::Approved;
             $proof->review_message = $message;
-            $proof->reviewed_by = $managerPlayerId;
+            $proof->reviewed_by_manager_user_id = $managerPlayerId;
             $proof->reviewed_at = time();
             $proof->save();
 
@@ -107,7 +107,7 @@ class BankProofService
 
             $proof->review_status = PaymentProofReviewStatus::Rejected;
             $proof->review_message = $message;
-            $proof->reviewed_by = $managerPlayerId;
+            $proof->reviewed_by_manager_user_id = $managerPlayerId;
             $proof->reviewed_at = time();
             $proof->save();
 
@@ -131,7 +131,7 @@ class BankProofService
                 $checkout->save();
 
                 $this->expoPushService->notifyRegistrationStatus(
-                    (int) $checkout->player_id,
+                    (int) $checkout->player_user_id,
                     'proof_rejected',
                     ['checkout_id' => $checkout->id_checkout]
                 );

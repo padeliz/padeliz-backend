@@ -86,7 +86,8 @@ class BenefitEntitlementController extends V1BaseController
     {
         $validated = $request->validate([
             'benefit_definition_id' => 'required|integer|exists:benefit_definitions,id_benefit',
-            'player_id' => 'required|integer|exists:players,id_player',
+            'player_user_id' => 'required|integer|exists:users,id_user',
+            'player_id' => 'prohibited',
             'remaining_uses' => 'nullable|integer|min:0',
             'valid_from' => 'nullable|integer|min:0',
             'valid_until' => 'nullable|integer|min:0',
@@ -101,7 +102,7 @@ class BenefitEntitlementController extends V1BaseController
 
         $entitlement = BenefitEntitlement::query()->create([
             'benefit_definition_id' => (int) $validated['benefit_definition_id'],
-            'player_id' => (int) $validated['player_id'],
+            'player_user_id' => (int) $validated['player_user_id'],
             'remaining_uses' => array_key_exists('remaining_uses', $validated)
                 ? $validated['remaining_uses']
                 : 1,

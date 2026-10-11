@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Services\Pdf;
 
 use App\Models\EventParticipation;
+use App\Services\EventCalendarTiming;
+use Carbon\Carbon;
 
 final class AttendancePdfLayout
 {
@@ -92,16 +94,65 @@ final class AttendancePdfLayout
         return $rows;
     }
 
+    /**
+     * Attendance PDF header date: ordinal single day, or compact multi-day range.
+     */
+    public static function formatAttendanceHeaderDate(int $eventStartsAt, int $eventEndsAt, int $eventNrOfDays): string
+    {
+        if ($eventNrOfDays <= 1) {
+            return self::formatOrdinalHeaderDate(EventCalendarTiming::dayYmd($eventStartsAt));
+        }
+
+        return self::formatCompactHeaderDateRange($eventStartsAt, $eventEndsAt);
+    }
+
+    /**
+     * Compact multi-day range (short months Jan..Dec, Europe/Bucharest).
+     */
+    public static function formatCompactHeaderDateRange(int $eventStartsAt, int $eventEndsAt): string
+    {
+        $tz = EventCalendarTiming::timezone();
+        $start = Carbon::createFromTimestamp($eventStartsAt, $tz);
+        $end = Carbon::createFromTimestamp($eventEndsAt, $tz);
+
+        $startDay = (int) $start->format('j');
+        $endDay = (int) $end->format('j');
+        $startMon = $start->format('M');
+        $endMon = $end->format('M');
+        $startYear = (int) $start->format('Y');
+        $endYear = (int) $end->format('Y');
+
+        if ($startYear === $endYear && $startMon === $endMon) {
+            return sprintf('%d-%d %s %d', $startDay, $endDay, $startMon, $startYear);
+        }
+
+        if ($startYear === $endYear) {
+            return sprintf('%d %s - %d %s', $startDay, $startMon, $endDay, $endMon);
+        }
+
+        return sprintf('%d %s %d - %d %s %d', $startDay, $startMon, $startYear, $endDay, $endMon, $endYear);
+    }
+
+    public static function formatAttendanceHeaderTimes(int $eventStartsAt, int $eventEndsAt): string
+    {
+        return EventCalendarTiming::formatHi($eventStartsAt) . ' – ' . EventCalendarTiming::formatHi($eventEndsAt);
+    }
+
     public static function formatOrdinalHeaderDate(string $date): string
     {
-        $timestamp = strtotime($date);
-        if ($timestamp === false) {
+        try {
+            $dt = Carbon::createFromFormat('Y-m-d', $date, EventCalendarTiming::timezone());
+        } catch (\Throwable) {
             return $date;
         }
 
-        $year = (int) date('Y', $timestamp);
-        $month = date('F', $timestamp);
-        $day = (int) date('j', $timestamp);
+        if ($dt === false) {
+            return $date;
+        }
+
+        $year = (int) $dt->format('Y');
+        $month = $dt->format('F');
+        $day = (int) $dt->format('j');
         $suffix = self::ordinalSuffix($day);
 
         return sprintf('%d %s %d%s', $year, $month, $day, $suffix);

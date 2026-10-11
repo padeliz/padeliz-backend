@@ -11,16 +11,17 @@ use App\Models\EventDivisionCourt;
 use App\Models\EventDivisionSchedule;
 use App\Models\EventParticipation;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
 
 final class EventFinalizeControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
     private PadelEvent $event;
 
@@ -32,23 +33,22 @@ final class EventFinalizeControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
 
         $this->event = PadelEvent::factory()->create([
             'name' => 'Finalize Me',
-            'arriving_time' => '09:00:00',
-            'closing_time' => '18:00:00',
+            ...UnixEventFactory::eventBounds('2026-10-20', '09:00:00', '18:00:00'),
         ]);
+        \Tests\Support\UnixEventFactory::withCover($this->event);
         $division = Division::factory()->create();
 
         $this->eventDivision = EventDivision::factory()->create([
             'event_id' => $this->event->id_event,
             'division_id' => $division->id_division,
             'players_limit' => 8,
-            'playing_start_time' => '14:00:00',
-            'playing_end_time' => '17:00:00',
+            ...UnixEventFactory::playingBounds($this->event, '14:00:00', '17:00:00'),
         ]);
 
         EventDivisionSchedule::factory()->create([
@@ -72,7 +72,7 @@ final class EventFinalizeControllerTest extends TestCase
             EventParticipation::factory()->create([
                 'event_id' => $this->event->id_event,
                 'event_division_id' => $this->eventDivision->id_event_division,
-                'player_id' => Player::factory()->create()->id_player,
+                'player_user_id' => User::factory()->create()->id_user,
                 'sort_order' => $i,
                 'is_collecting_points' => true,
                 'absence_reason' => null,
@@ -115,7 +115,7 @@ final class EventFinalizeControllerTest extends TestCase
             'original_participation_id' => EventParticipation::query()
                 ->where('event_division_id', $edId)
                 ->value('id_participation'),
-            'substitute_player_id' => Player::factory()->create()->id_player,
+            'substitute_player_user_id' => User::factory()->create()->id_user,
         ])->assertStatus(409);
 
         $this->patchJson(

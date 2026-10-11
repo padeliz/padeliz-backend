@@ -18,12 +18,12 @@ use App\Models\Level;
 use App\Models\Location;
 use App\Models\Organizer;
 use App\Models\PadelEvent;
-use App\Models\Player;
-use App\Models\PlayerEmail;
-use App\Models\PlayerIdentity;
+use App\Models\User;
+use App\Models\UserEmail;
+use App\Models\UserIdentity;
 use App\Models\PlayerLevel;
 use App\Models\PlayerLevelAssessment;
-use App\Models\PlayerPhone;
+use App\Models\UserPhone;
 use App\Models\PlayerProfileImage;
 use App\Models\Prize;
 use App\Models\Sponsor;
@@ -39,7 +39,7 @@ use Illuminate\Support\Facades\File;
  * Dev database seeding: truncates core tables, rebuilds synthetic clubs/events/players/player levels, etc.
  *
  * Upload-related behaviour:
- * - Player profile images: {@see PlayerFactory} afterCreating writes files under `players/{id}/profile/`
+ * - Player profile images: {@see UserFactory} afterCreating writes files under `players/{id}/profile/`
  *   on `filesystems.user_uploads_disk` (skipped in `testing`). Seeder clears `storage/app/public/players`
  *   when that directory exists.
  * - Player levels: {@see createPlayerLevels()} seeds assessments and the levels they approved (no files).
@@ -78,10 +78,10 @@ class DatabaseSeeder extends Seeder
         PlayerLevel::truncate();
         PlayerLevelAssessment::truncate();
         PlayerProfileImage::truncate();
-        PlayerIdentity::query()->delete();
-        PlayerPhone::query()->delete();
-        PlayerEmail::query()->delete();
-        Player::truncate();
+        UserIdentity::query()->delete();
+        UserPhone::query()->delete();
+        UserEmail::query()->delete();
+        User::truncate();
         PadelEvent::truncate();
         Organizer::truncate();
         Court::truncate();
@@ -192,13 +192,13 @@ class DatabaseSeeder extends Seeder
         // Create regular players (80% of total)
         $regularPlayersCount = (int) (\rand(15, 20) * 0.8);
         $players = $players->merge(
-            Player::factory()->count($regularPlayersCount)->playerOnly()->withContacts()->create()
+            User::factory()->count($regularPlayersCount)->playerOnly()->withContacts()->create()
         );
 
         // Create managers (20% of total) — no admin role in seed data
         $managersCount = max(1, (int) (\rand(15, 20) * 0.2));
         $players = $players->merge(
-            Player::factory()->count($managersCount)->manager()->withContacts()->create()
+            User::factory()->count($managersCount)->manager()->withContacts()->create()
         );
 
         $this->command->info('Creating past editions...');
@@ -223,7 +223,7 @@ class DatabaseSeeder extends Seeder
         $sponsors = collect();
         foreach ($clubs->take(2) as $club) {
             $sponsor = Sponsor::factory()->forClub($club)->create();
-            $sponsor->syncPlayerIds($players->random(min(2, $players->count()))->pluck('id_player')->all());
+            $sponsor->syncPlayerIds($players->random(min(2, $players->count()))->pluck('id_user')->all());
             $sponsors->push($sponsor->fresh(['players']));
 
             SponsorPrize::factory()->create([
@@ -260,37 +260,37 @@ class DatabaseSeeder extends Seeder
      *
      * @param  list<string>  $userTypes
      */
-    private function createNamedPlayer(string $name, string $email, string $displayName, array $userTypes): Player
+    private function createNamedPlayer(string $name, string $email, string $displayName, array $userTypes): User
     {
         $parts = \App\Support\PlayerNameSplitter::split($name);
 
-        $player = Player::factory()->create([
+        $player = User::factory()->create([
             'first_name' => $parts['first_name'],
             'middle_name' => $parts['middle_name'],
             'last_name' => $parts['last_name'],
             'user_types' => $userTypes,
         ]);
 
-        $playerEmail = PlayerEmail::create([
-            'player_id' => $player->id_player,
+        $playerEmail = UserEmail::create([
+            'user_id' => $player->id_user,
             'email' => $email,
             'purposes' => ['login', 'contact'],
             'is_primary' => true,
             'verified_at' => time(),
         ]);
 
-        PlayerPhone::create([
-            'player_id' => $player->id_player,
-            'phone' => '+407' . str_pad((string) $player->id_player, 8, '0', STR_PAD_LEFT),
+        UserPhone::create([
+            'user_id' => $player->id_user,
+            'phone' => '+407' . str_pad((string) $player->id_user, 8, '0', STR_PAD_LEFT),
             'purposes' => ['contact'],
             'is_primary' => true,
         ]);
 
-        PlayerIdentity::create([
-            'player_id' => $player->id_player,
-            'provider' => PlayerIdentity::PROVIDER_GOOGLE,
-            'provider_subject' => 'seed_google_' . $player->id_player,
-            'email_id' => $playerEmail->id_player_email,
+        UserIdentity::create([
+            'user_id' => $player->id_user,
+            'provider' => UserIdentity::PROVIDER_GOOGLE,
+            'provider_subject' => 'seed_google_' . $player->id_user,
+            'email_id' => $playerEmail->id_user_email,
             'display_name' => $displayName,
             'linked_at' => time(),
         ]);
@@ -313,16 +313,19 @@ class DatabaseSeeder extends Seeder
             ->where('name', 'ARSH Padel MiniTour')
             ->value('id_organizer');
 
+        $tz = (string) config('app.timezone', 'Europe/Bucharest');
         for ($i = 0; $i < $count; $i++) {
-            $arriving_time = Carbon::createFromTime(\rand(12, 19), 30);
+            $day = Carbon::parse($startDate)->addDays(\rand(0, (int) Carbon::parse($endDate)->diffInDays($startDate)));
+            $startHour = \rand(12, 19);
+            $startsAt = $day->copy()->timezone($tz)->setTime($startHour, 30)->timestamp;
+            $endsAt = $day->copy()->timezone($tz)->setTime($startHour, 30)->addHours(\rand(2, 4))->timestamp;
 
             $editions[] = PadelEvent::factory()->forLocation($locations->random())->create([
                 'name' => '#' . ($index_nr + $i + 1),
                 'organizer_id' => $organizerId,
                 'include_club_host_on_pdf' => true,
-                'date' => Carbon::parse($startDate)->addDays(\rand(0, (int) Carbon::parse($endDate)->diffInDays($startDate))),
-                'arriving_time' => $arriving_time->format('H:i:s'),
-                'closing_time' => $arriving_time->addHours(\rand(2, 4))->format('H:i:s'),
+                'event_starts_at' => $startsAt,
+                'event_ends_at' => $endsAt,
             ]);
         }
 
@@ -336,14 +339,21 @@ class DatabaseSeeder extends Seeder
 
         foreach ($selectedDivisions->values() as $skillOrder => $division) {
             // Create division for this edition (courts live on courts + pivot, not on event_divisions)
+            $playStart = (int) $event->event_starts_at + (\rand(0, 2) * 1800);
+            $playEnd = min((int) $event->event_ends_at, $playStart + (\rand(2, 4) * 3600));
+            if ($playEnd <= $playStart) {
+                $playEnd = $playStart + 3600;
+            }
+
             $eventDivision = EventDivision::factory()->create([
                 'event_id' => $event->id_event,
                 'division_id' => $division->id_division,
                 'division_title' => $division->name,
                 'players_limit' => \rand(8, 16),
                 'skill_order' => $skillOrder,
-                'playing_start_time' => Carbon::createFromTime(\rand(12, 19), 30)->format('H:i:s'),
-                'playing_end_time' => Carbon::createFromTime(\rand(16, 21), 30)->format('H:i:s'),
+                'check_in_at' => (int) $event->event_starts_at,
+                'playing_starts_at' => $playStart,
+                'playing_ends_at' => $playEnd,
             ]);
 
             // Schedule knobs live on their own row, one per edition division.
@@ -366,7 +376,7 @@ class DatabaseSeeder extends Seeder
                 EventParticipation::factory()->create([
                     'event_id' => $event->id_event,
                     'event_division_id' => $eventDivision->id_event_division,
-                    'player_id' => $player->id_player,
+                    'user_id' => $player->id_user,
                     'sort_order' => $i,
                     'is_collecting_points' => true,
                 ]);

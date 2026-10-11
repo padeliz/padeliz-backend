@@ -30,12 +30,12 @@ class RegistrationPaymentController extends V1BaseController
 
     public function indexForEvent(Request $request, PadelEvent $event)
     {
-        $playerId = (int) $request->user()->id_player;
+        $playerId = (int) $request->user()->id_user;
         $eventId = (int) $event->id_event;
 
         $checkouts = EventRegistrationCheckout::query()
             ->where('event_id', $eventId)
-            ->where('player_id', $playerId)
+            ->where('player_user_id', $playerId)
             ->with([
                 'items.registration.eventDivision.division',
                 'items.redemptions',
@@ -225,7 +225,7 @@ class RegistrationPaymentController extends V1BaseController
     {
         return EventRegistration::query()
             ->where('id_registration', $eventRegistration)
-            ->where('player_id', $request->user()->id_player)
+            ->where('player_user_id', $request->user()->id_user)
             ->firstOrFail();
     }
 
@@ -233,7 +233,7 @@ class RegistrationPaymentController extends V1BaseController
     {
         return EventRegistrationCheckout::query()
             ->where('id_checkout', $checkout)
-            ->where('player_id', $request->user()->id_player)
+            ->where('player_user_id', $request->user()->id_user)
             ->firstOrFail();
     }
 
@@ -246,7 +246,7 @@ class RegistrationPaymentController extends V1BaseController
 
         return $this->checkoutService->openOrRefreshForUnpaid(
             (int) $registration->event_id,
-            (int) $registration->player_id
+            (int) $registration->player_user_id
         );
     }
 }

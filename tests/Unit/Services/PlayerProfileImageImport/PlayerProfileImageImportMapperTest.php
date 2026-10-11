@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services\PlayerProfileImageImport;
 
-use App\Models\Player;
+use App\Models\User;
 use App\Services\PlayerProfileImageImport\PlayerProfileImageImportFilenameParser;
 use App\Services\PlayerProfileImageImport\PlayerProfileImageImportMapper;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -16,7 +16,7 @@ final class PlayerProfileImageImportMapperTest extends TestCase
 
     public function test_name_filename_matches_diacritic_player(): void
     {
-        $player = Player::factory()->create([
+        $player = User::factory()->create([
             'first_name' => 'Ștefan',
             'middle_name' => null,
             'last_name' => 'Popescu',
@@ -29,6 +29,6 @@ final class PlayerProfileImageImportMapperTest extends TestCase
 
         $this->assertSame('unmapped', $mapped[0]['mapping']['status']);
         $this->assertCount(1, $mapped[0]['mapping']['name_matches']);
-        $this->assertSame($player->id_player, $mapped[0]['mapping']['name_matches'][0]->id_player);
+        $this->assertSame($player->id_user, $mapped[0]['mapping']['name_matches'][0]->id_user);
     }
 }

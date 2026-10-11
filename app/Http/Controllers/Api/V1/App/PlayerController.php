@@ -6,10 +6,10 @@ namespace App\Http\Controllers\Api\V1\App;
 
 use App\Http\Requests\App\PlayerProfileImageUploadRequest;
 use App\Http\Requests\PlayerFormRequest;
-use App\Http\Resources\AppPlayerResource;
-use App\Models\Player;
-use App\Models\PlayerEmail;
-use App\Models\PlayerPhone;
+use App\Http\Resources\AppUserResource;
+use App\Models\User;
+use App\Models\UserEmail;
+use App\Models\UserPhone;
 use App\Models\PlayerProfileImage;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -46,7 +46,7 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
      *             allOf={
      *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
      *                 @OA\Schema(
-     *                     @OA\Property(property="data", ref="#/components/schemas/Player")
+     *                     @OA\Property(property="data", ref="#/components/schemas/User")
      *                 )
      *             }
      *         )
@@ -71,7 +71,7 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
         $player->load(['emails', 'phones']);
 
         return $this->resourceResponse(
-            new AppPlayerResource($player),
+            new AppUserResource($player),
             'Player profile updated successfully',
             201
         );
@@ -96,19 +96,19 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
      *             allOf={
      *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
      *                 @OA\Schema(
-     *                     @OA\Property(property="data", ref="#/components/schemas/Player")
+     *                     @OA\Property(property="data", ref="#/components/schemas/User")
      *                 )
      *             }
      *         )
      *     )
      * )
      */
-    public function show(Player $player)
+    public function show(User $player)
     {
         $player->load(['participations.event', 'participations.eventDivision']);
 
         return $this->resourceResponse(
-            new AppPlayerResource($player),
+            new AppUserResource($player),
             'Player details retrieved successfully'
         );
     }
@@ -141,7 +141,7 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
      *             allOf={
      *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
      *                 @OA\Schema(
-     *                     @OA\Property(property="data", ref="#/components/schemas/Player")
+     *                     @OA\Property(property="data", ref="#/components/schemas/User")
      *                 )
      *             }
      *         )
@@ -153,10 +153,10 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
      *     )
      * )
      */
-    public function update(PlayerFormRequest $request, Player $player)
+    public function update(PlayerFormRequest $request, User $player)
     {
         // Only allow users to update their own profile
-        if ($request->user()->id_player !== $player->id_player) {
+        if ($request->user()->id_user !== $player->id_user) {
             return $this->forbiddenResponse('You can only update your own profile');
         }
 
@@ -170,12 +170,12 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
         $player->load(['emails', 'phones']);
 
         return $this->resourceResponse(
-            new AppPlayerResource($player),
+            new AppUserResource($player),
             'Player profile updated successfully'
         );
     }
 
-    private function syncPlayerContacts(Player $player, ?string $email, ?string $phone): void
+    private function syncPlayerContacts(User $player, ?string $email, ?string $phone): void
     {
         if ($email !== null && $email !== '') {
             $playerEmail = $player->emails()->where('is_primary', true)->first()
@@ -184,8 +184,8 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
             if ($playerEmail) {
                 $playerEmail->update(['email' => $email, 'is_primary' => true]);
             } else {
-                PlayerEmail::create([
-                    'player_id' => $player->id_player,
+                UserEmail::create([
+                    'user_id' => $player->id_user,
                     'email' => $email,
                     'purposes' => ['login', 'contact'],
                     'is_primary' => true,
@@ -200,8 +200,8 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
             if ($playerPhone) {
                 $playerPhone->update(['phone' => $phone, 'is_primary' => true]);
             } else {
-                PlayerPhone::create([
-                    'player_id' => $player->id_player,
+                UserPhone::create([
+                    'user_id' => $player->id_user,
                     'phone' => $phone,
                     'purposes' => ['contact'],
                     'is_primary' => true,
@@ -261,7 +261,7 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
      */
     public function uploadImage(PlayerProfileImageUploadRequest $request)
     {
-        /** @var Player $player */
+        /** @var User $player */
         $player = $request->user();
 
         try {
@@ -276,7 +276,7 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
             }
 
             Log::error('PlayerController::uploadImage - Error uploading file', [
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'error' => $e->getMessage(),
                 'file_name' => $request->file('image')->getClientOriginalName(),
                 'file_size' => $request->file('image')->getSize(),
@@ -289,7 +289,7 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
             );
         } catch (\Throwable $e) {
             Log::error('PlayerController::uploadImage - Error uploading file', [
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'error' => $e->getMessage(),
                 'file_name' => $request->file('image')->getClientOriginalName(),
                 'file_size' => $request->file('image')->getSize(),
@@ -361,10 +361,10 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
      */
     public function deleteImage(Request $request, PlayerProfileImage $playerProfileImage)
     {
-        /** @var Player $player */
+        /** @var User $player */
         $player = $request->user();
 
-        if ($player->id_player !== $playerProfileImage->player_id) {
+        if ($player->id_user !== $playerProfileImage->player_user_id) {
             return $this->forbiddenResponse('You can only delete your own profile images.');
         }
 

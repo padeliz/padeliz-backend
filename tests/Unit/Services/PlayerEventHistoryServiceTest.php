@@ -9,10 +9,11 @@ use App\Models\EventDivision;
 use App\Models\EventDivisionStanding;
 use App\Models\EventParticipation;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Services\PlayerEventHistoryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
 
 final class PlayerEventHistoryServiceTest extends TestCase
 {
@@ -28,7 +29,7 @@ final class PlayerEventHistoryServiceTest extends TestCase
 
     public function test_date_cutoff_excludes_same_date_and_future(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $cutoff = '2026-06-15';
 
         $pastEd = $this->makeEditionWithDivision('2026-06-14', 'Past ED');
@@ -36,28 +37,28 @@ final class PlayerEventHistoryServiceTest extends TestCase
         $futureEd = $this->makeEditionWithDivision('2026-06-16', 'Future ED');
 
         EventParticipation::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_id' => $pastEd['event']->id_event,
             'event_division_id' => $pastEd['ed']->id_event_division,
             'absence_reason' => null,
             'ban_reason' => null,
         ]);
         EventParticipation::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_id' => $sameEd['event']->id_event,
             'event_division_id' => $sameEd['ed']->id_event_division,
             'absence_reason' => null,
             'ban_reason' => null,
         ]);
         EventParticipation::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_id' => $futureEd['event']->id_event,
             'event_division_id' => $futureEd['ed']->id_event_division,
             'absence_reason' => null,
             'ban_reason' => null,
         ]);
 
-        $history = $this->service->forPlayers([$player->id_player], $cutoff)[$player->id_player];
+        $history = $this->service->forPlayers([$player->id_user], $cutoff)[$player->id_user];
 
         $this->assertSame(1, $history['participated_count']);
         $this->assertSame('Past ED', $history['last_played']['division_title']);
@@ -65,18 +66,18 @@ final class PlayerEventHistoryServiceTest extends TestCase
 
     public function test_empty_ban_reason_is_clean_not_banned(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $past = $this->makeEditionWithDivision('2026-01-01', 'Clean Ban Empty');
 
         EventParticipation::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_id' => $past['event']->id_event,
             'event_division_id' => $past['ed']->id_event_division,
             'absence_reason' => null,
             'ban_reason' => '',
         ]);
 
-        $history = $this->service->forPlayers([$player->id_player], '2026-06-15')[$player->id_player];
+        $history = $this->service->forPlayers([$player->id_user], '2026-06-15')[$player->id_user];
 
         $this->assertSame(1, $history['participated_count']);
         $this->assertSame(0, $history['banned_count']);
@@ -85,18 +86,18 @@ final class PlayerEventHistoryServiceTest extends TestCase
 
     public function test_named_ban_increments_banned_not_participated(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $past = $this->makeEditionWithDivision('2026-01-01', 'Banned ED');
 
         EventParticipation::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_id' => $past['event']->id_event,
             'event_division_id' => $past['ed']->id_event_division,
             'absence_reason' => null,
             'ban_reason' => 'AGGRESSIVE PLAYER',
         ]);
 
-        $history = $this->service->forPlayers([$player->id_player], '2026-06-15')[$player->id_player];
+        $history = $this->service->forPlayers([$player->id_user], '2026-06-15')[$player->id_user];
 
         $this->assertSame(0, $history['participated_count']);
         $this->assertSame(1, $history['banned_count']);
@@ -105,18 +106,18 @@ final class PlayerEventHistoryServiceTest extends TestCase
 
     public function test_absence_increments_absented(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $past = $this->makeEditionWithDivision('2026-01-01', 'Absent ED');
 
         EventParticipation::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_id' => $past['event']->id_event,
             'event_division_id' => $past['ed']->id_event_division,
             'absence_reason' => 'SICK',
             'ban_reason' => null,
         ]);
 
-        $history = $this->service->forPlayers([$player->id_player], '2026-06-15')[$player->id_player];
+        $history = $this->service->forPlayers([$player->id_user], '2026-06-15')[$player->id_user];
 
         $this->assertSame(0, $history['participated_count']);
         $this->assertSame(1, $history['absented_count']);
@@ -125,27 +126,27 @@ final class PlayerEventHistoryServiceTest extends TestCase
 
     public function test_last_played_picks_latest_date_then_higher_id(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $older = $this->makeEditionWithDivision('2025-01-01', 'Older');
         $newerA = $this->makeEditionWithDivision('2025-06-01', 'Newer A');
         $newerB = $this->makeEditionWithDivision('2025-06-01', 'Newer B');
 
         EventParticipation::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_id' => $older['event']->id_event,
             'event_division_id' => $older['ed']->id_event_division,
             'absence_reason' => null,
             'ban_reason' => null,
         ]);
         $pA = EventParticipation::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_id' => $newerA['event']->id_event,
             'event_division_id' => $newerA['ed']->id_event_division,
             'absence_reason' => null,
             'ban_reason' => null,
         ]);
         $pB = EventParticipation::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_id' => $newerB['event']->id_event,
             'event_division_id' => $newerB['ed']->id_event_division,
             'absence_reason' => null,
@@ -153,7 +154,7 @@ final class PlayerEventHistoryServiceTest extends TestCase
         ]);
 
         $this->assertGreaterThan($pA->id_participation, $pB->id_participation);
-        $history = $this->service->forPlayers([$player->id_player], '2026-06-15')[$player->id_player];
+        $history = $this->service->forPlayers([$player->id_user], '2026-06-15')[$player->id_user];
 
         $this->assertSame('Newer B', $history['last_played']['division_title']);
         $this->assertSame(3, $history['participated_count']);
@@ -161,18 +162,18 @@ final class PlayerEventHistoryServiceTest extends TestCase
 
     public function test_last_played_includes_division_id(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $past = $this->makeEditionWithDivision('2025-01-01', 'Division ED');
 
         EventParticipation::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_id' => $past['event']->id_event,
             'event_division_id' => $past['ed']->id_event_division,
             'absence_reason' => null,
             'ban_reason' => null,
         ]);
 
-        $history = $this->service->forPlayers([$player->id_player], '2026-06-15')[$player->id_player];
+        $history = $this->service->forPlayers([$player->id_user], '2026-06-15')[$player->id_user];
 
         $this->assertSame(
             (int) $past['ed']->division_id,
@@ -182,18 +183,18 @@ final class PlayerEventHistoryServiceTest extends TestCase
 
     public function test_last_played_and_played_recent_include_division_color(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $past = $this->makeEditionWithDivision('2025-01-01', 'Color ED', null, '#ab12cd');
 
         EventParticipation::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_id' => $past['event']->id_event,
             'event_division_id' => $past['ed']->id_event_division,
             'absence_reason' => null,
             'ban_reason' => null,
         ]);
 
-        $history = $this->service->forPlayers([$player->id_player], '2026-06-15')[$player->id_player];
+        $history = $this->service->forPlayers([$player->id_user], '2026-06-15')[$player->id_user];
 
         $this->assertSame('#ab12cd', $history['last_played']['division_color']);
         $this->assertSame('#ab12cd', $history['played_recent'][0]['division_color']);
@@ -201,18 +202,18 @@ final class PlayerEventHistoryServiceTest extends TestCase
 
     public function test_division_color_empty_string_when_division_color_blank(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $past = $this->makeEditionWithDivision('2025-01-01', 'Blank Color ED', null, '');
 
         EventParticipation::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_id' => $past['event']->id_event,
             'event_division_id' => $past['ed']->id_event_division,
             'absence_reason' => null,
             'ban_reason' => null,
         ]);
 
-        $history = $this->service->forPlayers([$player->id_player], '2026-06-15')[$player->id_player];
+        $history = $this->service->forPlayers([$player->id_user], '2026-06-15')[$player->id_user];
 
         $this->assertSame('', $history['last_played']['division_color']);
         $this->assertSame('', $history['played_recent'][0]['division_color']);
@@ -220,19 +221,19 @@ final class PlayerEventHistoryServiceTest extends TestCase
 
     public function test_rank_present_and_missing_and_participant_count_all_rows(): void
     {
-        $player = Player::factory()->create();
-        $other = Player::factory()->create();
+        $player = User::factory()->create();
+        $other = User::factory()->create();
         $past = $this->makeEditionWithDivision('2025-03-01', 'Ranked ED');
 
         $clean = EventParticipation::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_id' => $past['event']->id_event,
             'event_division_id' => $past['ed']->id_event_division,
             'absence_reason' => null,
             'ban_reason' => null,
         ]);
         EventParticipation::factory()->create([
-            'player_id' => $other->id_player,
+            'player_user_id' => $other->id_user,
             'event_id' => $past['event']->id_event,
             'event_division_id' => $past['ed']->id_event_division,
             'absence_reason' => 'SICK',
@@ -247,60 +248,60 @@ final class PlayerEventHistoryServiceTest extends TestCase
             'rank' => 3,
         ]);
 
-        $withRank = $this->service->forPlayers([$player->id_player], '2026-06-15')[$player->id_player];
+        $withRank = $this->service->forPlayers([$player->id_user], '2026-06-15')[$player->id_user];
         $this->assertSame(3, $withRank['last_played']['rank']);
         $this->assertSame(2, $withRank['last_played']['participant_count']);
 
         $noStandingEd = $this->makeEditionWithDivision('2025-04-01', 'No Standing');
         EventParticipation::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_id' => $noStandingEd['event']->id_event,
             'event_division_id' => $noStandingEd['ed']->id_event_division,
             'absence_reason' => null,
             'ban_reason' => null,
         ]);
 
-        $noRank = $this->service->forPlayers([$player->id_player], '2026-06-15')[$player->id_player];
+        $noRank = $this->service->forPlayers([$player->id_user], '2026-06-15')[$player->id_user];
         $this->assertSame('No Standing', $noRank['last_played']['division_title']);
         $this->assertNull($noRank['last_played']['rank']);
     }
 
     public function test_batch_shape_for_two_players_and_no_winner_key(): void
     {
-        $p1 = Player::factory()->create();
-        $p2 = Player::factory()->create();
+        $p1 = User::factory()->create();
+        $p2 = User::factory()->create();
         $past = $this->makeEditionWithDivision('2025-01-01', 'Batch ED');
 
         EventParticipation::factory()->create([
-            'player_id' => $p1->id_player,
+            'player_user_id' => $p1->id_user,
             'event_id' => $past['event']->id_event,
             'event_division_id' => $past['ed']->id_event_division,
             'absence_reason' => null,
             'ban_reason' => null,
         ]);
         EventParticipation::factory()->create([
-            'player_id' => $p2->id_player,
+            'player_user_id' => $p2->id_user,
             'event_id' => $past['event']->id_event,
             'event_division_id' => $past['ed']->id_event_division,
             'absence_reason' => null,
             'ban_reason' => 'LEFT SUDDENLY',
         ]);
 
-        $histories = $this->service->forPlayers([$p1->id_player, $p2->id_player], '2026-06-15');
+        $histories = $this->service->forPlayers([$p1->id_user, $p2->id_user], '2026-06-15');
 
-        $this->assertSame(1, $histories[$p1->id_player]['participated_count']);
-        $this->assertSame(0, $histories[$p2->id_player]['participated_count']);
-        $this->assertSame(1, $histories[$p2->id_player]['banned_count']);
-        $this->assertArrayNotHasKey('winner', $histories[$p1->id_player]);
-        $this->assertArrayNotHasKey('is_winner', $histories[$p1->id_player]);
-        if ($histories[$p1->id_player]['last_played'] !== null) {
-            $this->assertArrayNotHasKey('winner', $histories[$p1->id_player]['last_played']);
+        $this->assertSame(1, $histories[$p1->id_user]['participated_count']);
+        $this->assertSame(0, $histories[$p2->id_user]['participated_count']);
+        $this->assertSame(1, $histories[$p2->id_user]['banned_count']);
+        $this->assertArrayNotHasKey('winner', $histories[$p1->id_user]);
+        $this->assertArrayNotHasKey('is_winner', $histories[$p1->id_user]);
+        if ($histories[$p1->id_user]['last_played'] !== null) {
+            $this->assertArrayNotHasKey('winner', $histories[$p1->id_user]['last_played']);
         }
     }
 
     public function test_tip_lists_exclude_participations_on_or_after_cutoff(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $cutoff = '2026-06-15';
 
         $past = $this->makeEditionWithDivision('2026-06-14', 'Past ED', 'Past Cup');
@@ -309,7 +310,7 @@ final class PlayerEventHistoryServiceTest extends TestCase
 
         foreach ([$past, $same, $future] as $bundle) {
             EventParticipation::factory()->create([
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'event_id' => $bundle['event']->id_event,
                 'event_division_id' => $bundle['ed']->id_event_division,
                 'absence_reason' => null,
@@ -317,7 +318,7 @@ final class PlayerEventHistoryServiceTest extends TestCase
             ]);
         }
 
-        $history = $this->service->forPlayers([$player->id_player], $cutoff)[$player->id_player];
+        $history = $this->service->forPlayers([$player->id_user], $cutoff)[$player->id_user];
 
         $this->assertCount(1, $history['played_recent']);
         $this->assertSame('Past Cup', $history['played_recent'][0]['edition_name']);
@@ -335,34 +336,34 @@ final class PlayerEventHistoryServiceTest extends TestCase
 
     public function test_ban_and_absence_excluded_from_played_and_participated_tips(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $clean = $this->makeEditionWithDivision('2025-01-01', 'Clean', 'Clean Cup');
         $banned = $this->makeEditionWithDivision('2025-02-01', 'Banned', 'Ban Cup');
         $absent = $this->makeEditionWithDivision('2025-03-01', 'Absent', 'Absent Cup');
 
         EventParticipation::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_id' => $clean['event']->id_event,
             'event_division_id' => $clean['ed']->id_event_division,
             'absence_reason' => null,
             'ban_reason' => null,
         ]);
         EventParticipation::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_id' => $banned['event']->id_event,
             'event_division_id' => $banned['ed']->id_event_division,
             'absence_reason' => null,
             'ban_reason' => 'AGGRESSIVE PLAYER',
         ]);
         EventParticipation::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_id' => $absent['event']->id_event,
             'event_division_id' => $absent['ed']->id_event_division,
             'absence_reason' => 'SICK',
             'ban_reason' => null,
         ]);
 
-        $history = $this->service->forPlayers([$player->id_player], '2026-06-15')[$player->id_player];
+        $history = $this->service->forPlayers([$player->id_user], '2026-06-15')[$player->id_user];
 
         $this->assertCount(1, $history['played_recent']);
         $this->assertSame('Clean Cup', $history['played_recent'][0]['edition_name']);
@@ -376,7 +377,7 @@ final class PlayerEventHistoryServiceTest extends TestCase
 
     public function test_played_recent_caps_at_four_asc_and_matches_last_played(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $titles = [];
         for ($i = 1; $i <= 5; $i++) {
             $bundle = $this->makeEditionWithDivision(
@@ -386,7 +387,7 @@ final class PlayerEventHistoryServiceTest extends TestCase
             );
             $titles[] = "Cup {$i}";
             $p = EventParticipation::factory()->create([
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'event_id' => $bundle['event']->id_event,
                 'event_division_id' => $bundle['ed']->id_event_division,
                 'absence_reason' => null,
@@ -401,7 +402,7 @@ final class PlayerEventHistoryServiceTest extends TestCase
             ]);
         }
 
-        $history = $this->service->forPlayers([$player->id_player], '2026-06-15')[$player->id_player];
+        $history = $this->service->forPlayers([$player->id_user], '2026-06-15')[$player->id_user];
 
         $this->assertCount(4, $history['played_recent']);
         $this->assertSame(
@@ -416,7 +417,7 @@ final class PlayerEventHistoryServiceTest extends TestCase
 
     public function test_participated_tooltip_truncates_with_ellipsis_when_more_than_six(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         for ($i = 1; $i <= 7; $i++) {
             $bundle = $this->makeEditionWithDivision(
                 sprintf('2025-%02d-01', $i),
@@ -424,7 +425,7 @@ final class PlayerEventHistoryServiceTest extends TestCase
                 "Cup {$i}"
             );
             EventParticipation::factory()->create([
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'event_id' => $bundle['event']->id_event,
                 'event_division_id' => $bundle['ed']->id_event_division,
                 'absence_reason' => null,
@@ -432,7 +433,7 @@ final class PlayerEventHistoryServiceTest extends TestCase
             ]);
         }
 
-        $history = $this->service->forPlayers([$player->id_player], '2026-06-15')[$player->id_player];
+        $history = $this->service->forPlayers([$player->id_user], '2026-06-15')[$player->id_user];
         $lines = $history['participated_tooltip']['lines'];
 
         $this->assertCount(7, $lines);
@@ -448,7 +449,7 @@ final class PlayerEventHistoryServiceTest extends TestCase
 
     public function test_participated_tooltip_lists_all_when_six_or_fewer(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         for ($i = 1; $i <= 3; $i++) {
             $bundle = $this->makeEditionWithDivision(
                 sprintf('2025-0%d-01', $i),
@@ -456,7 +457,7 @@ final class PlayerEventHistoryServiceTest extends TestCase
                 "Cup {$i}"
             );
             EventParticipation::factory()->create([
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'event_id' => $bundle['event']->id_event,
                 'event_division_id' => $bundle['ed']->id_event_division,
                 'absence_reason' => null,
@@ -464,7 +465,7 @@ final class PlayerEventHistoryServiceTest extends TestCase
             ]);
         }
 
-        $history = $this->service->forPlayers([$player->id_player], '2026-06-15')[$player->id_player];
+        $history = $this->service->forPlayers([$player->id_user], '2026-06-15')[$player->id_user];
         $lines = $history['participated_tooltip']['lines'];
 
         $this->assertCount(3, $lines);
@@ -479,7 +480,7 @@ final class PlayerEventHistoryServiceTest extends TestCase
 
     public function test_banned_and_absented_recent_cap_at_four_asc_with_reasons(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         for ($i = 1; $i <= 5; $i++) {
             $bundle = $this->makeEditionWithDivision(
                 sprintf('2025-0%d-01', $i),
@@ -487,7 +488,7 @@ final class PlayerEventHistoryServiceTest extends TestCase
                 "Ban Cup {$i}"
             );
             EventParticipation::factory()->create([
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'event_id' => $bundle['event']->id_event,
                 'event_division_id' => $bundle['ed']->id_event_division,
                 'absence_reason' => null,
@@ -501,7 +502,7 @@ final class PlayerEventHistoryServiceTest extends TestCase
                 "Abs Cup {$i}"
             );
             EventParticipation::factory()->create([
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'event_id' => $bundle['event']->id_event,
                 'event_division_id' => $bundle['ed']->id_event_division,
                 'absence_reason' => 'FORGOT',
@@ -509,7 +510,7 @@ final class PlayerEventHistoryServiceTest extends TestCase
             ]);
         }
 
-        $history = $this->service->forPlayers([$player->id_player], '2026-06-15')[$player->id_player];
+        $history = $this->service->forPlayers([$player->id_user], '2026-06-15')[$player->id_user];
 
         $this->assertCount(4, $history['banned_recent']);
         $this->assertSame(
@@ -528,17 +529,17 @@ final class PlayerEventHistoryServiceTest extends TestCase
 
     public function test_played_recent_null_rank_when_no_standing(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $past = $this->makeEditionWithDivision('2025-01-01', 'No Rank', 'No Rank Cup');
         EventParticipation::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_id' => $past['event']->id_event,
             'event_division_id' => $past['ed']->id_event_division,
             'absence_reason' => null,
             'ban_reason' => null,
         ]);
 
-        $history = $this->service->forPlayers([$player->id_player], '2026-06-15')[$player->id_player];
+        $history = $this->service->forPlayers([$player->id_user], '2026-06-15')[$player->id_user];
 
         $this->assertNull($history['played_recent'][0]['rank']);
         $this->assertNull($history['last_played']['rank']);
@@ -554,7 +555,7 @@ final class PlayerEventHistoryServiceTest extends TestCase
         ?string $divisionColor = null
     ): array {
         $event = PadelEvent::factory()->create([
-            'date' => $dateYmd,
+            ...UnixEventFactory::eventBounds($dateYmd),
             'name' => $editionName ?? $title,
         ]);
         $divisionAttrs = [];

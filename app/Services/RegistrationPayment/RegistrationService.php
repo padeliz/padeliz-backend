@@ -29,12 +29,12 @@ class RegistrationService
     }
 
     /**
-     * @param  array{event_id: int, player_id: int, event_division_id: int, is_minor?: bool, is_student?: bool, payment?: int}  $data
+     * @param  array{event_id: int, player_user_id: int, event_division_id: int, is_minor?: bool, is_student?: bool, payment?: int}  $data
      */
     public function createForApp(array $data, bool $attachCheckout = true): EventRegistration
     {
         $event = PadelEvent::query()->findOrFail($data['event_id']);
-        $playerId = (int) $data['player_id'];
+        $playerId = (int) $data['player_user_id'];
         if (! array_key_exists('event_division_id', $data) || $data['event_division_id'] === null) {
             throw new RegistrationValidationException([
                 'event_division_id' => ['An edition division is required.'],
@@ -66,7 +66,7 @@ class RegistrationService
 
         $attributes = [
             'event_id' => $event->id_event,
-            'player_id' => $playerId,
+            'player_user_id' => $playerId,
             'event_division_id' => $eventDivisionId,
             'is_minor' => false,
             'is_student' => $isStudent,
@@ -111,12 +111,12 @@ class RegistrationService
     }
 
     /**
-     * @param  array{event_id: int, player_id: int, event_division_id: int, is_minor?: bool, is_student?: bool, payment?: int}  $data
+     * @param  array{event_id: int, player_user_id: int, event_division_id: int, is_minor?: bool, is_student?: bool, payment?: int}  $data
      */
     public function createForManager(array $data): EventRegistration
     {
         $editionId = (int) $data['event_id'];
-        $playerId = (int) $data['player_id'];
+        $playerId = (int) $data['player_user_id'];
         if (! array_key_exists('event_division_id', $data) || $data['event_division_id'] === null) {
             throw new RegistrationValidationException([
                 'event_division_id' => ['An edition division is required.'],
@@ -140,7 +140,7 @@ class RegistrationService
 
         $registration = EventRegistration::query()->create([
             'event_id' => $editionId,
-            'player_id' => $playerId,
+            'player_user_id' => $playerId,
             'event_division_id' => $eventDivisionId,
             'is_minor' => $data['is_minor'] ?? false,
             'is_student' => $data['is_student'] ?? false,
@@ -221,7 +221,7 @@ class RegistrationService
         app(PricingService::class)->finalizeOnPaid($registration);
 
         $this->expoPushService->notifyRegistrationStatus(
-            (int) $registration->player_id,
+            (int) $registration->player_user_id,
             'paid',
             ['registration_id' => $registration->id_registration]
         );

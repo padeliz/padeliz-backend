@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerCustomFieldValueImport;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -18,7 +18,7 @@ class PlayerCustomFieldValueImportFactory extends Factory
     public function definition(): array
     {
         return [
-            'imported_by_player_id' => Player::factory()->manager(),
+            'imported_by_manager_user_id' => User::factory()->manager(),
             'format' => 'google_form_minitour_welcome',
             'original_filename' => 'minitour.csv',
             'event_id' => null,

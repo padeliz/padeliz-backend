@@ -11,19 +11,20 @@ use App\Models\EventDivisionCourt;
 use App\Models\EventDivisionPoster;
 use App\Models\EventParticipation;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Services\Pdf\PosterPdfResult;
 use App\Services\Pdf\PosterPdfService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
 
 final class EventPosterControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
     private PadelEvent $event;
 
@@ -33,13 +34,13 @@ final class EventPosterControllerTest extends TestCase
 
         Storage::fake(config('filesystems.user_uploads_disk', 'public'));
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
 
         $this->event = PadelEvent::factory()->create([
             'name' => 'Poster PadelEvent',
-            'date' => '2026-06-15',
+            ...UnixEventFactory::eventBounds('2026-06-15'),
         ]);
     }
 
@@ -295,7 +296,7 @@ final class EventPosterControllerTest extends TestCase
                 'display_order' => 0,
             ]);
 
-            $player = Player::factory()->create([
+            $player = User::factory()->create([
                 'first_name' => 'Player',
                 'middle_name' => null,
                 'last_name' => (string) ($i + 1),
@@ -304,7 +305,7 @@ final class EventPosterControllerTest extends TestCase
             EventParticipation::factory()->create([
                 'event_id' => $this->event->id_event,
                 'event_division_id' => $eventDivision->id_event_division,
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'is_collecting_points' => true,
             ]);
 

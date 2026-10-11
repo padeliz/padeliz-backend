@@ -88,7 +88,7 @@ class EventDivisionReplacementController extends \App\Http\Controllers\BaseVersi
      *             required={"original_participation_id"},
      *             @OA\Property(property="original_participation_id", type="integer"),
      *             @OA\Property(property="substitute_participation_id", type="integer", nullable=true),
-     *             @OA\Property(property="substitute_player_id", type="integer", nullable=true),
+     *             @OA\Property(property="substitute_player_user_id", type="integer", nullable=true),
      *             @OA\Property(property="match_id", type="integer", nullable=true)
      *         )
      *     ),
@@ -107,10 +107,10 @@ class EventDivisionReplacementController extends \App\Http\Controllers\BaseVersi
         $validated = $request->validate($this->writeRules($eventDivision, requiredOriginal: true));
 
         $subPart = $validated['substitute_participation_id'] ?? null;
-        $subPlayer = $validated['substitute_player_id'] ?? null;
+        $subPlayer = $validated['substitute_player_user_id'] ?? null;
         if ($subPart !== null && $subPlayer !== null) {
             return $this->errorResponse(
-                'Provide at most one of substitute_participation_id or substitute_player_id.',
+                'Provide at most one of substitute_participation_id or substitute_player_user_id.',
                 422
             );
         }
@@ -132,7 +132,7 @@ class EventDivisionReplacementController extends \App\Http\Controllers\BaseVersi
                 'event_division_id' => $eventDivision->id_event_division,
                 'original_participation_id' => $validated['original_participation_id'],
                 'substitute_participation_id' => $subPart,
-                'substitute_player_id' => $subPlayer,
+                'substitute_player_user_id' => $subPlayer,
                 'match_id' => $validated['match_id'] ?? null,
             ]);
         } catch (\Throwable $e) {
@@ -158,7 +158,7 @@ class EventDivisionReplacementController extends \App\Http\Controllers\BaseVersi
      *         @OA\JsonContent(
      *             @OA\Property(property="original_participation_id", type="integer"),
      *             @OA\Property(property="substitute_participation_id", type="integer", nullable=true),
-     *             @OA\Property(property="substitute_player_id", type="integer", nullable=true),
+     *             @OA\Property(property="substitute_player_user_id", type="integer", nullable=true),
      *             @OA\Property(property="match_id", type="integer", nullable=true)
      *         )
      *     ),
@@ -184,18 +184,18 @@ class EventDivisionReplacementController extends \App\Http\Controllers\BaseVersi
 
         $sentPartNonNull = array_key_exists('substitute_participation_id', $validated)
             && $validated['substitute_participation_id'] !== null;
-        $sentPlayerNonNull = array_key_exists('substitute_player_id', $validated)
-            && $validated['substitute_player_id'] !== null;
+        $sentPlayerNonNull = array_key_exists('substitute_player_user_id', $validated)
+            && $validated['substitute_player_user_id'] !== null;
 
         if ($sentPartNonNull && $sentPlayerNonNull) {
             return $this->errorResponse(
-                'Provide at most one of substitute_participation_id or substitute_player_id.',
+                'Provide at most one of substitute_participation_id or substitute_player_user_id.',
                 422
             );
         }
 
         if ($sentPartNonNull) {
-            $validated['substitute_player_id'] = null;
+            $validated['substitute_player_user_id'] = null;
         } elseif ($sentPlayerNonNull) {
             $validated['substitute_participation_id'] = null;
         }
@@ -203,13 +203,13 @@ class EventDivisionReplacementController extends \App\Http\Controllers\BaseVersi
         $resultingPart = array_key_exists('substitute_participation_id', $validated)
             ? $validated['substitute_participation_id']
             : $replacement->substitute_participation_id;
-        $resultingPlayer = array_key_exists('substitute_player_id', $validated)
-            ? $validated['substitute_player_id']
-            : $replacement->substitute_player_id;
+        $resultingPlayer = array_key_exists('substitute_player_user_id', $validated)
+            ? $validated['substitute_player_user_id']
+            : $replacement->substitute_player_user_id;
 
         if ($resultingPart !== null && $resultingPlayer !== null) {
             return $this->errorResponse(
-                'Provide at most one of substitute_participation_id or substitute_player_id.',
+                'Provide at most one of substitute_participation_id or substitute_player_user_id.',
                 422
             );
         }
@@ -332,7 +332,7 @@ class EventDivisionReplacementController extends \App\Http\Controllers\BaseVersi
                 Rule::exists('event_participations', 'id_participation')
                     ->where('event_division_id', $eventDivision->id_event_division),
             ],
-            'substitute_player_id' => 'nullable|integer|exists:players,id_player',
+            'substitute_player_user_id' => 'nullable|integer|exists:users,id_user',
             'match_id' => [
                 'nullable',
                 'integer',

@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace App\Services\PlayerProfileImageImport;
 
-use App\Models\Player;
-use App\Models\PlayerEmail;
-use App\Models\PlayerPhone;
+use App\Models\User;
+use App\Models\UserEmail;
+use App\Models\UserPhone;
 use App\Support\PlayerDisplayName;
 use App\Support\PlayerFullNameMatchIndex;
 use App\Support\PlayerPhoneNormalizer;
@@ -27,9 +27,9 @@ final class PlayerProfileImageImportMapper
      *     mapping: array{
      *         status: string,
      *         matched_by: ?string,
-     *         player: ?Player,
-     *         candidates: list<Player>,
-     *         name_matches: list<Player>
+     *         player: ?User,
+     *         candidates: list<User>,
+     *         name_matches: list<User>
      *     }
      * }>
      */
@@ -72,7 +72,7 @@ final class PlayerProfileImageImportMapper
                 }
             } elseif ($parsed['type'] === PlayerProfileImageImportFilenameParser::TYPE_ID) {
                 $id = (int) $parsed['stem'];
-                if ($id > 0 && Player::query()->whereKey($id)->exists()) {
+                if ($id > 0 && User::query()->whereKey($id)->exists()) {
                     $status = 'mapped';
                     $matchedBy = 'id';
                     $playerId = $id;
@@ -92,7 +92,7 @@ final class PlayerProfileImageImportMapper
                 'mapping' => [
                     'status' => $status,
                     'matched_by' => $matchedBy,
-                    'player_id' => $playerId,
+                    'player_user_id' => $playerId,
                     'name_match_ids' => $nameMatchIds,
                 ],
             ];
@@ -100,19 +100,19 @@ final class PlayerProfileImageImportMapper
 
         $players = empty($playerIds)
             ? collect()
-            : Player::query()
+            : User::query()
                 ->with('profileImages')
-                ->whereIn('id_player', array_keys($playerIds))
+                ->whereIn('id_user', array_keys($playerIds))
                 ->get()
-                ->keyBy('id_player');
+                ->keyBy('id_user');
 
         foreach ($mapped as &$row) {
             $mapping = $row['mapping'];
             $row['mapping'] = [
                 'status' => $mapping['status'],
                 'matched_by' => $mapping['matched_by'],
-                'player' => $mapping['player_id'] !== null
-                    ? $players->get($mapping['player_id'])
+                'player' => $mapping['player_user_id'] !== null
+                    ? $players->get($mapping['player_user_id'])
                     : null,
                 'candidates' => [],
                 'name_matches' => $this->playersInOrder($players, $mapping['name_match_ids']),
@@ -129,11 +129,11 @@ final class PlayerProfileImageImportMapper
     private function emailOwnerIndex(): array
     {
         $index = [];
-        PlayerEmail::query()->select(['player_id', 'email'])->each(function (PlayerEmail $email) use (&$index): void {
+        UserEmail::query()->select(['user_id', 'email'])->each(function (UserEmail $email) use (&$index): void {
             $key = mb_strtolower((string) $email->email);
             $index[$key] ??= [];
-            if (! in_array($email->player_id, $index[$key], true)) {
-                $index[$key][] = (int) $email->player_id;
+            if (! in_array($email->user_id, $index[$key], true)) {
+                $index[$key][] = (int) $email->user_id;
             }
         });
 
@@ -146,14 +146,14 @@ final class PlayerProfileImageImportMapper
     private function phoneOwnerIndex(): array
     {
         $index = [];
-        PlayerPhone::query()->select(['player_id', 'phone'])->each(function (PlayerPhone $phone) use (&$index): void {
+        UserPhone::query()->select(['user_id', 'phone'])->each(function (UserPhone $phone) use (&$index): void {
             $normalized = PlayerPhoneNormalizer::normalize((string) $phone->phone);
             if ($normalized === '') {
                 return;
             }
             $index[$normalized] ??= [];
-            if (! in_array($phone->player_id, $index[$normalized], true)) {
-                $index[$normalized][] = (int) $phone->player_id;
+            if (! in_array($phone->user_id, $index[$normalized], true)) {
+                $index[$normalized][] = (int) $phone->user_id;
             }
         });
 
@@ -161,16 +161,16 @@ final class PlayerProfileImageImportMapper
     }
 
     /**
-     * @param  Collection<int, Player>  $players
+     * @param  Collection<int, User>  $players
      * @param  list<int>  $ids
-     * @return list<Player>
+     * @return list<User>
      */
     private function playersInOrder(Collection $players, array $ids): array
     {
         $ordered = [];
         foreach ($ids as $id) {
             $player = $players->get($id);
-            if ($player instanceof Player) {
+            if ($player instanceof User) {
                 $ordered[] = $player;
             }
         }

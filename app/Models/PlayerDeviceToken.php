@@ -25,7 +25,7 @@ class PlayerDeviceToken extends Model
     public const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
-        'player_id',
+        'player_user_id',
         'token',
         'platform',
     ];
@@ -33,11 +33,11 @@ class PlayerDeviceToken extends Model
     protected $casts = [
         'inserted_at' => 'integer',
         'updated_at' => 'integer',
-        'player_id' => 'integer',
+        'player_user_id' => 'integer',
     ];
 
     public function player(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'player_id', 'id_player');
+        return $this->belongsTo(User::class, 'player_user_id', 'id_user');
     }
 }

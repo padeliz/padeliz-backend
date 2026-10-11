@@ -7,7 +7,7 @@ namespace Tests\Unit\Services\PlayerCustomField;
 use App\Enums\PlayerCustomFieldType;
 use App\Enums\PlayerCustomFieldValueReviewStatus;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerCustomField;
 use App\Models\PlayerCustomFieldOption;
 use App\Models\PlayerCustomFieldValue;
@@ -16,6 +16,7 @@ use App\Services\PlayerCustomField\PlayerCustomFieldParticipationResolver;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
 
 final class PlayerCustomFieldParticipationResolverTest extends TestCase
 {
@@ -32,11 +33,11 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
     public function test_only_validated_values_count_and_the_latest_validated_wins(): void
     {
         $event = $this->upcomingEvent();
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $field = PlayerCustomField::factory()->create(['type' => PlayerCustomFieldType::Text]);
 
         PlayerCustomFieldValue::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'player_custom_field_id' => $field->id_player_custom_field,
             'value_text' => 'Rejected',
             'inserted_at' => time(),
@@ -44,13 +45,13 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
             'reviewed_at' => time(),
         ]);
         PlayerCustomFieldValue::factory()->pending()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'player_custom_field_id' => $field->id_player_custom_field,
             'value_text' => 'Pending',
             'inserted_at' => time(),
         ]);
         PlayerCustomFieldValue::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'player_custom_field_id' => $field->id_player_custom_field,
             'value_text' => 'Discarded',
             'inserted_at' => time(),
@@ -58,7 +59,7 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
             'reviewed_at' => time(),
         ]);
         PlayerCustomFieldValue::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'player_custom_field_id' => $field->id_player_custom_field,
             'value_text' => 'Active',
             'inserted_at' => time() - 100,
@@ -67,28 +68,28 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
 
         $result = $this->resolver->resolveForPlayers(
             (int) $event->id_event,
-            [(int) $player->id_player],
+            [(int) $player->id_user],
             [(int) $field->id_player_custom_field],
             $this->cutoffFor($event)
         );
 
-        $this->assertSame('Active', $result[(int) $player->id_player][0]['value']);
+        $this->assertSame('Active', $result[(int) $player->id_user][0]['value']);
     }
 
     public function test_latest_inserted_at_wins(): void
     {
         $event = $this->upcomingEvent();
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $field = PlayerCustomField::factory()->create(['type' => PlayerCustomFieldType::Text]);
 
         PlayerCustomFieldValue::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'player_custom_field_id' => $field->id_player_custom_field,
             'value_text' => 'Older',
             'inserted_at' => time() - 500,
         ]);
         PlayerCustomFieldValue::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'player_custom_field_id' => $field->id_player_custom_field,
             'value_text' => 'Newer',
             'inserted_at' => time(),
@@ -96,18 +97,18 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
 
         $result = $this->resolver->resolveForPlayers(
             (int) $event->id_event,
-            [(int) $player->id_player],
+            [(int) $player->id_user],
             [(int) $field->id_player_custom_field],
             $this->cutoffFor($event)
         );
 
-        $this->assertSame('Newer', $result[(int) $player->id_player][0]['value']);
+        $this->assertSame('Newer', $result[(int) $player->id_user][0]['value']);
     }
 
     public function test_multi_select_values_join_as_comma_separated_string(): void
     {
         $event = $this->upcomingEvent();
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $field = PlayerCustomField::factory()->multiSelect()->create(['label' => 'Tags']);
         $optionA = PlayerCustomFieldOption::factory()->create([
             'player_custom_field_id' => $field->id_player_custom_field,
@@ -119,7 +120,7 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
         ]);
 
         $value = PlayerCustomFieldValue::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'player_custom_field_id' => $field->id_player_custom_field,
             'value_text' => null,
         ]);
@@ -138,18 +139,18 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
 
         $result = $this->resolver->resolveForPlayers(
             (int) $event->id_event,
-            [(int) $player->id_player],
+            [(int) $player->id_user],
             [(int) $field->id_player_custom_field],
             $this->cutoffFor($event)
         );
 
-        $this->assertSame('Alpha, Beta', $result[(int) $player->id_player][0]['value']);
+        $this->assertSame('Alpha, Beta', $result[(int) $player->id_user][0]['value']);
     }
 
     public function test_returns_one_value_per_field(): void
     {
         $event = $this->upcomingEvent();
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $fieldA = PlayerCustomField::factory()->create([
             'label' => 'Field A',
             'type' => PlayerCustomFieldType::Text,
@@ -162,30 +163,30 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
         ]);
 
         PlayerCustomFieldValue::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'player_custom_field_id' => $fieldA->id_player_custom_field,
             'value_text' => 'A value',
         ]);
         PlayerCustomFieldValue::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'player_custom_field_id' => $fieldA->id_player_custom_field,
             'value_text' => 'A duplicate',
             'inserted_at' => time() - 100,
         ]);
         PlayerCustomFieldValue::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'player_custom_field_id' => $fieldB->id_player_custom_field,
             'value_text' => 'B value',
         ]);
 
         $result = $this->resolver->resolveForPlayers(
             (int) $event->id_event,
-            [(int) $player->id_player],
+            [(int) $player->id_user],
             [(int) $fieldA->id_player_custom_field, (int) $fieldB->id_player_custom_field],
             $this->cutoffFor($event)
         );
 
-        $entries = $result[(int) $player->id_player];
+        $entries = $result[(int) $player->id_user];
         $this->assertCount(2, $entries);
         $this->assertSame('A value', $entries[0]['value']);
         $this->assertSame('B value', $entries[1]['value']);
@@ -194,7 +195,7 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
     public function test_no_requested_field_is_omitted_when_value_exists(): void
     {
         $event = $this->upcomingEvent();
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $fields = collect(range(1, 3))->map(function (int $order): PlayerCustomField {
             $field = PlayerCustomField::factory()->create([
                 'label' => 'Field ' . $order,
@@ -202,7 +203,7 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
                 'sort_order' => $order,
             ]);
             PlayerCustomFieldValue::factory()->create([
-                'player_id' => Player::factory()->create()->id_player,
+                'player_user_id' => User::factory()->create()->id_user,
                 'player_custom_field_id' => $field->id_player_custom_field,
                 'value_text' => 'Other player',
             ]);
@@ -212,7 +213,7 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
 
         foreach ($fields as $field) {
             PlayerCustomFieldValue::factory()->create([
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'player_custom_field_id' => $field->id_player_custom_field,
                 'value_text' => 'Value for ' . $field->label,
             ]);
@@ -221,22 +222,22 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
         $fieldIds = $fields->pluck('id_player_custom_field')->map(static fn ($id): int => (int) $id)->all();
         $result = $this->resolver->resolveForPlayers(
             (int) $event->id_event,
-            [(int) $player->id_player],
+            [(int) $player->id_user],
             $fieldIds,
             $this->cutoffFor($event)
         );
 
-        $this->assertCount(3, $result[(int) $player->id_player]);
+        $this->assertCount(3, $result[(int) $player->id_user]);
         $this->assertSame(
             ['Field 1', 'Field 2', 'Field 3'],
-            array_column($result[(int) $player->id_player], 'label')
+            array_column($result[(int) $player->id_user], 'label')
         );
     }
 
     public function test_recent_answers_cap_at_two_newest_by_inserted_at(): void
     {
-        $event = PadelEvent::factory()->create(['date' => '2026-06-15']);
-        $player = Player::factory()->create();
+        $event = PadelEvent::factory()->create(UnixEventFactory::eventBounds('2026-06-15'));
+        $player = User::factory()->create();
         $field = PlayerCustomField::factory()->create([
             'label' => 'Shirt Size',
             'type' => PlayerCustomFieldType::Text,
@@ -244,7 +245,7 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
 
         foreach ([['S', 1000], ['M', 2000], ['L', 3000]] as [$size, $insertedAt]) {
             PlayerCustomFieldValue::factory()->create([
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'player_custom_field_id' => $field->id_player_custom_field,
                 'value_text' => $size,
                 'inserted_at' => $insertedAt,
@@ -253,12 +254,12 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
 
         $result = $this->resolver->resolveForPlayers(
             (int) $event->id_event,
-            [(int) $player->id_player],
+            [(int) $player->id_user],
             [(int) $field->id_player_custom_field],
             $this->cutoffFor($event)
         );
 
-        $recent = $result[(int) $player->id_player][0]['recent_answers'];
+        $recent = $result[(int) $player->id_user][0]['recent_answers'];
         $this->assertCount(2, $recent);
         $this->assertSame('M', $recent[0]['value']);
         $this->assertSame('L', $recent[1]['value']);
@@ -266,18 +267,18 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
 
     public function test_answers_submitted_after_the_cutoff_are_excluded(): void
     {
-        $event = PadelEvent::factory()->create(['date' => '2026-06-15']);
-        $player = Player::factory()->create();
+        $event = PadelEvent::factory()->create(UnixEventFactory::eventBounds('2026-06-15'));
+        $player = User::factory()->create();
         $field = PlayerCustomField::factory()->create(['type' => PlayerCustomFieldType::Text]);
 
         PlayerCustomFieldValue::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'player_custom_field_id' => $field->id_player_custom_field,
             'value_text' => 'Now',
             'inserted_at' => Carbon::parse('2026-06-14', config('app.timezone'))->timestamp,
         ]);
         PlayerCustomFieldValue::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'player_custom_field_id' => $field->id_player_custom_field,
             'value_text' => 'Too late',
             'inserted_at' => Carbon::parse('2026-06-16', config('app.timezone'))->timestamp,
@@ -285,24 +286,24 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
 
         $result = $this->resolver->resolveForPlayers(
             (int) $event->id_event,
-            [(int) $player->id_player],
+            [(int) $player->id_user],
             [(int) $field->id_player_custom_field],
             $this->cutoffFor($event)
         );
 
-        $recent = $result[(int) $player->id_player][0]['recent_answers'];
+        $recent = $result[(int) $player->id_user][0]['recent_answers'];
         $this->assertCount(1, $recent);
         $this->assertSame('Now', $recent[0]['value']);
     }
 
     public function test_recent_answers_report_the_submission_channel_and_date(): void
     {
-        $event = PadelEvent::factory()->create(['date' => '2026-06-15']);
-        $player = Player::factory()->create();
+        $event = PadelEvent::factory()->create(UnixEventFactory::eventBounds('2026-06-15'));
+        $player = User::factory()->create();
         $field = PlayerCustomField::factory()->create(['type' => PlayerCustomFieldType::Text]);
 
         PlayerCustomFieldValue::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'player_custom_field_id' => $field->id_player_custom_field,
             'value_text' => 'Answer',
             'submitted_via' => PlayerCustomFieldValue::SUBMITTED_VIA_CSV,
@@ -311,12 +312,12 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
 
         $result = $this->resolver->resolveForPlayers(
             (int) $event->id_event,
-            [(int) $player->id_player],
+            [(int) $player->id_user],
             [(int) $field->id_player_custom_field],
             $this->cutoffFor($event)
         );
 
-        $recent = $result[(int) $player->id_player][0]['recent_answers'];
+        $recent = $result[(int) $player->id_user][0]['recent_answers'];
         $this->assertCount(1, $recent);
         $this->assertSame('Answer', $recent[0]['value']);
         $this->assertSame(PlayerCustomFieldValue::SUBMITTED_VIA_CSV, $recent[0]['submitted_via']);
@@ -329,16 +330,12 @@ final class PlayerCustomFieldParticipationResolverTest extends TestCase
     private function upcomingEvent(): PadelEvent
     {
         return PadelEvent::factory()->create([
-            'date' => Carbon::now(config('app.timezone'))->addMonth()->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(Carbon::now(config('app.timezone'))->addMonth()->format('Y-m-d')),
         ]);
     }
 
     private function cutoffFor(PadelEvent $event): string
     {
-        if ($event->date instanceof \DateTimeInterface) {
-            return $event->date->format('Y-m-d');
-        }
-
-        return (string) $event->formatted_date;
+        return \App\Services\EventCalendarTiming::dayYmd((int) $event->event_starts_at);
     }
 }

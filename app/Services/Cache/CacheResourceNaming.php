@@ -12,6 +12,17 @@ final class CacheResourceNaming
     public static function pathForSchema(string $schemaName): string
     {
         $modelName = class_basename($schemaName);
+
+        $productPaths = [
+            'User' => 'players',
+            'UserEmail' => 'player-emails',
+            'UserPhone' => 'player-phones',
+            'UserIdentity' => 'player-identities',
+        ];
+        if (isset($productPaths[$modelName])) {
+            return $productPaths[$modelName];
+        }
+
         $kebabCase = Str::kebab($modelName);
 
         if (str_contains($kebabCase, '-')) {

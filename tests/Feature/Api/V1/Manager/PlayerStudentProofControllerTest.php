@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\Manager;
 
 use App\Enums\PlayerLevel\AssessmentReviewStatus;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerStudentProof;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
@@ -21,7 +21,7 @@ final class PlayerStudentProofControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
-        Sanctum::actingAs(Player::factory()->manager()->create([
+        Sanctum::actingAs(User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]));
     }
@@ -43,7 +43,7 @@ final class PlayerStudentProofControllerTest extends TestCase
         $response = $this->getJson(self::BASE . '/' . $proof->id_player_student_proof)
             ->assertOk()
             ->assertJsonPath('data.id_player_student_proof', $proof->id_player_student_proof)
-            ->assertJsonPath('data.player.id_player', $proof->player_id)
+            ->assertJsonPath('data.player.id_user', $proof->player_user_id)
             ->assertJsonCount(3, 'data.files');
 
         $expected = $proof->files->map(fn ($file) => $file->url)->all();
@@ -100,7 +100,7 @@ final class PlayerStudentProofControllerTest extends TestCase
             ->assertJsonPath('data.student_until', $until)
             ->assertJsonCount(2, 'data.files');
 
-        $this->assertTrue(PlayerStudentProof::hasActiveFor((int) $proof->player_id));
+        $this->assertTrue(PlayerStudentProof::hasActiveFor((int) $proof->player_user_id));
         $this->assertSame(2, $proof->files()->count());
     }
 
@@ -115,7 +115,7 @@ final class PlayerStudentProofControllerTest extends TestCase
             ->assertJsonPath('data.review_message', 'Blurry')
             ->assertJsonCount(1, 'data.files');
 
-        $this->assertFalse(PlayerStudentProof::hasActiveFor((int) $proof->player_id));
+        $this->assertFalse(PlayerStudentProof::hasActiveFor((int) $proof->player_user_id));
         $this->assertSame(AssessmentReviewStatus::Rejected, $proof->fresh()->review_status);
     }
 
@@ -157,7 +157,7 @@ final class PlayerStudentProofControllerTest extends TestCase
 
     public function test_requires_manager_role(): void
     {
-        Sanctum::actingAs(Player::factory()->playerOnly()->create());
+        Sanctum::actingAs(User::factory()->playerOnly()->create());
 
         $this->getJson(self::BASE)->assertStatus(403);
     }

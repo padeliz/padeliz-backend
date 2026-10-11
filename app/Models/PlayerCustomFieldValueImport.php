@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *     schema="PlayerCustomFieldValueImport",
  *     required={"format", "original_filename"},
  *     @OA\Property(property="id_player_custom_field_value_import", type="integer", format="int64", readOnly=true, title="ID"),
- *     @OA\Property(property="imported_by_player_id", type="integer", format="int64", nullable=true, readOnly=true, title="Imported By"),
+ *     @OA\Property(property="imported_by_manager_user_id", type="integer", format="int64", nullable=true, readOnly=true, title="Imported By"),
  *     @OA\Property(property="format", type="string", maxLength=64, readOnly=true, title="Format"),
  *     @OA\Property(property="original_filename", type="string", maxLength=255, readOnly=true, title="Filename"),
  *     @OA\Property(property="event_id", type="integer", format="int64", nullable=true, title="PadelEvent"),
@@ -25,6 +25,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true, title="Created At"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true, title="Updated At"),
  *     @OA\Property(property="event", ref="#/components/schemas/Event", nullable=true),
+ *     @OA\Property(property="importedByManager", ref="#/components/schemas/User", nullable=true, title="Importer"),
  *     @OA\Property(
  *         property="rows",
  *         type="array",
@@ -44,7 +45,7 @@ class PlayerCustomFieldValueImport extends Model
 
     public static array $filterableFields = [
         'format',
-        'imported_by_player_id',
+        'imported_by_manager_user_id',
         'event_id',
     ];
 
@@ -73,7 +74,7 @@ class PlayerCustomFieldValueImport extends Model
     public const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
-        'imported_by_player_id',
+        'imported_by_manager_user_id',
         'format',
         'original_filename',
         'event_id',
@@ -83,7 +84,7 @@ class PlayerCustomFieldValueImport extends Model
     ];
 
     protected $casts = [
-        'imported_by_player_id' => 'integer',
+        'imported_by_manager_user_id' => 'integer',
         'event_id' => 'integer',
         'included_count' => 'integer',
         'values_new_count' => 'integer',
@@ -92,9 +93,9 @@ class PlayerCustomFieldValueImport extends Model
         'updated_at' => 'integer',
     ];
 
-    public function importedByPlayer(): BelongsTo
+    public function importedByManager(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'imported_by_player_id', 'id_player');
+        return $this->belongsTo(User::class, 'imported_by_manager_user_id', 'id_user');
     }
 
     public function event(): BelongsTo

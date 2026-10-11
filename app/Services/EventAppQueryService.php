@@ -7,7 +7,7 @@ namespace App\Services;
 use App\Enums\Registration\RegistrationPaymentStatus;
 use App\Models\EventLotteryLucky;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Builder;
 
 final class EventAppQueryService
@@ -18,7 +18,7 @@ final class EventAppQueryService
 
     /**
      * Explicit list ordering chosen by the App timing tab:
-     * Past → date DESC, arriving_time DESC; Ongoing/Upcoming → both ASC (default).
+     * Past → event_starts_at DESC; Ongoing/Upcoming → ASC (default).
      *
      * @param  Builder<PadelEvent>  $query
      */
@@ -26,8 +26,7 @@ final class EventAppQueryService
     {
         $direction = $sort === self::SORT_DESC ? 'desc' : 'asc';
 
-        $query->orderBy('date', $direction)
-            ->orderBy('arriving_time', $direction)
+        $query->orderBy('event_starts_at', $direction)
             ->orderBy('id_event', $direction);
     }
 
@@ -66,10 +65,14 @@ final class EventAppQueryService
     public function baseQuery(array $filters): Builder
     {
         $query = PadelEvent::query()
-            ->with(['location.club', 'divisions.division', 'organizer'])
-            ->withCount('participations')
-            ->whereDate('date', '>=', $filters['date_from'])
-            ->whereDate('date', '<=', $filters['date_to']);
+            ->with(['location.club', 'divisions.division', 'organizer', 'coverImages'])
+            ->withCount('participations');
+
+        EventCalendarTiming::applyOverlapsDateRange(
+            $query,
+            $filters['date_from'],
+            $filters['date_to']
+        );
 
         $this->applySort($query, $filters['sort'] ?? self::SORT_ASC);
 
@@ -93,26 +96,26 @@ final class EventAppQueryService
      * }  $filters
      * @return Builder<PadelEvent>
      */
-    public function applyPlayerFilters(Builder $query, array $filters, Player $player): Builder
+    public function applyPlayerFilters(Builder $query, array $filters, User $player): Builder
     {
-        $playerId = (int) $player->id_player;
+        $playerId = (int) $player->id_user;
 
         if ($filters['participated'] ?? false) {
             $query->whereHas('participations', function ($q) use ($playerId) {
-                $q->where('player_id', $playerId);
+                $q->where('player_user_id', $playerId);
             });
         }
 
         if ($filters['registered'] ?? false) {
             $query->whereHas('registrations', function ($q) use ($playerId) {
-                $q->active()->where('player_id', $playerId);
+                $q->active()->where('player_user_id', $playerId);
             });
         }
 
         if ($filters['unpaid'] ?? false) {
             $query->whereHas('registrations', function ($q) use ($playerId) {
                 $q->active()
-                    ->where('player_id', $playerId)
+                    ->where('player_user_id', $playerId)
                     ->where(function ($inner) {
                         $inner->where('payment_status', RegistrationPaymentStatus::Unpaid->value)
                             ->orWhere('payment_status', RegistrationPaymentStatus::AwaitingProofReview->value)
@@ -127,7 +130,7 @@ final class EventAppQueryService
 
         if ($filters['lottery_winner'] ?? false) {
             $query->whereHas('participations', function ($q) use ($playerId) {
-                $q->where('player_id', $playerId)
+                $q->where('player_user_id', $playerId)
                     ->whereIn('id_participation', EventLotteryLucky::query()
                         ->whereNotNull('accepted_at')
                         ->select('drawn_participation_id'));

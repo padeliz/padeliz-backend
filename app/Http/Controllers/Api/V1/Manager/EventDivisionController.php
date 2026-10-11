@@ -10,7 +10,6 @@ use App\Models\EventDivision;
 use App\Models\EventParticipation;
 use App\Models\PadelEvent;
 use App\Services\Pdf\EventDivisionPosterInvalidator;
-use App\Services\Schedule\PlayingWindow;
 use App\Traits\CachesManagerResourceReads;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -41,6 +40,16 @@ class EventDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
         'include_final',
         'template_version',
         'adjust',
+    ];
+
+    /**
+     * Legacy wall-clock fields replaced by unix timestamps.
+     *
+     * @var list<string>
+     */
+    private const DROPPED_PLAYING_TIME_KEYS = [
+        'playing_start_time',
+        'playing_end_time',
     ];
 
     public function __construct(
@@ -101,8 +110,9 @@ class EventDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *             @OA\Property(property="division_id", type="string", enum={"asc", "desc"}, description="Sort by division ID"),
      *             @OA\Property(property="players_limit", type="string", enum={"asc", "desc"}, description="Sort by players limit"),
      *             @OA\Property(property="division_title", type="string", enum={"asc", "desc"}, description="Sort by division title"),
-     *             @OA\Property(property="playing_start_time", type="string", enum={"asc", "desc"}, description="Sort by playing start time"),
-     *             @OA\Property(property="playing_end_time", type="string", enum={"asc", "desc"}, description="Sort by playing end time"),
+     *             @OA\Property(property="check_in_at", type="string", enum={"asc", "desc"}, description="Sort by check-in time"),
+     *             @OA\Property(property="playing_starts_at", type="string", enum={"asc", "desc"}, description="Sort by playing start"),
+     *             @OA\Property(property="playing_ends_at", type="string", enum={"asc", "desc"}, description="Sort by playing end"),
      *             @OA\Property(property="skill_order", type="string", enum={"asc", "desc"}, description="Sort by skill order"),
      *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}, description="Sort by creation date"),
      *             @OA\Property(property="updated_at", type="string", enum={"asc", "desc"}, description="Sort by update date")
@@ -233,14 +243,15 @@ class EventDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"event_id", "division_id", "players_limit", "entry_fee", "playing_start_time", "playing_end_time"},
+     *             required={"event_id", "division_id", "players_limit", "entry_fee", "playing_starts_at", "playing_ends_at"},
      *             @OA\Property(property="event_id", type="integer", description="PadelEvent ID"),
      *             @OA\Property(property="division_id", type="integer", description="Division ID"),
      *             @OA\Property(property="players_limit", type="integer", description="Players limit"),
      *             @OA\Property(property="entry_fee", type="integer", minimum=0, description="Entry fee in RON"),
      *             @OA\Property(property="division_title", type="string", maxLength=64, description="Division title. Defaults to the division name when omitted"),
-     *             @OA\Property(property="playing_start_time", type="string", format="time", description="Playing start time"),
-     *             @OA\Property(property="playing_end_time", type="string", format="time", description="Playing end time"),
+     *             @OA\Property(property="check_in_at", type="integer", format="timestamp", nullable=true, description="Unix timestamp for division check-in"),
+     *             @OA\Property(property="playing_starts_at", type="integer", format="timestamp", description="Unix timestamp when division play starts"),
+     *             @OA\Property(property="playing_ends_at", type="integer", format="timestamp", description="Unix timestamp when division play ends"),
      *             @OA\Property(property="skill_order", type="integer", description="Ordering of divisions by skill within the edition. Defaults to the next free slot in the edition")
      *         )
      *     ),
@@ -287,13 +298,14 @@ class EventDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
                 'division_title' => 'nullable|string|max:64',
                 'players_limit' => 'required|integer|min:1',
                 'entry_fee' => 'required|integer|min:0',
-                'playing_start_time' => ['required', PlayingWindow::clockRegexRule()],
-                'playing_end_time' => ['required', PlayingWindow::clockRegexRule()],
+                'check_in_at' => 'nullable|integer|min:0',
+                'playing_starts_at' => 'required|integer|min:0',
+                'playing_ends_at' => 'required|integer|min:0',
                 'skill_order' => 'nullable|integer|min:0',
                 'level_min' => 'nullable|numeric|between:0,9.99',
                 'level_max' => 'nullable|numeric|between:0,9.99',
-            ], $this->movedScheduleKeyRules()),
-            $this->movedScheduleKeyMessages()
+            ], $this->movedScheduleKeyRules(), $this->droppedPlayingTimeKeyRules()),
+            array_merge($this->movedScheduleKeyMessages(), $this->droppedPlayingTimeKeyMessages())
         );
 
         $event = PadelEvent::query()->find($validated['event_id']);
@@ -309,11 +321,10 @@ class EventDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
 
         $validated['skill_order'] = $validated['skill_order']
             ?? $this->nextSkillOrder((int) $validated['event_id']);
-        $validated['playing_start_time'] = PlayingWindow::normalizeStoredTime((string) $validated['playing_start_time']);
-        $validated['playing_end_time'] = PlayingWindow::normalizeStoredTime((string) $validated['playing_end_time']);
-        $this->assertDistinctPlayingWindow(
-            (string) $validated['playing_start_time'],
-            (string) $validated['playing_end_time']
+        $this->assertPlayingWindowOrdering(
+            isset($validated['check_in_at']) ? (int) $validated['check_in_at'] : null,
+            (int) $validated['playing_starts_at'],
+            (int) $validated['playing_ends_at']
         );
 
         $eventDivision = EventDivision::create($validated);
@@ -347,8 +358,9 @@ class EventDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *             @OA\Property(property="players_limit", type="integer", description="Players limit"),
      *             @OA\Property(property="entry_fee", type="integer", minimum=0, description="Entry fee in RON"),
      *             @OA\Property(property="division_title", type="string", maxLength=64, description="Division title"),
-     *             @OA\Property(property="playing_start_time", type="string", format="time", description="Playing start time"),
-     *             @OA\Property(property="playing_end_time", type="string", format="time", description="Playing end time"),
+     *             @OA\Property(property="check_in_at", type="integer", format="timestamp", nullable=true, description="Unix timestamp for division check-in"),
+     *             @OA\Property(property="playing_starts_at", type="integer", format="timestamp", description="Unix timestamp when division play starts"),
+     *             @OA\Property(property="playing_ends_at", type="integer", format="timestamp", description="Unix timestamp when division play ends"),
      *             @OA\Property(property="skill_order", type="integer", description="Ordering of divisions by skill within the edition")
      *         )
      *     ),
@@ -405,24 +417,22 @@ class EventDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
                 'division_title' => 'required|string|max:64',
                 'players_limit' => 'required|integer|min:1',
                 'entry_fee' => 'nullable|integer|min:0',
-                'playing_start_time' => ['required', PlayingWindow::clockRegexRule()],
-                'playing_end_time' => ['required', PlayingWindow::clockRegexRule()],
+                'check_in_at' => 'nullable|integer|min:0',
+                'playing_starts_at' => 'required|integer|min:0',
+                'playing_ends_at' => 'required|integer|min:0',
                 'skill_order' => 'nullable|integer|min:0',
                 'level_min' => 'nullable|numeric|between:0,9.99',
                 'level_max' => 'nullable|numeric|between:0,9.99',
-            ], $this->movedScheduleKeyRules()),
-            $this->movedScheduleKeyMessages()
+            ], $this->movedScheduleKeyRules(), $this->droppedPlayingTimeKeyRules()),
+            array_merge($this->movedScheduleKeyMessages(), $this->droppedPlayingTimeKeyMessages())
         );
 
-        if (isset($validated['playing_start_time'])) {
-            $validated['playing_start_time'] = PlayingWindow::normalizeStoredTime((string) $validated['playing_start_time']);
-        }
-        if (isset($validated['playing_end_time'])) {
-            $validated['playing_end_time'] = PlayingWindow::normalizeStoredTime((string) $validated['playing_end_time']);
-        }
-        $this->assertDistinctPlayingWindow(
-            (string) ($validated['playing_start_time'] ?? $eventDivision->getAttributes()['playing_start_time']),
-            (string) ($validated['playing_end_time'] ?? $eventDivision->getAttributes()['playing_end_time'])
+        $this->assertPlayingWindowOrdering(
+            array_key_exists('check_in_at', $validated)
+                ? ($validated['check_in_at'] !== null ? (int) $validated['check_in_at'] : null)
+                : ($eventDivision->check_in_at !== null ? (int) $eventDivision->check_in_at : null),
+            (int) $validated['playing_starts_at'],
+            (int) $validated['playing_ends_at']
         );
 
         $this->applyAndInvalidatePosters($eventDivision, $validated);
@@ -454,8 +464,9 @@ class EventDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
      *             @OA\Property(property="players_limit", type="integer", description="Players limit"),
      *             @OA\Property(property="entry_fee", type="integer", minimum=0, description="Entry fee in RON"),
      *             @OA\Property(property="division_title", type="string", maxLength=64, description="Division title"),
-     *             @OA\Property(property="playing_start_time", type="string", format="time", description="Playing start time"),
-     *             @OA\Property(property="playing_end_time", type="string", format="time", description="Playing end time"),
+     *             @OA\Property(property="check_in_at", type="integer", format="timestamp", nullable=true, description="Unix timestamp for division check-in"),
+     *             @OA\Property(property="playing_starts_at", type="integer", format="timestamp", description="Unix timestamp when division play starts"),
+     *             @OA\Property(property="playing_ends_at", type="integer", format="timestamp", description="Unix timestamp when division play ends"),
      *             @OA\Property(property="skill_order", type="integer", description="Ordering of divisions by skill within the edition")
      *         )
      *     ),
@@ -512,25 +523,29 @@ class EventDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
                 'division_title' => 'sometimes|string|max:64',
                 'players_limit' => 'sometimes|integer|min:1',
                 'entry_fee' => 'sometimes|integer|min:0',
-                'playing_start_time' => ['sometimes', PlayingWindow::clockRegexRule()],
-                'playing_end_time' => ['sometimes', PlayingWindow::clockRegexRule()],
+                'check_in_at' => 'sometimes|nullable|integer|min:0',
+                'playing_starts_at' => 'sometimes|integer|min:0',
+                'playing_ends_at' => 'sometimes|integer|min:0',
                 'skill_order' => 'sometimes|integer|min:0',
                 'level_min' => 'sometimes|nullable|numeric|between:0,9.99',
                 'level_max' => 'sometimes|nullable|numeric|between:0,9.99',
-            ], $this->movedScheduleKeyRules()),
-            $this->movedScheduleKeyMessages()
+            ], $this->movedScheduleKeyRules(), $this->droppedPlayingTimeKeyRules()),
+            array_merge($this->movedScheduleKeyMessages(), $this->droppedPlayingTimeKeyMessages())
         );
 
-        if (isset($validated['playing_start_time'])) {
-            $validated['playing_start_time'] = PlayingWindow::normalizeStoredTime((string) $validated['playing_start_time']);
-        }
-        if (isset($validated['playing_end_time'])) {
-            $validated['playing_end_time'] = PlayingWindow::normalizeStoredTime((string) $validated['playing_end_time']);
-        }
-        if (isset($validated['playing_start_time']) || isset($validated['playing_end_time'])) {
-            $this->assertDistinctPlayingWindow(
-                (string) ($validated['playing_start_time'] ?? $eventDivision->getAttributes()['playing_start_time']),
-                (string) ($validated['playing_end_time'] ?? $eventDivision->getAttributes()['playing_end_time'])
+        if (
+            array_key_exists('check_in_at', $validated)
+            || array_key_exists('playing_starts_at', $validated)
+            || array_key_exists('playing_ends_at', $validated)
+        ) {
+            $checkInAt = array_key_exists('check_in_at', $validated)
+                ? ($validated['check_in_at'] !== null ? (int) $validated['check_in_at'] : null)
+                : ($eventDivision->check_in_at !== null ? (int) $eventDivision->check_in_at : null);
+
+            $this->assertPlayingWindowOrdering(
+                $checkInAt,
+                (int) ($validated['playing_starts_at'] ?? $eventDivision->playing_starts_at),
+                (int) ($validated['playing_ends_at'] ?? $eventDivision->playing_ends_at)
             );
         }
 
@@ -986,15 +1001,45 @@ class EventDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
         return $messages;
     }
 
-    private function assertDistinctPlayingWindow(string $start, string $end): void
+    /**
+     * @return array<string, string>
+     */
+    private function droppedPlayingTimeKeyRules(): array
     {
-        if (PlayingWindow::windowsAreDistinct($start, $end)) {
-            return;
+        return array_fill_keys(self::DROPPED_PLAYING_TIME_KEYS, 'prohibited');
+    }
+
+    /**
+     * @return array<string, string>
+     */
+    private function droppedPlayingTimeKeyMessages(): array
+    {
+        $messages = [];
+        foreach (self::DROPPED_PLAYING_TIME_KEYS as $key) {
+            $messages[$key . '.prohibited'] = sprintf(
+                'The %s field was replaced by playing_starts_at / playing_ends_at unix timestamps.',
+                $key
+            );
         }
 
-        throw ValidationException::withMessages([
-            'playing_end_time' => ['Playing start time and playing end time must differ.'],
-        ]);
+        return $messages;
+    }
+
+    private function assertPlayingWindowOrdering(?int $checkInAt, int $playingStartsAt, int $playingEndsAt): void
+    {
+        $errors = [];
+
+        if ($playingStartsAt >= $playingEndsAt) {
+            $errors['playing_ends_at'] = ['Playing start must be before playing end.'];
+        }
+
+        if ($checkInAt !== null && $checkInAt > $playingStartsAt) {
+            $errors['check_in_at'] = ['Check-in must be on or before playing start.'];
+        }
+
+        if ($errors !== []) {
+            throw ValidationException::withMessages($errors);
+        }
     }
 
     private function nextSkillOrder(int $editionId): int
@@ -1016,14 +1061,16 @@ class EventDivisionController extends \App\Http\Controllers\BaseVersions\V1\V1Ba
         $playingWindowChanged = false;
         $attendanceChanged = false;
 
-        foreach (['playing_start_time', 'playing_end_time'] as $field) {
+        foreach (['playing_starts_at', 'playing_ends_at', 'check_in_at'] as $field) {
             if (! array_key_exists($field, $validated)) {
                 continue;
             }
-            $incoming = PlayingWindow::toClockString($validated[$field]);
-            $current = PlayingWindow::toClockString($eventDivision->getAttribute($field));
-            if ($incoming !== $current) {
-                $playingWindowChanged = true;
+            if ((string) $validated[$field] !== (string) $eventDivision->getAttribute($field)) {
+                if ($field === 'check_in_at') {
+                    $attendanceChanged = true;
+                } else {
+                    $playingWindowChanged = true;
+                }
             }
         }
 

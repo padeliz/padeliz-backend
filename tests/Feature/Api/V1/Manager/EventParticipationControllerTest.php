@@ -9,12 +9,14 @@ use App\Models\Division;
 use App\Models\EventDivision;
 use App\Models\EventParticipation;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerCustomField;
 use App\Models\PlayerCustomFieldValue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
+use Carbon\Carbon;
 
 class EventParticipationControllerTest extends TestCase
 {
@@ -34,14 +36,14 @@ class EventParticipationControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'first_name' => 'Test', 'middle_name' => null, 'last_name' => 'Manager',
             'user_types' => ['player', 'manager'],
         ]);
 
         $this->event = PadelEvent::factory()->create([
             'name' => 'Test PadelEvent',
-            'date' => '2026-06-15',
+            ...UnixEventFactory::eventBounds('2026-06-15'),
         ]);
 
         $this->division = Division::factory()->create([
@@ -54,7 +56,7 @@ class EventParticipationControllerTest extends TestCase
             'division_title' => $this->division->name,
         ]);
 
-        $this->player = Player::factory()->create([
+        $this->player = User::factory()->create([
             'first_name' => 'Test', 'middle_name' => null, 'last_name' => 'Player',
         ]);
     }
@@ -75,7 +77,7 @@ class EventParticipationControllerTest extends TestCase
                     '*' => [
                         'id_participation',
                         'event_id',
-                        'player_id',
+                        'player_user_id',
                         'event_division_id',
                         'absence_reason',
                         'ban_reason',
@@ -107,7 +109,7 @@ class EventParticipationControllerTest extends TestCase
 
         $eventParticipation = EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ]);
 
@@ -120,7 +122,7 @@ class EventParticipationControllerTest extends TestCase
                 'data' => [
                     'id_participation' => $eventParticipation->id_participation,
                     'event_id' => $this->event->id_event,
-                    'player_id' => $this->player->id_player,
+                    'player_user_id' => $this->player->id_user,
                     'event_division_id' => $this->eventDivision->id_event_division,
                 ],
             ]);
@@ -136,7 +138,7 @@ class EventParticipationControllerTest extends TestCase
 
         $eventParticipationData = [
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
             'absence_reason' => null,
             'ban_reason' => null,
@@ -150,7 +152,7 @@ class EventParticipationControllerTest extends TestCase
                 'message' => 'Participation created successfully',
                 'data' => [
                     'event_id' => $this->event->id_event,
-                    'player_id' => $this->player->id_player,
+                    'player_user_id' => $this->player->id_user,
                     'event_division_id' => $this->eventDivision->id_event_division,
                 ],
             ]);
@@ -159,7 +161,7 @@ class EventParticipationControllerTest extends TestCase
 
         $this->assertDatabaseHas('event_participations', [
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ]);
     }
@@ -170,13 +172,13 @@ class EventParticipationControllerTest extends TestCase
 
         $eventParticipation = EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ]);
 
         $updateData = [
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
             'sort_order' => 1,
             'is_collecting_points' => true,
@@ -203,7 +205,7 @@ class EventParticipationControllerTest extends TestCase
 
         $eventParticipation = EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
             'is_collecting_points' => true,
         ]);
@@ -229,7 +231,7 @@ class EventParticipationControllerTest extends TestCase
 
         $eventParticipation = EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ]);
 
@@ -239,18 +241,30 @@ class EventParticipationControllerTest extends TestCase
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['event_id', 'player_id', 'event_division_id', 'sort_order', 'is_collecting_points']);
+            ->assertJsonValidationErrors(['event_id', 'player_user_id', 'event_division_id', 'sort_order', 'is_collecting_points']);
 
         $response = $this->putJson("/api/v1/manager/event-participations/{$eventParticipation->id_participation}", [
             'event_id' => '',
-            'player_id' => '',
+            'player_user_id' => '',
             'event_division_id' => '',
             'sort_order' => '',
             'is_collecting_points' => '',
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['event_id', 'player_id', 'event_division_id', 'sort_order', 'is_collecting_points']);
+            ->assertJsonValidationErrors(['event_id', 'player_user_id', 'event_division_id', 'sort_order', 'is_collecting_points']);
+    }
+
+    public function test_store_rejects_legacy_player_id(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $this->postJson('/api/v1/manager/event-participations', [
+            'event_id' => $this->event->id_event,
+            'player_id' => $this->player->id_user,
+            'event_division_id' => $this->eventDivision->id_event_division,
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['player_id', 'player_user_id']);
     }
 
     public function test_manager_can_delete_participation()
@@ -259,7 +273,7 @@ class EventParticipationControllerTest extends TestCase
 
         $eventParticipation = EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ]);
 
@@ -391,14 +405,14 @@ class EventParticipationControllerTest extends TestCase
         // Create first participation
         EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ]);
 
         // Try to create duplicate
         $duplicateData = [
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ];
 
@@ -415,25 +429,25 @@ class EventParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $player2 = Player::factory()->create();
+        $player2 = User::factory()->create();
 
         // Create two different participations
         $eventParticipation1 = EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ]);
 
         $eventParticipation2 = EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $player2->id_player,
+            'player_user_id' => $player2->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ]);
 
         // Try to update second to match first
         $response = $this->putJson("/api/v1/manager/event-participations/{$eventParticipation2->id_participation}", [
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
             'sort_order' => 0,
             'is_collecting_points' => true,
@@ -453,7 +467,7 @@ class EventParticipationControllerTest extends TestCase
         $response = $this->postJson('/api/v1/manager/event-participations', []);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['event_id', 'player_id', 'event_division_id']);
+            ->assertJsonValidationErrors(['event_id', 'player_user_id', 'event_division_id']);
     }
 
     public function test_participation_creation_validation_invalid_player()
@@ -462,12 +476,12 @@ class EventParticipationControllerTest extends TestCase
 
         $response = $this->postJson('/api/v1/manager/event-participations', [
             'event_id' => $this->event->id_event,
-            'player_id' => 99999, // Non-existent player
+            'player_user_id' => 99999, // Non-existent player
             'event_division_id' => $this->eventDivision->id_event_division,
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['player_id']);
+            ->assertJsonValidationErrors(['player_user_id']);
     }
 
     public function test_participation_creation_validation_invalid_division()
@@ -476,7 +490,7 @@ class EventParticipationControllerTest extends TestCase
 
         $response = $this->postJson('/api/v1/manager/event-participations', [
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => 99999, // Non-existent division
         ]);
 
@@ -494,11 +508,11 @@ class EventParticipationControllerTest extends TestCase
 
         $response = $this->putJson("/api/v1/manager/event-participations/{$eventParticipation->id_participation}", [
             'event_id' => $this->event->id_event,
-            'player_id' => 99999, // Non-existent player
+            'player_user_id' => 99999, // Non-existent player
         ]);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['player_id']);
+            ->assertJsonValidationErrors(['player_user_id']);
     }
 
     public function test_participation_requires_manager_authentication()
@@ -510,7 +524,7 @@ class EventParticipationControllerTest extends TestCase
 
     public function test_regular_player_cannot_access_participation_management()
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
 
         $response = $this->getJson('/api/v1/manager/event-participations');
@@ -543,7 +557,7 @@ class EventParticipationControllerTest extends TestCase
                     '*' => [
                         'id_participation',
                         'event_id',
-                        'player_id',
+                        'player_user_id',
                         'event_division_id',
                     ],
                 ],
@@ -575,7 +589,7 @@ class EventParticipationControllerTest extends TestCase
 
         $eventParticipationData = [
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
             // Not providing optional fields
         ];
@@ -590,7 +604,7 @@ class EventParticipationControllerTest extends TestCase
 
         $this->assertDatabaseHas('event_participations', [
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
             'sort_order' => 0,
             'is_collecting_points' => 1,
@@ -601,7 +615,7 @@ class EventParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $pastEdition = PadelEvent::factory()->create(['date' => '2026-01-01']);
+        $pastEdition = PadelEvent::factory()->create(UnixEventFactory::eventBounds('2026-01-01'));
         $pastDivision = Division::factory()->create(['color' => '#ff5500']);
         $pastEd = EventDivision::factory()->create([
             'event_id' => $pastEdition->id_event,
@@ -610,7 +624,7 @@ class EventParticipationControllerTest extends TestCase
         ]);
         EventParticipation::factory()->create([
             'event_id' => $pastEdition->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $pastEd->id_event_division,
             'absence_reason' => null,
             'ban_reason' => null,
@@ -618,7 +632,7 @@ class EventParticipationControllerTest extends TestCase
 
         EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
             'absence_reason' => null,
             'ban_reason' => null,
@@ -629,7 +643,7 @@ class EventParticipationControllerTest extends TestCase
         );
 
         $response->assertStatus(200);
-        $row = collect($response->json('data'))->firstWhere('player_id', $this->player->id_player);
+        $row = collect($response->json('data'))->firstWhere('player_user_id', $this->player->id_user);
         $this->assertNotNull($row);
         $this->assertArrayHasKey('player_history', $row);
         $this->assertSame(1, $row['player_history']['participated_count']);
@@ -652,7 +666,7 @@ class EventParticipationControllerTest extends TestCase
 
         EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ]);
 
@@ -669,7 +683,7 @@ class EventParticipationControllerTest extends TestCase
 
         $participation = EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ]);
 
@@ -677,10 +691,10 @@ class EventParticipationControllerTest extends TestCase
         $show->assertStatus(200);
         $this->assertArrayNotHasKey('player_history', $show->json('data'));
 
-        $otherPlayer = Player::factory()->create();
+        $otherPlayer = User::factory()->create();
         $create = $this->postJson('/api/v1/manager/event-participations', [
             'event_id' => $this->event->id_event,
-            'player_id' => $otherPlayer->id_player,
+            'player_user_id' => $otherPlayer->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ]);
         $create->assertStatus(201);
@@ -688,7 +702,7 @@ class EventParticipationControllerTest extends TestCase
 
         $update = $this->putJson("/api/v1/manager/event-participations/{$participation->id_participation}", [
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
             'sort_order' => 0,
             'is_collecting_points' => true,
@@ -728,12 +742,12 @@ class EventParticipationControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $registered = Player::factory()->create();
-        $unregistered = Player::factory()->create();
+        $registered = User::factory()->create();
+        $unregistered = User::factory()->create();
         \App\Models\EventRegistration::factory()->create([
             'event_id' => $this->event->id_event,
             'event_division_id' => $this->eventDivision->id_event_division,
-            'player_id' => $registered->id_player,
+            'player_user_id' => $registered->id_user,
             'is_student' => false,
             'payment' => 50,
         ]);
@@ -741,12 +755,12 @@ class EventParticipationControllerTest extends TestCase
         EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
             'event_division_id' => $this->eventDivision->id_event_division,
-            'player_id' => $registered->id_player,
+            'player_user_id' => $registered->id_user,
         ]);
         EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
             'event_division_id' => $this->eventDivision->id_event_division,
-            'player_id' => $unregistered->id_player,
+            'player_user_id' => $unregistered->id_user,
         ]);
 
         $response = $this->getJson(
@@ -795,7 +809,7 @@ class EventParticipationControllerTest extends TestCase
 
         EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ]);
 
@@ -804,7 +818,7 @@ class EventParticipationControllerTest extends TestCase
         );
 
         $response->assertOk();
-        $row = collect($response->json('data'))->firstWhere('player_id', $this->player->id_player);
+        $row = collect($response->json('data'))->firstWhere('player_user_id', $this->player->id_user);
         $this->assertNotNull($row);
         $this->assertArrayHasKey('custom_field_values', $row);
         $this->assertSame([], $row['custom_field_values']);
@@ -816,13 +830,13 @@ class EventParticipationControllerTest extends TestCase
 
         $field = PlayerCustomField::factory()->create(['type' => PlayerCustomFieldType::Text]);
         PlayerCustomFieldValue::factory()->create([
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'player_custom_field_id' => $field->id_player_custom_field,
             'value_text' => 'Should not appear',
         ]);
         EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ]);
 
@@ -844,14 +858,14 @@ class EventParticipationControllerTest extends TestCase
             'type' => PlayerCustomFieldType::Text,
         ]);
         PlayerCustomFieldValue::factory()->create([
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'player_custom_field_id' => $field->id_player_custom_field,
             'value_text' => 'Padel Club',
             'inserted_at' => \Carbon\Carbon::parse('2026-06-01', config('app.timezone'))->timestamp,
         ]);
         EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ]);
 
@@ -862,7 +876,7 @@ class EventParticipationControllerTest extends TestCase
         );
 
         $response->assertOk();
-        $row = collect($response->json('data'))->firstWhere('player_id', $this->player->id_player);
+        $row = collect($response->json('data'))->firstWhere('player_user_id', $this->player->id_user);
         $this->assertNotNull($row);
         $this->assertSame('Club', $row['custom_field_values'][0]['label']);
         $this->assertSame('Padel Club', $row['custom_field_values'][0]['value']);
@@ -880,7 +894,7 @@ class EventParticipationControllerTest extends TestCase
 
         EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ]);
 
@@ -891,7 +905,7 @@ class EventParticipationControllerTest extends TestCase
         );
 
         $response->assertOk();
-        $row = collect($response->json('data'))->firstWhere('player_id', $this->player->id_player);
+        $row = collect($response->json('data'))->firstWhere('player_user_id', $this->player->id_user);
         $this->assertNotNull($row);
         $this->assertSame([], $row['custom_field_values']);
     }
@@ -903,14 +917,14 @@ class EventParticipationControllerTest extends TestCase
         $participation = EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
             'event_division_id' => $this->eventDivision->id_event_division,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'is_collecting_points' => true,
         ]);
 
         \App\Models\CachedPdfPlayerImage::query()->create([
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'player_is_collecting_points' => false,
-            'picture_path' => 'cached-pdf-player-images/' . $this->player->id_player . '/false.png',
+            'picture_path' => 'cached-pdf-player-images/' . $this->player->id_user . '/false.png',
         ]);
 
         $miss = $this->getJson(
@@ -921,9 +935,9 @@ class EventParticipationControllerTest extends TestCase
         $this->assertNull($missRow['pdf_avatar_url']);
 
         \App\Models\CachedPdfPlayerImage::query()->create([
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'player_is_collecting_points' => true,
-            'picture_path' => 'cached-pdf-player-images/' . $this->player->id_player . '/true.png',
+            'picture_path' => 'cached-pdf-player-images/' . $this->player->id_user . '/true.png',
         ]);
 
         $response = $this->getJson(
@@ -941,7 +955,7 @@ class EventParticipationControllerTest extends TestCase
         $participation = EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
             'event_division_id' => $this->eventDivision->id_event_division,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'is_collecting_points' => true,
         ]);
 
@@ -952,9 +966,9 @@ class EventParticipationControllerTest extends TestCase
         $this->assertNull($warmRow['pdf_avatar_url']);
 
         \App\Models\CachedPdfPlayerImage::query()->create([
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'player_is_collecting_points' => true,
-            'picture_path' => 'cached-pdf-player-images/' . $this->player->id_player . '/fresh.png',
+            'picture_path' => 'cached-pdf-player-images/' . $this->player->id_user . '/fresh.png',
         ]);
 
         $again = $this->getJson(
@@ -971,13 +985,13 @@ class EventParticipationControllerTest extends TestCase
         $participation = EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
             'event_division_id' => $this->eventDivision->id_event_division,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'is_collecting_points' => true,
         ]);
         \App\Models\CachedPdfPlayerImage::query()->create([
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'player_is_collecting_points' => true,
-            'picture_path' => 'cached-pdf-player-images/' . $this->player->id_player . '/show.png',
+            'picture_path' => 'cached-pdf-player-images/' . $this->player->id_user . '/show.png',
         ]);
 
         $response = $this->getJson("/api/v1/manager/event-participations/{$participation->id_participation}")

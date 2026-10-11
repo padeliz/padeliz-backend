@@ -12,9 +12,9 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @OA\Schema(
  *     schema="PlayerLevel",
- *     required={"player_id", "level"},
+ *     required={"player_user_id", "level"},
  *     @OA\Property(property="id_player_level", type="integer", format="int64", readOnly=true, title="ID"),
- *     @OA\Property(property="player_id", type="integer", format="int64", title="Player"),
+ *     @OA\Property(property="player_user_id", type="integer", format="int64", title="Player"),
  *     @OA\Property(property="level", type="string", title="Level", description="Two-decimal level inside a seeded band", example="3.50"),
  *     @OA\Property(property="player_level_assessment_id", type="integer", format="int64", nullable=true, title="Assessment"),
  *     @OA\Property(property="event_participation_id", type="integer", format="int64", nullable=true, title="Participation"),
@@ -30,13 +30,13 @@ class PlayerLevel extends Model
     public static array $searchableFields = [];
 
     public static array $filterableFields = [
-        'player_id',
+        'player_user_id',
         'level',
     ];
 
     public static array $sortableFields = [
         'id_player_level',
-        'player_id',
+        'player_user_id',
         'level',
         'inserted_at',
         'updated_at',
@@ -57,14 +57,14 @@ class PlayerLevel extends Model
     public const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
-        'player_id',
+        'player_user_id',
         'level',
         'player_level_assessment_id',
         'event_participation_id',
     ];
 
     protected $casts = [
-        'player_id' => 'integer',
+        'player_user_id' => 'integer',
         'level' => 'decimal:2',
         'player_level_assessment_id' => 'integer',
         'event_participation_id' => 'integer',
@@ -74,7 +74,7 @@ class PlayerLevel extends Model
 
     public function player(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'player_id', 'id_player');
+        return $this->belongsTo(User::class, 'player_user_id', 'id_user');
     }
 
     public function assessment(): BelongsTo

@@ -34,7 +34,7 @@ class ResourceMetadataController extends V1BaseController
      *         name="schema",
      *         in="path",
      *         required=true,
-     *         description="(e.g., Club, Division, PadelEvent, EventDivision, EventLottery, EventLotteryLucky, EventLotteryPrize, EventParticipation, EventRegistration, PlayerLevelAssessment, Location, Player, PlayerImport, PlayerImportRow, PlayerProfileImageImport, PlayerProfileImageImportRow, Prize, Sponsor, SponsorPrize)",
+     *         description="(e.g., Club, Division, PadelEvent, EventDivision, EventLottery, EventLotteryLucky, EventLotteryPrize, EventParticipation, EventRegistration, PlayerLevelAssessment, Location, User, UserImport, UserImportRow, PlayerProfileImageImport, PlayerProfileImageImportRow, Prize, Sponsor, SponsorPrize)",
      *         @OA\Schema(type="string", example="EventParticipation")
      *     ),
      *     @OA\Response(

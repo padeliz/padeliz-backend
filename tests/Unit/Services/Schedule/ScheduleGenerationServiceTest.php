@@ -29,7 +29,7 @@ final class ScheduleGenerationServiceTest extends TestCase
             false,
         );
 
-        $this->assertSame($playerIds, $result['player_ids']);
+        $this->assertSame($playerIds, $result['player_user_ids']);
         $this->assertSame(1, $result['courts_count']);
         $this->assertGreaterThan(0, $result['rounds_total']);
         $this->assertGreaterThan(0, $result['matches_count']);

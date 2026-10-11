@@ -6,7 +6,7 @@ namespace Tests\Unit\Services\Pdf;
 
 use App\Models\CachedPdfPairImage;
 use App\Models\CachedPdfPlayerImage;
-use App\Models\Player;
+use App\Models\User;
 use App\Services\Pdf\CachedPdfPairImageService;
 use App\Services\Pdf\CachedPdfPlayerImageService;
 use App\Services\Pdf\PdfCachedImageGenerator;
@@ -30,7 +30,7 @@ final class PdfCachedImageGeneratorTest extends TestCase
 
     public function test_player_avatar_url_persists_row_and_removes_initials_temp(): void
     {
-        $player = Player::factory()->create(['first_name' => 'Ana', 'last_name' => 'Pop']);
+        $player = User::factory()->create(['first_name' => 'Ana', 'last_name' => 'Pop']);
         // Non-null source id so the fixture path is not treated as ephemeral and deleted.
         $resolved = new PdfPlayerPhotoForCache(PdfFixtures::solidRed200Path(), 1);
 
@@ -44,7 +44,7 @@ final class PdfCachedImageGeneratorTest extends TestCase
             ->once()
             ->andReturnUsing(function (int $playerId): string {
                 $row = CachedPdfPlayerImage::query()->create([
-                    'player_id' => $playerId,
+                    'player_user_id' => $playerId,
                     'player_is_collecting_points' => true,
                     'picture_path' => null,
                     'source_player_profile_image_id' => null,
@@ -69,8 +69,8 @@ final class PdfCachedImageGeneratorTest extends TestCase
 
     public function test_pair_image_url_removes_initials_temps(): void
     {
-        $p1 = Player::factory()->create();
-        $p2 = Player::factory()->create();
+        $p1 = User::factory()->create();
+        $p2 = User::factory()->create();
         $resolved = new PdfPlayerPhotoForCache(PdfFixtures::solidRed200Path(), 1);
 
         $photoResolver = Mockery::mock(PdfPlayerPhotoForCacheResolver::class);
@@ -85,8 +85,8 @@ final class PdfCachedImageGeneratorTest extends TestCase
                 $left = min($id1, $id2);
                 $right = max($id1, $id2);
                 $row = CachedPdfPairImage::query()->create([
-                    'player_1_id' => $left,
-                    'player_2_id' => $right,
+                    'player_1_user_id' => $left,
+                    'player_2_user_id' => $right,
                     'player_1_is_collecting_points' => true,
                     'player_2_is_collecting_points' => true,
                     'picture_path' => null,
@@ -112,9 +112,9 @@ final class PdfCachedImageGeneratorTest extends TestCase
 
     public function test_pair_image_url_removes_mirrored_temp_for_reversed_ids(): void
     {
-        $p1 = Player::factory()->create();
-        $p2 = Player::factory()->create();
-        $low = (int) $p1->id_player <= (int) $p2->id_player ? $p1 : $p2;
+        $p1 = User::factory()->create();
+        $p2 = User::factory()->create();
+        $low = (int) $p1->id_user <= (int) $p2->id_user ? $p1 : $p2;
         $high = $low === $p1 ? $p2 : $p1;
         $resolved = new PdfPlayerPhotoForCache(PdfFixtures::solidRed200Path(), 1);
 
@@ -131,8 +131,8 @@ final class PdfCachedImageGeneratorTest extends TestCase
                 $right = max($id1, $id2);
                 $row = CachedPdfPairImage::query()->firstOrCreate(
                     [
-                        'player_1_id' => $left,
-                        'player_2_id' => $right,
+                        'player_1_user_id' => $left,
+                        'player_2_user_id' => $right,
                         'player_1_is_collecting_points' => true,
                         'player_2_is_collecting_points' => true,
                     ],
@@ -164,13 +164,13 @@ final class PdfCachedImageGeneratorTest extends TestCase
     /**
      * @return list<string>
      */
-    private function initialsTempsFor(Player $player): array
+    private function initialsTempsFor(User $player): array
     {
         $dir = storage_path('app/tmp/pdf-initials-placeholders');
         if (! is_dir($dir)) {
             return [];
         }
 
-        return array_values(glob($dir . '/player_' . $player->id_player . '_*.png') ?: []);
+        return array_values(glob($dir . '/player_' . $player->id_user . '_*.png') ?: []);
     }
 }

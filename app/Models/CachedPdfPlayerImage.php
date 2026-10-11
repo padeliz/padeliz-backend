@@ -28,14 +28,14 @@ class CachedPdfPlayerImage extends Model
     public const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
-        'player_id',
+        'player_user_id',
         'player_is_collecting_points',
         'picture_path',
         'source_player_profile_image_id',
     ];
 
     protected $casts = [
-        'player_id' => 'integer',
+        'player_user_id' => 'integer',
         'player_is_collecting_points' => 'boolean',
         'source_player_profile_image_id' => 'integer',
         'inserted_at' => 'integer',
@@ -55,7 +55,7 @@ class CachedPdfPlayerImage extends Model
 
     public function player(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'player_id', 'id_player');
+        return $this->belongsTo(User::class, 'player_user_id', 'id_user');
     }
 
     public function sourcePlayerProfileImage(): BelongsTo
@@ -83,7 +83,7 @@ class CachedPdfPlayerImage extends Model
     public static function urlForPlayer(int $playerId, bool $collecting): ?string
     {
         $cached = static::query()
-            ->where('player_id', $playerId)
+            ->where('player_user_id', $playerId)
             ->where('player_is_collecting_points', $collecting)
             ->first();
 
@@ -93,7 +93,7 @@ class CachedPdfPlayerImage extends Model
     /**
      * Batch lookup keyed by "{playerId}:{0|1}".
      *
-     * @param  list<array{player_id: int, collecting: bool}>  $pairs
+     * @param  list<array{player_user_id: int, collecting: bool}>  $pairs
      * @return array<string, null|string>
      */
     public static function urlsByPlayerCollectingPairs(array $pairs): array
@@ -103,23 +103,23 @@ class CachedPdfPlayerImage extends Model
         }
 
         $playerIds = array_values(array_unique(array_map(
-            static fn (array $row): int => (int) $row['player_id'],
+            static fn (array $row): int => (int) $row['player_user_id'],
             $pairs
         )));
 
         $images = static::query()
-            ->whereIn('player_id', $playerIds)
+            ->whereIn('player_user_id', $playerIds)
             ->get();
 
         $byKey = [];
         foreach ($images as $image) {
             $flag = $image->player_is_collecting_points ? '1' : '0';
-            $byKey[$image->player_id . ':' . $flag] = $image->url;
+            $byKey[$image->player_user_id . ':' . $flag] = $image->url;
         }
 
         $result = [];
         foreach ($pairs as $pair) {
-            $playerId = (int) $pair['player_id'];
+            $playerId = (int) $pair['player_user_id'];
             $key = $playerId . ':' . ($pair['collecting'] ? '1' : '0');
             $result[$key] = $byKey[$key] ?? null;
         }
@@ -128,7 +128,7 @@ class CachedPdfPlayerImage extends Model
     }
 
     /**
-     * PlayerResource preference: collecting=true URL if present, else any cached URL.
+     * UserResource preference: collecting=true URL if present, else any cached URL.
      */
     public static function urlForPlayerPreferCollecting(int $playerId): ?string
     {

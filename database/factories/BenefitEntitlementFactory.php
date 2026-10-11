@@ -8,7 +8,7 @@ use App\Enums\Benefit\BenefitEntitlementSourceType;
 use App\Enums\Benefit\BenefitEntitlementStatus;
 use App\Models\BenefitDefinition;
 use App\Models\BenefitEntitlement;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class BenefitEntitlementFactory extends Factory
@@ -19,7 +19,7 @@ class BenefitEntitlementFactory extends Factory
     {
         return [
             'benefit_definition_id' => BenefitDefinition::factory(),
-            'player_id' => Player::factory(),
+            'player_user_id' => User::factory(),
             'remaining_uses' => 1,
             'valid_from' => null,
             'valid_until' => null,

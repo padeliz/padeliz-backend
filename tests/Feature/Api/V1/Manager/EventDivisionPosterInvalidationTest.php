@@ -15,18 +15,19 @@ use App\Models\EventParticipation;
 use App\Models\GameMatch;
 use App\Models\MatchSide;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Services\Pdf\EventDivisionPosterInvalidator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
 
 final class EventDivisionPosterInvalidationTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
     private PadelEvent $event;
 
@@ -43,19 +44,18 @@ final class EventDivisionPosterInvalidationTest extends TestCase
 
         Storage::fake(config('filesystems.user_uploads_disk', 'public'));
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
 
-        $this->event = PadelEvent::factory()->create(['date' => '2000-01-01']);
+        $this->event = PadelEvent::factory()->create(UnixEventFactory::eventBounds('2000-01-01'));
         $division = Division::factory()->create();
 
         $this->eventDivision = EventDivision::factory()->create([
             'event_id' => $this->event->id_event,
             'division_id' => $division->id_division,
             'players_limit' => 8,
-            'playing_start_time' => '14:00:00',
-            'playing_end_time' => '17:00:00',
+            ...UnixEventFactory::playingBounds($this->event, '14:00:00', '17:00:00'),
         ]);
 
         EventDivisionSchedule::factory()->create([
@@ -79,7 +79,7 @@ final class EventDivisionPosterInvalidationTest extends TestCase
             $this->participations[] = EventParticipation::factory()->create([
                 'event_id' => $this->event->id_event,
                 'event_division_id' => $this->eventDivision->id_event_division,
-                'player_id' => Player::factory()->create()->id_player,
+                'player_user_id' => User::factory()->create()->id_user,
                 'sort_order' => $i,
                 'is_collecting_points' => true,
                 'absence_reason' => null,
@@ -185,7 +185,7 @@ final class EventDivisionPosterInvalidationTest extends TestCase
         $this->postJson('/api/v1/manager/event-participations', [
             'event_id' => $this->eventDivision->event_id,
             'event_division_id' => $this->eventDivision->id_event_division,
-            'player_id' => Player::factory()->create()->id_player,
+            'player_user_id' => User::factory()->create()->id_user,
             'sort_order' => 99,
             'is_collecting_points' => true,
         ])->assertCreated();
@@ -233,9 +233,11 @@ final class EventDivisionPosterInvalidationTest extends TestCase
         Sanctum::actingAs($this->manager);
         [$matches, $ranking] = $this->seedPosters();
 
+        $event = PadelEvent::query()->findOrFail($this->eventDivision->event_id);
+        $window = \Tests\Support\UnixEventFactory::playingBounds($event, '15:00:00', '17:00:00');
         $this->patchJson(
             "/api/v1/manager/event-divisions/{$this->eventDivision->id_event_division}",
-            ['playing_start_time' => '15:00:00']
+            $window
         )->assertOk();
 
         $this->assertGeneratedCleared($matches);
@@ -253,7 +255,6 @@ final class EventDivisionPosterInvalidationTest extends TestCase
             "/api/v1/manager/event-divisions/{$this->eventDivision->id_event_division}",
             [
                 'division_title' => 'Renamed Division',
-                'playing_start_time' => '14:00:00',
             ]
         )->assertOk();
 
@@ -329,8 +330,8 @@ final class EventDivisionPosterInvalidationTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $olderEdition = PadelEvent::factory()->create(['date' => '2100-01-01']);
-        PadelEvent::factory()->create(['date' => '2100-06-01']);
+        $olderEdition = PadelEvent::factory()->create(UnixEventFactory::eventBounds('2100-01-01'));
+        PadelEvent::factory()->create(UnixEventFactory::eventBounds('2100-06-01'));
 
         $olderDivision = EventDivision::factory()->create([
             'event_id' => $olderEdition->id_event,
@@ -348,8 +349,8 @@ final class EventDivisionPosterInvalidationTest extends TestCase
 
     public function test_clear_generated_clears_posters_for_last_edition(): void
     {
-        PadelEvent::factory()->create(['date' => '2100-01-01']);
-        $lastEdition = PadelEvent::factory()->create(['date' => '2100-06-01']);
+        PadelEvent::factory()->create(UnixEventFactory::eventBounds('2100-01-01'));
+        $lastEdition = PadelEvent::factory()->create(UnixEventFactory::eventBounds('2100-06-01'));
 
         $lastDivision = EventDivision::factory()->create([
             'event_id' => $lastEdition->id_event,
@@ -367,8 +368,8 @@ final class EventDivisionPosterInvalidationTest extends TestCase
 
     public function test_guard_blocks_clear_attendance_for_non_last_edition(): void
     {
-        $olderEdition = PadelEvent::factory()->create(['date' => '2100-01-01']);
-        PadelEvent::factory()->create(['date' => '2100-06-01']);
+        $olderEdition = PadelEvent::factory()->create(UnixEventFactory::eventBounds('2100-01-01'));
+        PadelEvent::factory()->create(UnixEventFactory::eventBounds('2100-06-01'));
 
         $poster = $this->seedAttendancePoster((int) $olderEdition->id_event);
 
@@ -380,8 +381,8 @@ final class EventDivisionPosterInvalidationTest extends TestCase
 
     public function test_clear_attendance_for_edition_clears_last_edition_poster(): void
     {
-        PadelEvent::factory()->create(['date' => '2100-01-01']);
-        $lastEdition = PadelEvent::factory()->create(['date' => '2100-06-01']);
+        PadelEvent::factory()->create(UnixEventFactory::eventBounds('2100-01-01'));
+        $lastEdition = PadelEvent::factory()->create(UnixEventFactory::eventBounds('2100-06-01'));
 
         $poster = $this->seedAttendancePoster((int) $lastEdition->id_event);
 
@@ -395,8 +396,8 @@ final class EventDivisionPosterInvalidationTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $olderEdition = PadelEvent::factory()->create(['date' => '2100-01-01']);
-        PadelEvent::factory()->create(['date' => '2100-06-01']);
+        $olderEdition = PadelEvent::factory()->create(UnixEventFactory::eventBounds('2100-01-01'));
+        PadelEvent::factory()->create(UnixEventFactory::eventBounds('2100-06-01'));
 
         $olderDivision = EventDivision::factory()->create([
             'event_id' => $olderEdition->id_event,
@@ -409,7 +410,7 @@ final class EventDivisionPosterInvalidationTest extends TestCase
         $this->postJson('/api/v1/manager/event-participations', [
             'event_id' => $olderEdition->id_event,
             'event_division_id' => $olderDivision->id_event_division,
-            'player_id' => Player::factory()->create()->id_player,
+            'player_user_id' => User::factory()->create()->id_user,
             'sort_order' => 0,
             'is_collecting_points' => true,
         ])->assertCreated();
@@ -462,6 +463,12 @@ final class EventDivisionPosterInvalidationTest extends TestCase
 
     private function markSetUpEditionAsLast(): void
     {
-        $this->event->forceFill(['date' => '2100-12-31'])->save();
+        $bounds = \Tests\Support\UnixEventFactory::eventBounds('2100-12-31');
+        $this->event->forceFill([
+            'event_starts_at' => $bounds['event_starts_at'],
+            'event_ends_at' => $bounds['event_ends_at'],
+            'registration_allowed_until' => $bounds['registration_allowed_until'],
+            'cancellation_allowed_until' => $bounds['cancellation_allowed_until'],
+        ])->save();
     }
 }

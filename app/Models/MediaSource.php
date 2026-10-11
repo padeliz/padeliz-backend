@@ -73,12 +73,12 @@ class MediaSource extends Model
     public function players(): BelongsToMany
     {
         return $this->belongsToMany(
-            Player::class,
+            User::class,
             'player_media_sources',
             'media_source_id',
-            'player_id',
+            'player_user_id',
             'id_media_source',
-            'id_player'
+            'id_user'
         )->withPivot(['id_player_media_source', 'inserted_at', 'updated_at']);
     }
 }

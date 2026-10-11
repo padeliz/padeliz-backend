@@ -6,7 +6,7 @@ namespace Tests\Unit\Services\PlayerCustomField;
 
 use App\Enums\PlayerCustomFieldType;
 use App\Models\Level;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerCustomField;
 use App\Models\PlayerCustomFieldSubmission;
 use App\Models\PlayerCustomFieldValue;
@@ -22,7 +22,7 @@ final class LabeledForeignIdWriterTest extends TestCase
 
     private PlayerCustomFieldValueWriter $writer;
 
-    private Player $player;
+    private User $player;
 
     private PlayerCustomFieldSubmission $submission;
 
@@ -37,9 +37,9 @@ final class LabeledForeignIdWriterTest extends TestCase
         parent::setUp();
 
         $this->writer = app(PlayerCustomFieldValueWriter::class);
-        $this->player = Player::factory()->create();
+        $this->player = User::factory()->create();
         $this->submission = PlayerCustomFieldSubmission::factory()->create([
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
         ]);
         $this->field = PlayerCustomField::factory()->create([
             'type' => PlayerCustomFieldType::LabeledForeignId,
@@ -53,7 +53,7 @@ final class LabeledForeignIdWriterTest extends TestCase
     public function test_id_only_fills_both_columns(): void
     {
         $this->writer->write(
-            (int) $this->player->id_player,
+            (int) $this->player->id_user,
             $this->field,
             (int) $this->submission->id_player_custom_field_submission,
             ['value' => (int) $this->levelA->id_level],
@@ -72,7 +72,7 @@ final class LabeledForeignIdWriterTest extends TestCase
     public function test_name_only_fills_both_columns(): void
     {
         $this->writer->write(
-            (int) $this->player->id_player,
+            (int) $this->player->id_user,
             $this->field,
             (int) $this->submission->id_player_custom_field_submission,
             ['value' => (string) $this->levelA->name],
@@ -87,7 +87,7 @@ final class LabeledForeignIdWriterTest extends TestCase
     public function test_matching_id_and_label_succeed(): void
     {
         $this->writer->write(
-            (int) $this->player->id_player,
+            (int) $this->player->id_user,
             $this->field,
             (int) $this->submission->id_player_custom_field_submission,
             [
@@ -105,7 +105,7 @@ final class LabeledForeignIdWriterTest extends TestCase
         $this->expectException(ValidationException::class);
 
         $this->writer->write(
-            (int) $this->player->id_player,
+            (int) $this->player->id_user,
             $this->field,
             (int) $this->submission->id_player_custom_field_submission,
             [
@@ -120,7 +120,7 @@ final class LabeledForeignIdWriterTest extends TestCase
     {
         try {
             $this->writer->write(
-                (int) $this->player->id_player,
+                (int) $this->player->id_user,
                 $this->field,
                 (int) $this->submission->id_player_custom_field_submission,
                 ['value' => 999999],
@@ -133,7 +133,7 @@ final class LabeledForeignIdWriterTest extends TestCase
 
         try {
             $this->writer->write(
-                (int) $this->player->id_player,
+                (int) $this->player->id_user,
                 $this->field,
                 (int) $this->submission->id_player_custom_field_submission,
                 ['value' => 'Not A Real Level'],
@@ -148,7 +148,7 @@ final class LabeledForeignIdWriterTest extends TestCase
     public function test_empty_answer_is_skipped(): void
     {
         $outcome = $this->writer->write(
-            (int) $this->player->id_player,
+            (int) $this->player->id_user,
             $this->field,
             (int) $this->submission->id_player_custom_field_submission,
             ['value' => ''],

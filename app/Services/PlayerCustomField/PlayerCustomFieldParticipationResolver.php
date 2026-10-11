@@ -50,7 +50,7 @@ final class PlayerCustomFieldParticipationResolver
 
         $rows = PlayerCustomFieldValue::query()
             ->with(['field', 'selectedOptions'])
-            ->whereIn('player_id', $playerIds)
+            ->whereIn('player_user_id', $playerIds)
             ->whereIn('player_custom_field_id', $activeFieldIds)
             ->validated()
             ->orderBy('reviewed_at')
@@ -60,7 +60,7 @@ final class PlayerCustomFieldParticipationResolver
         /** @var array<int, array<int, list<PlayerCustomFieldValue>>> $grouped */
         $grouped = [];
         foreach ($rows as $row) {
-            $grouped[(int) $row->player_id][(int) $row->player_custom_field_id][] = $row;
+            $grouped[(int) $row->player_user_id][(int) $row->player_custom_field_id][] = $row;
         }
 
         $result = [];

@@ -12,7 +12,7 @@ final class ConvertDatabaseCollationMigrationTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_players_table_uses_utf8mb4_0900_ai_ci_after_migrations(): void
+    public function test_users_table_uses_utf8mb4_0900_ai_ci_after_migrations(): void
     {
         $database = (string) config('database.connections.' . config('database.default') . '.database');
         $prefix = (string) config('database.connections.' . config('database.default') . '.prefix', '');
@@ -24,7 +24,7 @@ FROM information_schema.TABLES
 WHERE TABLE_SCHEMA = ?
   AND TABLE_NAME = ?
 SQL,
-            [$database, $prefix . 'players']
+            [$database, $prefix . 'users']
         );
 
         $this->assertSame('utf8mb4_0900_ai_ci', $row?->collation_name);

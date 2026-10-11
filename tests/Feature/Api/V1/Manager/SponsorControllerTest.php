@@ -7,7 +7,7 @@ namespace Tests\Feature\Api\V1\Manager;
 use App\Models\Club;
 use App\Models\EventLottery;
 use App\Models\EventLotteryPrize;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\Prize;
 use App\Models\Sponsor;
 use App\Models\SponsorPrize;
@@ -19,13 +19,13 @@ class SponsorControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
     public function setUp(): void
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
     }
@@ -64,12 +64,12 @@ class SponsorControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $playerA = Player::factory()->create();
-        $playerB = Player::factory()->create();
+        $playerA = User::factory()->create();
+        $playerB = User::factory()->create();
 
         $create = $this->postJson('/api/v1/manager/sponsors', [
             'name' => 'Players Sponsor',
-            'player_ids' => [(int) $playerA->id_player, (int) $playerB->id_player],
+            'player_user_ids' => [(int) $playerA->id_user, (int) $playerB->id_user],
         ]);
         $create->assertStatus(201);
         $sponsorId = $create->json('data.id_sponsor');
@@ -81,7 +81,7 @@ class SponsorControllerTest extends TestCase
 
         $update = $this->putJson("/api/v1/manager/sponsors/{$sponsorId}", [
             'name' => 'Players Sponsor',
-            'player_ids' => [],
+            'player_user_ids' => [],
         ]);
         $update->assertOk();
         $this->assertSame([], $update->json('data.players'));
@@ -124,17 +124,17 @@ class SponsorControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $club = Club::factory()->create();
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $sponsor = Sponsor::factory()->forClub($club)->create();
         $patch = $this->patchJson("/api/v1/manager/sponsors/{$sponsor->id_sponsor}", [
-            'player_ids' => [(int) $player->id_player],
+            'player_user_ids' => [(int) $player->id_user],
         ]);
         $patch->assertOk();
 
         $response = $this->getJson("/api/v1/manager/sponsors/{$sponsor->id_sponsor}");
         $response->assertOk();
         $this->assertSame($club->id_club, $response->json('data.club.id_club'));
-        $this->assertSame($player->id_player, $response->json('data.players.0.id_player'));
+        $this->assertSame($player->id_user, $response->json('data.players.0.id_user'));
     }
 
     public function test_manager_can_delete_empty_sponsor(): void
@@ -146,5 +146,18 @@ class SponsorControllerTest extends TestCase
         $response = $this->deleteJson("/api/v1/manager/sponsors/{$sponsor->id_sponsor}");
         $response->assertStatus(200);
         $this->assertDatabaseMissing('sponsors', ['id_sponsor' => $sponsor->id_sponsor]);
+    }
+
+    public function test_store_rejects_legacy_player_ids(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $player = User::factory()->create();
+
+        $this->postJson('/api/v1/manager/sponsors', [
+            'name' => 'Legacy Ids Sponsor',
+            'player_ids' => [(int) $player->id_user],
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['player_ids']);
     }
 }

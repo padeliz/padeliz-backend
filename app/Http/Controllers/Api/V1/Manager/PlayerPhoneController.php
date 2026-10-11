@@ -5,8 +5,8 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
-use App\Http\Resources\PlayerPhoneResource;
-use App\Models\PlayerPhone;
+use App\Http\Resources\UserPhoneResource;
+use App\Models\UserPhone;
 use App\Support\PlayerPhoneNormalizer;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
@@ -23,14 +23,14 @@ class PlayerPhoneController extends V1BaseController
 {
     /**
      * @OA\Get(
-     *     path="/api/v1/manager/player-phones",
+     *     path="/api/v1/manager/user-phones",
      *     summary="Get paginated list of player phones",
      *     tags={"🐧 Manager: Player Phones"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
      *     @OA\Parameter(name="per_page", in="query", required=false, @OA\Schema(type="integer", default=15, maximum=100)),
      *     @OA\Parameter(name="q", in="query", description="Search term for phone", required=false, @OA\Schema(type="string")),
-     *     @OA\Parameter(name="filters[player_id]", in="query", description="Filter by player ID", required=false, @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="filters[user_id]", in="query", description="Filter by player ID", required=false, @OA\Schema(type="integer")),
      *     @OA\Parameter(name="filters[is_primary]", in="query", description="Filter by primary flag (0 or 1)", required=false, @OA\Schema(type="integer")),
      *     @OA\Response(
      *         response=200,
@@ -38,7 +38,7 @@ class PlayerPhoneController extends V1BaseController
      *         @OA\JsonContent(
      *             allOf={
      *                 @OA\Schema(ref="#/components/schemas/ApiPaginatedResponse"),
-     *                 @OA\Schema(@OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/PlayerPhone")))
+     *                 @OA\Schema(@OA\Property(property="data", type="array", @OA\Items(ref="#/components/schemas/UserPhone")))
      *             }
      *         )
      *     ),
@@ -48,30 +48,30 @@ class PlayerPhoneController extends V1BaseController
      */
     public function index(Request $request)
     {
-        $query = PlayerPhone::query();
+        $query = UserPhone::query();
 
         $this->applyAdvancedPagination(
             $query,
             $request,
-            PlayerPhone::$searchableFields,
-            PlayerPhone::$filterableFields,
-            PlayerPhone::$sortableFields
+            UserPhone::$searchableFields,
+            UserPhone::$filterableFields,
+            UserPhone::$sortableFields
         );
 
         $paginationParams = $this->getPaginationParams($request);
 
         if (! $request->has('sort_by')) {
-            $query->orderBy('id_player_phone', 'desc');
+            $query->orderBy('id_user_phone', 'desc');
         }
 
         $phones = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
-        return PlayerPhoneResource::collection($phones);
+        return UserPhoneResource::collection($phones);
     }
 
     /**
      * @OA\Get(
-     *     path="/api/v1/manager/player-phones/{playerPhone}",
+     *     path="/api/v1/manager/user-phones/{playerPhone}",
      *     summary="Get player phone details",
      *     tags={"🐧 Manager: Player Phones"},
      *     security={{"sanctum":{}}},
@@ -82,32 +82,32 @@ class PlayerPhoneController extends V1BaseController
      *         @OA\JsonContent(
      *             allOf={
      *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
-     *                 @OA\Schema(@OA\Property(property="data", ref="#/components/schemas/PlayerPhone"))
+     *                 @OA\Schema(@OA\Property(property="data", ref="#/components/schemas/UserPhone"))
      *             }
      *         )
      *     ),
      *     @OA\Response(response=404, description="Phone not found", @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse"))
      * )
      */
-    public function show(PlayerPhone $playerPhone): JsonResponse
+    public function show(UserPhone $playerPhone): JsonResponse
     {
         return $this->resourceResponse(
-            new PlayerPhoneResource($playerPhone),
+            new UserPhoneResource($playerPhone),
             'Player phone retrieved successfully'
         );
     }
 
     /**
      * @OA\Post(
-     *     path="/api/v1/manager/player-phones",
+     *     path="/api/v1/manager/user-phones",
      *     summary="Create player phone",
      *     tags={"🐧 Manager: Player Phones"},
      *     security={{"sanctum":{}}},
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"player_id", "phone", "purposes"},
-     *             @OA\Property(property="player_id", type="integer"),
+     *             required={"user_id", "phone", "purposes"},
+     *             @OA\Property(property="user_id", type="integer"),
      *             @OA\Property(property="phone", type="string", maxLength=30, description="Normalized to +digits"),
      *             @OA\Property(property="purposes", type="array", @OA\Items(type="string", enum={"contact", "login"})),
      *             @OA\Property(property="is_primary", type="boolean", default=false),
@@ -120,7 +120,7 @@ class PlayerPhoneController extends V1BaseController
      *         @OA\JsonContent(
      *             allOf={
      *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
-     *                 @OA\Schema(@OA\Property(property="data", ref="#/components/schemas/PlayerPhone"))
+     *                 @OA\Schema(@OA\Property(property="data", ref="#/components/schemas/UserPhone"))
      *             }
      *         )
      *     ),
@@ -132,8 +132,10 @@ class PlayerPhoneController extends V1BaseController
         $this->normalizePhoneInput($request);
 
         $validated = $request->validate([
-            'player_id' => 'required|integer|exists:players,id_player',
-            'phone' => 'required|string|max:30|unique:player_phones,phone',
+            'user_id' => 'required|integer|exists:users,id_user',
+            'player_id' => 'prohibited',
+            'player_user_id' => 'prohibited',
+            'phone' => 'required|string|max:30|unique:user_phones,phone',
             'purposes' => 'required|array|min:1',
             'purposes.*' => 'string|distinct|in:contact,login',
             'is_primary' => 'sometimes|boolean',
@@ -142,15 +144,15 @@ class PlayerPhoneController extends V1BaseController
 
         $validated['is_primary'] = $validated['is_primary'] ?? false;
 
-        $phone = DB::transaction(function () use ($validated): PlayerPhone {
-            $phone = PlayerPhone::create($validated);
+        $phone = DB::transaction(function () use ($validated): UserPhone {
+            $phone = UserPhone::create($validated);
             $this->demoteOtherPrimaries($phone);
 
             return $phone;
         });
 
         return $this->resourceResponse(
-            new PlayerPhoneResource($phone->refresh()),
+            new UserPhoneResource($phone->refresh()),
             'Player phone created successfully',
             201
         );
@@ -158,7 +160,7 @@ class PlayerPhoneController extends V1BaseController
 
     /**
      * @OA\Put(
-     *     path="/api/v1/manager/player-phones/{playerPhone}",
+     *     path="/api/v1/manager/user-phones/{playerPhone}",
      *     summary="Update player phone",
      *     tags={"🐧 Manager: Player Phones"},
      *     security={{"sanctum":{}}},
@@ -166,7 +168,7 @@ class PlayerPhoneController extends V1BaseController
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             @OA\Property(property="player_id", type="integer"),
+     *             @OA\Property(property="user_id", type="integer"),
      *             @OA\Property(property="phone", type="string", maxLength=30),
      *             @OA\Property(property="purposes", type="array", @OA\Items(type="string", enum={"contact", "login"})),
      *             @OA\Property(property="is_primary", type="boolean"),
@@ -179,7 +181,7 @@ class PlayerPhoneController extends V1BaseController
      *         @OA\JsonContent(
      *             allOf={
      *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
-     *                 @OA\Schema(@OA\Property(property="data", ref="#/components/schemas/PlayerPhone"))
+     *                 @OA\Schema(@OA\Property(property="data", ref="#/components/schemas/UserPhone"))
      *             }
      *         )
      *     ),
@@ -187,18 +189,18 @@ class PlayerPhoneController extends V1BaseController
      *     @OA\Response(response=422, description="Validation error", @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse"))
      * )
      */
-    public function update(Request $request, PlayerPhone $playerPhone): JsonResponse
+    public function update(Request $request, UserPhone $playerPhone): JsonResponse
     {
         $this->normalizePhoneInput($request);
 
         $validated = $request->validate([
-            'player_id' => 'sometimes|required|integer|exists:players,id_player',
+            'user_id' => 'sometimes|required|integer|exists:users,id_user',
             'phone' => [
                 'sometimes',
                 'required',
                 'string',
                 'max:30',
-                Rule::unique('player_phones', 'phone')->ignore($playerPhone->id_player_phone, 'id_player_phone'),
+                Rule::unique('user_phones', 'phone')->ignore($playerPhone->id_user_phone, 'id_user_phone'),
             ],
             'purposes' => 'sometimes|required|array|min:1',
             'purposes.*' => 'string|distinct|in:contact,login',
@@ -212,14 +214,14 @@ class PlayerPhoneController extends V1BaseController
         });
 
         return $this->resourceResponse(
-            new PlayerPhoneResource($playerPhone->refresh()),
+            new UserPhoneResource($playerPhone->refresh()),
             'Player phone updated successfully'
         );
     }
 
     /**
      * @OA\Delete(
-     *     path="/api/v1/manager/player-phones/{playerPhone}",
+     *     path="/api/v1/manager/user-phones/{playerPhone}",
      *     summary="Delete player phone",
      *     tags={"🐧 Manager: Player Phones"},
      *     security={{"sanctum":{}}},
@@ -228,7 +230,7 @@ class PlayerPhoneController extends V1BaseController
      *     @OA\Response(response=404, description="Phone not found", @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse"))
      * )
      */
-    public function destroy(PlayerPhone $playerPhone): JsonResponse
+    public function destroy(UserPhone $playerPhone): JsonResponse
     {
         return $this->deleteResourceWithResponse(
             $playerPhone,
@@ -240,7 +242,7 @@ class PlayerPhoneController extends V1BaseController
 
     /**
      * @OA\Delete(
-     *     path="/api/v1/manager/player-phones/bulk",
+     *     path="/api/v1/manager/user-phones/bulk",
      *     summary="Bulk delete player phones",
      *     tags={"🐧 Manager: Player Phones"},
      *     security={{"sanctum":{}}},
@@ -265,7 +267,7 @@ class PlayerPhoneController extends V1BaseController
 
         return $this->deleteBulkResourcesWithResponse(
             $request->player_phone_ids,
-            PlayerPhone::class,
+            UserPhone::class,
             ['identities' => 'identities_count'],
             'player phone',
             'Player phones deleted successfully'
@@ -287,15 +289,15 @@ class PlayerPhoneController extends V1BaseController
     /**
      * A player has at most one primary phone: the one saved last as primary wins.
      */
-    private function demoteOtherPrimaries(PlayerPhone $phone): void
+    private function demoteOtherPrimaries(UserPhone $phone): void
     {
         if (! $phone->is_primary) {
             return;
         }
 
-        PlayerPhone::query()
-            ->where('player_id', $phone->player_id)
-            ->where('id_player_phone', '!=', $phone->id_player_phone)
+        UserPhone::query()
+            ->where('user_id', $phone->user_id)
+            ->where('id_user_phone', '!=', $phone->id_user_phone)
             ->where('is_primary', true)
             ->update(['is_primary' => false]);
     }

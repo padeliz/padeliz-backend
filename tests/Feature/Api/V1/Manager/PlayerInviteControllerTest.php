@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Manager;
 
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerInvite;
 use App\Models\PlayerInviteEvent;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,18 +15,18 @@ class PlayerInviteControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
-    private Player $player;
+    private User $player;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'first_name' => 'Invite', 'middle_name' => null, 'last_name' => 'Manager',
         ]);
-        $this->player = Player::factory()->playerOnly()->create([
+        $this->player = User::factory()->playerOnly()->create([
             'first_name' => 'Invite', 'middle_name' => null, 'last_name' => 'Target',
         ]);
 
@@ -36,7 +36,7 @@ class PlayerInviteControllerTest extends TestCase
     public function test_create_invite_returns_raw_token_once_and_logs_event()
     {
         $response = $this->postJson('/api/v1/manager/player-invites', [
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
         ]);
 
         $response->assertStatus(200)
@@ -46,7 +46,7 @@ class PlayerInviteControllerTest extends TestCase
                 'data' => [
                     'invite' => [
                         'id_invite',
-                        'player_id',
+                        'player_user_id',
                         'expires_at',
                         'invite_token',
                     ],
@@ -59,13 +59,13 @@ class PlayerInviteControllerTest extends TestCase
         $this->assertNotEmpty($token);
         $this->assertDatabaseHas('player_invites', [
             'id_invite' => $inviteId,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'token_hash' => PlayerInvite::hashToken($token),
         ]);
         $this->assertDatabaseHas('player_invite_events', [
             'invite_id' => $inviteId,
             'event' => PlayerInviteEvent::EVENT_CREATED,
-            'actor_player_id' => $this->manager->id_player,
+            'actor_manager_user_id' => $this->manager->id_user,
         ]);
 
         $expiresAt = (int) $response->json('data.invite.expires_at');
@@ -76,14 +76,14 @@ class PlayerInviteControllerTest extends TestCase
     public function test_create_invite_revokes_prior_active_invite()
     {
         $old = PlayerInvite::create([
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'token_hash' => PlayerInvite::hashToken('old-token'),
             'expires_at' => time() + 3600,
-            'created_by_player_id' => $this->manager->id_player,
+            'created_by_manager_user_id' => $this->manager->id_user,
         ]);
 
         $response = $this->postJson('/api/v1/manager/player-invites', [
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
         ]);
 
         $response->assertStatus(200);
@@ -93,16 +93,16 @@ class PlayerInviteControllerTest extends TestCase
             'event' => PlayerInviteEvent::EVENT_REVOKED,
             'result_code' => 'superseded',
         ]);
-        $this->assertSame(1, PlayerInvite::query()->where('player_id', $this->player->id_player)->active()->count());
+        $this->assertSame(1, PlayerInvite::query()->where('player_user_id', $this->player->id_user)->active()->count());
     }
 
     public function test_revoke_invite_via_delete()
     {
         $invite = PlayerInvite::create([
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'token_hash' => PlayerInvite::hashToken('revoke-me'),
             'expires_at' => time() + 3600,
-            'created_by_player_id' => $this->manager->id_player,
+            'created_by_manager_user_id' => $this->manager->id_user,
         ]);
 
         $response = $this->deleteJson('/api/v1/manager/player-invites/' . $invite->id_invite);
@@ -119,10 +119,10 @@ class PlayerInviteControllerTest extends TestCase
     public function test_revoke_invite_via_post()
     {
         $invite = PlayerInvite::create([
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'token_hash' => PlayerInvite::hashToken('revoke-me-post'),
             'expires_at' => time() + 3600,
-            'created_by_player_id' => $this->manager->id_player,
+            'created_by_manager_user_id' => $this->manager->id_user,
         ]);
 
         $response = $this->postJson('/api/v1/manager/player-invites/' . $invite->id_invite . '/revoke');
@@ -133,10 +133,10 @@ class PlayerInviteControllerTest extends TestCase
 
     public function test_invite_endpoints_require_manager_auth()
     {
-        Sanctum::actingAs(Player::factory()->playerOnly()->create(['first_name' => 'Not', 'middle_name' => null, 'last_name' => 'Manager']));
+        Sanctum::actingAs(User::factory()->playerOnly()->create(['first_name' => 'Not', 'middle_name' => null, 'last_name' => 'Manager']));
 
         $response = $this->postJson('/api/v1/manager/player-invites', [
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
         ]);
 
         $response->assertStatus(403);

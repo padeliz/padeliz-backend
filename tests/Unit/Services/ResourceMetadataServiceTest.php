@@ -31,7 +31,10 @@ class ResourceMetadataServiceTest extends TestCase
         $method->setAccessible(true);
 
         // Test single word models (should be pluralized normally)
-        $this->assertEquals('players', $method->invoke($this->metadataService, 'Player'));
+        $this->assertEquals('players', $method->invoke($this->metadataService, 'User'));
+        $this->assertEquals('player-emails', $method->invoke($this->metadataService, 'UserEmail'));
+        $this->assertEquals('player-phones', $method->invoke($this->metadataService, 'UserPhone'));
+        $this->assertEquals('player-identities', $method->invoke($this->metadataService, 'UserIdentity'));
         $this->assertEquals('clubs', $method->invoke($this->metadataService, 'Club'));
         $this->assertEquals('divisions', $method->invoke($this->metadataService, 'Division'));
         $this->assertEquals('events', $method->invoke($this->metadataService, 'Event'));
@@ -47,8 +50,8 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertEquals('sponsors', $method->invoke($this->metadataService, 'Sponsor'));
         $this->assertEquals('sponsor-prizes', $method->invoke($this->metadataService, 'SponsorPrize'));
         $this->assertEquals('event-lottery-prizes', $method->invoke($this->metadataService, 'EventLotteryPrize'));
-        $this->assertEquals('player-imports', $method->invoke($this->metadataService, 'PlayerImport'));
-        $this->assertEquals('player-import-rows', $method->invoke($this->metadataService, 'PlayerImportRow'));
+        $this->assertEquals('user-imports', $method->invoke($this->metadataService, 'UserImport'));
+        $this->assertEquals('user-import-rows', $method->invoke($this->metadataService, 'UserImportRow'));
         $this->assertEquals('challenge-sessions', $method->invoke($this->metadataService, 'ChallengeSession'));
 
         // Test edge cases with multiple hyphens (using existing models)
@@ -65,7 +68,7 @@ class ResourceMetadataServiceTest extends TestCase
         $method->setAccessible(true);
 
         // Test with already kebab-case input (should still work)
-        $this->assertEquals('players', $method->invoke($this->metadataService, 'player'));
+        $this->assertEquals('players', $method->invoke($this->metadataService, 'User'));
         $this->assertEquals('event-lotteries', $method->invoke($this->metadataService, 'event-lottery'));
 
         // Test with mixed case
@@ -127,7 +130,7 @@ class ResourceMetadataServiceTest extends TestCase
         $method->setAccessible(true);
 
         $testCases = [
-            'Player',
+            'User',
             'Club',
             'EventLottery',
             'EventParticipation',
@@ -141,7 +144,9 @@ class ResourceMetadataServiceTest extends TestCase
             $result = $method->invoke($this->metadataService, $modelName);
             $kebabCase = Str::kebab($modelName);
 
-            if (str_contains($kebabCase, '-')) {
+            if ($modelName === 'User') {
+                $expected = 'players';
+            } elseif (str_contains($kebabCase, '-')) {
                 // For hyphenated strings, only the last word should be pluralized
                 $parts = explode('-', $kebabCase);
                 $lastPart = array_pop($parts);
@@ -175,6 +180,15 @@ class ResourceMetadataServiceTest extends TestCase
 
             if ($modelName === 'PadelEvent' || $modelName === 'Event') {
                 $expected = 'events';
+            } elseif ($modelName === 'User') {
+                // Product directory resource slug stays /players.
+                $expected = 'players';
+            } elseif ($modelName === 'UserEmail') {
+                $expected = 'player-emails';
+            } elseif ($modelName === 'UserPhone') {
+                $expected = 'player-phones';
+            } elseif ($modelName === 'UserIdentity') {
+                $expected = 'player-identities';
             } elseif (str_contains($kebabCase, '-')) {
                 // For hyphenated strings, only the last word should be pluralized
                 $parts = explode('-', $kebabCase);

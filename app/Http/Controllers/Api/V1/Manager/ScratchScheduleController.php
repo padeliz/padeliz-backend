@@ -41,8 +41,8 @@ class ScratchScheduleController extends \App\Http\Controllers\BaseVersions\V1\V1
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"player_ids", "court_names"},
-     *             @OA\Property(property="player_ids", type="array", @OA\Items(type="integer")),
+     *             required={"player_user_ids", "court_names"},
+     *             @OA\Property(property="player_user_ids", type="array", @OA\Items(type="integer")),
      *             @OA\Property(property="court_names", type="array", maxItems=4, @OA\Items(type="string")),
      *             @OA\Property(property="player_opponents_nr", type="integer"),
      *             @OA\Property(property="opponents_per_player", type="integer"),
@@ -101,8 +101,9 @@ class ScratchScheduleController extends \App\Http\Controllers\BaseVersions\V1\V1
                 'final_points_target' => ['nullable', 'integer', 'min:1'],
                 'include_scores' => ['nullable', 'boolean'],
                 'allow_replacements' => ['nullable', 'boolean'],
-                'collecting_player_ids' => ['nullable', 'array'],
-                'collecting_player_ids.*' => ['integer', 'distinct'],
+                'collecting_player_user_ids' => ['nullable', 'array'],
+                'collecting_player_user_ids.*' => ['integer', 'distinct'],
+                'collecting_player_ids' => ['prohibited'],
             ]);
 
             if ((int) $validated['court_index'] >= count($validated['court_names'])) {
@@ -147,8 +148,9 @@ class ScratchScheduleController extends \App\Http\Controllers\BaseVersions\V1\V1
                 'points_per_match' => ['nullable', 'integer', 'min:0'],
                 'include_scores' => ['nullable', 'boolean'],
                 'allow_replacements' => ['nullable', 'boolean'],
-                'collecting_player_ids' => ['nullable', 'array'],
-                'collecting_player_ids.*' => ['integer', 'distinct'],
+                'collecting_player_user_ids' => ['nullable', 'array'],
+                'collecting_player_user_ids.*' => ['integer', 'distinct'],
+                'collecting_player_ids' => ['prohibited'],
             ]);
 
             $result = $this->posterPdfService->generateRankingFromScratch([
@@ -171,8 +173,9 @@ class ScratchScheduleController extends \App\Http\Controllers\BaseVersions\V1\V1
     private function validateScratchBase(Request $request): array
     {
         $validated = $request->validate([
-            'player_ids' => ['required', 'array', 'min:1'],
-            'player_ids.*' => ['integer', 'distinct', 'exists:players,id_player'],
+            'player_user_ids' => ['required', 'array', 'min:1'],
+            'player_user_ids.*' => ['integer', 'distinct', 'exists:users,id_user'],
+            'player_ids' => ['prohibited'],
             'court_names' => ['required', 'array', 'min:1', 'max:4'],
             'court_names.*' => ['string', 'max:30'],
             'time_start' => ['nullable', PlayingWindow::clockRegexRule()],
@@ -227,7 +230,7 @@ class ScratchScheduleController extends \App\Http\Controllers\BaseVersions\V1\V1
     private function buildPreview(array $validated): array
     {
         $preview = $this->scheduleGenerationService->preview(
-            array_values(array_map('intval', $validated['player_ids'])),
+            array_values(array_map('intval', $validated['player_user_ids'])),
             (int) $validated['opponents_per_player'],
             (int) $validated['repeat_partners'],
             array_values($validated['court_names']),

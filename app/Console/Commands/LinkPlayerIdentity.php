@@ -4,36 +4,36 @@ declare(strict_types=1);
 
 namespace App\Console\Commands;
 
-use App\Models\Player;
-use App\Models\PlayerIdentity;
-use App\Services\PlayerIdentity\ContactConflictException;
-use App\Services\PlayerIdentity\IdentityConflictException;
-use App\Services\PlayerIdentity\PlayerIdentityLinker;
+use App\Models\User;
+use App\Models\UserIdentity;
+use App\Services\UserIdentity\ContactConflictException;
+use App\Services\UserIdentity\IdentityConflictException;
+use App\Services\UserIdentity\UserIdentityLinker;
 use Illuminate\Console\Command;
 
 class LinkPlayerIdentity extends Command
 {
     protected $signature = 'players:link-identity
-        {player_id : Player ID}
+        {player_user_id : Player ID}
         {provider : Identity provider (google|apple|sms|dev)}
         {subject : Provider subject (e.g. Google sub)}
         {--email= : Optional email to attach/create on the player}';
 
     protected $description = 'Link an SSO identity to a player (ops bootstrap)';
 
-    public function handle(PlayerIdentityLinker $linker): int
+    public function handle(UserIdentityLinker $linker): int
     {
-        $playerId = (int) $this->argument('player_id');
+        $playerId = (int) $this->argument('player_user_id');
         $provider = strtolower((string) $this->argument('provider'));
         $subject = (string) $this->argument('subject');
         $email = $this->option('email');
         $email = is_string($email) && $email !== '' ? strtolower(trim($email)) : null;
 
         $allowedProviders = [
-            PlayerIdentity::PROVIDER_GOOGLE,
-            PlayerIdentity::PROVIDER_APPLE,
-            PlayerIdentity::PROVIDER_SMS,
-            PlayerIdentity::PROVIDER_DEV,
+            UserIdentity::PROVIDER_GOOGLE,
+            UserIdentity::PROVIDER_APPLE,
+            UserIdentity::PROVIDER_SMS,
+            UserIdentity::PROVIDER_DEV,
         ];
 
         if (! in_array($provider, $allowedProviders, true)) {
@@ -42,7 +42,7 @@ class LinkPlayerIdentity extends Command
             return self::FAILURE;
         }
 
-        $player = Player::query()->find($playerId);
+        $player = User::query()->find($playerId);
         if (! $player) {
             $this->error("Player {$playerId} not found.");
 
@@ -65,14 +65,14 @@ class LinkPlayerIdentity extends Command
 
         if ($result->wasAlreadyLinked()) {
             $this->info(
-                "Identity already linked to player {$playerId} (id_identity={$result->identity->id_identity})."
+                "Identity already linked to player {$playerId} (id_user_identity={$result->identity->id_user_identity})."
             );
 
             return self::SUCCESS;
         }
 
         $this->info(
-            "Linked {$provider}/{$subject} to player {$playerId} (id_identity={$result->identity->id_identity})."
+            "Linked {$provider}/{$subject} to player {$playerId} (id_user_identity={$result->identity->id_user_identity})."
         );
 
         return self::SUCCESS;

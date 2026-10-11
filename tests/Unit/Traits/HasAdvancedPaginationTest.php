@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Traits;
 
-use App\Models\Player;
-use App\Models\PlayerEmail;
+use App\Models\User;
+use App\Models\UserEmail;
 use App\Traits\HasAdvancedPagination;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -27,7 +27,7 @@ final class HasAdvancedPaginationTest extends TestCase
 
             public function paginate(Request $request, ?callable $extendSearch = null): Builder
             {
-                $query = Player::query();
+                $query = User::query();
 
                 return $this->applyAdvancedPagination(
                     $query,
@@ -43,10 +43,10 @@ final class HasAdvancedPaginationTest extends TestCase
 
     public function test_extend_search_runs_inside_same_or_group(): void
     {
-        Player::factory()->create(['first_name' => 'Alice', 'last_name' => 'One']);
-        $match = Player::factory()->create(['first_name' => 'Bob', 'last_name' => 'Two']);
-        PlayerEmail::factory()->create([
-            'player_id' => $match->id_player,
+        User::factory()->create(['first_name' => 'Alice', 'last_name' => 'One']);
+        $match = User::factory()->create(['first_name' => 'Bob', 'last_name' => 'Two']);
+        UserEmail::factory()->create([
+            'user_id' => $match->id_user,
             'email' => 'unique-search@example.test',
             'purposes' => ['contact'],
             'is_primary' => true,
@@ -59,8 +59,8 @@ final class HasAdvancedPaginationTest extends TestCase
             });
         });
 
-        $ids = $query->pluck('id_player')->all();
+        $ids = $query->pluck('id_user')->all();
 
-        $this->assertSame([$match->id_player], $ids);
+        $this->assertSame([$match->id_user], $ids);
     }
 }

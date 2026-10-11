@@ -244,6 +244,11 @@ Route::prefix('v1')->group(function () {
                 ->whereNumber('event');
             Route::patch('{event}', [\App\Http\Controllers\Api\V1\Manager\EventController::class, 'patch'])
                 ->whereNumber('event');
+            Route::post('{event}/cover-images', [\App\Http\Controllers\Api\V1\Manager\EventCoverController::class, 'store'])
+                ->name('manager.events.cover-images.store');
+            Route::delete('{event}/cover-images/{coverImage}', [\App\Http\Controllers\Api\V1\Manager\EventCoverController::class, 'destroy'])
+                ->name('manager.events.cover-images.destroy');
+            // Legacy single-cover path kept as alias to the multi uploader.
             Route::post('{event}/cover', [\App\Http\Controllers\Api\V1\Manager\EventCoverController::class, 'store'])
                 ->whereNumber('event');
             Route::post('{event}/finalize', [\App\Http\Controllers\Api\V1\Manager\EventFinalizeController::class, 'store'])
@@ -494,8 +499,8 @@ Route::prefix('v1')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\Manager\PlayerController::class, 'index']);
             Route::post('custom-field-values/import/preview', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldValueImportController::class, 'preview']);
             Route::post('custom-field-values/import', [\App\Http\Controllers\Api\V1\Manager\PlayerCustomFieldValueImportController::class, 'store']);
-            Route::post('import/preview', [\App\Http\Controllers\Api\V1\Manager\PlayerImportController::class, 'preview']);
-            Route::post('import', [\App\Http\Controllers\Api\V1\Manager\PlayerImportController::class, 'store']);
+            Route::post('import/preview', [\App\Http\Controllers\Api\V1\Manager\UserImportController::class, 'preview']);
+            Route::post('import', [\App\Http\Controllers\Api\V1\Manager\UserImportController::class, 'store']);
             Route::post('profile-images/import/preview', [\App\Http\Controllers\Api\V1\Manager\PlayerProfileImageImportController::class, 'preview']);
             Route::post('profile-images/import', [\App\Http\Controllers\Api\V1\Manager\PlayerProfileImageImportController::class, 'store']);
             Route::post('{player}/profile-images', [\App\Http\Controllers\Api\V1\Manager\PlayerProfileImageController::class, 'store'])
@@ -529,13 +534,13 @@ Route::prefix('v1')->group(function () {
 
         Route::post('cached-pdf-pair-images', [\App\Http\Controllers\Api\V1\Manager\CachedPdfPairImageController::class, 'store']);
 
-        Route::prefix('player-imports')->group(function () {
-            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\PlayerImportController::class, 'index']);
-            Route::get('{playerImport}', [\App\Http\Controllers\Api\V1\Manager\PlayerImportController::class, 'show'])
-                ->whereNumber('playerImport');
+        Route::prefix('user-imports')->group(function () {
+            Route::get('/', [\App\Http\Controllers\Api\V1\Manager\UserImportController::class, 'index']);
+            Route::get('{userImport}', [\App\Http\Controllers\Api\V1\Manager\UserImportController::class, 'show'])
+                ->whereNumber('userImport');
         });
 
-        Route::get('player-import-rows', [\App\Http\Controllers\Api\V1\Manager\PlayerImportRowController::class, 'index']);
+        Route::get('user-import-rows', [\App\Http\Controllers\Api\V1\Manager\UserImportRowController::class, 'index']);
 
         Route::prefix('player-profile-image-imports')->group(function () {
             Route::get('/', [\App\Http\Controllers\Api\V1\Manager\PlayerProfileImageImportController::class, 'index']);

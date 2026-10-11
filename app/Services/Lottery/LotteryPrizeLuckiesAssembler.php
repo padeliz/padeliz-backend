@@ -98,13 +98,13 @@ final class LotteryPrizeLuckiesAssembler
     {
         $keys = [];
         foreach ($luckies as $lucky) {
-            $playerId = $lucky->drawnParticipation?->player_id;
+            $playerId = $lucky->drawnParticipation?->player_user_id;
             if ($playerId === null) {
                 continue;
             }
             $collecting = (bool) ($lucky->drawnParticipation?->is_collecting_points ?? false);
             $keys[$playerId . ':' . ($collecting ? '1' : '0')] = [
-                'player_id' => (int) $playerId,
+                'player_user_id' => (int) $playerId,
                 'collecting' => $collecting,
             ];
         }
@@ -115,7 +115,7 @@ final class LotteryPrizeLuckiesAssembler
         $byKey = CachedPdfPlayerImage::urlsByPlayerCollectingPairs(array_values($keys));
 
         foreach ($luckies as $lucky) {
-            $playerId = $lucky->drawnParticipation?->player_id;
+            $playerId = $lucky->drawnParticipation?->player_user_id;
             if ($playerId === null) {
                 $lucky->setAttribute('pdf_avatar_url', null);
 

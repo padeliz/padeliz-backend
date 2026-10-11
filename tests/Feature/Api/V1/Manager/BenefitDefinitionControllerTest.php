@@ -10,7 +10,7 @@ use App\Enums\Benefit\BenefitExclusivity;
 use App\Enums\Benefit\BenefitScopeType;
 use App\Models\BenefitDefinition;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -19,13 +19,13 @@ class BenefitDefinitionControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
     }

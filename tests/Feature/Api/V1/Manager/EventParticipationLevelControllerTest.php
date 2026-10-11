@@ -6,7 +6,7 @@ namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\EventDivisionStanding;
 use App\Models\EventParticipation;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerLevel;
 use App\Services\PlayerLevel\PlayerLevelService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -25,7 +25,7 @@ final class EventParticipationLevelControllerTest extends TestCase
     {
         parent::setUp();
 
-        Sanctum::actingAs(Player::factory()->manager()->create([
+        Sanctum::actingAs(User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]));
         $this->participation = EventParticipation::factory()->create();
@@ -52,11 +52,11 @@ final class EventParticipationLevelControllerTest extends TestCase
         $this->postJson($this->url(), ['level' => '3.50'])
             ->assertOk()
             ->assertJsonPath('data.level', '3.50')
-            ->assertJsonPath('data.player_id', $this->participation->player_id)
+            ->assertJsonPath('data.player_user_id', $this->participation->player_user_id)
             ->assertJsonPath('data.band_name', 'Division 3 Mid');
 
         $this->assertDatabaseHas('player_levels', [
-            'player_id' => $this->participation->player_id,
+            'player_user_id' => $this->participation->player_user_id,
             'event_participation_id' => $this->participation->id_participation,
             'player_level_assessment_id' => null,
             'level' => '3.50',
@@ -88,9 +88,9 @@ final class EventParticipationLevelControllerTest extends TestCase
 
     public function test_each_participation_keeps_its_own_level_and_the_latest_one_is_current(): void
     {
-        $player = Player::factory()->create();
-        $first = EventParticipation::factory()->create(['player_id' => $player->id_player]);
-        $second = EventParticipation::factory()->create(['player_id' => $player->id_player]);
+        $player = User::factory()->create();
+        $first = EventParticipation::factory()->create(['player_user_id' => $player->id_user]);
+        $second = EventParticipation::factory()->create(['player_user_id' => $player->id_user]);
 
         $this->postJson($this->url($first), ['level' => '2.50'])->assertOk();
         PlayerLevel::query()->where('event_participation_id', $first->id_participation)
@@ -100,8 +100,8 @@ final class EventParticipationLevelControllerTest extends TestCase
         // Re-setting the older participation must not overtake the newer one.
         $this->postJson($this->url($first), ['level' => '2.60'])->assertOk();
 
-        $this->assertSame(2, PlayerLevel::query()->where('player_id', $player->id_player)->count());
-        $this->assertSame('4.50', (string) app(PlayerLevelService::class)->currentLevel((int) $player->id_player)->level);
+        $this->assertSame(2, PlayerLevel::query()->where('player_user_id', $player->id_user)->count());
+        $this->assertSame('4.50', (string) app(PlayerLevelService::class)->currentLevel((int) $player->id_user)->level);
     }
 
     public function test_invalid_levels_are_rejected(): void
@@ -122,7 +122,7 @@ final class EventParticipationLevelControllerTest extends TestCase
 
     public function test_requires_manager_role(): void
     {
-        Sanctum::actingAs(Player::factory()->playerOnly()->create());
+        Sanctum::actingAs(User::factory()->playerOnly()->create());
 
         $this->postJson($this->url(), ['level' => '3.50'])->assertStatus(403);
         $this->getJson($this->url())->assertStatus(403);

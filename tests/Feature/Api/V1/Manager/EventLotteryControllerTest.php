@@ -11,7 +11,7 @@ use App\Models\EventLotteryPrize;
 use App\Models\EventLotteryRule;
 use App\Models\EventParticipation;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\Prize;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -21,7 +21,7 @@ class EventLotteryControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
     private PadelEvent $event;
 
@@ -29,7 +29,7 @@ class EventLotteryControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'first_name' => 'Test', 'middle_name' => null, 'last_name' => 'Manager',
             'user_types' => ['player', 'manager'],
         ]);

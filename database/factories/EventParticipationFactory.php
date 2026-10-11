@@ -7,7 +7,7 @@ namespace Database\Factories;
 use App\Models\EventDivision;
 use App\Models\EventParticipation;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class EventParticipationFactory extends Factory
@@ -20,7 +20,7 @@ class EventParticipationFactory extends Factory
 
         return [
             'event_id' => $eventDivision->event_id,
-            'player_id' => Player::factory(),
+            'player_user_id' => User::factory(),
             'event_division_id' => $eventDivision->id_event_division,
             'sort_order' => 0,
             'is_collecting_points' => true,

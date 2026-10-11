@@ -6,7 +6,7 @@ namespace Tests\Unit\Services\PlayerLevel;
 
 use App\Enums\PlayerCustomFieldValueReviewStatus;
 use App\Enums\PlayerLevel\AssessmentReviewStatus;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerCustomFieldSubmission;
 use App\Models\PlayerCustomFieldValue;
 use App\Models\PlayerLevel;
@@ -30,17 +30,17 @@ final class LevelAssessmentServiceTest extends TestCase
 
     public function test_ensure_pending_reuses_existing_pending_row(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $first = $this->service->ensurePending($player);
         $second = $this->service->ensurePending($player);
 
         $this->assertSame($first->id_player_level_assessment, $second->id_player_level_assessment);
-        $this->assertSame(1, PlayerLevelAssessment::query()->where('player_id', $player->id_player)->count());
+        $this->assertSame(1, PlayerLevelAssessment::query()->where('player_user_id', $player->id_user)->count());
     }
 
     public function test_approve_upserts_player_level_and_reject_keeps_it(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $assessment = $this->service->ensurePending($player);
 
         $this->service->approve($assessment, '3.50');
@@ -65,7 +65,7 @@ final class LevelAssessmentServiceTest extends TestCase
 
     public function test_mark_ready_locks_and_reopen_unlocks(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $assessment = $this->service->ensurePending($player);
 
         $this->service->markReady($assessment);
@@ -80,7 +80,7 @@ final class LevelAssessmentServiceTest extends TestCase
 
     public function test_cannot_approve_a_non_pending_assessment(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $assessment = $this->service->ensurePending($player);
         $this->service->reject($assessment);
 
@@ -90,10 +90,10 @@ final class LevelAssessmentServiceTest extends TestCase
 
     public function test_approve_flips_only_pending_values_to_validated_with_the_manager(): void
     {
-        $player = Player::factory()->create();
-        $manager = Player::factory()->manager()->create();
+        $player = User::factory()->create();
+        $manager = User::factory()->manager()->create();
         $assessment = $this->service->ensurePending($player);
-        $other = $this->service->ensurePending(Player::factory()->create());
+        $other = $this->service->ensurePending(User::factory()->create());
 
         $pending = $this->valueIn($assessment, PlayerCustomFieldValueReviewStatus::Pending);
         $rejected = $this->valueIn($assessment, PlayerCustomFieldValueReviewStatus::Rejected, 1_600_000_001);
@@ -101,12 +101,12 @@ final class LevelAssessmentServiceTest extends TestCase
         $validated = $this->valueIn($assessment, PlayerCustomFieldValueReviewStatus::Validated, 1_600_000_003, $manager);
         $untouched = $this->valueIn($other, PlayerCustomFieldValueReviewStatus::Pending);
 
-        $this->service->approve($assessment, '3.50', null, (int) $manager->id_player);
+        $this->service->approve($assessment, '3.50', null, (int) $manager->id_user);
 
         $flipped = $pending->fresh();
         $this->assertSame(PlayerCustomFieldValueReviewStatus::Validated, $flipped->review_status);
         $this->assertSame((int) $assessment->fresh()->reviewed_at, (int) $flipped->reviewed_at);
-        $this->assertSame((int) $manager->id_player, (int) $flipped->reviewed_by_manager_id);
+        $this->assertSame((int) $manager->id_user, (int) $flipped->reviewed_by_manager_user_id);
 
         $this->assertTerminalUnchanged($rejected, PlayerCustomFieldValueReviewStatus::Rejected, 1_600_000_001);
         $this->assertTerminalUnchanged($discarded, PlayerCustomFieldValueReviewStatus::Discarded, 1_600_000_002);
@@ -116,19 +116,19 @@ final class LevelAssessmentServiceTest extends TestCase
 
     public function test_reject_flips_only_pending_values_to_rejected_with_the_manager(): void
     {
-        $manager = Player::factory()->manager()->create();
-        $assessment = $this->service->ensurePending(Player::factory()->create());
+        $manager = User::factory()->manager()->create();
+        $assessment = $this->service->ensurePending(User::factory()->create());
 
         $pending = $this->valueIn($assessment, PlayerCustomFieldValueReviewStatus::Pending);
         $validated = $this->valueIn($assessment, PlayerCustomFieldValueReviewStatus::Validated, 1_600_000_003);
         $discarded = $this->valueIn($assessment, PlayerCustomFieldValueReviewStatus::Discarded, 1_600_000_002);
 
-        $this->service->reject($assessment, 'no', (int) $manager->id_player);
+        $this->service->reject($assessment, 'no', (int) $manager->id_user);
 
         $flipped = $pending->fresh();
         $this->assertSame(PlayerCustomFieldValueReviewStatus::Rejected, $flipped->review_status);
         $this->assertNotNull($flipped->reviewed_at);
-        $this->assertSame((int) $manager->id_player, (int) $flipped->reviewed_by_manager_id);
+        $this->assertSame((int) $manager->id_user, (int) $flipped->reviewed_by_manager_user_id);
 
         $this->assertTerminalUnchanged($validated, PlayerCustomFieldValueReviewStatus::Validated, 1_600_000_003);
         $this->assertTerminalUnchanged($discarded, PlayerCustomFieldValueReviewStatus::Discarded, 1_600_000_002);
@@ -136,7 +136,7 @@ final class LevelAssessmentServiceTest extends TestCase
 
     public function test_discard_flips_only_pending_values_to_discarded_without_a_manager(): void
     {
-        $assessment = $this->service->ensurePending(Player::factory()->create());
+        $assessment = $this->service->ensurePending(User::factory()->create());
 
         $pending = $this->valueIn($assessment, PlayerCustomFieldValueReviewStatus::Pending);
         $rejected = $this->valueIn($assessment, PlayerCustomFieldValueReviewStatus::Rejected, 1_600_000_001);
@@ -147,7 +147,7 @@ final class LevelAssessmentServiceTest extends TestCase
         $flipped = $pending->fresh();
         $this->assertSame(PlayerCustomFieldValueReviewStatus::Discarded, $flipped->review_status);
         $this->assertNotNull($flipped->reviewed_at);
-        $this->assertNull($flipped->reviewed_by_manager_id);
+        $this->assertNull($flipped->reviewed_by_manager_user_id);
 
         $this->assertTerminalUnchanged($rejected, PlayerCustomFieldValueReviewStatus::Rejected, 1_600_000_001);
         $this->assertTerminalUnchanged($validated, PlayerCustomFieldValueReviewStatus::Validated, 1_600_000_003);
@@ -155,8 +155,8 @@ final class LevelAssessmentServiceTest extends TestCase
 
     public function test_deleting_an_assessment_removes_its_submission_values_then_the_submission(): void
     {
-        $assessment = $this->service->ensurePending(Player::factory()->create());
-        $other = $this->service->ensurePending(Player::factory()->create());
+        $assessment = $this->service->ensurePending(User::factory()->create());
+        $other = $this->service->ensurePending(User::factory()->create());
 
         $value = $this->valueIn($assessment, PlayerCustomFieldValueReviewStatus::Pending);
         $kept = $this->valueIn($other, PlayerCustomFieldValueReviewStatus::Pending);
@@ -175,15 +175,15 @@ final class LevelAssessmentServiceTest extends TestCase
         PlayerLevelAssessment $assessment,
         PlayerCustomFieldValueReviewStatus $status,
         ?int $reviewedAt = null,
-        ?Player $manager = null,
+        ?User $manager = null,
     ): PlayerCustomFieldValue {
         return PlayerCustomFieldValue::factory()->create([
-            'player_id' => $assessment->player_id,
+            'player_user_id' => $assessment->player_user_id,
             'submission_id' => $assessment->player_custom_field_submission_id,
             'submitted_via' => PlayerCustomFieldValue::SUBMITTED_VIA_APP,
             'review_status' => $status,
             'reviewed_at' => $reviewedAt,
-            'reviewed_by_manager_id' => $manager?->id_player,
+            'reviewed_by_manager_user_id' => $manager?->id_user,
         ]);
     }
 
@@ -196,6 +196,6 @@ final class LevelAssessmentServiceTest extends TestCase
 
         $this->assertSame($status, $fresh->review_status);
         $this->assertSame($reviewedAt, (int) $fresh->reviewed_at);
-        $this->assertSame($value->reviewed_by_manager_id, $fresh->reviewed_by_manager_id);
+        $this->assertSame($value->reviewed_by_manager_user_id, $fresh->reviewed_by_manager_user_id);
     }
 }

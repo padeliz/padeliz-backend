@@ -13,7 +13,7 @@ use App\Models\BenefitRedemption;
 use App\Models\EventReferralAttribution;
 use App\Models\EventRegistration;
 use App\Models\EventRegistrationCheckoutItem;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerStudentProof;
 use Illuminate\Support\Facades\DB;
 use InvalidArgumentException;
@@ -183,7 +183,7 @@ final class PricingService
             return;
         }
 
-        $isStudent = PlayerStudentProof::hasActiveFor((int) $registration->player_id);
+        $isStudent = PlayerStudentProof::hasActiveFor((int) $registration->player_user_id);
         $existing = BenefitRedemption::query()
             ->where('checkout_item_id', $item->id_checkout_item)
             ->where('benefit_definition_id', $studentBenefit->id_benefit)
@@ -235,7 +235,7 @@ final class PricingService
 
         $attribution = EventReferralAttribution::query()
             ->where('event_id', $registration->event_id)
-            ->where('referred_player_id', $registration->player_id)
+            ->where('referred_player_user_id', $registration->player_user_id)
             ->where('status', ReferralAttributionStatus::Pending->value)
             ->first();
 
@@ -245,7 +245,7 @@ final class PricingService
 
         $alreadyConfirmedOrReleased = EventReferralAttribution::query()
             ->where('event_id', $registration->event_id)
-            ->where('referred_player_id', $registration->player_id)
+            ->where('referred_player_user_id', $registration->player_user_id)
             ->whereIn('status', [
                 ReferralAttributionStatus::Confirmed->value,
                 ReferralAttributionStatus::Released->value,
@@ -255,7 +255,7 @@ final class PricingService
         // First paid in edition for this player?
         $priorPaid = EventRegistration::query()
             ->where('event_id', $registration->event_id)
-            ->where('player_id', $registration->player_id)
+            ->where('player_user_id', $registration->player_user_id)
             ->where('id_registration', '!=', $registration->id_registration)
             ->whereIn('payment_status', [
                 RegistrationPaymentStatus::Paid->value,
@@ -279,7 +279,7 @@ final class PricingService
         BenefitEntitlement::query()->firstOrCreate(
             [
                 'benefit_definition_id' => $referrerBenefit->id_benefit,
-                'player_id' => $attribution->referrer_player_id,
+                'player_user_id' => $attribution->referrer_player_user_id,
                 'source_type' => 'referral_reward',
                 'source_id' => $attribution->id_attribution,
             ],

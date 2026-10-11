@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services\PlayerCustomField;
 
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerCustomField;
 use App\Models\PlayerCustomFieldSubmission;
 use App\Models\PlayerCustomFieldValue;
@@ -29,12 +29,12 @@ final class PlayerCustomFieldValueWriterTest extends TestCase
 
     public function test_returns_new_for_the_first_write_in_a_submission(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $submission = $this->submissionFor($player);
         $field = PlayerCustomField::factory()->create();
 
         $outcome = $this->writer->write(
-            (int) $player->id_player,
+            (int) $player->id_user,
             $field,
             (int) $submission->id_player_custom_field_submission,
             ['value' => 'Answer'],
@@ -46,12 +46,12 @@ final class PlayerCustomFieldValueWriterTest extends TestCase
 
     public function test_returns_replaced_when_rewriting_inside_the_same_submission(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $submission = $this->submissionFor($player);
         $field = PlayerCustomField::factory()->create();
 
         $this->writer->write(
-            (int) $player->id_player,
+            (int) $player->id_user,
             $field,
             (int) $submission->id_player_custom_field_submission,
             ['value' => 'First'],
@@ -59,7 +59,7 @@ final class PlayerCustomFieldValueWriterTest extends TestCase
         );
 
         $outcome = $this->writer->write(
-            (int) $player->id_player,
+            (int) $player->id_user,
             $field,
             (int) $submission->id_player_custom_field_submission,
             ['value' => 'Second'],
@@ -73,12 +73,12 @@ final class PlayerCustomFieldValueWriterTest extends TestCase
 
     public function test_a_second_submission_keeps_the_earlier_value_row(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $field = PlayerCustomField::factory()->create();
 
         foreach (['First', 'Second'] as $answer) {
             $this->writer->write(
-                (int) $player->id_player,
+                (int) $player->id_user,
                 $field,
                 (int) $this->submissionFor($player)->id_player_custom_field_submission,
                 ['value' => $answer],
@@ -91,14 +91,14 @@ final class PlayerCustomFieldValueWriterTest extends TestCase
 
     public function test_json_field_stores_racket_experience(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $submission = $this->submissionFor($player);
         $field = PlayerCustomField::query()
             ->where('code', PlayerCustomFieldValueWriter::RACKET_EXPERIENCE_CODE)
             ->firstOrFail();
 
         $this->writer->write(
-            (int) $player->id_player,
+            (int) $player->id_user,
             $field,
             (int) $submission->id_player_custom_field_submission,
             ['value' => [['sport' => 'padel', 'level' => 'amateur', 'matches_played' => 12]]],
@@ -128,14 +128,14 @@ final class PlayerCustomFieldValueWriterTest extends TestCase
 
     public function test_archived_field_is_rejected(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $submission = $this->submissionFor($player);
         $field = PlayerCustomField::factory()->archived()->create();
 
         $this->expectException(ValidationException::class);
 
         $this->writer->write(
-            (int) $player->id_player,
+            (int) $player->id_user,
             $field,
             (int) $submission->id_player_custom_field_submission,
             ['value' => 'Nope'],
@@ -143,10 +143,10 @@ final class PlayerCustomFieldValueWriterTest extends TestCase
         );
     }
 
-    private function submissionFor(Player $player): PlayerCustomFieldSubmission
+    private function submissionFor(User $player): PlayerCustomFieldSubmission
     {
         return PlayerCustomFieldSubmission::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
         ]);
     }
 }

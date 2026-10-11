@@ -16,18 +16,19 @@ use App\Models\GameMatch;
 use App\Models\MatchPlayer;
 use App\Models\MatchSide;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Services\Schedule\RoundClockCalculator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
 
 final class EventDivisionScheduleReorderTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
     private PadelEvent $event;
 
@@ -46,7 +47,7 @@ final class EventDivisionScheduleReorderTest extends TestCase
 
         Storage::fake(config('filesystems.user_uploads_disk', 'public'));
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
 
@@ -57,8 +58,7 @@ final class EventDivisionScheduleReorderTest extends TestCase
             'event_id' => $this->event->id_event,
             'division_id' => $division->id_division,
             'players_limit' => 8,
-            'playing_start_time' => '14:00:00',
-            'playing_end_time' => '17:00:00',
+            ...UnixEventFactory::playingBounds($this->event, '14:00:00', '17:00:00'),
         ]);
 
         EventDivisionSchedule::factory()->create([
@@ -88,7 +88,7 @@ final class EventDivisionScheduleReorderTest extends TestCase
             $this->participations[] = EventParticipation::factory()->create([
                 'event_id' => $this->event->id_event,
                 'event_division_id' => $this->eventDivision->id_event_division,
-                'player_id' => Player::factory()->create()->id_player,
+                'player_user_id' => User::factory()->create()->id_user,
                 'sort_order' => $i,
                 'is_collecting_points' => true,
                 'absence_reason' => null,
@@ -99,7 +99,13 @@ final class EventDivisionScheduleReorderTest extends TestCase
 
     public function test_reorder_syncs_complete_rounds_recomputes_clocks_and_clears_matches_posters(): void
     {
-        $this->event->forceFill(['date' => '2100-12-31'])->save();
+        $bounds = \Tests\Support\UnixEventFactory::eventBounds('2100-12-31');
+        $this->event->forceFill([
+            'event_starts_at' => $bounds['event_starts_at'],
+            'event_ends_at' => $bounds['event_ends_at'],
+            'registration_allowed_until' => $bounds['registration_allowed_until'],
+            'cancellation_allowed_until' => $bounds['cancellation_allowed_until'],
+        ])->save();
         Sanctum::actingAs($this->manager);
         $edId = $this->eventDivision->id_event_division;
 
@@ -317,7 +323,7 @@ final class EventDivisionScheduleReorderTest extends TestCase
                 'match_side_id' => $side->id_match_side,
                 'slot' => $slot,
                 'participation_id' => $p->id_participation,
-                'player_id' => $p->player_id,
+                'player_user_id' => $p->player_user_id,
             ]);
         }
 

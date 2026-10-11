@@ -16,9 +16,9 @@ use Illuminate\Support\Carbon;
 /**
  * @OA\Schema(
  *     schema="PlayerStudentProof",
- *     required={"player_id", "student_until", "review_status"},
+ *     required={"player_user_id", "student_until", "review_status"},
  *     @OA\Property(property="id_player_student_proof", type="integer", format="int64", readOnly=true, title="ID"),
- *     @OA\Property(property="player_id", type="integer", format="int64", title="Player"),
+ *     @OA\Property(property="player_user_id", type="integer", format="int64", title="Player"),
  *     @OA\Property(property="student_until", type="string", format="date", title="Student Until"),
  *     @OA\Property(property="sort_order", type="integer", title="Sort Order"),
  *     @OA\Property(property="ready_for_review", type="boolean", title="Ready For Review"),
@@ -47,14 +47,14 @@ class PlayerStudentProof extends Model
     ];
 
     public static array $filterableFields = [
-        'player_id',
+        'player_user_id',
         'review_status',
         'ready_for_review',
     ];
 
     public static array $sortableFields = [
         'id_player_student_proof',
-        'player_id',
+        'player_user_id',
         'student_until',
         'review_status',
         'ready_for_review',
@@ -79,10 +79,10 @@ class PlayerStudentProof extends Model
     public const UPDATED_AT = 'updated_at';
 
     /**
-     * `pending_player_id` is a generated column enforcing one pending row per player; never written.
+     * `pending_player_user_id` is a generated column enforcing one pending row per player; never written.
      */
     protected $fillable = [
-        'player_id',
+        'player_user_id',
         'student_until',
         'sort_order',
         'ready_for_review',
@@ -93,7 +93,7 @@ class PlayerStudentProof extends Model
     ];
 
     protected $casts = [
-        'player_id' => 'integer',
+        'player_user_id' => 'integer',
         'sort_order' => 'integer',
         'ready_for_review' => 'boolean',
         'reviewed_at' => 'integer',
@@ -120,7 +120,7 @@ class PlayerStudentProof extends Model
 
     public function player(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'player_id', 'id_player');
+        return $this->belongsTo(User::class, 'player_user_id', 'id_user');
     }
 
     /**
@@ -139,12 +139,12 @@ class PlayerStudentProof extends Model
     /**
      * True when the player currently holds an approved, unexpired student proof.
      */
-    public static function hasActiveFor(Player|int $player, ?int $now = null): bool
+    public static function hasActiveFor(User|int $player, ?int $now = null): bool
     {
-        $playerId = $player instanceof Player ? (int) $player->id_player : $player;
+        $playerId = $player instanceof User ? (int) $player->id_user : $player;
 
         return static::query()
-            ->where('player_id', $playerId)
+            ->where('player_user_id', $playerId)
             ->active($now)
             ->exists();
     }

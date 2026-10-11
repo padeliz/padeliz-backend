@@ -6,8 +6,8 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
 use App\Http\Resources\PlayerProfileImageImportResource;
-use App\Http\Resources\PlayerResource;
-use App\Models\Player;
+use App\Http\Resources\UserResource;
+use App\Models\User;
 use App\Models\PlayerProfileImageImport;
 use App\Services\PlayerProfileImageImport\PlayerProfileImageImportFailedException;
 use App\Services\PlayerProfileImageImport\PlayerProfileImageImportService;
@@ -69,7 +69,7 @@ class PlayerProfileImageImportController extends V1BaseController
                     'player' => $this->playerPayload($mapping['player']),
                     'candidates' => [],
                     'name_matches' => array_map(
-                        fn (Player $player) => $this->playerPayload($player),
+                        fn (User $player) => $this->playerPayload($player),
                         $mapping['name_matches']
                     ),
                 ],
@@ -135,7 +135,7 @@ class PlayerProfileImageImportController extends V1BaseController
             $import = $this->importService->save(
                 $payload,
                 $filesByIndex,
-                (int) $request->user()->id_player
+                (int) $request->user()->id_user
             );
         } catch (PlayerProfileImageImportFailedException $e) {
             return $this->errorResponse($e->getMessage(), $e->status, $e->errors);
@@ -159,7 +159,7 @@ class PlayerProfileImageImportController extends V1BaseController
      */
     public function index(Request $request)
     {
-        $query = PlayerProfileImageImport::with('importedByPlayer');
+        $query = PlayerProfileImageImport::with('importedByManager');
 
         $this->applyAdvancedPagination(
             $query,
@@ -196,7 +196,7 @@ class PlayerProfileImageImportController extends V1BaseController
      */
     public function show(PlayerProfileImageImport $playerProfileImageImport): JsonResponse
     {
-        $playerProfileImageImport->load(['rows', 'importedByPlayer']);
+        $playerProfileImageImport->load(['rows', 'importedByManager']);
 
         return $this->resourceResponse(
             new PlayerProfileImageImportResource($playerProfileImageImport),
@@ -207,12 +207,12 @@ class PlayerProfileImageImportController extends V1BaseController
     /**
      * @return null|array<string, mixed>
      */
-    private function playerPayload(?Player $player): ?array
+    private function playerPayload(?User $player): ?array
     {
         if ($player === null) {
             return null;
         }
 
-        return (new PlayerResource($player))->resolve();
+        return (new UserResource($player))->resolve();
     }
 }

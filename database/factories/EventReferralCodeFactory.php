@@ -6,7 +6,7 @@ namespace Database\Factories;
 
 use App\Models\EventReferralCode;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 use Illuminate\Support\Str;
 
@@ -18,7 +18,7 @@ class EventReferralCodeFactory extends Factory
     {
         return [
             'event_id' => PadelEvent::factory(),
-            'referrer_player_id' => Player::factory(),
+            'referrer_player_user_id' => User::factory(),
             'code' => Str::upper(Str::random(8)),
             'expires_at' => time() + ((int) config('referral.code_ttl_hours', 24) * 3600),
             'revoked_at' => null,

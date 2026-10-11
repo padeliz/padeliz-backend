@@ -72,7 +72,7 @@ class EventRegistrationController extends V1BaseController
      *             type="object",
      *             additionalProperties=false,
      *             @OA\Property(property="event_id", type="string"),
-     *             @OA\Property(property="player_id", type="string"),
+     *             @OA\Property(property="player_user_id", type="string"),
      *             @OA\Property(property="event_division_id", type="string"),
      *             @OA\Property(property="is_minor", type="string"),
      *             @OA\Property(property="is_student", type="string"),
@@ -90,7 +90,7 @@ class EventRegistrationController extends V1BaseController
      *             additionalProperties=false,
      *             @OA\Property(property="id_registration", type="string", enum={"asc", "desc"}),
      *             @OA\Property(property="event_id", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="player_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="player_user_id", type="string", enum={"asc", "desc"}),
      *             @OA\Property(property="event_division_id", type="string", enum={"asc", "desc"}),
      *             @OA\Property(property="is_minor", type="string", enum={"asc", "desc"}),
      *             @OA\Property(property="is_student", type="string", enum={"asc", "desc"}),
@@ -171,9 +171,9 @@ class EventRegistrationController extends V1BaseController
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"event_id", "player_id"},
+     *             required={"event_id", "player_user_id"},
      *             @OA\Property(property="event_id", type="integer"),
-     *             @OA\Property(property="player_id", type="integer"),
+     *             @OA\Property(property="player_user_id", type="integer"),
      *             @OA\Property(property="event_division_id", type="integer", nullable=true),
      *             @OA\Property(property="is_minor", type="boolean"),
      *             @OA\Property(property="is_student", type="boolean"),
@@ -199,7 +199,7 @@ class EventRegistrationController extends V1BaseController
         try {
             $payload = [
                 'event_id' => (int) $validated['event_id'],
-                'player_id' => (int) $validated['player_id'],
+                'player_user_id' => (int) $validated['player_user_id'],
                 'event_division_id' => $eventDivisionId,
                 'is_minor' => $validated['is_minor'] ?? false,
                 'is_student' => $validated['is_student'] ?? false,
@@ -211,7 +211,7 @@ class EventRegistrationController extends V1BaseController
         } catch (RegistrationValidationException $e) {
             return $this->validationErrorResponse($e->errors);
         } catch (InvalidArgumentException $e) {
-            return $this->validationErrorResponse(['player_id' => [$e->getMessage()]]);
+            return $this->validationErrorResponse(['player_user_id' => [$e->getMessage()]]);
         }
 
         $registration->load(['player', 'eventDivision', 'event']);
@@ -233,9 +233,9 @@ class EventRegistrationController extends V1BaseController
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"event_id", "player_id"},
+     *             required={"event_id", "player_user_id"},
      *             @OA\Property(property="event_id", type="integer"),
-     *             @OA\Property(property="player_id", type="integer"),
+     *             @OA\Property(property="player_user_id", type="integer"),
      *             @OA\Property(property="event_division_id", type="integer", nullable=true),
      *             @OA\Property(property="is_minor", type="boolean"),
      *             @OA\Property(property="is_student", type="boolean"),
@@ -261,7 +261,7 @@ class EventRegistrationController extends V1BaseController
             : null;
         $xor = EventRegistration::xorConflict(
             (int) $validated['event_id'],
-            (int) $validated['player_id'],
+            (int) $validated['player_user_id'],
             $eventDivisionId,
             (int) $eventRegistration->id_registration
         );
@@ -300,7 +300,7 @@ class EventRegistrationController extends V1BaseController
      *         required=true,
      *         @OA\JsonContent(
      *             @OA\Property(property="event_id", type="integer"),
-     *             @OA\Property(property="player_id", type="integer"),
+     *             @OA\Property(property="player_user_id", type="integer"),
      *             @OA\Property(property="event_division_id", type="integer", nullable=true),
      *             @OA\Property(property="is_minor", type="boolean"),
      *             @OA\Property(property="is_student", type="boolean"),
@@ -323,7 +323,7 @@ class EventRegistrationController extends V1BaseController
         $validated = $request->validate($this->patchRules($targetEditionId));
 
         $editionId = (int) ($validated['event_id'] ?? $eventRegistration->event_id);
-        $playerId = (int) ($validated['player_id'] ?? $eventRegistration->player_id);
+        $playerId = (int) ($validated['player_user_id'] ?? $eventRegistration->player_user_id);
         $eventDivisionId = array_key_exists('event_division_id', $validated)
             ? $this->nullableInt($validated, 'event_division_id')
             : ($eventRegistration->event_division_id !== null ? (int) $eventRegistration->event_division_id : null);
@@ -472,7 +472,7 @@ class EventRegistrationController extends V1BaseController
         if ($item === null || $itemStatus !== CheckoutItemStatus::Active) {
             $checkout = $this->checkoutService->openOrRefreshForUnpaid(
                 (int) $eventRegistration->event_id,
-                (int) $eventRegistration->player_id
+                (int) $eventRegistration->player_user_id
             );
             $item = $checkout->items()
                 ->where('registration_id', $eventRegistration->id_registration)
@@ -517,7 +517,8 @@ class EventRegistrationController extends V1BaseController
     {
         return [
             'event_id' => 'required|exists:events,id_event',
-            'player_id' => 'required|exists:players,id_player',
+            'player_user_id' => 'required|exists:users,id_user',
+            'player_id' => 'prohibited',
             'event_division_id' => $this->eventDivisionIdRules($editionId),
             'is_minor' => 'boolean',
             'is_student' => 'boolean',
@@ -532,7 +533,8 @@ class EventRegistrationController extends V1BaseController
     {
         return [
             'event_id' => 'required|exists:events,id_event',
-            'player_id' => 'required|exists:players,id_player',
+            'player_user_id' => 'required|exists:users,id_user',
+            'player_id' => 'prohibited',
             'event_division_id' => $this->eventDivisionIdRules($editionId),
             'is_minor' => 'required|boolean',
             'is_student' => 'required|boolean',
@@ -547,7 +549,8 @@ class EventRegistrationController extends V1BaseController
     {
         return [
             'event_id' => 'sometimes|exists:events,id_event',
-            'player_id' => 'sometimes|exists:players,id_player',
+            'player_user_id' => 'sometimes|exists:users,id_user',
+            'player_id' => 'prohibited',
             'event_division_id' => $this->eventDivisionIdRules($editionId, sometimes: true),
             'is_minor' => 'boolean',
             'is_student' => 'boolean',

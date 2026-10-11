@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Services\PlayerLevel;
 
 use App\Models\EventParticipation;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerLevel;
 use App\Models\PlayerLevelAssessment;
 use App\Services\PlayerLevel\PlayerLevelService;
@@ -28,20 +28,20 @@ final class PlayerLevelServiceTest extends TestCase
 
     public function test_current_level_is_null_without_history(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
 
-        $this->assertNull($this->service->currentLevel((int) $player->id_player));
+        $this->assertNull($this->service->currentLevel((int) $player->id_user));
     }
 
     public function test_current_level_takes_the_newest_row_and_breaks_ties_on_id(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
 
         $older = $this->seedLevel($player, '2.50', 1_700_000_000);
         $tieA = $this->seedLevel($player, '3.50', 1_700_000_100);
         $tieB = $this->seedLevel($player, '4.50', 1_700_000_100);
 
-        $current = $this->service->currentLevel((int) $player->id_player);
+        $current = $this->service->currentLevel((int) $player->id_user);
 
         $this->assertNotNull($current);
         $this->assertSame(
@@ -55,11 +55,11 @@ final class PlayerLevelServiceTest extends TestCase
 
     public function test_upsert_for_assessment_creates_then_updates_the_same_row(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $assessment = PlayerLevelAssessment::factory()->forPlayer($player)->approved()->create();
 
         $created = $this->service->upsertForAssessment(
-            (int) $player->id_player,
+            (int) $player->id_user,
             (int) $assessment->id_player_level_assessment,
             '3.50'
         );
@@ -68,20 +68,20 @@ final class PlayerLevelServiceTest extends TestCase
         $this->assertNull($created->event_participation_id);
 
         $updated = $this->service->upsertForAssessment(
-            (int) $player->id_player,
+            (int) $player->id_user,
             (int) $assessment->id_player_level_assessment,
             '4.20'
         );
 
         $this->assertSame((int) $created->id_player_level, (int) $updated->id_player_level);
         $this->assertSame('4.20', $updated->level);
-        $this->assertSame(1, PlayerLevel::query()->where('player_id', $player->id_player)->count());
+        $this->assertSame(1, PlayerLevel::query()->where('player_user_id', $player->id_user)->count());
     }
 
     public function test_upsert_for_participation_creates_then_updates_the_same_row(): void
     {
         $participation = EventParticipation::factory()->create();
-        $playerId = (int) $participation->player_id;
+        $playerId = (int) $participation->player_user_id;
 
         $created = $this->service->upsertForParticipation(
             $playerId,
@@ -145,7 +145,7 @@ final class PlayerLevelServiceTest extends TestCase
         $participation = EventParticipation::factory()->create();
 
         $fromParticipation = $this->service->upsertForParticipation(
-            (int) $participation->player_id,
+            (int) $participation->player_user_id,
             (int) $participation->id_participation,
             '2.10'
         );
@@ -153,7 +153,7 @@ final class PlayerLevelServiceTest extends TestCase
         $this->assertTrue($fromParticipation->hasExactlyOneSource());
     }
 
-    private function seedLevel(Player $player, string $level, int $insertedAt): PlayerLevel
+    private function seedLevel(User $player, string $level, int $insertedAt): PlayerLevel
     {
         $assessment = PlayerLevelAssessment::factory()->forPlayer($player)->approved()->create();
 

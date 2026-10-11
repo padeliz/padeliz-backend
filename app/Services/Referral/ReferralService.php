@@ -15,9 +15,9 @@ use App\Models\EventReferralSetting;
 use App\Models\EventRegistration;
 use App\Models\EventRegistrationCheckout;
 use App\Models\PadelEvent;
-use App\Models\Player;
-use App\Models\PlayerEmail;
-use App\Models\PlayerPhone;
+use App\Models\User;
+use App\Models\UserEmail;
+use App\Models\UserPhone;
 use App\Models\ReferralTouchpoint;
 use App\Services\PlayerEventHistoryService;
 use App\Support\PlayerPhoneNormalizer;
@@ -41,7 +41,7 @@ final class ReferralService
         $cap = (int) config('referral.edition_discount_cap', 6);
         $used = EventReferralAttribution::query()
             ->where('event_id', $editionId)
-            ->where('referrer_player_id', $referrerPlayerId)
+            ->where('referrer_player_user_id', $referrerPlayerId)
             ->whereIn('status', [
                 ReferralAttributionStatus::Pending->value,
                 ReferralAttributionStatus::Confirmed->value,
@@ -52,17 +52,17 @@ final class ReferralService
     }
 
     /**
-     * @param  list<array{email?: ?string, phone?: ?string, player_id?: ?int}>  $invitees
+     * @param  list<array{email?: ?string, phone?: ?string, player_user_id?: ?int}>  $invitees
      */
-    public function createCode(Player $referrer, int $editionId, array $invitees): EventReferralCode
+    public function createCode(User $referrer, int $editionId, array $invitees): EventReferralCode
     {
         PadelEvent::query()->findOrFail($editionId);
 
-        if (! $this->hasCleanParticipation((int) $referrer->id_player)) {
+        if (! $this->hasCleanParticipation((int) $referrer->id_user)) {
             throw new InvalidArgumentException('Only players with at least one clean past participation may create referral codes.');
         }
 
-        $remaining = $this->remainingSlots((int) $referrer->id_player, $editionId);
+        $remaining = $this->remainingSlots((int) $referrer->id_user, $editionId);
         if ($remaining <= 0) {
             throw new InvalidArgumentException('No referral discount slots remaining for this edition.');
         }
@@ -80,29 +80,29 @@ final class ReferralService
         foreach ($invitees as $invitee) {
             $email = isset($invitee['email']) ? $this->normalizeEmail((string) $invitee['email']) : null;
             $phone = isset($invitee['phone']) ? $this->normalizePhone((string) $invitee['phone']) : null;
-            $playerId = isset($invitee['player_id']) ? (int) $invitee['player_id'] : null;
+            $playerId = isset($invitee['player_user_id']) ? (int) $invitee['player_user_id'] : null;
 
             if ($email === null && $phone === null && $playerId === null) {
-                throw new InvalidArgumentException('Each invitee requires email and/or phone (or player_id).');
+                throw new InvalidArgumentException('Each invitee requires email and/or phone (or player_user_id).');
             }
 
             if ($playerId !== null) {
-                $player = Player::query()->findOrFail($playerId);
-                if ((int) $player->id_player === (int) $referrer->id_player) {
+                $player = User::query()->findOrFail($playerId);
+                if ((int) $player->id_user === (int) $referrer->id_user) {
                     throw new InvalidArgumentException('Cannot invite yourself.');
                 }
-                $email = $email ?? PlayerEmail::query()->where('player_id', $playerId)->value('email');
-                $phone = $phone ?? PlayerPhone::query()->where('player_id', $playerId)->value('phone');
+                $email = $email ?? UserEmail::query()->where('user_id', $playerId)->value('email');
+                $phone = $phone ?? UserPhone::query()->where('user_id', $playerId)->value('phone');
                 $email = $email ? $this->normalizeEmail((string) $email) : null;
                 $phone = $phone ? $this->normalizePhone((string) $phone) : null;
             } else {
                 if ($email) {
-                    $playerId = PlayerEmail::query()->where('email', $email)->value('player_id');
+                    $playerId = UserEmail::query()->where('email', $email)->value('user_id');
                 }
                 if ($playerId === null && $phone) {
-                    $playerId = PlayerPhone::query()->where('phone', $phone)->value('player_id');
+                    $playerId = UserPhone::query()->where('phone', $phone)->value('user_id');
                 }
-                if ($playerId !== null && (int) $playerId === (int) $referrer->id_player) {
+                if ($playerId !== null && (int) $playerId === (int) $referrer->id_user) {
                     throw new InvalidArgumentException('Cannot invite yourself.');
                 }
             }
@@ -119,7 +119,7 @@ final class ReferralService
             $normalized[] = [
                 'email' => $email,
                 'phone' => $phone,
-                'player_id' => $playerId,
+                'player_user_id' => $playerId,
             ];
         }
 
@@ -129,7 +129,7 @@ final class ReferralService
         return DB::transaction(function () use ($referrer, $editionId, $normalized, $ttl, $now) {
             $code = EventReferralCode::query()->create([
                 'event_id' => $editionId,
-                'referrer_player_id' => $referrer->id_player,
+                'referrer_player_user_id' => $referrer->id_user,
                 'code' => Str::upper(Str::random(8)),
                 'expires_at' => $now + ($ttl * 3600),
                 'revoked_at' => null,
@@ -140,7 +140,7 @@ final class ReferralService
                     'referral_code_id' => $code->id_referral_code,
                     'email' => $row['email'],
                     'phone' => $row['phone'],
-                    'player_id' => $row['player_id'],
+                    'player_user_id' => $row['player_user_id'],
                 ]);
             }
 
@@ -148,7 +148,7 @@ final class ReferralService
         });
     }
 
-    public function recordTouchpoint(Player $player, string $code, int $editionId, ?array $clientMetadata = null): ReferralTouchpoint
+    public function recordTouchpoint(User $player, string $code, int $editionId, ?array $clientMetadata = null): ReferralTouchpoint
     {
         $referralCode = EventReferralCode::query()
             ->where('event_id', $editionId)
@@ -161,7 +161,7 @@ final class ReferralService
         if (! $referralCode->isUsable()) {
             throw new InvalidArgumentException('Referral code is expired or revoked.');
         }
-        if ((int) $referralCode->referrer_player_id === (int) $player->id_player) {
+        if ((int) $referralCode->referrer_player_user_id === (int) $player->id_user) {
             throw new InvalidArgumentException('Self-referral is not allowed.');
         }
 
@@ -169,8 +169,8 @@ final class ReferralService
 
         return ReferralTouchpoint::query()->create([
             'event_id' => $editionId,
-            'referred_player_id' => $player->id_player,
-            'referrer_player_id' => $referralCode->referrer_player_id,
+            'referred_player_user_id' => $player->id_user,
+            'referrer_player_user_id' => $referralCode->referrer_player_user_id,
             'referral_code_id' => $referralCode->id_referral_code,
             'discount_eligible' => $eligible,
             'touched_at' => time(),
@@ -179,38 +179,38 @@ final class ReferralService
     }
 
     /**
-     * @return list<array{referrer_player_id: int, latest_touched_at: int}>
+     * @return list<array{referrer_player_user_id: int, latest_touched_at: int}>
      */
-    public function candidatesForCheckout(Player $player, int $editionId): array
+    public function candidatesForCheckout(User $player, int $editionId): array
     {
         $rows = ReferralTouchpoint::query()
             ->where('event_id', $editionId)
-            ->where('referred_player_id', $player->id_player)
+            ->where('referred_player_user_id', $player->id_user)
             ->where('discount_eligible', true)
             ->orderByDesc('touched_at')
             ->get();
 
         $pending = EventReferralAttribution::query()
             ->where('event_id', $editionId)
-            ->where('referred_player_id', $player->id_player)
+            ->where('referred_player_user_id', $player->id_user)
             ->where('status', ReferralAttributionStatus::Pending->value)
             ->first();
 
         $out = [];
         $seen = [];
         foreach ($rows as $row) {
-            $rid = (int) $row->referrer_player_id;
+            $rid = (int) $row->referrer_player_user_id;
             if (isset($seen[$rid])) {
                 continue;
             }
             $hasSlot = $this->remainingSlots($rid, $editionId) > 0
-                || ($pending && (int) $pending->referrer_player_id === $rid);
+                || ($pending && (int) $pending->referrer_player_user_id === $rid);
             if (! $hasSlot) {
                 continue;
             }
             $seen[$rid] = true;
             $out[] = [
-                'referrer_player_id' => $rid,
+                'referrer_player_user_id' => $rid,
                 'latest_touched_at' => (int) $row->touched_at,
             ];
         }
@@ -223,16 +223,16 @@ final class ReferralService
         int $referrerPlayerId,
     ): EventReferralAttribution {
         $editionId = (int) $checkout->event_id;
-        $referredId = (int) $checkout->player_id;
+        $referredId = (int) $checkout->player_user_id;
 
         if ($referrerPlayerId === $referredId) {
             throw new InvalidArgumentException('Self-referral is not allowed.');
         }
 
         $candidates = collect($this->candidatesForCheckout(
-            Player::query()->findOrFail($referredId),
+            User::query()->findOrFail($referredId),
             $editionId
-        ))->pluck('referrer_player_id')->all();
+        ))->pluck('referrer_player_user_id')->all();
 
         if (! in_array($referrerPlayerId, $candidates, true)) {
             throw new InvalidArgumentException('Selected referrer is not an eligible candidate.');
@@ -241,14 +241,14 @@ final class ReferralService
         return DB::transaction(function () use ($checkout, $editionId, $referredId, $referrerPlayerId) {
             EventReferralAttribution::query()
                 ->where('event_id', $editionId)
-                ->where('referred_player_id', $referredId)
+                ->where('referred_player_user_id', $referredId)
                 ->where('status', ReferralAttributionStatus::Pending->value)
-                ->where('referrer_player_id', '!=', $referrerPlayerId)
+                ->where('referrer_player_user_id', '!=', $referrerPlayerId)
                 ->delete();
 
             $existing = EventReferralAttribution::query()
                 ->where('event_id', $editionId)
-                ->where('referred_player_id', $referredId)
+                ->where('referred_player_user_id', $referredId)
                 ->lockForUpdate()
                 ->first();
 
@@ -259,7 +259,7 @@ final class ReferralService
                 throw new InvalidArgumentException('Referral discount was already used for this edition.');
             }
 
-            if ($existing && (int) $existing->referrer_player_id === $referrerPlayerId) {
+            if ($existing && (int) $existing->referrer_player_user_id === $referrerPlayerId) {
                 $existing->checkout_id = $checkout->id_checkout;
                 $existing->save();
 
@@ -276,8 +276,8 @@ final class ReferralService
 
             return EventReferralAttribution::query()->create([
                 'event_id' => $editionId,
-                'referred_player_id' => $referredId,
-                'referrer_player_id' => $referrerPlayerId,
+                'referred_player_user_id' => $referredId,
+                'referrer_player_user_id' => $referrerPlayerId,
                 'referral_code_id' => null,
                 'checkout_id' => $checkout->id_checkout,
                 'status' => ReferralAttributionStatus::Pending->value,
@@ -289,7 +289,7 @@ final class ReferralService
     {
         EventReferralAttribution::query()
             ->where('event_id', $editionId)
-            ->where('referred_player_id', $playerId)
+            ->where('referred_player_user_id', $playerId)
             ->where('status', ReferralAttributionStatus::Pending->value)
             ->delete();
     }
@@ -298,7 +298,7 @@ final class ReferralService
     {
         $attribution = EventReferralAttribution::query()
             ->where('event_id', $registration->event_id)
-            ->where('referred_player_id', $registration->player_id)
+            ->where('referred_player_user_id', $registration->player_user_id)
             ->where('status', ReferralAttributionStatus::Confirmed->value)
             ->first();
 
@@ -326,20 +326,20 @@ final class ReferralService
         $history = app(PlayerEventHistoryService::class);
 
         return EventParticipation::query()
-            ->where('player_id', $playerId)
+            ->where('player_user_id', $playerId)
             ->get()
             ->contains(static fn (EventParticipation $row): bool => $history->isClean($row));
     }
 
-    private function playerMatchesInvitees(Player $player, EventReferralCode $code): bool
+    private function playerMatchesInvitees(User $player, EventReferralCode $code): bool
     {
-        $emails = PlayerEmail::query()->where('player_id', $player->id_player)->pluck('email')
+        $emails = UserEmail::query()->where('user_id', $player->id_user)->pluck('email')
             ->map(fn ($e) => $this->normalizeEmail((string) $e))->filter()->all();
-        $phones = PlayerPhone::query()->where('player_id', $player->id_player)->pluck('phone')
+        $phones = UserPhone::query()->where('user_id', $player->id_user)->pluck('phone')
             ->map(fn ($p) => $this->normalizePhone((string) $p))->filter()->all();
 
         foreach ($code->invitees as $invitee) {
-            if ($invitee->player_id && (int) $invitee->player_id === (int) $player->id_player) {
+            if ($invitee->player_user_id && (int) $invitee->player_user_id === (int) $player->id_user) {
                 return true;
             }
             if ($invitee->email && in_array($this->normalizeEmail((string) $invitee->email), $emails, true)) {

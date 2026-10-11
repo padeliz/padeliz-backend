@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Services\Pdf;
 
 use App\Models\Organizer;
-use App\Models\Player;
+use App\Models\User;
 use App\Services\Pdf\PdfHtmlHelper;
 use App\Services\Pdf\PosterPdfService;
 use App\Services\Schedule\PointsPerMatchCalculator;
@@ -145,10 +145,10 @@ final class PosterPdfServiceTest extends TestCase
 
     public function test_scratch_preview_applies_adjust_and_print_for_pdfs(): void
     {
-        $players = Player::factory()->count(8)->create();
-        $playerIds = $players->pluck('id_player')->all();
+        $players = User::factory()->count(8)->create();
+        $playerIds = $players->pluck('id_user')->all();
         $baseInput = [
-            'player_ids' => $playerIds,
+            'player_user_ids' => $playerIds,
             'court_names' => ['Court 1'],
             'time_start' => '14:00',
             'time_end' => '17:00',

@@ -21,7 +21,7 @@ class PlayerLevelResource extends JsonResource
 
         return [
             'id_player_level' => $this->id_player_level,
-            'player_id' => $this->player_id,
+            'player_user_id' => $this->player_user_id,
             'level' => $this->level,
             'band_name' => $band?->name,
             'player_level_assessment_id' => $this->player_level_assessment_id,

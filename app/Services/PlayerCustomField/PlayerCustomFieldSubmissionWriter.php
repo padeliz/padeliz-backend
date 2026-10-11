@@ -33,7 +33,7 @@ final class PlayerCustomFieldSubmissionWriter
         ?int $submittedByPlayerId = null,
         ?int $createdViaImportId = null,
     ): ?PlayerCustomFieldValue {
-        $playerId = (int) $submission->player_id;
+        $playerId = (int) $submission->player_user_id;
         $submissionId = (int) $submission->id_player_custom_field_submission;
         $fieldId = (int) $field->id_player_custom_field;
 
@@ -106,7 +106,7 @@ final class PlayerCustomFieldSubmissionWriter
     public function currentValue(int $playerId, int $fieldId): ?PlayerCustomFieldValue
     {
         return PlayerCustomFieldValue::query()
-            ->where('player_id', $playerId)
+            ->where('player_user_id', $playerId)
             ->where('player_custom_field_id', $fieldId)
             ->latestValidatedFirst()
             ->first();

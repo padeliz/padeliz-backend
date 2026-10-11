@@ -71,7 +71,7 @@ class EventParticipationController extends V1BaseController
      *             type="object",
      *             additionalProperties=false,
      *             @OA\Property(property="event_id", type="string", description="Filter by edition ID"),
-     *             @OA\Property(property="player_id", type="string", description="Filter by player ID"),
+     *             @OA\Property(property="player_user_id", type="string", description="Filter by player ID"),
      *             @OA\Property(property="event_division_id", type="string", description="Filter by edition division ID"),
      *             @OA\Property(property="sort_order", type="string", description="Filter by sort order"),
      *             @OA\Property(property="is_collecting_points", type="string", description="Filter by collecting points (use 0 or 1)")
@@ -89,7 +89,7 @@ class EventParticipationController extends V1BaseController
      *             additionalProperties=false,
      *             @OA\Property(property="id_participation", type="string", enum={"asc", "desc"}, description="Sort by participation ID"),
      *             @OA\Property(property="event_id", type="string", enum={"asc", "desc"}, description="Sort by edition ID"),
-     *             @OA\Property(property="player_id", type="string", enum={"asc", "desc"}, description="Sort by player ID"),
+     *             @OA\Property(property="player_user_id", type="string", enum={"asc", "desc"}, description="Sort by player ID"),
      *             @OA\Property(property="event_division_id", type="string", enum={"asc", "desc"}, description="Sort by edition division ID"),
      *             @OA\Property(property="sort_order", type="string", enum={"asc", "desc"}, description="Sort by sort order"),
      *             @OA\Property(property="is_collecting_points", type="string", enum={"asc", "desc"}, description="Sort by collecting points"),
@@ -158,7 +158,7 @@ class EventParticipationController extends V1BaseController
                 $event = PadelEvent::query()->find($editionId);
                 if ($event !== null) {
                     $histories = $this->playerEditionHistory->forPlayers(
-                        $eventParticipations->getCollection()->pluck('player_id')->all(),
+                        $eventParticipations->getCollection()->pluck('player_user_id')->all(),
                         $this->playerEditionHistory->cutoffDateForEdition($event)
                     );
                     $flagPayload = $this->participationFlags->forEventParticipations(
@@ -171,7 +171,7 @@ class EventParticipationController extends V1BaseController
                     $customFieldsByPlayer = $customFieldIds !== []
                         ? $this->customFieldResolver->resolveForPlayers(
                             $editionId,
-                            $eventParticipations->getCollection()->pluck('player_id')->map(static fn ($id): int => (int) $id)->all(),
+                            $eventParticipations->getCollection()->pluck('player_user_id')->map(static fn ($id): int => (int) $id)->all(),
                             $customFieldIds,
                             $this->playerEditionHistory->cutoffDateForEdition($event)
                         )
@@ -180,7 +180,7 @@ class EventParticipationController extends V1BaseController
                     $eventParticipations->getCollection()->transform(function (EventParticipation $p) use ($histories, $flagsById, $customFieldsByPlayer) {
                         $p->setAttribute(
                             'player_history',
-                            $histories[(int) $p->player_id] ?? [
+                            $histories[(int) $p->player_user_id] ?? [
                                 'last_played' => null,
                                 'participated_count' => 0,
                                 'banned_count' => 0,
@@ -197,7 +197,7 @@ class EventParticipationController extends V1BaseController
                         );
                         $p->setAttribute(
                             'custom_field_values',
-                            $customFieldsByPlayer[(int) $p->player_id] ?? []
+                            $customFieldsByPlayer[(int) $p->player_user_id] ?? []
                         );
 
                         return $p;
@@ -288,9 +288,9 @@ class EventParticipationController extends V1BaseController
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"event_id", "player_id", "event_division_id"},
+     *             required={"event_id", "player_user_id", "event_division_id"},
      *             @OA\Property(property="event_id", type="integer"),
-     *             @OA\Property(property="player_id", type="integer"),
+     *             @OA\Property(property="player_user_id", type="integer"),
      *             @OA\Property(property="event_division_id", type="integer"),
      *             @OA\Property(property="sort_order", type="integer", description="Sort order", default=0),
      *             @OA\Property(property="is_collecting_points", type="boolean", description="Is collecting points", default=true),
@@ -336,7 +336,8 @@ class EventParticipationController extends V1BaseController
     {
         $validated = $request->validate([
             'event_id' => 'required|exists:events,id_event',
-            'player_id' => 'required|exists:players,id_player',
+            'player_user_id' => 'required|exists:users,id_user',
+            'player_id' => 'prohibited',
             'event_division_id' => 'required|exists:event_divisions,id_event_division',
             'sort_order' => 'integer|min:0',
             'is_collecting_points' => 'boolean',
@@ -352,7 +353,7 @@ class EventParticipationController extends V1BaseController
         // Check if player is already participating in this edition division
         $existingParticipation = EventParticipation::where([
             'event_division_id' => $validated['event_division_id'],
-            'player_id' => $validated['player_id'],
+            'player_user_id' => $validated['player_user_id'],
         ])->first();
 
         if ($existingParticipation) {
@@ -394,7 +395,7 @@ class EventParticipationController extends V1BaseController
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             @OA\Property(property="player_id", type="integer", description="Player ID"),
+     *             @OA\Property(property="player_user_id", type="integer", description="Player ID"),
      *             @OA\Property(property="event_division_id", type="integer", description="PadelEvent division ID"),
      *             @OA\Property(property="sort_order", type="integer", description="Sort order"),
      *             @OA\Property(property="is_collecting_points", type="boolean", description="Is collecting points"),
@@ -450,7 +451,8 @@ class EventParticipationController extends V1BaseController
 
         $validated = $request->validate([
             'event_id' => 'required|exists:events,id_event',
-            'player_id' => 'required|exists:players,id_player',
+            'player_user_id' => 'required|exists:users,id_user',
+            'player_id' => 'prohibited',
             'event_division_id' => 'required|exists:event_divisions,id_event_division',
             'sort_order' => 'required|integer|min:0',
             'is_collecting_points' => 'required|boolean',
@@ -461,7 +463,7 @@ class EventParticipationController extends V1BaseController
         // Check if player is already participating in this edition division (excluding current record)
         $existingParticipation = EventParticipation::where('id_participation', '!=', $eventParticipation->id_participation)
             ->where('event_division_id', $validated['event_division_id'])
-            ->where('player_id', $validated['player_id'])
+            ->where('player_user_id', $validated['player_user_id'])
             ->first();
 
         if ($existingParticipation) {
@@ -502,7 +504,7 @@ class EventParticipationController extends V1BaseController
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             @OA\Property(property="player_id", type="integer", description="Player ID"),
+     *             @OA\Property(property="player_user_id", type="integer", description="Player ID"),
      *             @OA\Property(property="event_division_id", type="integer", description="PadelEvent division ID"),
      *             @OA\Property(property="sort_order", type="integer", description="Sort order"),
      *             @OA\Property(property="is_collecting_points", type="boolean", description="Is collecting points"),
@@ -558,7 +560,8 @@ class EventParticipationController extends V1BaseController
 
         $validated = $request->validate([
             'event_id' => 'sometimes|exists:events,id_event',
-            'player_id' => 'sometimes|exists:players,id_player',
+            'player_user_id' => 'sometimes|exists:users,id_user',
+            'player_id' => 'prohibited',
             'event_division_id' => 'sometimes|exists:event_divisions,id_event_division',
             'sort_order' => 'integer|min:0',
             'is_collecting_points' => 'boolean',
@@ -567,10 +570,10 @@ class EventParticipationController extends V1BaseController
         ]);
 
         // Check if player is already participating in this edition division (excluding current record)
-        if (isset($validated['player_id']) || isset($validated['event_division_id'])) {
+        if (isset($validated['player_user_id']) || isset($validated['event_division_id'])) {
             $existingParticipation = EventParticipation::where('id_participation', '!=', $eventParticipation->id_participation)
                 ->where('event_division_id', $validated['event_division_id'] ?? $eventParticipation->event_division_id)
-                ->where('player_id', $validated['player_id'] ?? $eventParticipation->player_id)
+                ->where('player_user_id', $validated['player_user_id'] ?? $eventParticipation->player_user_id)
                 ->first();
 
             if ($existingParticipation) {
@@ -990,8 +993,8 @@ class EventParticipationController extends V1BaseController
      */
     private function participationUpdateShouldInvalidate(EventParticipation $participation, array $validated): bool
     {
-        if (array_key_exists('player_id', $validated)
-            && (int) $validated['player_id'] !== (int) $participation->player_id) {
+        if (array_key_exists('player_user_id', $validated)
+            && (int) $validated['player_user_id'] !== (int) $participation->player_user_id) {
             return true;
         }
 

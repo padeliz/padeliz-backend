@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Club;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -18,7 +18,7 @@ final class ClubLogoControllerTest extends TestCase
     use RefreshDatabase;
     use FileUploadTestHelper;
 
-    private Player $manager;
+    private User $manager;
 
     private Club $club;
 
@@ -31,7 +31,7 @@ final class ClubLogoControllerTest extends TestCase
         $this->disk = config('filesystems.user_uploads_disk', 'public');
         Storage::fake($this->disk);
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         $this->club = Club::factory()->create(['logo_path' => null]);

@@ -6,7 +6,7 @@ namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Organizer;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\Storage;
@@ -19,7 +19,7 @@ final class OrganizerControllerTest extends TestCase
     use RefreshDatabase;
     use FileUploadTestHelper;
 
-    private Player $manager;
+    private User $manager;
 
     protected function setUp(): void
     {
@@ -27,7 +27,7 @@ final class OrganizerControllerTest extends TestCase
 
         Storage::fake(config('filesystems.user_uploads_disk', 'public'));
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
     }
@@ -39,7 +39,7 @@ final class OrganizerControllerTest extends TestCase
 
     public function test_regular_player_cannot_access_organizer_management(): void
     {
-        Sanctum::actingAs(Player::factory()->playerOnly()->create());
+        Sanctum::actingAs(User::factory()->playerOnly()->create());
 
         $this->getJson('/api/v1/manager/organizers')->assertStatus(403);
     }

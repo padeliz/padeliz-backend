@@ -12,7 +12,8 @@ use App\Models\GameMatch;
 use App\Models\MatchPlayer;
 use App\Models\Organizer;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
+use App\Services\EventCalendarTiming;
 use App\Services\Schedule\PlayingWindow;
 use App\Services\Schedule\PointsPerMatchCalculator;
 use App\Services\Schedule\ScheduleGenerationService;
@@ -98,7 +99,7 @@ class PosterPdfService
                 hasDemonstrativeMatch: (bool) $schedule->has_demonstrative_match,
                 allowReplacements: (bool) $schedule->allow_replacements,
                 finalPointsTarget: (int) ($schedule->final_points_target ?? 24),
-                timeEnd: $this->formatTime($eventDivision->playing_end_time),
+                timeEnd: EventCalendarTiming::formatHi((int) $eventDivision->playing_ends_at),
                 matchRows: $rows,
                 persistCachedPdfImages: true,
             );
@@ -139,7 +140,7 @@ class PosterPdfService
 
             $players = $eventDivision->participations
                 ->filter(fn ($p) => (bool) $p->is_collecting_points)
-                ->map(fn ($p) => $this->playerPayload($p->player, [(int) $p->player_id => true]))
+                ->map(fn ($p) => $this->playerPayload($p->player, [(int) $p->player_user_id => true]))
                 ->sortBy(fn (array $p) => mb_strtolower($p['name']))
                 ->values()
                 ->all();
@@ -262,9 +263,12 @@ class PosterPdfService
      */
     public function generateMatchesFromScratch(array $input): PosterPdfResult
     {
-        $playerIds = array_values(array_map('intval', $input['player_ids']));
+        $playerIds = array_values(array_map('intval', $input['player_user_ids']));
         $players = $this->loadPlayersByIds($playerIds);
-        $collecting = $this->collectingMap($playerIds, $input['collecting_player_ids'] ?? $playerIds);
+        $collecting = $this->collectingMap(
+            $playerIds,
+            $input['collecting_player_user_ids'] ?? $playerIds
+        );
         $branding = $this->scratchBranding($input);
 
         $this->ephemeralTemps = [];
@@ -350,9 +354,9 @@ class PosterPdfService
      */
     public function generateRankingFromScratch(array $input): PosterPdfResult
     {
-        $playerIds = array_values(array_map('intval', $input['player_ids']));
+        $playerIds = array_values(array_map('intval', $input['player_user_ids']));
         $playersById = $this->loadPlayersByIds($playerIds);
-        $collectingIds = $input['collecting_player_ids'] ?? $playerIds;
+        $collectingIds = $input['collecting_player_user_ids'] ?? $playerIds;
         $collecting = $this->collectingMap($playerIds, $collectingIds);
         $branding = $this->scratchBranding($input);
 
@@ -408,7 +412,7 @@ class PosterPdfService
         $schedule = $this->schedule ?? new ScheduleGenerationService();
 
         $preview = $schedule->preview(
-            array_values(array_map('intval', $input['player_ids'])),
+            array_values(array_map('intval', $input['player_user_ids'])),
             (int) $input['opponents_per_player'],
             (int) $input['repeat_partners'],
             array_values(array_map('strval', $input['court_names'])),
@@ -555,7 +559,7 @@ class PosterPdfService
             'include_scores' => $includeScores,
             'include_final' => $includeFinal,
             'allow_replacements' => $allowReplacements,
-            'players' => $players,
+            'users' => $players,
             'player_matches_count' => $playerMatchesCount,
             'matches_rows' => $matchesRows,
             'nr_of_rows' => $nrOfRows,
@@ -771,10 +775,14 @@ class PosterPdfService
             ? trim(((string) ($event->organizer?->name ?? '')) . ' ' . ((string) $event->name))
             : (string) $event->name;
 
-        $headerDate = AttendancePdfLayout::formatOrdinalHeaderDate((string) $event->date);
-        $arriving = $this->formatTime($event->arriving_time);
-        $closing = $this->formatTime($event->closing_time);
-        $headerTimes = trim($arriving . ' – ' . $closing);
+        $startsAt = (int) $event->event_starts_at;
+        $endsAt = (int) $event->event_ends_at;
+        $headerDate = AttendancePdfLayout::formatAttendanceHeaderDate(
+            $startsAt,
+            $endsAt,
+            (int) $event->event_nr_of_days,
+        );
+        $headerTimes = AttendancePdfLayout::formatAttendanceHeaderTimes($startsAt, $endsAt);
 
         $pages = [];
         foreach (AttendancePdfLayout::pageBatches($divisions) as $batch) {
@@ -915,14 +923,14 @@ class PosterPdfService
 
         $collecting = (bool) $participation->is_collecting_points;
 
-        return $this->playerPayload($player, [(int) $player->id_player => $collecting]);
+        return $this->playerPayload($player, [(int) $player->id_user => $collecting]);
     }
 
     /**
      * @param  array<int, bool>  $collectingByPlayerId
      * @return array{id: int, name: string, is_collecting_points: bool, profile_abs_path: string, source_player_profile_image_id: ?int, player_updated_at: ?int, short_name?: string, html_short_name?: string, name_font_size?: int}
      */
-    private function playerPayload(?Player $player, array $collectingByPlayerId): array
+    private function playerPayload(?User $player, array $collectingByPlayerId): array
     {
         if ($player === null) {
             throw new RuntimeException('Match is missing a player slot.');
@@ -930,14 +938,14 @@ class PosterPdfService
 
         $photo = $this->imageGenerator->resolvePhotoForPoster($player, $this->ephemeralTemps);
 
-        $collecting = $collectingByPlayerId[(int) $player->id_player] ?? true;
+        $collecting = $collectingByPlayerId[(int) $player->id_user] ?? true;
         $name = (string) $player->name;
         $short = PdfHtmlHelper::shortenPlayerName($name);
         $updatedAt = $player->updated_at;
         $updatedAtInt = ($updatedAt === null || $updatedAt === '') ? null : (int) $updatedAt;
 
         return [
-            'id' => (int) $player->id_player,
+            'id' => (int) $player->id_user,
             'name' => $name,
             'is_collecting_points' => $collecting,
             'profile_abs_path' => $photo['absolute_path'],
@@ -955,11 +963,11 @@ class PosterPdfService
      */
     private function loadPlayersByIds(array $playerIds): Collection
     {
-        return Player::query()
+        return User::query()
             ->with('profileImages')
-            ->whereIn('id_player', $playerIds)
+            ->whereIn('id_user', $playerIds)
             ->get()
-            ->keyBy('id_player');
+            ->keyBy('id_user');
     }
 
     /**

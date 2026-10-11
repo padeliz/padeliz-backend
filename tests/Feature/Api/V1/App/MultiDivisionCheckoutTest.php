@@ -12,7 +12,7 @@ use App\Models\Division;
 use App\Models\EventDivision;
 use App\Models\EventRegistration;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerLevel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -20,12 +20,13 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
 
 class MultiDivisionCheckoutTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $player;
+    private User $player;
 
     private PadelEvent $event;
 
@@ -59,9 +60,9 @@ class MultiDivisionCheckoutTest extends TestCase
             'netopia.return_url' => 'https://example.test/api/v1/payments/netopia/return',
         ]);
 
-        $this->player = Player::factory()->playerOnly()->create();
+        $this->player = User::factory()->playerOnly()->create();
         $this->event = PadelEvent::factory()->create([
-            'date' => now()->addDays(30)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(now()->addDays(30)->format('Y-m-d')),
             'registration_allowed_until' => time() + 86400,
             'cancellation_allowed_until' => time() + 86400,
         ]);
@@ -77,7 +78,7 @@ class MultiDivisionCheckoutTest extends TestCase
             'players_limit' => 10,
             'entry_fee' => 50,
         ]);
-        PlayerLevel::factory()->level('4.50')->create(['player_id' => $this->player->id_player]);
+        PlayerLevel::factory()->level('4.50')->create(['player_user_id' => $this->player->id_user]);
     }
 
     public function test_multi_create_opens_one_checkout_with_fee_items(): void

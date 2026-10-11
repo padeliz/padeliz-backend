@@ -22,7 +22,7 @@ class EventRegistrationResource extends JsonResource
         return [
             'id_registration' => $this->id_registration,
             'event_id' => $this->event_id,
-            'player_id' => $this->player_id,
+            'player_user_id' => $this->player_user_id,
             'event_division_id' => $this->event_division_id,
             'checkout_id' => $checkoutId,
             'is_minor' => $this->is_minor,
@@ -46,7 +46,7 @@ class EventRegistrationResource extends JsonResource
                 return new EventResource($this->event);
             }),
             'player' => $this->whenLoaded('player', function () {
-                return new PlayerResource($this->player);
+                return new UserSummaryResource($this->player);
             }),
             'event_division' => $this->whenLoaded('eventDivision', function () {
                 return $this->eventDivision === null

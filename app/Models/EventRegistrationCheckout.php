@@ -15,7 +15,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @OA\Schema(
  *     schema="EventRegistrationCheckout",
- *     required={"event_id", "player_id", "status", "total_amount"},
+ *     required={"event_id", "player_user_id", "status", "total_amount"},
  *     @OA\Property(
  *         property="id_checkout",
  *         type="integer",
@@ -33,7 +33,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *         description="Foreign key - References PadelEvent.id_event"
  *     ),
  *     @OA\Property(
- *         property="player_id",
+ *         property="player_user_id",
  *         type="integer",
  *         format="int64",
  *         minimum=1,
@@ -96,7 +96,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *     ),
  *     @OA\Property(
  *         property="player",
- *         ref="#/components/schemas/Player",
+ *         ref="#/components/schemas/User",
  *         title="Player",
  *         description="Related player object",
  *         nullable=true
@@ -112,7 +112,7 @@ class EventRegistrationCheckout extends Model
 
     public static array $filterableFields = [
         'event_id',
-        'player_id',
+        'player_user_id',
         'status',
         'total_amount',
         'payment_method',
@@ -121,7 +121,7 @@ class EventRegistrationCheckout extends Model
     public static array $sortableFields = [
         'id_checkout',
         'event_id',
-        'player_id',
+        'player_user_id',
         'status',
         'total_amount',
         'payment_method',
@@ -139,7 +139,7 @@ class EventRegistrationCheckout extends Model
      */
     public static array $listFields = [
         'player.profile_image_url',
-        'player_id',
+        'player_user_id',
         'event_id',
         'status',
         'total_amount',
@@ -160,7 +160,7 @@ class EventRegistrationCheckout extends Model
 
     protected $fillable = [
         'event_id',
-        'player_id',
+        'player_user_id',
         'status',
         'total_amount',
         'payment_method',
@@ -172,7 +172,7 @@ class EventRegistrationCheckout extends Model
         'updated_at' => 'integer',
         'paid_at' => 'integer',
         'event_id' => 'integer',
-        'player_id' => 'integer',
+        'player_user_id' => 'integer',
         'total_amount' => 'integer',
         'status' => CheckoutStatus::class,
         'payment_method' => RegistrationPaymentMethod::class,
@@ -185,7 +185,7 @@ class EventRegistrationCheckout extends Model
 
     public function player(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'player_id', 'id_player');
+        return $this->belongsTo(User::class, 'player_user_id', 'id_user');
     }
 
     public function items(): HasMany

@@ -7,15 +7,22 @@ namespace Tests\Feature\EventSlug;
 use App\Models\Location;
 use App\Models\Organizer;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Services\EventSlug\EventSlugSync;
 use Illuminate\Foundation\Testing\RefreshDatabase;
+use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
 
 final class EventSlugSyncFeatureTest extends TestCase
 {
     use RefreshDatabase;
+
+    protected function setUp(): void
+    {
+        parent::setUp();
+        Storage::fake((string) config('filesystems.user_uploads_disk', 'public'));
+    }
 
     public function test_manager_create_sets_non_null_slug(): void
     {
@@ -66,6 +73,7 @@ final class EventSlugSyncFeatureTest extends TestCase
             'name' => 'Alpha',
             'slug' => 'alpha',
         ]);
+        \Tests\Support\UnixEventFactory::withCover($event);
 
         $this->patchJson('/api/v1/manager/events/' . $event->id_event, [
             'name' => 'Beta Cup',
@@ -126,24 +134,25 @@ final class EventSlugSyncFeatureTest extends TestCase
      */
     private function validPayload(int $locationId, ?int $organizerId, string $name): array
     {
-        $now = time();
+        $bounds = \Tests\Support\UnixEventFactory::eventBounds(
+            date('Y-m-d', time() + 86400 * 10)
+        );
 
         return [
             'name' => $name,
             'description' => '<p>Hello</p>',
-            'date' => date('Y-m-d', $now + 86400 * 10),
             'location_id' => $locationId,
             'organizer_id' => $organizerId,
-            'arriving_time' => '09:00:00',
-            'closing_time' => '18:00:00',
-            'registration_allowed_until' => $now + 86400 * 7,
-            'cancellation_allowed_until' => $now + 86400 * 5,
+            'event_starts_at' => $bounds['event_starts_at'],
+            'event_ends_at' => $bounds['event_ends_at'],
+            'registration_allowed_until' => time() + 86400 * 7,
+            'cancellation_allowed_until' => time() + 86400 * 5,
         ];
     }
 
     private function actingAsManager(): void
     {
-        $manager = Player::factory()->manager()->create();
+        $manager = User::factory()->manager()->create();
         Sanctum::actingAs($manager);
     }
 }

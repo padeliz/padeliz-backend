@@ -16,9 +16,9 @@ class PlayerFriendsSourceResource extends JsonResource
     {
         return [
             'id_player_friends_source' => $this->id_player_friends_source,
-            'player_id' => $this->player_id,
-            'friend_player_id' => $this->friend_player_id,
-            'friend_name' => $this->whenLoaded('friend', fn () => $this->friend?->name),
+            'player_user_id' => $this->player_user_id,
+            'friend_player_user_id' => $this->friend_player_user_id,
+            'friend_name' => $this->whenLoaded('friendPlayer', fn () => $this->friendPlayer?->name),
             'full_name' => $this->full_name,
             'email' => $this->email,
             'phone' => $this->phone,

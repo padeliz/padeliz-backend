@@ -4,16 +4,16 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Services\Schedule\PlayingWindow;
+use App\Services\EventCalendarTiming;
 use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Support\Facades\Storage;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 
 /**
  * @OA\Schema(
  *     schema="Event",
- *     required={"name", "date", "location_id", "arriving_time", "closing_time", "description", "registration_allowed_until", "cancellation_allowed_until"},
+ *     required={"name", "event_starts_at", "event_ends_at", "location_id", "description", "registration_allowed_until", "cancellation_allowed_until"},
  *     @OA\Property(
  *         property="id_event",
  *         type="integer",
@@ -76,46 +76,57 @@ use Illuminate\Support\Facades\Storage;
  *         nullable=true,
  *         readOnly=true,
  *         title="Cover URL",
- *         description="Public URL for the edition cover image",
+ *         description="Public URL for the primary edition cover image (lowest sort_order)",
  *         x={
- *             "padeliz-upload": {
- *                 "mode": "single",
- *                 "max_files": 1,
- *                 "max_size_kb": 5120,
- *                 "form_field": "file",
- *                 "required": true,
- *                 "accept": {"0":"image/jpeg","1":"image/png","2":"image/gif","3":"image/webp"},
- *                 "upload": {"method":"POST","path":"/api/v1/manager/events/{id}/cover"}
- *             },
  *             "padeliz-image": {"role": "list"}
  *         }
  *     ),
  *     @OA\Property(
- *         property="date",
- *         type="string",
- *         format="date",
- *         pattern="^[0-9]{4}-[0-9]{2}-[0-9]{2}$",
- *         title="Date",
- *         description="PadelEvent date in YYYY-MM-DD format",
- *         example="2024-06-15"
+ *         property="cover_images",
+ *         type="array",
+ *         readOnly=true,
+ *         title="Cover Images",
+ *         description="Edition cover images (max 2)",
+ *         @OA\Items(
+ *             type="object",
+ *             @OA\Property(property="id", type="integer"),
+ *             @OA\Property(property="url", type="string"),
+ *             @OA\Property(property="aspect_ratio", type="number", format="float"),
+ *             @OA\Property(property="sort_order", type="integer")
+ *         ),
+ *         x={
+ *             "padeliz-upload": {
+ *                 "mode": "multi",
+ *                 "max_files": 2,
+ *                 "max_size_kb": 5120,
+ *                 "form_field": "file",
+ *                 "required": true,
+ *                 "accept": {"0":"image/jpeg","1":"image/png","2":"image/gif","3":"image/webp"},
+ *                 "upload": {"method":"POST","path":"/api/v1/manager/events/{id}/cover-images"},
+ *                 "delete": {"method":"DELETE","path":"/api/v1/manager/events/{id}/cover-images/{childId}"}
+ *             }
+ *         }
  *     ),
  *     @OA\Property(
- *         property="arriving_time",
- *         type="string",
- *         format="time",
- *         pattern="^([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$",
- *         title="Arriving Time",
- *         description="Arriving time in HH:MM:SS format",
- *         example="09:00:00"
+ *         property="event_starts_at",
+ *         type="integer",
+ *         format="timestamp",
+ *         title="Event Starts At",
+ *         description="Unix timestamp when the edition starts"
  *     ),
  *     @OA\Property(
- *         property="closing_time",
- *         type="string",
- *         format="time",
- *         pattern="^([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$",
- *         title="Closing Time",
- *         description="Closing time in HH:MM:SS format",
- *         example="18:00:00"
+ *         property="event_ends_at",
+ *         type="integer",
+ *         format="timestamp",
+ *         title="Event Ends At",
+ *         description="Unix timestamp when the edition ends"
+ *     ),
+ *     @OA\Property(
+ *         property="event_nr_of_days",
+ *         type="integer",
+ *         readOnly=true,
+ *         title="Event Number Of Days",
+ *         description="Inclusive Bucharest calendar days from event_starts_at to event_ends_at"
  *     ),
  *     @OA\Property(
  *         property="finalized_at",
@@ -182,38 +193,29 @@ use Illuminate\Support\Facades\Storage;
  * )
  *
  * @property-read null|string $cover_url
+ * @property-read int $event_nr_of_days
  */
 class PadelEvent extends Model
 {
     use HasFactory;
     use HasResourceMetadata;
 
-    /**
-     * Fields that can be searched
-     */
     public static array $searchableFields = [
         'name',
     ];
 
-    /**
-     * Fields that can be filtered
-     */
     public static array $filterableFields = [
         'location_id',
         'organizer_id',
     ];
 
-    /**
-     * Fields that can be sorted
-     */
     public static array $sortableFields = [
         'id_event',
         'name',
-        'date',
+        'event_starts_at',
+        'event_ends_at',
         'location_id',
         'organizer_id',
-        'arriving_time',
-        'closing_time',
         'finalized_at',
         'registration_allowed_until',
         'cancellation_allowed_until',
@@ -221,13 +223,12 @@ class PadelEvent extends Model
         'updated_at',
     ];
 
-    /**
-     * Field that will be used to display the edition in the UI
-     */
     public static ?string $displayField = 'name';
 
     public static array $listFields = [
         'cover_url',
+        'cover_images',
+        'event_nr_of_days',
     ];
 
     protected $table = 'events';
@@ -236,28 +237,28 @@ class PadelEvent extends Model
 
     public $timestamps = true;
 
-    protected $dateFormat = 'U'; // handle inserted_at and updated_at as Unix timestamps
+    protected $dateFormat = 'U';
 
     public const CREATED_AT = 'inserted_at';
+
     public const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
         'name',
         'description',
-        'cover_path',
-        'date',
+        'event_starts_at',
+        'event_ends_at',
         'location_id',
         'organizer_id',
         'include_club_host_on_pdf',
-        'arriving_time',
-        'closing_time',
         'finalized_at',
         'registration_allowed_until',
         'cancellation_allowed_until',
     ];
 
     protected $casts = [
-        'date' => 'date:Y-m-d',
+        'event_starts_at' => 'integer',
+        'event_ends_at' => 'integer',
         'finalized_at' => 'integer',
         'registration_allowed_until' => 'integer',
         'cancellation_allowed_until' => 'integer',
@@ -267,10 +268,8 @@ class PadelEvent extends Model
     ];
 
     protected $appends = [
-        'formatted_date',
-        'formatted_arriving_time',
-        'formatted_closing_time',
         'cover_url',
+        'event_nr_of_days',
     ];
 
     public function location()
@@ -286,6 +285,13 @@ class PadelEvent extends Model
     public function divisions()
     {
         return $this->hasMany(EventDivision::class, 'event_id');
+    }
+
+    public function coverImages(): HasMany
+    {
+        return $this->hasMany(EventCoverImage::class, 'event_id', 'id_event')
+            ->orderBy('sort_order')
+            ->orderBy('id_event_cover_image');
     }
 
     public function participations()
@@ -305,43 +311,37 @@ class PadelEvent extends Model
 
     public function storageDisk(): string
     {
-        return config('filesystems.user_uploads_disk', 'public');
+        return (string) config('filesystems.user_uploads_disk', 'public');
+    }
+
+    public function primaryCoverImage(): ?EventCoverImage
+    {
+        if ($this->relationLoaded('coverImages')) {
+            $first = $this->coverImages->sortBy([
+                ['sort_order', 'asc'],
+                ['id_event_cover_image', 'asc'],
+            ])->first();
+
+            return $first instanceof EventCoverImage ? $first : null;
+        }
+
+        $first = $this->coverImages()->first();
+
+        return $first instanceof EventCoverImage ? $first : null;
     }
 
     public function getCoverUrlAttribute(): ?string
     {
-        if ($this->cover_path === null || $this->cover_path === '') {
-            return null;
-        }
+        $primary = $this->primaryCoverImage();
 
-        return Storage::disk($this->storageDisk())->url($this->cover_path);
+        return $primary?->url;
     }
 
-    /**
-     * Get the formatted date as Y-m-d
-     */
-    public function getFormattedDateAttribute()
+    public function getEventNrOfDaysAttribute(): int
     {
-        if ($this->attributes['date']) {
-            return $this->asDate($this->attributes['date'])->format('Y-m-d');
-        }
-
-        return null;
-    }
-
-    /**
-     * Get the formatted arriving time as H:i:s
-     */
-    public function getFormattedArrivingTimeAttribute()
-    {
-        return PlayingWindow::toClockString($this->attributes['arriving_time'] ?? null);
-    }
-
-    /**
-     * Get the formatted closing time as H:i:s
-     */
-    public function getFormattedClosingTimeAttribute()
-    {
-        return PlayingWindow::toClockString($this->attributes['closing_time'] ?? null);
+        return EventCalendarTiming::eventNrOfDays(
+            (int) $this->event_starts_at,
+            (int) $this->event_ends_at
+        );
     }
 }

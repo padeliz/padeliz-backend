@@ -14,16 +14,18 @@ use App\Models\EventParticipation;
 use App\Models\GameMatch;
 use App\Models\MatchSide;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
+use App\Services\EventCalendarTiming;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\Support\UnixEventFactory;
 use Tests\TestCase;
 
 class EventDivisionScheduleControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
     private EventDivision $eventDivision;
 
@@ -38,7 +40,7 @@ class EventDivisionScheduleControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
 
@@ -49,8 +51,7 @@ class EventDivisionScheduleControllerTest extends TestCase
             'event_id' => $event->id_event,
             'division_id' => $division->id_division,
             'players_limit' => 8,
-            'playing_start_time' => '14:00:00',
-            'playing_end_time' => '17:00:00',
+            ...UnixEventFactory::playingBounds($event, '14:00:00', '17:00:00'),
         ]);
 
         $this->schedule = EventDivisionSchedule::factory()->create([
@@ -74,7 +75,7 @@ class EventDivisionScheduleControllerTest extends TestCase
             $this->participations[] = EventParticipation::factory()->create([
                 'event_id' => $event->id_event,
                 'event_division_id' => $this->eventDivision->id_event_division,
-                'player_id' => Player::factory()->create()->id_player,
+                'player_user_id' => User::factory()->create()->id_user,
                 'sort_order' => $i,
                 'is_collecting_points' => true,
                 'absence_reason' => null,
@@ -119,10 +120,10 @@ class EventDivisionScheduleControllerTest extends TestCase
 
         $edId = $this->eventDivision->id_event_division;
 
-        $this->eventDivision->update([
-            'playing_start_time' => '10:00:00',
-            'playing_end_time' => '00:00:00',
-        ]);
+        $event = PadelEvent::query()->findOrFail($this->eventDivision->event_id);
+        $this->eventDivision->update(
+            UnixEventFactory::playingBounds($event, '10:00:00', '00:00:00')
+        );
 
         $this->putJson("/api/v1/manager/event-divisions/{$edId}/schedule/form", [
             'final_points_target' => 200,
@@ -360,19 +361,20 @@ class EventDivisionScheduleControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $edId = $this->eventDivision->id_event_division;
+        $event = PadelEvent::query()->findOrFail($this->eventDivision->event_id);
+        $window = UnixEventFactory::playingBounds($event, '18:00', '00:00');
 
-        $this->patchJson("/api/v1/manager/event-divisions/{$edId}", [
-            'playing_start_time' => '18:00',
-            'playing_end_time' => '00:00',
-        ])->assertOk();
+        $this->patchJson("/api/v1/manager/event-divisions/{$edId}", $window)->assertOk();
 
         $fresh = $this->eventDivision->fresh();
-        $this->assertSame('00:00:00', $fresh->getAttributes()['playing_end_time'] ?? null);
-        $this->assertSame('00:00:00', $fresh->formatted_playing_end_time);
+        $this->assertSame(
+            '00:00',
+            EventCalendarTiming::formatHi((int) $fresh->playing_ends_at)
+        );
 
         $this->getJson("/api/v1/manager/event-divisions/{$edId}")
             ->assertOk()
-            ->assertJsonPath('data.playing_end_time', '00:00:00');
+            ->assertJsonPath('data.playing_ends_at', $window['playing_ends_at']);
     }
 
     public function test_schedule_form_rejects_playing_times(): void
@@ -463,10 +465,8 @@ class EventDivisionScheduleControllerTest extends TestCase
 
         $edId = $this->eventDivision->id_event_division;
 
-        $this->eventDivision->update([
-            'playing_start_time' => '18:00:00',
-            'playing_end_time' => '00:00:00',
-        ]);
+        $event = PadelEvent::query()->findOrFail($this->eventDivision->event_id);
+        $this->eventDivision->update(UnixEventFactory::playingBounds($event, '18:00:00', '00:00:00'));
 
         $overnight = $this->postJson(
             "/api/v1/manager/event-divisions/{$edId}/schedule/preview",
@@ -479,10 +479,7 @@ class EventDivisionScheduleControllerTest extends TestCase
         $this->assertStringNotContainsString('PT-', (string) $overnight->json('message'));
         $this->assertStringNotContainsString('Unknown or bad format', (string) json_encode($overnight->json()));
 
-        $this->eventDivision->update([
-            'playing_start_time' => '18:00:00',
-            'playing_end_time' => '00:00:00',
-        ]);
+        $this->eventDivision->update(UnixEventFactory::playingBounds($event, '18:00:00', '00:00:00'));
 
         $toMidnight = $this->postJson(
             "/api/v1/manager/event-divisions/{$edId}/schedule/preview",
@@ -602,8 +599,8 @@ class EventDivisionScheduleControllerTest extends TestCase
         $players = $side->players->values();
         $this->assertGreaterThanOrEqual(2, $players->count());
 
-        $idA = (int) $players[0]->player_id;
-        $idB = (int) $players[1]->player_id;
+        $idA = (int) $players[0]->player_user_id;
+        $idB = (int) $players[1]->player_user_id;
         $cA = (bool) ($players[0]->participation?->is_collecting_points ?? true);
         $cB = (bool) ($players[1]->participation?->is_collecting_points ?? true);
         if ($idA <= $idB) {
@@ -619,8 +616,8 @@ class EventDivisionScheduleControllerTest extends TestCase
         }
 
         \App\Models\CachedPdfPairImage::query()->create([
-            'player_1_id' => $p1,
-            'player_2_id' => $p2,
+            'player_1_user_id' => $p1,
+            'player_2_user_id' => $p2,
             'player_1_is_collecting_points' => $c1,
             'player_2_is_collecting_points' => $c2,
             'picture_path' => 'cached-pdf-pair-images/1/picture/couple.png',
@@ -643,8 +640,8 @@ class EventDivisionScheduleControllerTest extends TestCase
         // Wrong collecting flags → null
         \App\Models\CachedPdfPairImage::query()->delete();
         \App\Models\CachedPdfPairImage::query()->create([
-            'player_1_id' => $p1,
-            'player_2_id' => $p2,
+            'player_1_user_id' => $p1,
+            'player_2_user_id' => $p2,
             'player_1_is_collecting_points' => ! $c1,
             'player_2_is_collecting_points' => ! $c2,
             'picture_path' => 'cached-pdf-pair-images/2/picture/couple.png',
@@ -684,10 +681,10 @@ class EventDivisionScheduleControllerTest extends TestCase
         $disk = config('filesystems.user_uploads_disk', 'public');
         \Illuminate\Support\Facades\Storage::fake($disk);
         foreach ($this->participations as $participation) {
-            $relative = 'player-profile-images/' . $participation->player_id . '/profile/avatar.png';
+            $relative = 'player-profile-images/' . $participation->player_user_id . '/profile/avatar.png';
             \Illuminate\Support\Facades\Storage::disk($disk)->put($relative, $this->solidPngBytes());
             \App\Models\PlayerProfileImage::query()->create([
-                'player_id' => $participation->player_id,
+                'player_user_id' => $participation->player_user_id,
                 'profile_path' => $relative,
                 'sort_order' => 0,
                 'inserted_at' => time(),
@@ -711,9 +708,9 @@ class EventDivisionScheduleControllerTest extends TestCase
         $this->postJson("/api/v1/manager/event-divisions/{$edId}/schedule/generate", [])
             ->assertStatus(200);
 
-        $playerId = (int) $this->participations[0]->player_id;
+        $playerId = (int) $this->participations[0]->player_user_id;
         \App\Models\CachedPdfPlayerImage::query()->create([
-            'player_id' => $playerId,
+            'player_user_id' => $playerId,
             'player_is_collecting_points' => true,
             'picture_path' => 'cached-pdf-player-images/1/picture/avatar.png',
             'inserted_at' => time(),
@@ -723,7 +720,7 @@ class EventDivisionScheduleControllerTest extends TestCase
             ->assertOk()
             ->json('data.players_board');
 
-        $entry = collect($board)->firstWhere('player_id', $playerId);
+        $entry = collect($board)->firstWhere('player_user_id', $playerId);
         $this->assertNotNull($entry);
         $this->assertNotNull($entry['pdf_avatar_url']);
         $this->assertSame(1, \App\Models\CachedPdfPlayerImage::query()->count());
@@ -734,11 +731,11 @@ class EventDivisionScheduleControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $edId = $this->eventDivision->id_event_division;
-        $playerId = (int) $this->participations[0]->player_id;
+        $playerId = (int) $this->participations[0]->player_user_id;
         $this->participations[0]->update(['is_collecting_points' => true]);
 
         \App\Models\CachedPdfPlayerImage::query()->create([
-            'player_id' => $playerId,
+            'player_user_id' => $playerId,
             'player_is_collecting_points' => false,
             'picture_path' => 'cached-pdf-player-images/' . $playerId . '/false.png',
             'inserted_at' => time(),
@@ -747,11 +744,11 @@ class EventDivisionScheduleControllerTest extends TestCase
         $missRows = $this->getJson("/api/v1/manager/event-divisions/{$edId}/schedule")
             ->assertOk()
             ->json('data.participations');
-        $miss = collect($missRows)->firstWhere('player_id', $playerId);
+        $miss = collect($missRows)->firstWhere('player_user_id', $playerId);
         $this->assertNull($miss['pdf_avatar_url']);
 
         \App\Models\CachedPdfPlayerImage::query()->create([
-            'player_id' => $playerId,
+            'player_user_id' => $playerId,
             'player_is_collecting_points' => true,
             'picture_path' => 'cached-pdf-player-images/' . $playerId . '/true.png',
             'inserted_at' => time(),
@@ -760,7 +757,7 @@ class EventDivisionScheduleControllerTest extends TestCase
         $rows = $this->getJson("/api/v1/manager/event-divisions/{$edId}/schedule")
             ->assertOk()
             ->json('data.participations');
-        $row = collect($rows)->firstWhere('player_id', $playerId);
+        $row = collect($rows)->firstWhere('player_user_id', $playerId);
         $this->assertNotNull($row);
         $this->assertNotNull($row['pdf_avatar_url']);
     }
@@ -770,22 +767,22 @@ class EventDivisionScheduleControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $edId = $this->eventDivision->id_event_division;
-        $playerId = (int) $this->participations[0]->player_id;
+        $playerId = (int) $this->participations[0]->player_user_id;
         $this->participations[0]->update(['is_collecting_points' => true]);
 
         $warm = $this->getJson("/api/v1/manager/event-divisions/{$edId}/schedule")->assertOk();
-        $warmRow = collect($warm->json('data.participations'))->firstWhere('player_id', $playerId);
+        $warmRow = collect($warm->json('data.participations'))->firstWhere('player_user_id', $playerId);
         $this->assertNull($warmRow['pdf_avatar_url']);
 
         \App\Models\CachedPdfPlayerImage::query()->create([
-            'player_id' => $playerId,
+            'player_user_id' => $playerId,
             'player_is_collecting_points' => true,
             'picture_path' => 'cached-pdf-player-images/' . $playerId . '/fresh.png',
             'inserted_at' => time(),
         ]);
 
         $again = $this->getJson("/api/v1/manager/event-divisions/{$edId}/schedule")->assertOk();
-        $row = collect($again->json('data.participations'))->firstWhere('player_id', $playerId);
+        $row = collect($again->json('data.participations'))->firstWhere('player_user_id', $playerId);
         $this->assertNotNull($row['pdf_avatar_url']);
     }
 
@@ -794,10 +791,10 @@ class EventDivisionScheduleControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $edId = $this->eventDivision->id_event_division;
-        $playerId = (int) $this->participations[0]->player_id;
+        $playerId = (int) $this->participations[0]->player_user_id;
         $this->participations[0]->update(['is_collecting_points' => true]);
         \App\Models\CachedPdfPlayerImage::query()->create([
-            'player_id' => $playerId,
+            'player_user_id' => $playerId,
             'player_is_collecting_points' => true,
             'picture_path' => 'cached-pdf-player-images/' . $playerId . '/form.png',
             'inserted_at' => time(),
@@ -812,7 +809,7 @@ class EventDivisionScheduleControllerTest extends TestCase
         ]);
 
         $response->assertOk();
-        $row = collect($response->json('data.participations'))->firstWhere('player_id', $playerId);
+        $row = collect($response->json('data.participations'))->firstWhere('player_user_id', $playerId);
         $this->assertNotNull($row);
         $this->assertNotNull($row['pdf_avatar_url']);
     }

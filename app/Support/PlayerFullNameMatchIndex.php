@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Support;
 
-use App\Models\Player;
+use App\Models\User;
 
 final class PlayerFullNameMatchIndex
 {
@@ -30,9 +30,9 @@ final class PlayerFullNameMatchIndex
         $index = [];
 
         foreach (array_keys($lookups) as $lookup) {
-            $ids = Player::query()
+            $ids = User::query()
                 ->whereRaw("{$expression} = ?", [$lookup])
-                ->pluck('id_player')
+                ->pluck('id_user')
                 ->map(static fn ($id): int => (int) $id)
                 ->all();
 

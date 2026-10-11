@@ -10,7 +10,8 @@ use App\Models\Club;
 use App\Models\EventLotteryLucky;
 use App\Models\EventRegistration;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
+use App\Services\EventCalendarTiming;
 use Illuminate\Support\Facades\Auth;
 
 /**
@@ -49,9 +50,12 @@ class EventFilterOptionsController extends \App\Http\Controllers\BaseVersions\V1
         $dateFrom = $validated['date_from'];
         $dateTo = $validated['date_to'];
 
+        $inRange = static function ($q) use ($dateFrom, $dateTo): void {
+            EventCalendarTiming::applyOverlapsDateRange($q, $dateFrom, $dateTo);
+        };
+
         $clubIds = PadelEvent::query()
-            ->whereDate('date', '>=', $dateFrom)
-            ->whereDate('date', '<=', $dateTo)
+            ->tap($inRange)
             ->whereHas('location', fn ($q) => $q->whereNotNull('club_id'))
             ->with('location:id_location,club_id')
             ->get()
@@ -77,15 +81,13 @@ class EventFilterOptionsController extends \App\Http\Controllers\BaseVersions\V1
         $unpaidCount = 0;
         $hasLotteryWinner = false;
 
-        if ($player instanceof Player) {
-            $playerId = (int) $player->id_player;
+        if ($player instanceof User) {
+            $playerId = (int) $player->id_user;
 
             $unpaidCount = EventRegistration::query()
                 ->active()
-                ->where('player_id', $playerId)
-                ->whereHas('event', function ($q) use ($dateFrom, $dateTo) {
-                    $q->whereDate('date', '>=', $dateFrom)->whereDate('date', '<=', $dateTo);
-                })
+                ->where('player_user_id', $playerId)
+                ->whereHas('event', $inRange)
                 ->where(function ($inner) {
                     $inner->where('payment_status', RegistrationPaymentStatus::Unpaid->value)
                         ->orWhere('payment_status', RegistrationPaymentStatus::AwaitingProofReview->value)
@@ -99,11 +101,9 @@ class EventFilterOptionsController extends \App\Http\Controllers\BaseVersions\V1
 
             $hasLotteryWinner = EventLotteryLucky::query()
                 ->whereNotNull('accepted_at')
-                ->whereHas('drawnParticipation', function ($q) use ($playerId, $dateFrom, $dateTo) {
-                    $q->where('player_id', $playerId)
-                        ->whereHas('event', function ($eq) use ($dateFrom, $dateTo) {
-                            $eq->whereDate('date', '>=', $dateFrom)->whereDate('date', '<=', $dateTo);
-                        });
+                ->whereHas('drawnParticipation', function ($q) use ($playerId, $inRange) {
+                    $q->where('player_user_id', $playerId)
+                        ->whereHas('event', $inRange);
                 })
                 ->exists();
         }

@@ -9,13 +9,14 @@ use App\Models\Division;
 use App\Models\EventParticipation;
 use App\Models\Location;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerLevelAssessment;
 use App\Models\Prize;
 use App\Services\Cache\ModelSchemaCatalog;
 use App\Services\ResourceMetadataService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
 
 class ResourceMetadataServiceTest extends TestCase
 {
@@ -32,17 +33,17 @@ class ResourceMetadataServiceTest extends TestCase
     public function test_get_player_metadata(): void
     {
         // Create some test data
-        Player::factory()->create(['first_name' => 'John', 'middle_name' => null, 'last_name' => 'Doe']);
-        Player::factory()->create(['first_name' => 'Jane', 'middle_name' => null, 'last_name' => 'Smith']);
-        Player::factory()->create(['first_name' => 'Bob', 'middle_name' => null, 'last_name' => 'Johnson']);
+        User::factory()->create(['first_name' => 'John', 'middle_name' => null, 'last_name' => 'Doe']);
+        User::factory()->create(['first_name' => 'Jane', 'middle_name' => null, 'last_name' => 'Smith']);
+        User::factory()->create(['first_name' => 'Bob', 'middle_name' => null, 'last_name' => 'Johnson']);
 
-        $metadata = $this->metadataService->getMetadata('Player', 'v1');
+        $metadata = $this->metadataService->getMetadata('User', 'v1');
 
         $this->assertArrayHasKey('version', $metadata);
         $this->assertEquals('v1', $metadata['version']);
 
         $this->assertArrayHasKey('schema_name', $metadata);
-        $this->assertEquals('Player', $metadata['schema_name']);
+        $this->assertEquals('User', $metadata['schema_name']);
 
         $this->assertArrayHasKey('swagger_schema', $metadata);
         $this->assertNotNull($metadata['swagger_schema']);
@@ -199,23 +200,23 @@ class ResourceMetadataServiceTest extends TestCase
     public function test_metadata_is_cached(): void
     {
         // First call should cache the result
-        $metadata1 = $this->metadataService->getMetadata('Player', 'v1');
+        $metadata1 = $this->metadataService->getMetadata('User', 'v1');
 
         // Second call should return cached result
-        $metadata2 = $this->metadataService->getMetadata('Player', 'v1');
+        $metadata2 = $this->metadataService->getMetadata('User', 'v1');
 
         $this->assertEquals($metadata1, $metadata2);
     }
 
     public function test_metadata_bust_via_invalidator(): void
     {
-        $this->metadataService->getMetadata('Player', 'v1');
+        $this->metadataService->getMetadata('User', 'v1');
 
-        app(\App\Services\Cache\MetadataCacheInvalidator::class)->invalidateSchema('Player');
+        app(\App\Services\Cache\MetadataCacheInvalidator::class)->invalidateSchema('User');
 
-        $metadata = $this->metadataService->getMetadata('Player', 'v1');
+        $metadata = $this->metadataService->getMetadata('User', 'v1');
         $this->assertArrayHasKey('schema_name', $metadata);
-        $this->assertEquals('Player', $metadata['schema_name']);
+        $this->assertEquals('User', $metadata['schema_name']);
     }
 
     public function test_boolean_field_values(): void
@@ -276,7 +277,7 @@ class ResourceMetadataServiceTest extends TestCase
             $this->assertEquals(
                 [
                     'player.profile_image_url',
-                    'player_id',
+                    'player_user_id',
                     'event_division_id',
                 ],
                 $metadata['list_fields']
@@ -284,7 +285,10 @@ class ResourceMetadataServiceTest extends TestCase
         } elseif (in_array($expectedSchemaName, ['Club', 'Prize'], true)) {
             $this->assertEquals(['url'], $metadata['list_fields']);
         } elseif ($expectedSchemaName === 'Event') {
-            $this->assertEquals(['cover_url'], $metadata['list_fields']);
+            $this->assertEquals(
+                ['cover_url', 'cover_images', 'event_nr_of_days'],
+                $metadata['list_fields']
+            );
         } else {
             $this->assertEquals([], $metadata['list_fields']);
         }
@@ -302,7 +306,7 @@ class ResourceMetadataServiceTest extends TestCase
             'EventParticipation' => ['EventParticipation', 'EventParticipation'],
             'EventRegistration' => ['EventRegistration', 'EventRegistration'],
             'Location' => ['Location', 'Location'],
-            'Player' => ['Player', 'Player'],
+            'User' => ['User', 'User'],
             'PlayerLevelAssessment' => ['PlayerLevelAssessment', 'PlayerLevelAssessment'],
             'Prize' => ['Prize', 'Prize'],
         ];
@@ -341,8 +345,8 @@ class ResourceMetadataServiceTest extends TestCase
     public function test_edition_metadata(): void
     {
         // Create test data
-        PadelEvent::factory()->create(['name' => 'Summer 2024', 'date' => '2024-06-01']);
-        PadelEvent::factory()->create(['name' => 'Winter 2024', 'date' => '2024-12-01']);
+        PadelEvent::factory()->create(UnixEventFactory::eventBounds('2024-06-01') + ['name' => 'Summer 2024']);
+        PadelEvent::factory()->create(UnixEventFactory::eventBounds('2024-12-01') + ['name' => 'Winter 2024']);
 
         $metadata = $this->metadataService->getMetadata('Event', 'v1');
 
@@ -351,18 +355,16 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertContains('name', $metadata['searchable_fields']);
         $this->assertArrayHasKey('location_id', $metadata['filterable_fields']);
         $required = $metadata['swagger_schema']['required'] ?? [];
-        $this->assertContains('arriving_time', $required);
-        $this->assertContains('closing_time', $required);
-        $this->assertEquals(
-            '^[0-9]{4}-[0-9]{2}-[0-9]{2}$',
-            $metadata['swagger_schema']['properties']['date']['pattern'] ?? null
-        );
+        $this->assertContains('event_starts_at', $required);
+        $this->assertContains('event_ends_at', $required);
+        $this->assertArrayHasKey('event_starts_at', $metadata['swagger_schema']['properties'] ?? []);
+        $this->assertArrayHasKey('event_ends_at', $metadata['swagger_schema']['properties'] ?? []);
     }
 
     public function test_edition_participation_metadata(): void
     {
         // Create test data with relationships
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $event = PadelEvent::factory()->create();
         $division = Division::factory()->create();
 
@@ -373,7 +375,7 @@ class ResourceMetadataServiceTest extends TestCase
         ]);
 
         EventParticipation::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_id' => $event->id_event,
             'event_division_id' => $eventDivision->id_event_division,
         ]);
@@ -383,15 +385,15 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertEquals('EventParticipation', $metadata['schema_name']);
 
         $filterableFields = $metadata['filterable_fields'];
-        $this->assertArrayHasKey('player_id', $filterableFields);
+        $this->assertArrayHasKey('player_user_id', $filterableFields);
         $this->assertArrayHasKey('event_id', $filterableFields);
         $this->assertArrayHasKey('event_division_id', $filterableFields);
 
         // Test foreign key relationships
-        if (isset($filterableFields['player_id']['type']) && $filterableFields['player_id']['type'] === 'foreign_key') {
-            $this->assertEquals('Player', $filterableFields['player_id']['related_schema_name']);
-            $this->assertEquals('first_name', $filterableFields['player_id']['related_schema_field']);
-            $this->assertIsObject($filterableFields['player_id']['values']);
+        if (isset($filterableFields['player_user_id']['type']) && $filterableFields['player_user_id']['type'] === 'foreign_key') {
+            $this->assertEquals('User', $filterableFields['player_user_id']['related_schema_name']);
+            $this->assertEquals('first_name', $filterableFields['player_user_id']['related_schema_field']);
+            $this->assertIsObject($filterableFields['player_user_id']['values']);
         }
     }
 
@@ -466,7 +468,7 @@ class ResourceMetadataServiceTest extends TestCase
 
     public function test_swagger_schema_structure(): void
     {
-        $metadata = $this->metadataService->getMetadata('Player', 'v1');
+        $metadata = $this->metadataService->getMetadata('User', 'v1');
         $swaggerSchema = $metadata['swagger_schema'];
 
         // Validate swagger schema structure
@@ -508,11 +510,11 @@ class ResourceMetadataServiceTest extends TestCase
     {
         $invalidator = app(\App\Services\Cache\MetadataCacheInvalidator::class);
 
-        $this->metadataService->getMetadata('Player', 'v1');
-        $invalidator->invalidateSchema('Player');
+        $this->metadataService->getMetadata('User', 'v1');
+        $invalidator->invalidateSchema('User');
 
-        $metadata = $this->metadataService->getMetadata('Player', 'v1');
-        $this->assertEquals('Player', $metadata['schema_name']);
+        $metadata = $this->metadataService->getMetadata('User', 'v1');
+        $this->assertEquals('User', $metadata['schema_name']);
 
         $this->metadataService->getMetadata('Club', 'v1');
         $invalidator->invalidateAll();
@@ -528,7 +530,7 @@ class ResourceMetadataServiceTest extends TestCase
     public function test_resource_name_generation_for_hyphenated_models(): void
     {
         // Test single word models (should be pluralized normally)
-        $playerMetadata = $this->metadataService->getMetadata('Player', 'v1');
+        $playerMetadata = $this->metadataService->getMetadata('User', 'v1');
         $this->assertArrayHasKey('request_body', $playerMetadata);
 
         // Test hyphenated models (only last word should be pluralized)
@@ -645,7 +647,7 @@ class ResourceMetadataServiceTest extends TestCase
     {
         return [
             // Single word models (should be pluralized normally)
-            'Player' => ['Player', 'players'],
+            'User' => ['User', 'players'],
             'Club' => ['Club', 'clubs'],
             'Division' => ['Division', 'divisions'],
             'Event' => ['Event', 'events'],
@@ -685,7 +687,7 @@ class ResourceMetadataServiceTest extends TestCase
     public function test_irregular_plural_handling(): void
     {
         // Test with models that might have irregular plurals
-        $metadata = $this->metadataService->getMetadata('Player', 'v1');
+        $metadata = $this->metadataService->getMetadata('User', 'v1');
         $this->assertArrayHasKey('request_body', $metadata);
 
         // The method should handle irregular plurals correctly
@@ -698,7 +700,7 @@ class ResourceMetadataServiceTest extends TestCase
         // Test models with display_field set to first searchable field
         $modelsWithDisplayField = [
             'Club' => 'name',
-            'Player' => 'name',
+            'User' => 'name',
             'Location' => 'name',
             'Division' => 'name',
             'Event' => 'name',
@@ -768,7 +770,7 @@ class ResourceMetadataServiceTest extends TestCase
         $this->assertArrayHasKey('original_filename', $properties);
         $this->assertArrayHasKey('included_count', $properties);
         $this->assertArrayHasKey('uploaded_count', $properties);
-        $this->assertArrayHasKey('importedByPlayer', $properties);
+        $this->assertArrayHasKey('importedByManager', $properties);
         $this->assertArrayHasKey('rows', $properties);
     }
 

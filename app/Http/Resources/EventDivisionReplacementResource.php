@@ -20,7 +20,7 @@ class EventDivisionReplacementResource extends JsonResource
             'event_division_id' => $this->event_division_id,
             'original_participation_id' => $this->original_participation_id,
             'substitute_participation_id' => $this->substitute_participation_id,
-            'substitute_player_id' => $this->substitute_player_id,
+            'substitute_player_user_id' => $this->substitute_player_user_id,
             'match_id' => $this->match_id,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
@@ -75,11 +75,11 @@ class EventDivisionReplacementResource extends JsonResource
         }
 
         return [
-            'id_player' => $player->id_player,
+            'id_user' => $player->id_user,
             'name' => $player->name,
             'first_name' => $player->first_name,
             'last_name' => $player->last_name,
-            'pdf_avatar_url' => CachedPdfPlayerImage::urlForPlayer((int) $player->id_player, $collecting),
+            'pdf_avatar_url' => CachedPdfPlayerImage::urlForPlayer((int) $player->id_user, $collecting),
         ];
     }
 }

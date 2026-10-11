@@ -8,14 +8,14 @@ use Carbon\Carbon;
 
 final class EventDeadlineTimestamps
 {
-    public static function startOfEditionDay(string $dateYmd): int
+    public static function startOfEventStartDay(int $eventStartsAt): int
     {
-        return Carbon::parse($dateYmd, config('app.timezone'))->startOfDay()->timestamp;
+        return Carbon::createFromTimestamp($eventStartsAt, config('app.timezone'))->startOfDay()->timestamp;
     }
 
-    public static function defaultDeadline(string $dateYmd): int
+    public static function defaultDeadline(int $eventStartsAt): int
     {
-        return self::startOfEditionDay($dateYmd) - (48 * 3600);
+        return self::startOfEventStartDay($eventStartsAt) - (48 * 3600);
     }
 
     /**
@@ -23,12 +23,12 @@ final class EventDeadlineTimestamps
      *
      * @return array{0: int, 1: int} [registration_allowed_until, cancellation_allowed_until]
      */
-    public static function fromLegacyCancelUntil(?int $legacyCancelUntil, string $dateYmd): array
+    public static function fromLegacyCancelUntil(?int $legacyCancelUntil, int $eventStartsAt): array
     {
-        $cap = self::startOfEditionDay($dateYmd);
+        $cap = $eventStartsAt - 1;
 
         if ($legacyCancelUntil === null) {
-            $value = self::defaultDeadline($dateYmd);
+            $value = min(self::defaultDeadline($eventStartsAt), $cap);
 
             return [$value, $value];
         }
@@ -36,5 +36,11 @@ final class EventDeadlineTimestamps
         $value = min($legacyCancelUntil, $cap);
 
         return [$value, $value];
+    }
+
+    /** @deprecated Use startOfEventStartDay */
+    public static function startOfEditionDay(string $dateYmd): int
+    {
+        return Carbon::parse($dateYmd, config('app.timezone'))->startOfDay()->timestamp;
     }
 }

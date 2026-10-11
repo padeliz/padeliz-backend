@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Enums\PlayerLevel\AssessmentReviewStatus;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerStudentProof;
 use App\Models\PlayerStudentProofFile;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -22,7 +22,7 @@ class PlayerStudentProofFactory extends Factory
     public function definition(): array
     {
         return [
-            'player_id' => Player::factory(),
+            'player_user_id' => User::factory(),
             'student_until' => Carbon::now()->addMonths(6)->format('Y-m-d'),
             'sort_order' => 0,
             'ready_for_review' => false,

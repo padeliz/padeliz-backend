@@ -8,11 +8,12 @@ use App\Models\Division;
 use App\Models\EventDivision;
 use App\Models\EventParticipation;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
 
 class EventHistoryControllerTest extends TestCase
 {
@@ -33,12 +34,12 @@ class EventHistoryControllerTest extends TestCase
 
     public function test_aggregates_division_titles_per_edition(): void
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
 
         $event = PadelEvent::factory()->create([
             'name' => '#History1',
-            'date' => Carbon::now($this->tz)->subDays(5)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(Carbon::now($this->tz)->subDays(5)->format('Y-m-d')),
         ]);
         $divisionA = Division::factory()->create(['name' => 'Open A']);
         $divisionB = Division::factory()->create(['name' => 'Open B']);
@@ -56,12 +57,12 @@ class EventHistoryControllerTest extends TestCase
         EventParticipation::factory()->create([
             'event_id' => $event->id_event,
             'event_division_id' => $edA->id_event_division,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
         ]);
         EventParticipation::factory()->create([
             'event_id' => $event->id_event,
             'event_division_id' => $edB->id_event_division,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
         ]);
 
         $response = $this->getJson('/api/v1/app/my/event-history');
@@ -79,18 +80,18 @@ class EventHistoryControllerTest extends TestCase
         $this->assertContains('Open B Title', $titles);
     }
 
-    public function test_orders_editions_by_date_descending(): void
+    public function test_orders_editions_by_event_starts_at_descending(): void
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
 
         $older = PadelEvent::factory()->create([
             'name' => '#Older',
-            'date' => Carbon::now($this->tz)->subDays(20)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(Carbon::now($this->tz)->subDays(20)->format('Y-m-d')),
         ]);
         $newer = PadelEvent::factory()->create([
             'name' => '#Newer',
-            'date' => Carbon::now($this->tz)->subDays(3)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(Carbon::now($this->tz)->subDays(3)->format('Y-m-d')),
         ]);
 
         foreach ([$older, $newer] as $event) {
@@ -101,7 +102,7 @@ class EventHistoryControllerTest extends TestCase
             EventParticipation::factory()->create([
                 'event_id' => $event->id_event,
                 'event_division_id' => $division->id_event_division,
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
             ]);
         }
 
@@ -116,17 +117,50 @@ class EventHistoryControllerTest extends TestCase
         );
     }
 
+    public function test_includes_only_calendar_past_editions(): void
+    {
+        $player = User::factory()->playerOnly()->create();
+        Sanctum::actingAs($player);
+
+        $tz = $this->tz;
+        $past = PadelEvent::factory()->create([
+            'event_starts_at' => Carbon::now($tz)->subDays(3)->startOfDay()->addHours(10)->timestamp,
+            'event_ends_at' => Carbon::now($tz)->subDays(2)->startOfDay()->addHours(18)->timestamp,
+        ]);
+        $ongoing = PadelEvent::factory()->create([
+            'event_starts_at' => Carbon::now($tz)->subDay()->startOfDay()->timestamp,
+            'event_ends_at' => Carbon::now($tz)->addDay()->endOfDay()->timestamp,
+        ]);
+        $upcoming = PadelEvent::factory()->create([
+            ...UnixEventFactory::eventBounds(Carbon::now($tz)->addDays(3)->format('Y-m-d')),
+        ]);
+
+        foreach ([$past, $ongoing, $upcoming] as $event) {
+            $division = EventDivision::factory()->create(['event_id' => $event->id_event]);
+            EventParticipation::factory()->create([
+                'event_id' => $event->id_event,
+                'event_division_id' => $division->id_event_division,
+                'player_user_id' => $player->id_user,
+            ]);
+        }
+
+        $this->getJson('/api/v1/app/my/event-history')
+            ->assertOk()
+            ->assertJsonCount(1, 'data')
+            ->assertJsonPath('data.0.id_event', $past->id_event);
+    }
+
     public function test_excludes_other_players_participations(): void
     {
-        $player = Player::factory()->playerOnly()->create();
-        $other = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
+        $other = User::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
 
         $mine = PadelEvent::factory()->create([
-            'date' => Carbon::now($this->tz)->subDays(2)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(Carbon::now($this->tz)->subDays(2)->format('Y-m-d')),
         ]);
         $theirs = PadelEvent::factory()->create([
-            'date' => Carbon::now($this->tz)->subDays(1)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(Carbon::now($this->tz)->subDays(1)->format('Y-m-d')),
         ]);
 
         $mineDivision = EventDivision::factory()->create(['event_id' => $mine->id_event]);
@@ -135,12 +169,12 @@ class EventHistoryControllerTest extends TestCase
         EventParticipation::factory()->create([
             'event_id' => $mine->id_event,
             'event_division_id' => $mineDivision->id_event_division,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
         ]);
         EventParticipation::factory()->create([
             'event_id' => $theirs->id_event,
             'event_division_id' => $theirsDivision->id_event_division,
-            'player_id' => $other->id_player,
+            'player_user_id' => $other->id_user,
         ]);
 
         $this->getJson('/api/v1/app/my/event-history')
@@ -151,19 +185,19 @@ class EventHistoryControllerTest extends TestCase
 
     public function test_includes_event_slug_for_detail_links(): void
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
 
         $event = PadelEvent::factory()->create([
             'name' => '#Slugged',
-            'date' => Carbon::now($this->tz)->subDays(4)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(Carbon::now($this->tz)->subDays(4)->format('Y-m-d')),
         ]);
         $event->forceFill(['slug' => 'padeliz-slugged'])->saveQuietly();
         $division = EventDivision::factory()->create(['event_id' => $event->id_event]);
         EventParticipation::factory()->create([
             'event_id' => $event->id_event,
             'event_division_id' => $division->id_event_division,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
         ]);
 
         $this->getJson('/api/v1/app/my/event-history')

@@ -12,32 +12,33 @@ use App\Models\EventDivision;
 use App\Models\EventRegistration;
 use App\Models\EventRegistrationPaymentProof;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
 
 class EventRegistrationControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
     private PadelEvent $event;
 
     private EventDivision $eventDivision;
 
-    private Player $player;
+    private User $player;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         $this->event = PadelEvent::factory()->create([
-            'date' => now()->addDays(30)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(now()->addDays(30)->format('Y-m-d')),
         ]);
         $division = Division::factory()->create();
         $this->eventDivision = EventDivision::factory()->create([
@@ -47,7 +48,7 @@ class EventRegistrationControllerTest extends TestCase
             'players_limit' => 1,
             'entry_fee' => 55,
         ]);
-        $this->player = Player::factory()->create();
+        $this->player = User::factory()->create();
     }
 
     public function test_manager_can_index_show_store_update_patch_destroy(): void
@@ -56,7 +57,7 @@ class EventRegistrationControllerTest extends TestCase
 
         $created = $this->postJson('/api/v1/manager/event-registrations', [
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ]);
         $created->assertStatus(201)
@@ -120,7 +121,7 @@ class EventRegistrationControllerTest extends TestCase
 
         $this->getJson('/api/v1/manager/event-registrations')->assertStatus(401);
 
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
         $this->getJson('/api/v1/manager/event-registrations')->assertStatus(403);
 
@@ -137,11 +138,11 @@ class EventRegistrationControllerTest extends TestCase
 
         $this->postJson('/api/v1/manager/event-registrations', [])
             ->assertStatus(422)
-            ->assertJsonValidationErrors(['event_id', 'player_id', 'event_division_id']);
+            ->assertJsonValidationErrors(['event_id', 'player_user_id', 'event_division_id']);
 
         $this->postJson('/api/v1/manager/event-registrations', [
             'event_id' => 99999,
-            'player_id' => 99999,
+            'player_user_id' => 99999,
             'event_division_id' => 99999,
         ])->assertStatus(422);
     }
@@ -152,14 +153,14 @@ class EventRegistrationControllerTest extends TestCase
 
         $this->postJson('/api/v1/manager/event-registrations', [
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => null,
         ])->assertStatus(422)
             ->assertJsonValidationErrors(['event_division_id']);
 
         $this->postJson('/api/v1/manager/event-registrations', [
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
         ])->assertStatus(422)
             ->assertJsonValidationErrors(['event_division_id']);
     }
@@ -170,7 +171,7 @@ class EventRegistrationControllerTest extends TestCase
 
         $created = $this->postJson('/api/v1/manager/event-registrations', [
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ]);
         $created->assertStatus(201);
@@ -183,7 +184,7 @@ class EventRegistrationControllerTest extends TestCase
         $this->assertNotNull(collect($byEdition->json('data'))->firstWhere('id_registration', $id));
 
         $byPlayer = $this->getJson(
-            '/api/v1/manager/event-registrations?filters[player_id]=' . $this->player->id_player
+            '/api/v1/manager/event-registrations?filters[player_user_id]=' . $this->player->id_user
         );
         $this->assertNotNull(collect($byPlayer->json('data'))->firstWhere('id_registration', $id));
 
@@ -206,7 +207,7 @@ class EventRegistrationControllerTest extends TestCase
 
         $this->postJson('/api/v1/manager/event-registrations', [
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $other->id_event_division,
         ])->assertStatus(422);
     }
@@ -218,25 +219,25 @@ class EventRegistrationControllerTest extends TestCase
 
         $this->postJson('/api/v1/manager/event-registrations', [
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ])->assertStatus(201);
 
         $this->postJson('/api/v1/manager/event-registrations', [
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ])->assertStatus(422);
 
         $this->postJson('/api/v1/manager/event-registrations', [
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $second->id_event_division,
         ])->assertStatus(201);
 
         $this->postJson('/api/v1/manager/event-registrations', [
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => null,
         ])->assertStatus(422)
             ->assertJsonValidationErrors(['event_division_id']);
@@ -248,11 +249,11 @@ class EventRegistrationControllerTest extends TestCase
 
         $this->postJson('/api/v1/manager/event-registrations', [
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ])->assertStatus(201);
 
-        $otherEdition = PadelEvent::factory()->create(['date' => now()->addDays(40)->format('Y-m-d')]);
+        $otherEdition = PadelEvent::factory()->create(UnixEventFactory::eventBounds(now()->addDays(40)->format('Y-m-d')));
         $otherDivision = EventDivision::factory()->create([
             'event_id' => $otherEdition->id_event,
             'players_limit' => 8,
@@ -261,7 +262,7 @@ class EventRegistrationControllerTest extends TestCase
 
         $this->postJson('/api/v1/manager/event-registrations', [
             'event_id' => $otherEdition->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $otherDivision->id_event_division,
         ])->assertStatus(201);
     }
@@ -273,7 +274,7 @@ class EventRegistrationControllerTest extends TestCase
 
         $created = $this->postJson('/api/v1/manager/event-registrations', [
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ]);
         $created->assertStatus(201);
@@ -301,13 +302,13 @@ class EventRegistrationControllerTest extends TestCase
 
         $secondRow = $this->postJson('/api/v1/manager/event-registrations', [
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $second->id_event_division,
         ]);
         $secondRow->assertStatus(201);
 
         $this->putJson("/api/v1/manager/event-registrations/{$secondRow->json('data.id_registration')}", $this->putPayload([
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ]))->assertStatus(422);
     }
@@ -317,7 +318,7 @@ class EventRegistrationControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
         $registration = EventRegistration::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
             'is_student' => false,
             'payment' => 0,
@@ -329,7 +330,7 @@ class EventRegistrationControllerTest extends TestCase
 
         $this->postJson('/api/v1/manager/event-registrations', [
             'event_id' => $this->event->id_event,
-            'player_id' => Player::factory()->create()->id_player,
+            'player_user_id' => User::factory()->create()->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ])->assertStatus(409);
 
@@ -350,17 +351,23 @@ class EventRegistrationControllerTest extends TestCase
     public function test_manager_can_store_for_past_date_and_over_players_limit(): void
     {
         Sanctum::actingAs($this->manager);
-        $this->event->update(['date' => now()->subDay()->format('Y-m-d')]);
+        $bounds = \Tests\Support\UnixEventFactory::eventBounds(now()->subDay()->format('Y-m-d'));
+        $this->event->update([
+            'event_starts_at' => $bounds['event_starts_at'],
+            'event_ends_at' => $bounds['event_ends_at'],
+            'registration_allowed_until' => $bounds['registration_allowed_until'],
+            'cancellation_allowed_until' => $bounds['cancellation_allowed_until'],
+        ]);
 
         $this->postJson('/api/v1/manager/event-registrations', [
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ])->assertStatus(201);
 
         $this->postJson('/api/v1/manager/event-registrations', [
             'event_id' => $this->event->id_event,
-            'player_id' => Player::factory()->create()->id_player,
+            'player_user_id' => User::factory()->create()->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ])->assertStatus(201);
     }
@@ -370,7 +377,7 @@ class EventRegistrationControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
         $this->postJson('/api/v1/manager/event-registrations', [
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ])->assertStatus(201);
 
@@ -390,7 +397,7 @@ class EventRegistrationControllerTest extends TestCase
 
         $registration = EventRegistration::query()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
             'is_minor' => false,
             'is_student' => false,
@@ -400,7 +407,7 @@ class EventRegistrationControllerTest extends TestCase
         ]);
         $checkout = \App\Models\EventRegistrationCheckout::query()->create([
             'event_id' => $registration->event_id,
-            'player_id' => $registration->player_id,
+            'player_user_id' => $registration->player_user_id,
             'status' => \App\Enums\Registration\CheckoutStatus::AwaitingProof,
             'total_amount' => 50,
         ]);
@@ -448,7 +455,7 @@ class EventRegistrationControllerTest extends TestCase
     {
         return array_merge([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
             'is_minor' => false,
             'is_student' => false,

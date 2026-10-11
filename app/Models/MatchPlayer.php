@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *     @OA\Property(property="match_side_id", type="integer", format="int64"),
  *     @OA\Property(property="slot", type="integer"),
  *     @OA\Property(property="participation_id", type="integer", format="int64", nullable=true),
- *     @OA\Property(property="player_id", type="integer", format="int64", nullable=true),
+ *     @OA\Property(property="player_user_id", type="integer", format="int64", nullable=true),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true)
  * )
@@ -40,7 +40,7 @@ class MatchPlayer extends Model
         'match_side_id',
         'slot',
         'participation_id',
-        'player_id',
+        'player_user_id',
     ];
 
     protected $casts = [
@@ -61,6 +61,6 @@ class MatchPlayer extends Model
 
     public function player(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'player_id', 'id_player');
+        return $this->belongsTo(User::class, 'player_user_id', 'id_user');
     }
 }

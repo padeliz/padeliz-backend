@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Manager;
 
-use App\Models\Player;
-use App\Models\PlayerIdentity;
+use App\Models\User;
+use App\Models\UserIdentity;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Mockery;
@@ -15,20 +15,20 @@ class ManagerAuthControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
     public function setUp(): void
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'first_name' => 'Test', 'middle_name' => null, 'last_name' => 'Manager',
             'user_types' => ['player', 'manager'],
         ]);
 
-        PlayerIdentity::create([
-            'player_id' => $this->manager->id_player,
-            'provider' => PlayerIdentity::PROVIDER_GOOGLE,
+        UserIdentity::create([
+            'user_id' => $this->manager->id_user,
+            'provider' => UserIdentity::PROVIDER_GOOGLE,
             'provider_subject' => 'google_manager_123',
             'display_name' => 'Test Manager',
             'avatar_url' => 'https://example.com/manager-avatar.jpg',
@@ -82,8 +82,8 @@ class ManagerAuthControllerTest extends TestCase
                 'message',
                 'data' => [
                     'token',
-                    'player' => [
-                        'id_player',
+                    'user' => [
+                        'id_user',
                         'name',
                     ],
                     'user_type',
@@ -93,8 +93,8 @@ class ManagerAuthControllerTest extends TestCase
                 'success' => true,
                 'message' => 'Manager authenticated successfully',
                 'data' => [
-                    'player' => [
-                        'id_player' => $this->manager->id_player,
+                    'user' => [
+                        'id_user' => $this->manager->id_user,
                         'name' => 'Test Manager',
                     ],
                     'user_type' => 'manager',
@@ -104,13 +104,13 @@ class ManagerAuthControllerTest extends TestCase
 
     public function test_google_callback_returns_403_for_player_without_manager_privileges()
     {
-        $player = Player::factory()->playerOnly()->create([
+        $player = User::factory()->playerOnly()->create([
             'first_name' => 'Player', 'middle_name' => null, 'last_name' => 'Only',
         ]);
 
-        PlayerIdentity::create([
-            'player_id' => $player->id_player,
-            'provider' => PlayerIdentity::PROVIDER_GOOGLE,
+        UserIdentity::create([
+            'user_id' => $player->id_user,
+            'provider' => UserIdentity::PROVIDER_GOOGLE,
             'provider_subject' => 'google_player_123',
             'linked_at' => time(),
         ]);
@@ -147,7 +147,7 @@ class ManagerAuthControllerTest extends TestCase
                 'success',
                 'message',
                 'data' => [
-                    'id_player',
+                    'id_user',
                     'name',
                 ],
             ])
@@ -155,7 +155,7 @@ class ManagerAuthControllerTest extends TestCase
                 'success' => true,
                 'message' => 'Manager profile retrieved successfully',
                 'data' => [
-                    'id_player' => $this->manager->id_player,
+                    'id_user' => $this->manager->id_user,
                     'name' => 'Test Manager',
                 ],
             ]);
@@ -181,8 +181,8 @@ class ManagerAuthControllerTest extends TestCase
             ]);
 
         $this->assertDatabaseMissing('personal_access_tokens', [
-            'tokenable_id' => $this->manager->id_player,
-            'tokenable_type' => Player::class,
+            'tokenable_id' => $this->manager->id_user,
+            'tokenable_type' => User::class,
         ]);
     }
 
@@ -202,18 +202,18 @@ class ManagerAuthControllerTest extends TestCase
                 'message',
                 'data' => [
                     'token',
-                    'player' => [
-                        'id_player',
+                    'user' => [
+                        'id_user',
                         'name',
                     ],
                     'user_type',
                 ],
             ]);
 
-        $this->assertDatabaseHas('player_emails', [
+        $this->assertDatabaseHas('user_emails', [
             'email' => 'devmanager@example.com',
         ]);
-        $this->assertDatabaseHas('player_identities', [
+        $this->assertDatabaseHas('user_identities', [
             'provider' => 'dev',
             'provider_subject' => 'dev:devmanager@example.com',
         ]);
@@ -221,7 +221,7 @@ class ManagerAuthControllerTest extends TestCase
 
     public function test_manager_access_control()
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
 
         $response = $this->postJson('/api/v1/manager/auth/dev-login', [
@@ -234,8 +234,8 @@ class ManagerAuthControllerTest extends TestCase
                 'message',
                 'data' => [
                     'token',
-                    'player' => [
-                        'id_player',
+                    'user' => [
+                        'id_user',
                         'name',
                     ],
                     'user_type',
@@ -263,7 +263,7 @@ class ManagerAuthControllerTest extends TestCase
         ];
 
         foreach ($testCases as $userTypes) {
-            $manager = Player::factory()->create(['user_types' => $userTypes]);
+            $manager = User::factory()->create(['user_types' => $userTypes]);
 
             Sanctum::actingAs($manager);
 

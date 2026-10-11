@@ -34,8 +34,8 @@ class ReferralAnalyticsController extends V1BaseController
     {
         $validated = $request->validate([
             'event_id' => 'sometimes|integer|exists:events,id_event',
-            'referrer' => 'sometimes|integer|exists:players,id_player',
-            'referred' => 'sometimes|integer|exists:players,id_player',
+            'referrer' => 'sometimes|integer|exists:users,id_user',
+            'referred' => 'sometimes|integer|exists:users,id_user',
             'discount_eligible' => 'sometimes|boolean',
         ]);
 
@@ -45,10 +45,10 @@ class ReferralAnalyticsController extends V1BaseController
             $query->where('event_id', (int) $validated['event_id']);
         }
         if (isset($validated['referrer'])) {
-            $query->where('referrer_player_id', (int) $validated['referrer']);
+            $query->where('referrer_player_user_id', (int) $validated['referrer']);
         }
         if (isset($validated['referred'])) {
-            $query->where('referred_player_id', (int) $validated['referred']);
+            $query->where('referred_player_user_id', (int) $validated['referred']);
         }
         if (array_key_exists('discount_eligible', $validated)) {
             $query->where('discount_eligible', (bool) $validated['discount_eligible']);
@@ -74,8 +74,8 @@ class ReferralAnalyticsController extends V1BaseController
     {
         $validated = $request->validate([
             'event_id' => 'sometimes|integer|exists:events,id_event',
-            'referrer' => 'sometimes|integer|exists:players,id_player',
-            'referred' => 'sometimes|integer|exists:players,id_player',
+            'referrer' => 'sometimes|integer|exists:users,id_user',
+            'referred' => 'sometimes|integer|exists:users,id_user',
             'status' => ['sometimes', Rule::enum(ReferralAttributionStatus::class)],
         ]);
 
@@ -85,10 +85,10 @@ class ReferralAnalyticsController extends V1BaseController
             $query->where('event_id', (int) $validated['event_id']);
         }
         if (isset($validated['referrer'])) {
-            $query->where('referrer_player_id', (int) $validated['referrer']);
+            $query->where('referrer_player_user_id', (int) $validated['referrer']);
         }
         if (isset($validated['referred'])) {
-            $query->where('referred_player_id', (int) $validated['referred']);
+            $query->where('referred_player_user_id', (int) $validated['referred']);
         }
         if (isset($validated['status'])) {
             $query->where('status', $validated['status']);

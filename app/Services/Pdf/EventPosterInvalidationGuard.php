@@ -30,7 +30,7 @@ final class EventPosterInvalidationGuard
     public function lastEditionId(): ?int
     {
         $row = PadelEvent::query()
-            ->orderByDesc('date')
+            ->orderByDesc('event_starts_at')
             ->orderByDesc('id_event')
             ->first(['id_event']);
 

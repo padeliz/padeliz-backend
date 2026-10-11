@@ -5,14 +5,14 @@ declare(strict_types=1);
 namespace App\Services\PlayerCustomField;
 
 use App\Enums\PlayerCustomFieldType;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerCustomField;
 use App\Models\PlayerCustomFieldOption;
 use App\Models\PlayerCustomFieldSubmission;
 use App\Models\PlayerCustomFieldValueImport;
 use App\Models\PlayerCustomFieldValueImportRow;
 use App\Services\PlayerCustomField\Formats\GoogleFormMiniTourWelcomeCsvFormat;
-use App\Services\PlayerImport\PlayerImportMapper;
+use App\Services\UserImport\UserImportMapper;
 use App\Support\PlayerNameSplitter;
 use App\Support\PlayerPhoneNormalizer;
 use Illuminate\Http\UploadedFile;
@@ -35,7 +35,7 @@ final class PlayerCustomFieldValueImportService
 
     public function __construct(
         private readonly PlayerCustomFieldValueCsvFormatRegistry $registry,
-        private readonly PlayerImportMapper $mapper,
+        private readonly UserImportMapper $mapper,
         private readonly PlayerCustomFieldSubmissionWriter $writer,
     ) {
     }
@@ -93,13 +93,13 @@ final class PlayerCustomFieldValueImportService
                 'mapping' => [
                     'status' => $status,
                     'matched_by' => $mapping['matched_by'],
-                    'player_id' => $mapping['player']?->id_player,
+                    'player_user_id' => $mapping['player']?->id_user,
                     'candidate_ids' => array_map(
-                        static fn (Player $player): int => (int) $player->id_player,
+                        static fn (User $player): int => (int) $player->id_user,
                         $mapping['candidates']
                     ),
                     'name_match_ids' => array_map(
-                        static fn (Player $player): int => (int) $player->id_player,
+                        static fn (User $player): int => (int) $player->id_user,
                         $mapping['name_matches']
                     ),
                 ],
@@ -178,7 +178,7 @@ final class PlayerCustomFieldValueImportService
             $fields
         ): PlayerCustomFieldValueImport {
             $import = PlayerCustomFieldValueImport::create([
-                'imported_by_player_id' => $importedByPlayerId,
+                'imported_by_manager_user_id' => $importedByPlayerId,
                 'format' => $formatKey,
                 'original_filename' => $filename,
                 'event_id' => $editionId,
@@ -192,12 +192,12 @@ final class PlayerCustomFieldValueImportService
 
             foreach ($prepared as $row) {
                 $answersJson = [];
-                $player = Player::query()->findOrFail($row['player_id']);
+                $player = User::query()->findOrFail($row['player_user_id']);
 
                 $submission = PlayerCustomFieldSubmission::create([
-                    'player_id' => $player->id_player,
+                    'player_user_id' => $player->id_user,
                     'submitted_via' => PlayerCustomFieldSubmission::SUBMITTED_VIA_CSV,
-                    'submitted_by_player_id' => $importedByPlayerId,
+                    'submitted_by_manager_user_id' => $importedByPlayerId,
                 ]);
 
                 foreach ($fields as $code => $field) {
@@ -207,7 +207,7 @@ final class PlayerCustomFieldValueImportService
                     }
 
                     $hadCurrent = $this->writer->currentValue(
-                        (int) $player->id_player,
+                        (int) $player->id_user,
                         (int) $field->id_player_custom_field
                     ) !== null;
 
@@ -234,7 +234,7 @@ final class PlayerCustomFieldValueImportService
                     'full_name' => $row['full_name'] !== '' ? $row['full_name'] : null,
                     'email' => $row['email'] !== '' ? $row['email'] : null,
                     'phone' => $row['phone'] !== '' ? $row['phone'] : null,
-                    'player_id' => $player->id_player,
+                    'player_user_id' => $player->id_user,
                     'action' => PlayerCustomFieldValueImportRow::ACTION_IMPORTED,
                     'answers_json' => $answersJson,
                 ]);
@@ -246,7 +246,7 @@ final class PlayerCustomFieldValueImportService
                 'values_replaced_count' => $valuesReplaced,
             ]);
 
-            return $import->fresh(['rows', 'importedByPlayer', 'event']) ?? $import;
+            return $import->fresh(['rows', 'importedByManager', 'event']) ?? $import;
         });
     }
 
@@ -448,17 +448,17 @@ final class PlayerCustomFieldValueImportService
      *     full_name: string,
      *     email: string,
      *     phone: string,
-     *     player_id: int,
+     *     player_user_id: int,
      *     answers: array<string, string>
      * }
      */
     private function prepareSaveRow(array $row): array
     {
-        $playerId = $row['player_id'] ?? null;
+        $playerId = $row['player_user_id'] ?? null;
         if ($playerId === '' || $playerId === false || $playerId === null) {
             throw new PlayerCustomFieldValueImportFailedException(
                 'Validation failed',
-                ['rows.' . ($row['index'] ?? 0) . '.player_id' => ['Player is required for included rows.']],
+                ['rows.' . ($row['index'] ?? 0) . '.player_user_id' => ['Player is required for included rows.']],
             );
         }
 
@@ -474,13 +474,13 @@ final class PlayerCustomFieldValueImportService
             'phone' => isset($row['phone']) && trim((string) $row['phone']) !== ''
                 ? PlayerPhoneNormalizer::normalize((string) $row['phone'])
                 : '',
-            'player_id' => (int) $playerId,
+            'player_user_id' => (int) $playerId,
             'answers' => $answers,
         ];
     }
 
     /**
-     * @param  list<array{index: int, full_name: string, email: string, phone: string, player_id: int, answers: array<string, string>}>  $rows
+     * @param  list<array{index: int, full_name: string, email: string, phone: string, player_user_id: int, answers: array<string, string>}>  $rows
      */
     private function assertSaveRows(array $rows): void
     {
@@ -490,8 +490,8 @@ final class PlayerCustomFieldValueImportService
             $index = $row['index'];
             $prefix = 'rows.' . $index;
 
-            if (! Player::query()->whereKey($row['player_id'])->exists()) {
-                $errors[$prefix . '.player_id'][] = 'The selected player does not exist.';
+            if (! User::query()->whereKey($row['player_user_id'])->exists()) {
+                $errors[$prefix . '.player_user_id'][] = 'The selected player does not exist.';
             }
         }
 

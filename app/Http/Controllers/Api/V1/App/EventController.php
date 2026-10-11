@@ -8,7 +8,7 @@ use App\Http\Requests\App\EventDateRangeRequest;
 use App\Http\Resources\EventResource;
 use App\Models\EventParticipation;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Services\EventAppQueryService;
 use App\Services\EventBadgeService;
 use App\Services\PlayerLevel\PlayerLevelService;
@@ -59,7 +59,7 @@ class EventController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *         name="sort",
      *         in="query",
      *         required=false,
-     *         description="Order by date then arriving_time. Past tab sends desc; Ongoing/Upcoming use asc (default).",
+     *         description="Order by event_starts_at. Past tab sends desc; Ongoing/Upcoming use asc (default).",
      *         @OA\Schema(type="string", enum={"asc", "desc"}, default="asc")
      *     ),
      *     @OA\Parameter(
@@ -147,7 +147,7 @@ class EventController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      */
     public function show(Request $request, PadelEvent $event)
     {
-        $event->load(['location.club', 'organizer', 'divisions.division']);
+        $event->load(['location.club', 'organizer', 'divisions.division', 'coverImages']);
         $event->loadCount('participations');
 
         $player = $this->optionalPlayer();
@@ -168,10 +168,10 @@ class EventController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      *
      * @param  \Illuminate\Support\Collection<int, PadelEvent>  $events
      */
-    private function attachEligibilityToEvents($events, ?Player $player): void
+    private function attachEligibilityToEvents($events, ?User $player): void
     {
         $current = $player !== null
-            ? $this->playerLevels->currentLevel((int) $player->id_player)
+            ? $this->playerLevels->currentLevel((int) $player->id_user)
             : null;
 
         foreach ($events as $event) {
@@ -193,7 +193,7 @@ class EventController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
      * True only when the authenticated player has an EventParticipation row for the event
      * (never inferred from registration / payment badges). Guests always get false.
      */
-    private function hasParticipated(PadelEvent $event, ?Player $player): bool
+    private function hasParticipated(PadelEvent $event, ?User $player): bool
     {
         if ($player === null) {
             return false;
@@ -201,21 +201,21 @@ class EventController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContro
 
         return EventParticipation::query()
             ->where('event_id', (int) $event->id_event)
-            ->where('player_id', (int) $player->id_player)
+            ->where('player_user_id', (int) $player->id_user)
             ->exists();
     }
 
-    private function optionalPlayer(): ?Player
+    private function optionalPlayer(): ?User
     {
         $user = Auth::guard('sanctum')->user();
 
-        return $user instanceof Player ? $user : null;
+        return $user instanceof User ? $user : null;
     }
 
     /**
      * @param  \Illuminate\Support\Collection<int, PadelEvent>  $events
      */
-    private function attachBadges($events, ?Player $player): void
+    private function attachBadges($events, ?User $player): void
     {
         $badgesById = $this->badgeService->forEvents($events, $player);
         foreach ($events as $event) {

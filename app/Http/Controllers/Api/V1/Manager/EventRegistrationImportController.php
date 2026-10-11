@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
-use App\Http\Resources\PlayerResource;
+use App\Http\Resources\UserResource;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Services\EventRegistrationImport\EventRegistrationImportFailedException;
 use App\Services\EventRegistrationImport\EventRegistrationImportService;
 use Illuminate\Http\JsonResponse;
@@ -85,11 +85,11 @@ class EventRegistrationImportController extends V1BaseController
                     'matched_by' => $mapping['matched_by'],
                     'player' => $this->playerPayload($mapping['player']),
                     'candidates' => array_map(
-                        fn (Player $player) => $this->playerPayload($player),
+                        fn (User $player) => $this->playerPayload($player),
                         $mapping['candidates']
                     ),
                     'name_matches' => array_map(
-                        fn (Player $player) => $this->playerPayload($player),
+                        fn (User $player) => $this->playerPayload($player),
                         $mapping['name_matches']
                     ),
                 ],
@@ -129,7 +129,7 @@ class EventRegistrationImportController extends V1BaseController
      *                     @OA\Property(property="last_name", type="string", nullable=true),
      *                     @OA\Property(property="email", type="string", nullable=true),
      *                     @OA\Property(property="phone", type="string", nullable=true),
-     *                     @OA\Property(property="player_id", type="integer", nullable=true),
+     *                     @OA\Property(property="player_user_id", type="integer", nullable=true),
      *                     @OA\Property(property="status", type="string", nullable=true)
      *                 )
      *             )
@@ -156,7 +156,7 @@ class EventRegistrationImportController extends V1BaseController
             'rows.*.last_name' => 'nullable|string|max:50',
             'rows.*.email' => 'nullable|string|max:255',
             'rows.*.phone' => 'nullable|string|max:30',
-            'rows.*.player_id' => 'nullable|integer',
+            'rows.*.player_user_id' => 'nullable|integer',
             'rows.*.status' => 'nullable|string|max:32',
         ]);
 
@@ -176,12 +176,12 @@ class EventRegistrationImportController extends V1BaseController
     /**
      * @return null|array<string, mixed>
      */
-    private function playerPayload(?Player $player): ?array
+    private function playerPayload(?User $player): ?array
     {
         if ($player === null) {
             return null;
         }
 
-        return (new PlayerResource($player))->resolve();
+        return (new UserResource($player))->resolve();
     }
 }

@@ -16,7 +16,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
  *     @OA\Property(property="event_division_id", type="integer", format="int64"),
  *     @OA\Property(property="original_participation_id", type="integer", format="int64"),
  *     @OA\Property(property="substitute_participation_id", type="integer", format="int64", nullable=true),
- *     @OA\Property(property="substitute_player_id", type="integer", format="int64", nullable=true),
+ *     @OA\Property(property="substitute_player_user_id", type="integer", format="int64", nullable=true),
  *     @OA\Property(property="match_id", type="integer", format="int64", nullable=true),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true)
@@ -41,7 +41,7 @@ class EventDivisionReplacement extends Model
         'event_division_id',
         'original_participation_id',
         'substitute_participation_id',
-        'substitute_player_id',
+        'substitute_player_user_id',
         'match_id',
     ];
 
@@ -67,7 +67,7 @@ class EventDivisionReplacement extends Model
 
     public function substitutePlayer(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'substitute_player_id', 'id_player');
+        return $this->belongsTo(User::class, 'substitute_player_user_id', 'id_user');
     }
 
     public function match(): BelongsTo

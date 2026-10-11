@@ -51,7 +51,7 @@ class EventRegistrationController extends \App\Http\Controllers\BaseVersions\V1\
 
         $query = EventRegistration::query()
             ->with(['event.location', 'event.divisions.division', 'eventDivision', 'checkoutItems'])
-            ->where('player_id', $request->user()->id_player)
+            ->where('player_user_id', $request->user()->id_user)
             ->orderByDesc('id_registration');
 
         if (isset($validated['event_id'])) {
@@ -81,7 +81,7 @@ class EventRegistrationController extends \App\Http\Controllers\BaseVersions\V1\
      *     ),
      *     @OA\Response(response=201, description="Registration created"),
      *     @OA\Response(response=403, description="Player has no level or level is outside the division bounds (Assess my level)"),
-     *     @OA\Response(response=422, description="Validation error or past edition")
+     *     @OA\Response(response=422, description="Validation error or registration closed")
      * )
      */
     public function store(Request $request)
@@ -92,15 +92,11 @@ class EventRegistrationController extends \App\Http\Controllers\BaseVersions\V1\
 
         $event = PadelEvent::query()->findOrFail((int) $request->input('event_id'));
 
-        if (strtotime($event->date->format('Y-m-d')) <= strtotime(date('Y-m-d'))) {
-            return $this->validationErrorResponse(['event' => ['Cannot join past editions']]);
-        }
-
         if (time() >= (int) $event->registration_allowed_until) {
             return $this->validationErrorResponse(['event' => ['Registration is closed for this edition']]);
         }
 
-        $currentLevel = $this->playerLevels->currentLevel((int) $request->user()->id_player);
+        $currentLevel = $this->playerLevels->currentLevel((int) $request->user()->id_user);
 
         if ($currentLevel === null) {
             return $this->forbiddenResponse('You do not have a player level yet. Please use Assess my level first.');
@@ -122,7 +118,7 @@ class EventRegistrationController extends \App\Http\Controllers\BaseVersions\V1\
             ],
         ]);
 
-        $playerId = (int) $request->user()->id_player;
+        $playerId = (int) $request->user()->id_user;
 
         $requestedDivisionIds = array_key_exists('event_division_ids', $validated)
             ? array_map(static fn ($id) => (int) $id, $validated['event_division_ids'])
@@ -162,7 +158,7 @@ class EventRegistrationController extends \App\Http\Controllers\BaseVersions\V1\
 
             $registration = $this->registrationService->createForApp([
                 'event_id' => (int) $event->id_event,
-                'player_id' => $playerId,
+                'player_user_id' => $playerId,
                 'event_division_id' => (int) $validated['event_division_id'],
             ]);
         } catch (RegistrationValidationException $e) {
@@ -208,7 +204,7 @@ class EventRegistrationController extends \App\Http\Controllers\BaseVersions\V1\
     {
         $registration = EventRegistration::query()
             ->where('id_registration', $eventRegistration)
-            ->where('player_id', $request->user()->id_player)
+            ->where('player_user_id', $request->user()->id_user)
             ->firstOrFail();
 
         $validated = $request->validate([

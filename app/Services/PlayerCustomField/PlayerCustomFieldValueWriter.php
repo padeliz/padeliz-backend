@@ -71,7 +71,7 @@ final class PlayerCustomFieldValueWriter
         $normalized = $this->normalizeInput($field, $input);
 
         $existing = PlayerCustomFieldValue::query()
-            ->where('player_id', $playerId)
+            ->where('player_user_id', $playerId)
             ->where('player_custom_field_id', $field->id_player_custom_field)
             ->where('submission_id', $submissionId)
             ->orderByDesc('id_player_custom_field_value')
@@ -85,21 +85,22 @@ final class PlayerCustomFieldValueWriter
             'value_json' => $normalized['value_json'],
         ];
 
+        $submittedBy = $this->submittedByColumns($submittedVia, $submittedByPlayerId);
+
         if ($existing !== null) {
-            $existing->fill($columns + ['submitted_by_player_id' => $submittedByPlayerId]);
+            $existing->fill($columns + $submittedBy);
             $existing->save();
             $existing->selectedOptions()->delete();
             $value = $existing;
             $outcome = self::OUTCOME_REPLACED;
         } else {
             $value = PlayerCustomFieldValue::create($columns + [
-                'player_id' => $playerId,
+                'player_user_id' => $playerId,
                 'player_custom_field_id' => $field->id_player_custom_field,
                 'submission_id' => $submissionId,
-                'submitted_by_player_id' => $submittedByPlayerId,
                 'submitted_via' => $submittedVia,
                 'created_via_import_id' => $createdViaImportId,
-            ] + $this->reviewStateFor($submittedVia, $submittedByPlayerId));
+            ] + $submittedBy + $this->reviewStateFor($submittedVia, $submittedByPlayerId));
             $outcome = self::OUTCOME_NEW;
         }
 
@@ -137,7 +138,28 @@ final class PlayerCustomFieldValueWriter
     }
 
     /**
-     * @return array{review_status: PlayerCustomFieldValueReviewStatus, reviewed_at: ?int, reviewed_by_manager_id: ?int}
+     * @return array{submitted_by_player_user_id: ?int, submitted_by_manager_user_id: ?int}
+     */
+    private function submittedByColumns(string $submittedVia, ?int $submittedByUserId): array
+    {
+        if (in_array($submittedVia, [
+            PlayerCustomFieldValue::SUBMITTED_VIA_MANAGER,
+            PlayerCustomFieldValue::SUBMITTED_VIA_CSV,
+        ], true)) {
+            return [
+                'submitted_by_player_user_id' => null,
+                'submitted_by_manager_user_id' => $submittedByUserId,
+            ];
+        }
+
+        return [
+            'submitted_by_player_user_id' => $submittedByUserId,
+            'submitted_by_manager_user_id' => null,
+        ];
+    }
+
+    /**
+     * @return array{review_status: PlayerCustomFieldValueReviewStatus, reviewed_at: ?int, reviewed_by_manager_user_id: ?int}
      */
     private function reviewStateFor(string $submittedVia, ?int $submittedByPlayerId): array
     {
@@ -145,7 +167,7 @@ final class PlayerCustomFieldValueWriter
             return [
                 'review_status' => PlayerCustomFieldValueReviewStatus::Validated,
                 'reviewed_at' => time(),
-                'reviewed_by_manager_id' => $submittedByPlayerId,
+                'reviewed_by_manager_user_id' => $submittedByPlayerId,
             ];
         }
 
@@ -153,14 +175,14 @@ final class PlayerCustomFieldValueWriter
             return [
                 'review_status' => PlayerCustomFieldValueReviewStatus::Validated,
                 'reviewed_at' => time(),
-                'reviewed_by_manager_id' => null,
+                'reviewed_by_manager_user_id' => null,
             ];
         }
 
         return [
             'review_status' => PlayerCustomFieldValueReviewStatus::Pending,
             'reviewed_at' => null,
-            'reviewed_by_manager_id' => null,
+            'reviewed_by_manager_user_id' => null,
         ];
     }
 

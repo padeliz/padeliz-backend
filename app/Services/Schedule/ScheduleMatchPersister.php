@@ -149,14 +149,14 @@ final class ScheduleMatchPersister
             $playerId = (int) $playerId;
             $participation = $participationsByPlayerId[$playerId] ?? null;
             if ($participation === null) {
-                throw new InvalidArgumentException(sprintf('No participation mapped for player_id %d.', $playerId));
+                throw new InvalidArgumentException(sprintf('No participation mapped for player_user_id %d.', $playerId));
             }
 
             MatchPlayer::create([
                 'match_side_id' => $side->id_match_side,
                 'slot' => (int) $slot,
                 'participation_id' => $participation->id_participation,
-                'player_id' => $playerId,
+                'player_user_id' => $playerId,
             ]);
         }
     }

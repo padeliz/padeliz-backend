@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\App;
 
 use App\Enums\PlayerLevel\AssessmentReviewStatus;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerStudentProof;
 use App\Models\PlayerStudentProofFile;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -23,13 +23,13 @@ final class MyStudentProofControllerTest extends TestCase
 
     private const BASE = '/api/v1/app/my/student-proofs';
 
-    private Player $player;
+    private User $player;
 
     protected function setUp(): void
     {
         parent::setUp();
         Storage::fake(config('filesystems.user_uploads_disk', 'public'));
-        $this->player = Player::factory()->create();
+        $this->player = User::factory()->create();
         Sanctum::actingAs($this->player);
     }
 
@@ -81,7 +81,7 @@ final class MyStudentProofControllerTest extends TestCase
     private function pending(): PlayerStudentProof
     {
         return PlayerStudentProof::query()
-            ->where('player_id', $this->player->id_player)
+            ->where('player_user_id', $this->player->id_user)
             ->where('review_status', AssessmentReviewStatus::Pending->value)
             ->firstOrFail();
     }
@@ -327,7 +327,7 @@ final class MyStudentProofControllerTest extends TestCase
 
     public function test_mark_ready_with_zero_files_is_422(): void
     {
-        $proof = PlayerStudentProof::factory()->create(['player_id' => $this->player->id_player]);
+        $proof = PlayerStudentProof::factory()->create(['player_user_id' => $this->player->id_user]);
         $this->assertSame(0, $proof->files()->count());
 
         $this->postJson(self::BASE . '/pending/ready')->assertStatus(422);
@@ -416,25 +416,25 @@ final class MyStudentProofControllerTest extends TestCase
 
     public function test_has_active_reflects_approved_unexpired_proofs(): void
     {
-        PlayerStudentProof::factory()->expired()->withFiles()->create(['player_id' => $this->player->id_player]);
+        PlayerStudentProof::factory()->expired()->withFiles()->create(['player_user_id' => $this->player->id_user]);
         $this->getJson(self::BASE)->assertOk()->assertJsonPath('data.has_active', false);
 
-        PlayerStudentProof::factory()->approved()->withFiles(2)->create(['player_id' => $this->player->id_player]);
+        PlayerStudentProof::factory()->approved()->withFiles(2)->create(['player_user_id' => $this->player->id_user]);
         $this->getJson(self::BASE)->assertOk()->assertJsonPath('data.has_active', true);
         $this->assertTrue(PlayerStudentProof::hasActiveFor($this->player));
     }
 
     public function test_has_active_for_is_decided_by_the_parent_regardless_of_file_count(): void
     {
-        $withFiles = Player::factory()->create();
-        $withoutFiles = Player::factory()->create();
-        $expired = Player::factory()->create();
-        $pendingOnly = Player::factory()->create();
+        $withFiles = User::factory()->create();
+        $withoutFiles = User::factory()->create();
+        $expired = User::factory()->create();
+        $pendingOnly = User::factory()->create();
 
-        PlayerStudentProof::factory()->approved()->withFiles(3)->create(['player_id' => $withFiles->id_player]);
-        PlayerStudentProof::factory()->approved()->create(['player_id' => $withoutFiles->id_player]);
-        PlayerStudentProof::factory()->expired()->withFiles(2)->create(['player_id' => $expired->id_player]);
-        PlayerStudentProof::factory()->withFiles(1)->create(['player_id' => $pendingOnly->id_player]);
+        PlayerStudentProof::factory()->approved()->withFiles(3)->create(['player_user_id' => $withFiles->id_user]);
+        PlayerStudentProof::factory()->approved()->create(['player_user_id' => $withoutFiles->id_user]);
+        PlayerStudentProof::factory()->expired()->withFiles(2)->create(['player_user_id' => $expired->id_user]);
+        PlayerStudentProof::factory()->withFiles(1)->create(['player_user_id' => $pendingOnly->id_user]);
 
         $this->assertTrue(PlayerStudentProof::hasActiveFor($withFiles));
         $this->assertTrue(PlayerStudentProof::hasActiveFor($withoutFiles));

@@ -47,7 +47,7 @@ final class ScheduleBoardMetricsService
         }
         $meetingValues = array_values($meetingCounts);
 
-        $playerIds = $participations->pluck('player_id')->map(static fn ($id): int => (int) $id)->all();
+        $playerIds = $participations->pluck('player_user_id')->map(static fn ($id): int => (int) $id)->all();
         $scored = $this->distributionScorer->scoreAll($playerIds, $matchesByCourt);
         $classifiedPerPlayer = [];
         foreach ($scored['per_player'] as $playerId => $score) {
@@ -99,7 +99,7 @@ final class ScheduleBoardMetricsService
     }
 
     /**
-     * @return list<array{participation_id: int, player_id: int, short_name: string, pdf_avatar_url: null|string, is_collecting_points: bool}>
+     * @return list<array{participation_id: int, player_user_id: int, short_name: string, pdf_avatar_url: null|string, is_collecting_points: bool}>
      */
     public function buildPlayersBoard(EventDivision $eventDivision): array
     {
@@ -118,10 +118,10 @@ final class ScheduleBoardMetricsService
             $collecting = (bool) $participation->is_collecting_points;
             $board[] = [
                 'participation_id' => (int) $participation->id_participation,
-                'player_id' => (int) $player->id_player,
+                'player_user_id' => (int) $player->id_user,
                 'short_name' => PdfHtmlHelper::shortenPlayerName($name),
                 'pdf_avatar_url' => CachedPdfPlayerImage::urlForPlayer(
-                    (int) $player->id_player,
+                    (int) $player->id_user,
                     $collecting
                 ),
                 'is_collecting_points' => $collecting,
@@ -200,7 +200,7 @@ final class ScheduleBoardMetricsService
             $ids = [];
             foreach ($side->players as $mp) {
                 /** @var MatchPlayer $mp */
-                $playerId = $mp->participation?->player_id ?? $mp->participation?->player?->id_player;
+                $playerId = $mp->participation?->player_user_id ?? $mp->participation?->player?->id_user;
                 if ($playerId === null) {
                     return null;
                 }

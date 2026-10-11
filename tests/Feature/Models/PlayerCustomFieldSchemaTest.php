@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Models;
 
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerCustomField;
 use App\Models\PlayerCustomFieldSubmission;
 use App\Models\PlayerCustomFieldValue;
@@ -58,15 +58,15 @@ final class PlayerCustomFieldSchemaTest extends TestCase
 
     public function test_a_player_may_answer_the_same_field_in_several_submissions(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $field = PlayerCustomField::factory()->create();
 
         foreach (['one', 'two'] as $answer) {
             PlayerCustomFieldValue::factory()->create([
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'player_custom_field_id' => $field->id_player_custom_field,
                 'submission_id' => PlayerCustomFieldSubmission::factory()->create([
-                    'player_id' => $player->id_player,
+                    'player_user_id' => $player->id_user,
                 ])->id_player_custom_field_submission,
                 'value_text' => $answer,
             ]);
@@ -75,7 +75,7 @@ final class PlayerCustomFieldSchemaTest extends TestCase
         $this->assertSame(
             2,
             PlayerCustomFieldValue::query()
-                ->where('player_id', $player->id_player)
+                ->where('player_user_id', $player->id_user)
                 ->where('player_custom_field_id', $field->id_player_custom_field)
                 ->count()
         );
@@ -83,13 +83,13 @@ final class PlayerCustomFieldSchemaTest extends TestCase
 
     public function test_a_value_cannot_exist_without_a_submission(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $field = PlayerCustomField::factory()->create();
 
         $this->expectException(QueryException::class);
 
         DB::table('player_custom_field_values')->insert([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'player_custom_field_id' => $field->id_player_custom_field,
             'submission_id' => null,
             'value_text' => 'orphan',

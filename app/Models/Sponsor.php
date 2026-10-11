@@ -22,8 +22,8 @@ use Illuminate\Support\Facades\DB;
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true, title="Created At"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true, title="Updated At"),
  *     @OA\Property(property="club", ref="#/components/schemas/Club", nullable=true, title="Club"),
- *     @OA\Property(property="player_ids", type="array", @OA\Items(type="integer", format="int64", minimum=1), title="Players", description="Full-replace list of player IDs"),
- *     @OA\Property(property="players", type="array", @OA\Items(ref="#/components/schemas/Player"), nullable=true, title="Players"),
+ *     @OA\Property(property="player_user_ids", type="array", @OA\Items(type="integer", format="int64", minimum=1), title="Players", description="Full-replace list of player user IDs"),
+ *     @OA\Property(property="players", type="array", @OA\Items(ref="#/components/schemas/User"), nullable=true, title="Players"),
  *     @OA\Property(property="sponsorPrizes", type="array", @OA\Items(ref="#/components/schemas/SponsorPrize"), nullable=true, title="Sponsor Prizes")
  * )
  */
@@ -80,12 +80,12 @@ class Sponsor extends Model
     public function players(): BelongsToMany
     {
         return $this->belongsToMany(
-            Player::class,
+            User::class,
             'sponsor_players',
             'sponsor_id',
-            'player_id',
+            'player_user_id',
             'id_sponsor',
-            'id_player'
+            'id_user'
         )->withPivot(['id_sponsor_player', 'inserted_at', 'updated_at']);
     }
 
@@ -117,11 +117,11 @@ class Sponsor extends Model
             return;
         }
 
-        $query->whereNotIn('player_id', $desired)->delete();
+        $query->whereNotIn('player_user_id', $desired)->delete();
 
         $existing = DB::table('sponsor_players')
             ->where('sponsor_id', $this->id_sponsor)
-            ->pluck('player_id')
+            ->pluck('player_user_id')
             ->map(static fn ($id): int => (int) $id)
             ->all();
 
@@ -132,7 +132,7 @@ class Sponsor extends Model
 
             DB::table('sponsor_players')->insert([
                 'sponsor_id' => $this->id_sponsor,
-                'player_id' => $playerId,
+                'player_user_id' => $playerId,
                 'inserted_at' => $now,
                 'updated_at' => null,
             ]);

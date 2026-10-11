@@ -17,7 +17,7 @@ class BenefitEntitlementResource extends JsonResource
         return [
             'id_entitlement' => $this->id_entitlement,
             'benefit_definition_id' => $this->benefit_definition_id,
-            'player_id' => $this->player_id,
+            'player_user_id' => $this->player_user_id,
             'remaining_uses' => $this->remaining_uses,
             'valid_from' => $this->valid_from,
             'valid_until' => $this->valid_until,
@@ -30,7 +30,7 @@ class BenefitEntitlementResource extends JsonResource
                 return new BenefitDefinitionResource($this->benefitDefinition);
             }),
             'player' => $this->whenLoaded('player', function () {
-                return new PlayerResource($this->player);
+                return new UserSummaryResource($this->player);
             }),
         ];
     }

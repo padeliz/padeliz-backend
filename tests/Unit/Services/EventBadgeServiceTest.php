@@ -10,13 +10,14 @@ use App\Models\EventLotteryLucky;
 use App\Models\EventParticipation;
 use App\Models\EventRegistration;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerLevelAssessment;
 use App\Services\EventBadgeService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Collection;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
 
 final class EventBadgeServiceTest extends TestCase
 {
@@ -39,7 +40,7 @@ final class EventBadgeServiceTest extends TestCase
 
     public function test_pending_payment_for_unpaid_with_amount_due(): void
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         $event = $this->upcomingEdition(['inserted_at' => $this->now - (72 * 3600)]);
         $division = EventDivision::factory()->create([
             'event_id' => $event->id_event,
@@ -47,7 +48,7 @@ final class EventBadgeServiceTest extends TestCase
         ]);
 
         EventRegistration::factory()->forEvent($event)->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_division_id' => $division->id_event_division,
             'payment_status' => RegistrationPaymentStatus::Unpaid,
             'payment' => 55,
@@ -64,7 +65,7 @@ final class EventBadgeServiceTest extends TestCase
 
     public function test_pending_payment_for_overdue_registration(): void
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         $event = $this->upcomingEdition(['inserted_at' => $this->now - (72 * 3600)]);
         $division = EventDivision::factory()->create([
             'event_id' => $event->id_event,
@@ -72,7 +73,7 @@ final class EventBadgeServiceTest extends TestCase
         ]);
 
         EventRegistration::factory()->forEvent($event)->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_division_id' => $division->id_event_division,
             'payment_status' => RegistrationPaymentStatus::AwaitingProofReview,
             'payment' => 0,
@@ -89,7 +90,7 @@ final class EventBadgeServiceTest extends TestCase
 
     public function test_registration_pending_on_upcoming_omitted_on_past(): void
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         $upcoming = $this->upcomingEdition(['inserted_at' => $this->now - (72 * 3600)]);
         $past = $this->pastEdition(['inserted_at' => $this->now - (72 * 3600)]);
 
@@ -99,7 +100,7 @@ final class EventBadgeServiceTest extends TestCase
                 'players_limit' => 16,
             ]);
             EventRegistration::factory()->forEvent($event)->create([
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'event_division_id' => $division->id_event_division,
                 'payment_status' => RegistrationPaymentStatus::AwaitingProofReview,
                 'payment' => 55,
@@ -116,7 +117,7 @@ final class EventBadgeServiceTest extends TestCase
 
     public function test_level_assessment_pending_only_when_pending_and_ready_for_review(): void
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         $event = $this->upcomingEdition(['inserted_at' => $this->now - (72 * 3600)]);
         EventDivision::factory()->create([
             'event_id' => $event->id_event,
@@ -130,11 +131,11 @@ final class EventBadgeServiceTest extends TestCase
         PlayerLevelAssessment::factory()->forPlayer($player)->approved()->create();
         $this->assertSame([], $this->badgesFor($event, $player));
 
-        PlayerLevelAssessment::query()->where('player_id', $player->id_player)->delete();
+        PlayerLevelAssessment::query()->where('player_user_id', $player->id_user)->delete();
         PlayerLevelAssessment::factory()->forPlayer($player)->rejected()->create();
         $this->assertSame([], $this->badgesFor($event, $player));
 
-        PlayerLevelAssessment::query()->where('player_id', $player->id_player)->delete();
+        PlayerLevelAssessment::query()->where('player_user_id', $player->id_user)->delete();
         PlayerLevelAssessment::factory()->forPlayer($player)->readyForReview()->create();
         $this->assertSame(
             [['key' => EventBadgeService::KEY_LEVEL_ASSESSMENT_PENDING, 'label' => 'Level Assessment Pending']],
@@ -144,7 +145,7 @@ final class EventBadgeServiceTest extends TestCase
 
     public function test_level_assessment_pending_omitted_on_past_edition(): void
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         $past = $this->pastEdition(['inserted_at' => $this->now - (72 * 3600)]);
         EventDivision::factory()->create([
             'event_id' => $past->id_event,
@@ -158,7 +159,7 @@ final class EventBadgeServiceTest extends TestCase
 
     public function test_registered_vs_participated_by_date(): void
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         $upcoming = $this->upcomingEdition(['inserted_at' => $this->now - (72 * 3600)]);
         $past = $this->pastEdition(['inserted_at' => $this->now - (72 * 3600)]);
 
@@ -168,7 +169,7 @@ final class EventBadgeServiceTest extends TestCase
                 'players_limit' => 16,
             ]);
             EventRegistration::factory()->forEvent($event)->paid()->create([
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'event_division_id' => $division->id_event_division,
                 'payment' => 55,
             ]);
@@ -186,7 +187,7 @@ final class EventBadgeServiceTest extends TestCase
 
     public function test_lottery_winner_when_accepted_at_set(): void
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         $event = $this->upcomingEdition(['inserted_at' => $this->now - (72 * 3600)]);
         $division = EventDivision::factory()->create([
             'event_id' => $event->id_event,
@@ -195,7 +196,7 @@ final class EventBadgeServiceTest extends TestCase
         $participation = EventParticipation::factory()->create([
             'event_id' => $event->id_event,
             'event_division_id' => $division->id_event_division,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
         ]);
 
         EventLotteryLucky::factory()->create([
@@ -264,7 +265,7 @@ final class EventBadgeServiceTest extends TestCase
             EventParticipation::factory()->create([
                 'event_id' => $event->id_event,
                 'event_division_id' => $division->id_event_division,
-                'player_id' => Player::factory()->playerOnly()->create()->id_player,
+                'player_user_id' => User::factory()->playerOnly()->create()->id_user,
             ]);
         }
 
@@ -308,7 +309,7 @@ final class EventBadgeServiceTest extends TestCase
             EventParticipation::factory()->create([
                 'event_id' => $event->id_event,
                 'event_division_id' => $division->id_event_division,
-                'player_id' => Player::factory()->playerOnly()->create()->id_player,
+                'player_user_id' => User::factory()->playerOnly()->create()->id_user,
             ]);
         }
         $event->load(['divisions', 'participations']);
@@ -336,7 +337,7 @@ final class EventBadgeServiceTest extends TestCase
     private function upcomingEdition(array $overrides = []): PadelEvent
     {
         return PadelEvent::factory()->create(array_merge([
-            'date' => Carbon::now($this->tz)->addDays(10)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(Carbon::now($this->tz)->addDays(10)->format('Y-m-d')),
             'registration_allowed_until' => $this->now + 86400,
             'cancellation_allowed_until' => $this->now + 86400,
         ], $overrides));
@@ -348,7 +349,7 @@ final class EventBadgeServiceTest extends TestCase
     private function pastEdition(array $overrides = []): PadelEvent
     {
         return PadelEvent::factory()->create(array_merge([
-            'date' => Carbon::now($this->tz)->subDays(10)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(Carbon::now($this->tz)->subDays(10)->format('Y-m-d')),
             'registration_allowed_until' => $this->now - 86400,
             'cancellation_allowed_until' => $this->now - 86400,
         ], $overrides));
@@ -357,7 +358,7 @@ final class EventBadgeServiceTest extends TestCase
     /**
      * @return list<array{key: string, label: string}>
      */
-    private function badgesFor(PadelEvent $event, ?Player $player): array
+    private function badgesFor(PadelEvent $event, ?User $player): array
     {
         $result = $this->service->forEvents(new Collection([$event]), $player, $this->now);
 

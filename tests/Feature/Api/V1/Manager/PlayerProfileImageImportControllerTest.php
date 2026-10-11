@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Manager;
 
-use App\Models\Player;
-use App\Models\PlayerEmail;
+use App\Models\User;
+use App\Models\UserEmail;
 use App\Models\PlayerProfileImage;
 use App\Models\PlayerProfileImageImport;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -18,20 +18,20 @@ class PlayerProfileImageImportControllerTest extends TestCase
     use FileUploadTestHelper;
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->manager = Player::factory()->manager()->create();
+        $this->manager = User::factory()->manager()->create();
     }
 
     public function test_preview_maps_email_filename(): void
     {
         Sanctum::actingAs($this->manager);
-        $player = Player::factory()->create();
-        PlayerEmail::factory()->create([
-            'player_id' => $player->id_player,
+        $player = User::factory()->create();
+        UserEmail::factory()->create([
+            'user_id' => $player->id_user,
             'email' => 'mara@example.test',
         ]);
 
@@ -43,15 +43,15 @@ class PlayerProfileImageImportControllerTest extends TestCase
             ->assertJsonPath('data.max_images_per_player', 10)
             ->assertJsonPath('data.rows.0.mapping.status', 'mapped')
             ->assertJsonPath('data.rows.0.mapping.matched_by', 'email')
-            ->assertJsonPath('data.rows.0.mapping.player.id_player', $player->id_player);
+            ->assertJsonPath('data.rows.0.mapping.player.id_user', $player->id_user);
     }
 
     public function test_save_uploads_included_rows(): void
     {
         Sanctum::actingAs($this->manager);
-        $player = Player::factory()->create();
-        PlayerEmail::factory()->create([
-            'player_id' => $player->id_player,
+        $player = User::factory()->create();
+        UserEmail::factory()->create([
+            'user_id' => $player->id_user,
             'email' => 'mara@example.test',
         ]);
 
@@ -60,7 +60,7 @@ class PlayerProfileImageImportControllerTest extends TestCase
             [
                 'index' => 0,
                 'filename' => 'mara@example.test.jpg',
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'is_pdf_primary' => true,
             ],
         ]);
@@ -83,7 +83,7 @@ class PlayerProfileImageImportControllerTest extends TestCase
     public function test_preview_name_filename_matches_diacritic_player(): void
     {
         Sanctum::actingAs($this->manager);
-        $player = Player::factory()->create([
+        $player = User::factory()->create([
             'first_name' => 'Ștefan',
             'middle_name' => null,
             'last_name' => 'Popescu',
@@ -95,7 +95,7 @@ class PlayerProfileImageImportControllerTest extends TestCase
 
         $response->assertOk()
             ->assertJsonPath('data.rows.0.mapping.status', 'unmapped')
-            ->assertJsonPath('data.rows.0.mapping.name_matches.0.id_player', $player->id_player);
+            ->assertJsonPath('data.rows.0.mapping.name_matches.0.id_user', $player->id_user);
     }
 
     public function test_preview_allows_duplicate_filenames(): void
@@ -113,9 +113,9 @@ class PlayerProfileImageImportControllerTest extends TestCase
     public function test_save_rejects_cap_exceeded(): void
     {
         Sanctum::actingAs($this->manager);
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         for ($i = 0; $i < PlayerProfileImage::MAX_PER_PLAYER; $i++) {
-            PlayerProfileImage::factory()->create(['player_id' => $player->id_player]);
+            PlayerProfileImage::factory()->create(['player_user_id' => $player->id_user]);
         }
 
         $file = $this->createFakeImage('extra.jpg');
@@ -123,7 +123,7 @@ class PlayerProfileImageImportControllerTest extends TestCase
             [
                 'index' => 0,
                 'filename' => 'extra.jpg',
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'is_pdf_primary' => false,
             ],
         ]);
@@ -141,20 +141,20 @@ class PlayerProfileImageImportControllerTest extends TestCase
     public function test_set_pdf_primary_clears_siblings(): void
     {
         Sanctum::actingAs($this->manager);
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $first = PlayerProfileImage::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'is_pdf_primary' => true,
             'sort_order' => 0,
         ]);
         $second = PlayerProfileImage::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'is_pdf_primary' => false,
             'sort_order' => 1,
         ]);
 
         $response = $this->postJson(
-            "/api/v1/manager/players/{$player->id_player}/profile-images/{$second->id}/pdf-primary"
+            "/api/v1/manager/players/{$player->id_user}/profile-images/{$second->id}/pdf-primary"
         );
 
         $response->assertOk();

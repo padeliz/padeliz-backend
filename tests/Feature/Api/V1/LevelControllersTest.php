@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1;
 
 use App\Models\Level;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -16,7 +16,7 @@ final class LevelControllersTest extends TestCase
 
     public function test_player_can_list_and_show_levels_read_only(): void
     {
-        Sanctum::actingAs(Player::factory()->create());
+        Sanctum::actingAs(User::factory()->create());
         $level = Level::query()->firstOrFail();
 
         $this->getJson('/api/v1/app/levels')
@@ -31,7 +31,7 @@ final class LevelControllersTest extends TestCase
 
     public function test_manager_can_list_and_show_levels_read_only(): void
     {
-        Sanctum::actingAs(Player::factory()->manager()->create(['user_types' => ['player', 'manager']]));
+        Sanctum::actingAs(User::factory()->manager()->create(['user_types' => ['player', 'manager']]));
         $level = Level::query()->firstOrFail();
 
         $this->getJson('/api/v1/manager/levels?per_page=100')->assertOk()->assertJsonStructure(['data']);

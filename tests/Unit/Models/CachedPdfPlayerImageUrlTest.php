@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Models;
 
 use App\Models\CachedPdfPlayerImage;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Tests\TestCase;
@@ -22,15 +22,15 @@ final class CachedPdfPlayerImageUrlTest extends TestCase
 
     public function test_url_for_player_hit_and_miss_by_collecting_flag(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         CachedPdfPlayerImage::query()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'player_is_collecting_points' => true,
-            'picture_path' => 'cached-pdf-player-images/' . $player->id_player . '/true.png',
+            'picture_path' => 'cached-pdf-player-images/' . $player->id_user . '/true.png',
         ]);
 
-        $hit = CachedPdfPlayerImage::urlForPlayer((int) $player->id_player, true);
-        $miss = CachedPdfPlayerImage::urlForPlayer((int) $player->id_player, false);
+        $hit = CachedPdfPlayerImage::urlForPlayer((int) $player->id_user, true);
+        $miss = CachedPdfPlayerImage::urlForPlayer((int) $player->id_user, false);
 
         $this->assertNotNull($hit);
         $this->assertNull($miss);
@@ -38,43 +38,43 @@ final class CachedPdfPlayerImageUrlTest extends TestCase
 
     public function test_urls_by_player_collecting_pairs_batch_keys(): void
     {
-        $a = Player::factory()->create();
-        $b = Player::factory()->create();
+        $a = User::factory()->create();
+        $b = User::factory()->create();
         CachedPdfPlayerImage::query()->create([
-            'player_id' => $a->id_player,
+            'player_user_id' => $a->id_user,
             'player_is_collecting_points' => true,
-            'picture_path' => 'cached-pdf-player-images/' . $a->id_player . '/true.png',
+            'picture_path' => 'cached-pdf-player-images/' . $a->id_user . '/true.png',
         ]);
         CachedPdfPlayerImage::query()->create([
-            'player_id' => $b->id_player,
+            'player_user_id' => $b->id_user,
             'player_is_collecting_points' => false,
-            'picture_path' => 'cached-pdf-player-images/' . $b->id_player . '/false.png',
+            'picture_path' => 'cached-pdf-player-images/' . $b->id_user . '/false.png',
         ]);
 
         $map = CachedPdfPlayerImage::urlsByPlayerCollectingPairs([
-            ['player_id' => (int) $a->id_player, 'collecting' => true],
-            ['player_id' => (int) $a->id_player, 'collecting' => false],
-            ['player_id' => (int) $b->id_player, 'collecting' => false],
+            ['player_user_id' => (int) $a->id_user, 'collecting' => true],
+            ['player_user_id' => (int) $a->id_user, 'collecting' => false],
+            ['player_user_id' => (int) $b->id_user, 'collecting' => false],
         ]);
 
-        $this->assertNotNull($map[$a->id_player . ':1']);
-        $this->assertNull($map[$a->id_player . ':0']);
-        $this->assertNotNull($map[$b->id_player . ':0']);
+        $this->assertNotNull($map[$a->id_user . ':1']);
+        $this->assertNull($map[$a->id_user . ':0']);
+        $this->assertNotNull($map[$b->id_user . ':0']);
     }
 
     public function test_url_for_player_prefer_collecting_falls_back(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         CachedPdfPlayerImage::query()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'player_is_collecting_points' => false,
-            'picture_path' => 'cached-pdf-player-images/' . $player->id_player . '/false.png',
+            'picture_path' => 'cached-pdf-player-images/' . $player->id_user . '/false.png',
         ]);
 
-        $url = CachedPdfPlayerImage::urlForPlayerPreferCollecting((int) $player->id_player);
+        $url = CachedPdfPlayerImage::urlForPlayerPreferCollecting((int) $player->id_user);
         $this->assertNotNull($url);
         $this->assertSame(
-            CachedPdfPlayerImage::urlForPlayer((int) $player->id_player, false),
+            CachedPdfPlayerImage::urlForPlayer((int) $player->id_user, false),
             $url
         );
     }

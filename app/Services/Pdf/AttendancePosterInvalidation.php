@@ -15,8 +15,8 @@ final class AttendancePosterInvalidation
         EventParticipation $participation,
         array $validated,
     ): bool {
-        if (array_key_exists('player_id', $validated)
-            && (int) $validated['player_id'] !== (int) $participation->player_id) {
+        if (array_key_exists('player_user_id', $validated)
+            && (int) $validated['player_user_id'] !== (int) $participation->player_user_id) {
             return true;
         }
 

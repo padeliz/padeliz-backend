@@ -20,7 +20,7 @@ class DeviceTokenController extends V1BaseController
         $token = PlayerDeviceToken::query()->updateOrCreate(
             ['token' => $validated['token']],
             [
-                'player_id' => $request->user()->id_player,
+                'player_user_id' => $request->user()->id_user,
                 'platform' => $validated['platform'] ?? null,
             ]
         );
@@ -39,7 +39,7 @@ class DeviceTokenController extends V1BaseController
         ]);
 
         PlayerDeviceToken::query()
-            ->where('player_id', $request->user()->id_player)
+            ->where('player_user_id', $request->user()->id_user)
             ->where('token', $validated['token'])
             ->delete();
 

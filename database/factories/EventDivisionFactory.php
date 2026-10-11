@@ -7,7 +7,6 @@ namespace Database\Factories;
 use App\Models\Division;
 use App\Models\EventDivision;
 use App\Models\PadelEvent;
-use Carbon\Carbon;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class EventDivisionFactory extends Factory
@@ -25,9 +24,29 @@ class EventDivisionFactory extends Factory
             'players_limit' => $this->faker->numberBetween(8, 16),
             'entry_fee' => 55,
             'skill_order' => 0,
-            'playing_start_time' => Carbon::createFromTime($this->faker->numberBetween(12, 19), 30),
-            'playing_end_time' => Carbon::createFromTime($this->faker->numberBetween(16, 21), 30),
             'inserted_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
         ];
+    }
+
+    public function configure(): static
+    {
+        return $this->afterMaking(function (EventDivision $eventDivision) {
+            $event = null;
+            if (! empty($eventDivision->event_id)) {
+                $event = PadelEvent::query()->find($eventDivision->event_id);
+            }
+
+            $starts = (int) ($eventDivision->playing_starts_at ?? ($event?->event_starts_at ?? (time() + 3600)));
+            $ends = (int) ($eventDivision->playing_ends_at ?? ($event?->event_ends_at ?? ($starts + 4 * 3600)));
+            if ($ends <= $starts) {
+                $ends = $starts + 3600;
+            }
+            $eventDivision->playing_starts_at = $starts;
+            $eventDivision->playing_ends_at = $ends;
+
+            if (! array_key_exists('check_in_at', $eventDivision->getAttributes())) {
+                $eventDivision->check_in_at = (int) ($event?->event_starts_at ?? $starts);
+            }
+        });
     }
 }

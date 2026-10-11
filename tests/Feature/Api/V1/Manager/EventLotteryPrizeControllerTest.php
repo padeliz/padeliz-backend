@@ -12,8 +12,8 @@ use App\Models\EventLotteryPrize;
 use App\Models\EventLotteryRule;
 use App\Models\EventParticipation;
 use App\Models\PadelEvent;
-use App\Models\Player;
-use App\Models\PlayerPhone;
+use App\Models\User;
+use App\Models\UserPhone;
 use App\Models\Prize;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
@@ -24,7 +24,7 @@ class EventLotteryPrizeControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
     private EventLottery $lottery;
 
@@ -34,7 +34,7 @@ class EventLotteryPrizeControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
 
@@ -486,21 +486,21 @@ class EventLotteryPrizeControllerTest extends TestCase
             'rule_prize_quantity' => 1,
         ]);
 
-        $player = Player::factory()->create();
-        PlayerPhone::query()->where('player_id', $player->id_player)->delete();
-        PlayerPhone::factory()->create([
-            'player_id' => $player->id_player,
+        $player = User::factory()->create();
+        UserPhone::query()->where('user_id', $player->id_user)->delete();
+        UserPhone::factory()->create([
+            'user_id' => $player->id_user,
             'phone' => '+40111111111',
             'is_primary' => true,
         ]);
-        PlayerPhone::factory()->create([
-            'player_id' => $player->id_player,
+        UserPhone::factory()->create([
+            'user_id' => $player->id_user,
             'phone' => '+40222222222',
             'is_primary' => false,
         ]);
         $participation = EventParticipation::factory()->create([
             'event_id' => $event->id_event,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
         ]);
         $this->makeLucky($event, $rule, [
             'player' => $player,
@@ -537,10 +537,10 @@ class EventLotteryPrizeControllerTest extends TestCase
             'lottery_prize_id' => $line->id_lottery_prize,
             'rule_prize_quantity' => 1,
         ]);
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $participation = EventParticipation::factory()->create([
             'event_id' => $event->id_event,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'is_collecting_points' => true,
         ]);
         $this->makeLucky($event, $rule, [
@@ -559,13 +559,13 @@ class EventLotteryPrizeControllerTest extends TestCase
         $relative = 'cached-pdf-player-images/1/picture/avatar.png';
         Storage::disk(config('filesystems.user_uploads_disk', 'public'))->put($relative, 'png');
         CachedPdfPlayerImage::query()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'player_is_collecting_points' => false,
             'picture_path' => 'cached-pdf-player-images/1/picture/wrong.png',
             'inserted_at' => time(),
         ]);
         $hitImage = CachedPdfPlayerImage::query()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'player_is_collecting_points' => true,
             'picture_path' => $relative,
             'inserted_at' => time(),
@@ -852,7 +852,7 @@ class EventLotteryPrizeControllerTest extends TestCase
      */
     private function makeLucky(PadelEvent $event, EventLotteryRule $rule, array $overrides = []): EventLotteryLucky
     {
-        $player = $overrides['player'] ?? Player::factory()->create([
+        $player = $overrides['player'] ?? User::factory()->create([
             'first_name' => $overrides['first_name'] ?? 'Pat',
             'last_name' => $overrides['last_name'] ?? 'Lucky',
         ]);
@@ -860,7 +860,7 @@ class EventLotteryPrizeControllerTest extends TestCase
 
         $participation = $overrides['participation'] ?? EventParticipation::factory()->create([
             'event_id' => $event->id_event,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
         ]);
         unset($overrides['participation']);
 

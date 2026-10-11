@@ -4,8 +4,8 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Manager;
 
-use App\Models\Player;
-use App\Models\PlayerPhone;
+use App\Models\User;
+use App\Models\UserPhone;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -14,23 +14,23 @@ class PlayerPhoneControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
-    private Player $player;
+    private User $player;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create();
-        $this->player = Player::factory()->create();
+        $this->manager = User::factory()->manager()->create();
+        $this->player = User::factory()->create();
     }
 
     public function test_index_requires_manager(): void
     {
         $this->getJson('/api/v1/manager/player-phones')->assertStatus(401);
 
-        Sanctum::actingAs(Player::factory()->playerOnly()->create());
+        Sanctum::actingAs(User::factory()->playerOnly()->create());
         $this->getJson('/api/v1/manager/player-phones')->assertStatus(403);
     }
 
@@ -38,27 +38,27 @@ class PlayerPhoneControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $mine = PlayerPhone::factory()->create(['player_id' => $this->player->id_player]);
-        PlayerPhone::factory()->count(2)->create();
+        $mine = UserPhone::factory()->create(['user_id' => $this->player->id_user]);
+        UserPhone::factory()->count(2)->create();
 
-        $response = $this->getJson('/api/v1/manager/player-phones?filters[player_id]=' . $this->player->id_player);
+        $response = $this->getJson('/api/v1/manager/player-phones?filters[user_id]=' . $this->player->id_user);
 
         $response->assertStatus(200)
             ->assertJsonStructure([
-                'data' => [['id_player_phone', 'player_id', 'phone', 'purposes', 'is_primary', 'verified_at', 'inserted_at', 'updated_at']],
+                'data' => [['id_user_phone', 'user_id', 'phone', 'purposes', 'is_primary', 'verified_at', 'inserted_at', 'updated_at']],
                 'meta',
             ]);
         $rows = collect($response->json('data'));
-        $this->assertContains($mine->id_player_phone, $rows->pluck('id_player_phone')->all());
-        $this->assertSame([$this->player->id_player], $rows->pluck('player_id')->unique()->values()->all());
+        $this->assertContains($mine->id_user_phone, $rows->pluck('id_user_phone')->all());
+        $this->assertSame([$this->player->id_user], $rows->pluck('user_id')->unique()->values()->all());
     }
 
     public function test_manager_can_search_phones(): void
     {
         Sanctum::actingAs($this->manager);
 
-        PlayerPhone::factory()->create(['phone' => '+99900011122']);
-        PlayerPhone::factory()->create(['phone' => '+40799999999']);
+        UserPhone::factory()->create(['phone' => '+99900011122']);
+        UserPhone::factory()->create(['phone' => '+40799999999']);
 
         $response = $this->getJson('/api/v1/manager/player-phones?q=9990001112');
 
@@ -70,12 +70,12 @@ class PlayerPhoneControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $phone = PlayerPhone::factory()->create(['player_id' => $this->player->id_player]);
+        $phone = UserPhone::factory()->create(['user_id' => $this->player->id_user]);
 
-        $this->getJson('/api/v1/manager/player-phones/' . $phone->id_player_phone)
+        $this->getJson('/api/v1/manager/player-phones/' . $phone->id_user_phone)
             ->assertStatus(200)
-            ->assertJsonPath('data.id_player_phone', $phone->id_player_phone)
-            ->assertJsonPath('data.player_id', $this->player->id_player);
+            ->assertJsonPath('data.id_user_phone', $phone->id_user_phone)
+            ->assertJsonPath('data.user_id', $this->player->id_user);
 
         $this->getJson('/api/v1/manager/player-phones/999999')->assertStatus(404);
     }
@@ -85,7 +85,7 @@ class PlayerPhoneControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $response = $this->postJson('/api/v1/manager/player-phones', [
-            'player_id' => $this->player->id_player,
+            'user_id' => $this->player->id_user,
             'phone' => '+40 712 345 678',
             'purposes' => ['contact'],
             'is_primary' => true,
@@ -94,8 +94,8 @@ class PlayerPhoneControllerTest extends TestCase
         $response->assertStatus(201)
             ->assertJsonPath('data.phone', '+40712345678')
             ->assertJsonPath('data.is_primary', true);
-        $this->assertDatabaseHas('player_phones', [
-            'player_id' => $this->player->id_player,
+        $this->assertDatabaseHas('user_phones', [
+            'user_id' => $this->player->id_user,
             'phone' => '+40712345678',
         ]);
     }
@@ -106,24 +106,24 @@ class PlayerPhoneControllerTest extends TestCase
 
         $this->postJson('/api/v1/manager/player-phones', [])
             ->assertStatus(422)
-            ->assertJsonValidationErrors(['player_id', 'phone', 'purposes']);
+            ->assertJsonValidationErrors(['user_id', 'phone', 'purposes']);
 
         $this->postJson('/api/v1/manager/player-phones', [
-            'player_id' => 999999,
+            'user_id' => 999999,
             'phone' => 'not-a-number',
             'purposes' => ['sms'],
         ])->assertStatus(422)
-            ->assertJsonValidationErrors(['player_id', 'phone', 'purposes.0']);
+            ->assertJsonValidationErrors(['user_id', 'phone', 'purposes.0']);
     }
 
     public function test_store_rejects_duplicate_phone_after_normalization(): void
     {
         Sanctum::actingAs($this->manager);
 
-        PlayerPhone::factory()->create(['phone' => '+40712345678']);
+        UserPhone::factory()->create(['phone' => '+40712345678']);
 
         $this->postJson('/api/v1/manager/player-phones', [
-            'player_id' => $this->player->id_player,
+            'user_id' => $this->player->id_user,
             'phone' => '+40 712 345 678',
             'purposes' => ['contact'],
         ])->assertStatus(422)->assertJsonValidationErrors(['phone']);
@@ -133,14 +133,14 @@ class PlayerPhoneControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $first = PlayerPhone::factory()->create([
-            'player_id' => $this->player->id_player,
+        $first = UserPhone::factory()->create([
+            'user_id' => $this->player->id_user,
             'is_primary' => true,
         ]);
-        $otherPlayerPrimary = PlayerPhone::factory()->create(['is_primary' => true]);
+        $otherPlayerPrimary = UserPhone::factory()->create(['is_primary' => true]);
 
         $this->postJson('/api/v1/manager/player-phones', [
-            'player_id' => $this->player->id_player,
+            'user_id' => $this->player->id_user,
             'phone' => '+40700000001',
             'purposes' => ['contact'],
             'is_primary' => true,
@@ -154,14 +154,14 @@ class PlayerPhoneControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $phone = PlayerPhone::factory()->create([
-            'player_id' => $this->player->id_player,
+        $phone = UserPhone::factory()->create([
+            'user_id' => $this->player->id_user,
             'phone' => '+40711111111',
             'purposes' => ['contact'],
             'is_primary' => false,
         ]);
 
-        $this->putJson('/api/v1/manager/player-phones/' . $phone->id_player_phone, [
+        $this->putJson('/api/v1/manager/player-phones/' . $phone->id_user_phone, [
             'phone' => '+40722222222',
             'purposes' => ['contact', 'login'],
             'is_primary' => true,
@@ -170,8 +170,8 @@ class PlayerPhoneControllerTest extends TestCase
             ->assertJsonPath('data.purposes', ['contact', 'login'])
             ->assertJsonPath('data.is_primary', true);
 
-        $this->assertDatabaseHas('player_phones', [
-            'id_player_phone' => $phone->id_player_phone,
+        $this->assertDatabaseHas('user_phones', [
+            'id_user_phone' => $phone->id_user_phone,
             'phone' => '+40722222222',
         ]);
     }
@@ -180,14 +180,14 @@ class PlayerPhoneControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $phone = PlayerPhone::factory()->create(['phone' => '+40711111111']);
-        PlayerPhone::factory()->create(['phone' => '+40733333333']);
+        $phone = UserPhone::factory()->create(['phone' => '+40711111111']);
+        UserPhone::factory()->create(['phone' => '+40733333333']);
 
-        $this->putJson('/api/v1/manager/player-phones/' . $phone->id_player_phone, [
+        $this->putJson('/api/v1/manager/player-phones/' . $phone->id_user_phone, [
             'phone' => '+40711111111',
         ])->assertStatus(200);
 
-        $this->putJson('/api/v1/manager/player-phones/' . $phone->id_player_phone, [
+        $this->putJson('/api/v1/manager/player-phones/' . $phone->id_user_phone, [
             'phone' => '+40733333333',
         ])->assertStatus(422)->assertJsonValidationErrors(['phone']);
     }
@@ -196,32 +196,32 @@ class PlayerPhoneControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $phone = PlayerPhone::factory()->create();
+        $phone = UserPhone::factory()->create();
 
-        $this->deleteJson('/api/v1/manager/player-phones/' . $phone->id_player_phone)
+        $this->deleteJson('/api/v1/manager/player-phones/' . $phone->id_user_phone)
             ->assertStatus(200);
 
-        $this->assertDatabaseMissing('player_phones', ['id_player_phone' => $phone->id_player_phone]);
-        $this->deleteJson('/api/v1/manager/player-phones/' . $phone->id_player_phone)->assertStatus(404);
+        $this->assertDatabaseMissing('user_phones', ['id_user_phone' => $phone->id_user_phone]);
+        $this->deleteJson('/api/v1/manager/player-phones/' . $phone->id_user_phone)->assertStatus(404);
     }
 
     public function test_manager_can_bulk_delete_phones(): void
     {
         Sanctum::actingAs($this->manager);
 
-        $phones = PlayerPhone::factory()->count(2)->create();
-        $keep = PlayerPhone::factory()->create();
-        $before = PlayerPhone::query()->count();
+        $phones = UserPhone::factory()->count(2)->create();
+        $keep = UserPhone::factory()->create();
+        $before = UserPhone::query()->count();
 
         $response = $this->deleteJson('/api/v1/manager/player-phones/bulk', [
-            'player_phone_ids' => $phones->pluck('id_player_phone')->all(),
+            'player_phone_ids' => $phones->pluck('id_user_phone')->all(),
         ]);
 
         $response->assertStatus(200)
             ->assertJsonPath('data.total_successful', 2)
             ->assertJsonPath('data.total_failed', 0);
-        $this->assertDatabaseHas('player_phones', ['id_player_phone' => $keep->id_player_phone]);
-        $this->assertSame($before - 2, PlayerPhone::query()->count());
+        $this->assertDatabaseHas('user_phones', ['id_user_phone' => $keep->id_user_phone]);
+        $this->assertSame($before - 2, UserPhone::query()->count());
     }
 
     public function test_bulk_delete_requires_ids(): void
@@ -235,7 +235,7 @@ class PlayerPhoneControllerTest extends TestCase
 
     public function test_phone_model_exposes_resource_metadata(): void
     {
-        $this->assertContains('player_id', PlayerPhone::getFilterableFields());
-        $this->assertSame('phone', PlayerPhone::$displayField);
+        $this->assertContains('user_id', UserPhone::getFilterableFields());
+        $this->assertSame('phone', UserPhone::$displayField);
     }
 }

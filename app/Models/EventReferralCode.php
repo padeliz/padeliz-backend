@@ -27,7 +27,7 @@ class EventReferralCode extends Model
 
     protected $fillable = [
         'event_id',
-        'referrer_player_id',
+        'referrer_player_user_id',
         'code',
         'expires_at',
         'revoked_at',
@@ -35,7 +35,7 @@ class EventReferralCode extends Model
 
     protected $casts = [
         'event_id' => 'integer',
-        'referrer_player_id' => 'integer',
+        'referrer_player_user_id' => 'integer',
         'expires_at' => 'integer',
         'revoked_at' => 'integer',
         'inserted_at' => 'integer',
@@ -49,7 +49,7 @@ class EventReferralCode extends Model
 
     public function referrerPlayer(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'referrer_player_id', 'id_player');
+        return $this->belongsTo(User::class, 'referrer_player_user_id', 'id_user');
     }
 
     public function invitees(): HasMany

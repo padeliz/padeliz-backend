@@ -17,12 +17,13 @@ use App\Models\EventLotteryRule;
 use App\Models\EventParticipation;
 use App\Models\GameMatch;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerProfileImage;
 use App\Models\Prize;
 use App\Models\Sponsor;
 use App\Models\SponsorPrize;
 use App\Services\Lottery\LotteryDrawService;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
@@ -64,45 +65,43 @@ final class EventLotteryLiveControllerTest extends TestCase
 
     public function test_live_draw_skips_division_wide_replaced_and_absent(): void
     {
-        $manager = Player::factory()->manager()->create([
+        $manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         Sanctum::actingAs($manager);
 
-        $event = PadelEvent::factory()->create(['date' => now()->toDateString()]);
+        $event = PadelEvent::factory()->create();
         $division = EventDivision::factory()->create([
             'event_id' => $event->id_event,
-            'playing_start_time' => '10:00:00',
-            'playing_end_time' => '13:00:00',
         ]);
 
-        $absentPlayer = Player::factory()->create();
-        $replacedPlayer = Player::factory()->create();
-        $okPlayer = Player::factory()->create();
+        $absentPlayer = User::factory()->create();
+        $replacedPlayer = User::factory()->create();
+        $okPlayer = User::factory()->create();
 
         $absent = EventParticipation::factory()->create([
             'event_id' => $event->id_event,
             'event_division_id' => $division->id_event_division,
-            'player_id' => $absentPlayer->id_player,
+            'player_user_id' => $absentPlayer->id_user,
             'absence_reason' => 'SICK',
         ]);
         $replaced = EventParticipation::factory()->create([
             'event_id' => $event->id_event,
             'event_division_id' => $division->id_event_division,
-            'player_id' => $replacedPlayer->id_player,
+            'player_user_id' => $replacedPlayer->id_user,
             'absence_reason' => null,
         ]);
         $ok = EventParticipation::factory()->create([
             'event_id' => $event->id_event,
             'event_division_id' => $division->id_event_division,
-            'player_id' => $okPlayer->id_player,
+            'player_user_id' => $okPlayer->id_user,
             'absence_reason' => null,
         ]);
 
         EventDivisionReplacement::query()->create([
             'event_division_id' => $division->id_event_division,
             'original_participation_id' => $replaced->id_participation,
-            'substitute_player_id' => Player::factory()->create()->id_player,
+            'substitute_player_user_id' => User::factory()->create()->id_user,
             'match_id' => null,
             'inserted_at' => time(),
         ]);
@@ -116,20 +115,26 @@ final class EventLotteryLiveControllerTest extends TestCase
         $response = $this->getJson("/api/v1/manager/event-lotteries/{$lottery->id_lottery}/live");
         $response->assertStatus(200)
             ->assertJsonPath('data.status', 'pending')
-            ->assertJsonPath('data.lucky.player.id_player', $ok->player_id);
+            ->assertJsonPath('data.lucky.player.id_user', $ok->player_user_id);
 
-        $this->assertNotEquals($absent->player_id, $response->json('data.lucky.player.id_player'));
-        $this->assertNotEquals($replaced->player_id, $response->json('data.lucky.player.id_player'));
+        $this->assertNotEquals($absent->player_user_id, $response->json('data.lucky.player.id_user'));
+        $this->assertNotEquals($replaced->player_user_id, $response->json('data.lucky.player.id_user'));
     }
 
     public function test_prizes_board_keeps_placeholders_when_no_next_edition(): void
     {
-        $manager = Player::factory()->manager()->create([
+        $manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         Sanctum::actingAs($manager);
 
-        $event = PadelEvent::factory()->create(['date' => now()->toDateString()]);
+        // Past edition with no later Upcoming → placeholders stay literal.
+        $tz = (string) config('app.timezone', 'Europe/Bucharest');
+        $startsAt = Carbon::now($tz)->subDays(14)->setTime(12, 0)->timestamp;
+        $event = PadelEvent::factory()->create([
+            'event_starts_at' => $startsAt,
+            'event_ends_at' => $startsAt + (4 * 3600),
+        ]);
         $prize = Prize::factory()->create([
             'box_1_text' => 'Hello {{edition.next.name}}',
             'box_2_text' => 'On {{edition.next.date.short}}',
@@ -223,22 +228,20 @@ final class EventLotteryLiveControllerTest extends TestCase
 
     public function test_live_avatar_url_uses_pdf_cache_not_profile_image(): void
     {
-        $manager = Player::factory()->manager()->create([
+        $manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         Sanctum::actingAs($manager);
 
-        $event = PadelEvent::factory()->create(['date' => now()->toDateString()]);
+        $event = PadelEvent::factory()->create();
         $division = EventDivision::factory()->create([
             'event_id' => $event->id_event,
-            'playing_start_time' => '10:00:00',
-            'playing_end_time' => '13:00:00',
         ]);
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         Storage::fake(config('filesystems.user_uploads_disk', 'public'));
         PlayerProfileImage::query()->create([
-            'player_id' => $player->id_player,
-            'profile_path' => 'player-profile-images/' . $player->id_player . '/profile/x.png',
+            'player_user_id' => $player->id_user,
+            'profile_path' => 'player-profile-images/' . $player->id_user . '/profile/x.png',
             'sort_order' => 0,
             'inserted_at' => time(),
         ]);
@@ -246,7 +249,7 @@ final class EventLotteryLiveControllerTest extends TestCase
         $participation = EventParticipation::factory()->create([
             'event_id' => $event->id_event,
             'event_division_id' => $division->id_event_division,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'is_collecting_points' => true,
             'absence_reason' => null,
         ]);
@@ -260,7 +263,7 @@ final class EventLotteryLiveControllerTest extends TestCase
         $relative = 'cached-pdf-player-images/1/picture/avatar.png';
         Storage::disk(config('filesystems.user_uploads_disk', 'public'))->put($relative, 'png');
         CachedPdfPlayerImage::query()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'player_is_collecting_points' => true,
             'picture_path' => $relative,
             'inserted_at' => time(),
@@ -270,27 +273,25 @@ final class EventLotteryLiveControllerTest extends TestCase
         $hit->assertOk();
         $this->assertNotNull($hit->json('data.lucky.player.avatar_url'));
         $this->assertStringContainsString('cached-pdf-player-images', (string) $hit->json('data.lucky.player.avatar_url'));
-        $this->assertSame($participation->player_id, $hit->json('data.lucky.player.id_player'));
+        $this->assertSame($participation->player_user_id, $hit->json('data.lucky.player.id_user'));
     }
 
     public function test_two_lotteries_have_independent_drawn_queues(): void
     {
-        $manager = Player::factory()->manager()->create([
+        $manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         Sanctum::actingAs($manager);
 
-        $event = PadelEvent::factory()->create(['date' => now()->toDateString()]);
+        $event = PadelEvent::factory()->create();
         $division = EventDivision::factory()->create([
             'event_id' => $event->id_event,
-            'playing_start_time' => '10:00:00',
-            'playing_end_time' => '13:00:00',
         ]);
-        $onlyPlayer = Player::factory()->create();
+        $onlyPlayer = User::factory()->create();
         $participation = EventParticipation::factory()->create([
             'event_id' => $event->id_event,
             'event_division_id' => $division->id_event_division,
-            'player_id' => $onlyPlayer->id_player,
+            'player_user_id' => $onlyPlayer->id_user,
             'absence_reason' => null,
         ]);
 
@@ -301,7 +302,7 @@ final class EventLotteryLiveControllerTest extends TestCase
 
         $liveA = $this->getJson("/api/v1/manager/event-lotteries/{$lotteryA->id_lottery}/live");
         $liveA->assertOk()
-            ->assertJsonPath('data.lucky.player.id_player', $participation->player_id);
+            ->assertJsonPath('data.lucky.player.id_user', $participation->player_user_id);
 
         $this->postJson("/api/v1/manager/event-lotteries/{$lotteryA->id_lottery}/accept", [
             'id_lucky' => $liveA->json('data.lucky.id_lucky'),
@@ -310,7 +311,7 @@ final class EventLotteryLiveControllerTest extends TestCase
         $liveB = $this->getJson("/api/v1/manager/event-lotteries/{$lotteryB->id_lottery}/live");
         $liveB->assertOk()
             ->assertJsonPath('data.status', 'pending')
-            ->assertJsonPath('data.lucky.player.id_player', $participation->player_id);
+            ->assertJsonPath('data.lucky.player.id_user', $participation->player_user_id);
     }
 
     public function test_already_drawn_is_scoped_per_lottery(): void
@@ -354,23 +355,31 @@ final class EventLotteryLiveControllerTest extends TestCase
 
     public function test_prize_index_increments_per_prize_line(): void
     {
-        $manager = Player::factory()->manager()->create([
+        $manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         Sanctum::actingAs($manager);
 
-        $event = PadelEvent::factory()->create(['date' => now()->toDateString()]);
+        // Upcoming edition: accept must still draw the next lucky for the same
+        // prize line (gate by division playing_starts_at, not wall-clock now).
+        $tz = (string) config('app.timezone', 'Europe/Bucharest');
+        $startsAt = Carbon::now($tz)->addDays(7)->setTime(12, 0)->timestamp;
+        $endsAt = $startsAt + (4 * 3600);
+        $event = PadelEvent::factory()->create([
+            'event_starts_at' => $startsAt,
+            'event_ends_at' => $endsAt,
+        ]);
         $division = EventDivision::factory()->create([
             'event_id' => $event->id_event,
-            'playing_start_time' => '10:00:00',
-            'playing_end_time' => '13:00:00',
+            'playing_starts_at' => $startsAt,
+            'playing_ends_at' => $endsAt,
         ]);
-        $players = Player::factory()->count(2)->create();
+        $players = User::factory()->count(2)->create();
         foreach ($players as $player) {
             EventParticipation::factory()->create([
                 'event_id' => $event->id_event,
                 'event_division_id' => $division->id_event_division,
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'absence_reason' => null,
             ]);
         }
@@ -391,16 +400,14 @@ final class EventLotteryLiveControllerTest extends TestCase
 
     public function test_organizer_prize_line_has_no_host_club_overlay(): void
     {
-        $manager = Player::factory()->manager()->create([
+        $manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         Sanctum::actingAs($manager);
 
-        $event = PadelEvent::factory()->create(['date' => now()->toDateString()]);
+        $event = PadelEvent::factory()->create();
         $division = EventDivision::factory()->create([
             'event_id' => $event->id_event,
-            'playing_start_time' => '10:00:00',
-            'playing_end_time' => '13:00:00',
         ]);
         EventParticipation::factory()->create([
             'event_id' => $event->id_event,
@@ -429,16 +436,14 @@ final class EventLotteryLiveControllerTest extends TestCase
 
     public function test_sponsor_overlay_merges_non_null_and_includes_sponsor_name_only(): void
     {
-        $manager = Player::factory()->manager()->create([
+        $manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         Sanctum::actingAs($manager);
 
-        $event = PadelEvent::factory()->create(['date' => now()->toDateString()]);
+        $event = PadelEvent::factory()->create();
         $division = EventDivision::factory()->create([
             'event_id' => $event->id_event,
-            'playing_start_time' => '10:00:00',
-            'playing_end_time' => '13:00:00',
         ]);
         EventParticipation::factory()->create([
             'event_id' => $event->id_event,
@@ -492,16 +497,14 @@ final class EventLotteryLiveControllerTest extends TestCase
 
     public function test_live_draw_ignores_prize_line_display_order(): void
     {
-        $manager = Player::factory()->manager()->create([
+        $manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         Sanctum::actingAs($manager);
 
-        $event = PadelEvent::factory()->create(['date' => now()->toDateString()]);
+        $event = PadelEvent::factory()->create();
         $division = EventDivision::factory()->create([
             'event_id' => $event->id_event,
-            'playing_start_time' => '10:00:00',
-            'playing_end_time' => '13:00:00',
         ]);
         EventParticipation::factory()->create([
             'event_id' => $event->id_event,
@@ -542,16 +545,14 @@ final class EventLotteryLiveControllerTest extends TestCase
 
     public function test_live_draw_tie_break_uses_lower_rule_id(): void
     {
-        $manager = Player::factory()->manager()->create([
+        $manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         Sanctum::actingAs($manager);
 
-        $event = PadelEvent::factory()->create(['date' => now()->toDateString()]);
+        $event = PadelEvent::factory()->create();
         $division = EventDivision::factory()->create([
             'event_id' => $event->id_event,
-            'playing_start_time' => '10:00:00',
-            'playing_end_time' => '13:00:00',
         ]);
         EventParticipation::factory()->create([
             'event_id' => $event->id_event,

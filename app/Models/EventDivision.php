@@ -4,7 +4,6 @@ declare(strict_types=1);
 
 namespace App\Models;
 
-use App\Services\Schedule\PlayingWindow;
 use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -17,7 +16,7 @@ use InvalidArgumentException;
 /**
  * @OA\Schema(
  *     schema="EventDivision",
- *     required={"event_id", "division_id", "division_title", "players_limit", "playing_start_time", "playing_end_time"},
+ *     required={"event_id", "division_id", "division_title", "players_limit", "playing_starts_at", "playing_ends_at"},
  *     @OA\Property(property="id_event_division", type="integer", format="int64", readOnly=true, title="ID"),
  *     @OA\Property(property="event_id", type="integer", format="int64", minimum=1, title="PadelEvent"),
  *     @OA\Property(property="division_id", type="integer", format="int64", minimum=1, title="Division"),
@@ -28,20 +27,26 @@ use InvalidArgumentException;
  *     @OA\Property(property="level_min", type="string", nullable=true, title="Level Min", example="4.99"),
  *     @OA\Property(property="level_max", type="string", nullable=true, title="Level Max", example="4.67"),
  *     @OA\Property(
- *         property="playing_start_time",
- *         type="string",
- *         format="time",
- *         pattern="^([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$",
- *         title="Playing Start Time",
- *         example="10:00:00"
+ *         property="check_in_at",
+ *         type="integer",
+ *         format="timestamp",
+ *         nullable=true,
+ *         title="Check-in At",
+ *         description="Unix timestamp for division check-in; omit or null when unset"
  *     ),
  *     @OA\Property(
- *         property="playing_end_time",
- *         type="string",
- *         format="time",
- *         pattern="^([01]?[0-9]|2[0-3]):[0-5][0-9]:[0-5][0-9]$",
- *         title="Playing End Time",
- *         example="16:00:00"
+ *         property="playing_starts_at",
+ *         type="integer",
+ *         format="timestamp",
+ *         title="Playing Starts At",
+ *         description="Unix timestamp when division play starts"
+ *     ),
+ *     @OA\Property(
+ *         property="playing_ends_at",
+ *         type="integer",
+ *         format="timestamp",
+ *         title="Playing Ends At",
+ *         description="Unix timestamp when division play ends"
  *     ),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true),
@@ -78,8 +83,9 @@ class EventDivision extends Model
         'players_limit',
         'entry_fee',
         'skill_order',
-        'playing_start_time',
-        'playing_end_time',
+        'check_in_at',
+        'playing_starts_at',
+        'playing_ends_at',
         'level_min',
         'level_max',
         'inserted_at',
@@ -106,8 +112,9 @@ class EventDivision extends Model
         'players_limit',
         'entry_fee',
         'skill_order',
-        'playing_start_time',
-        'playing_end_time',
+        'check_in_at',
+        'playing_starts_at',
+        'playing_ends_at',
         'level_min',
         'level_max',
     ];
@@ -117,13 +124,11 @@ class EventDivision extends Model
         'updated_at' => 'integer',
         'skill_order' => 'integer',
         'entry_fee' => 'integer',
+        'check_in_at' => 'integer',
+        'playing_starts_at' => 'integer',
+        'playing_ends_at' => 'integer',
         'level_min' => 'decimal:2',
         'level_max' => 'decimal:2',
-    ];
-
-    protected $appends = [
-        'formatted_playing_start_time',
-        'formatted_playing_end_time',
     ];
 
     protected static function booted(): void
@@ -243,13 +248,4 @@ class EventDivision extends Model
         return $this->hasMany(GameMatch::class, 'event_division_id', 'id_event_division');
     }
 
-    public function getFormattedPlayingStartTimeAttribute()
-    {
-        return PlayingWindow::toClockString($this->attributes['playing_start_time'] ?? null);
-    }
-
-    public function getFormattedPlayingEndTimeAttribute()
-    {
-        return PlayingWindow::toClockString($this->attributes['playing_end_time'] ?? null);
-    }
 }

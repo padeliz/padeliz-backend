@@ -63,7 +63,7 @@ class CheckoutService
             foreach ($specific as $divisionId) {
                 $registrations[] = $this->registrationService->createForApp([
                     'event_id' => $editionId,
-                    'player_id' => $playerId,
+                    'player_user_id' => $playerId,
                     'event_division_id' => $divisionId,
                 ], attachCheckout: false);
             }
@@ -75,7 +75,7 @@ class CheckoutService
             if (! $hasUnpaid) {
                 $checkout = EventRegistrationCheckout::query()->create([
                     'event_id' => $editionId,
-                    'player_id' => $playerId,
+                    'player_user_id' => $playerId,
                     'status' => CheckoutStatus::Completed,
                     'total_amount' => 0,
                     'payment_method' => null,
@@ -127,7 +127,7 @@ class CheckoutService
 
         $checkout = EventRegistrationCheckout::query()->create([
             'event_id' => $registration->event_id,
-            'player_id' => $registration->player_id,
+            'player_user_id' => $registration->player_user_id,
             'status' => CheckoutStatus::Completed,
             'total_amount' => $amount,
             'payment_method' => $registration->payment_method,
@@ -153,7 +153,7 @@ class CheckoutService
         return DB::transaction(function () use ($editionId, $playerId) {
             $checkout = EventRegistrationCheckout::query()
                 ->where('event_id', $editionId)
-                ->where('player_id', $playerId)
+                ->where('player_user_id', $playerId)
                 ->open()
                 ->lockForUpdate()
                 ->first();
@@ -161,7 +161,7 @@ class CheckoutService
             $unpaidRegs = EventRegistration::query()
                 ->active()
                 ->where('event_id', $editionId)
-                ->where('player_id', $playerId)
+                ->where('player_user_id', $playerId)
                 ->whereIn('payment_status', [
                     RegistrationPaymentStatus::Unpaid->value,
                     RegistrationPaymentStatus::AwaitingProofReview->value,
@@ -172,7 +172,7 @@ class CheckoutService
             $paidZeroRegs = EventRegistration::query()
                 ->active()
                 ->where('event_id', $editionId)
-                ->where('player_id', $playerId)
+                ->where('player_user_id', $playerId)
                 ->where('payment_status', RegistrationPaymentStatus::Paid->value)
                 ->where('payment', 0)
                 ->whereDoesntHave('checkoutItems', function ($q) {
@@ -193,7 +193,7 @@ class CheckoutService
                 $activePaid = EventRegistration::query()
                     ->active()
                     ->where('event_id', $editionId)
-                    ->where('player_id', $playerId)
+                    ->where('player_user_id', $playerId)
                     ->where('payment_status', RegistrationPaymentStatus::Paid->value)
                     ->get();
 
@@ -215,7 +215,7 @@ class CheckoutService
             if ($checkout === null) {
                 $checkout = EventRegistrationCheckout::query()->create([
                     'event_id' => $editionId,
-                    'player_id' => $playerId,
+                    'player_user_id' => $playerId,
                     'status' => CheckoutStatus::Open,
                     'total_amount' => 0,
                     'payment_method' => null,
@@ -560,7 +560,7 @@ class CheckoutService
             $remainingUnpaid = EventRegistration::query()
                 ->active()
                 ->where('event_id', $checkout->event_id)
-                ->where('player_id', $checkout->player_id)
+                ->where('player_user_id', $checkout->player_user_id)
                 ->whereIn('payment_status', [
                     RegistrationPaymentStatus::Unpaid->value,
                     RegistrationPaymentStatus::AwaitingProofReview->value,
@@ -570,7 +570,7 @@ class CheckoutService
             if (! $remainingUnpaid) {
                 app(ReferralService::class)->clearPendingAttribution(
                     (int) $checkout->event_id,
-                    (int) $checkout->player_id
+                    (int) $checkout->player_user_id
                 );
             }
 
@@ -634,7 +634,7 @@ class CheckoutService
 
     public function assertOwnedBy(EventRegistrationCheckout $checkout, int $playerId): void
     {
-        if ((int) $checkout->player_id !== $playerId) {
+        if ((int) $checkout->player_user_id !== $playerId) {
             throw new InvalidArgumentException('Checkout not found.');
         }
     }

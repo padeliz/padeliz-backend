@@ -35,7 +35,7 @@ class PlayerStudentProofController extends V1BaseController
      *     @OA\Parameter(name="per_page", in="query", @OA\Schema(type="integer")),
      *     @OA\Parameter(name="filters[review_status]", in="query", @OA\Schema(type="string", enum={"pending","approved","rejected","discarded"})),
      *     @OA\Parameter(name="filters[ready_for_review]", in="query", @OA\Schema(type="boolean")),
-     *     @OA\Parameter(name="filters[player_id]", in="query", @OA\Schema(type="integer")),
+     *     @OA\Parameter(name="filters[player_user_id]", in="query", @OA\Schema(type="integer")),
      *     @OA\Response(response=200, description="Paginated student proofs")
      * )
      */

@@ -6,7 +6,7 @@ namespace Tests\Feature\Api\V1\Manager;
 
 use App\Enums\Benefit\BenefitEntitlementStatus;
 use App\Models\BenefitDefinition;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -15,9 +15,9 @@ class BenefitEntitlementControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
-    private Player $player;
+    private User $player;
 
     private BenefitDefinition $benefit;
 
@@ -25,10 +25,10 @@ class BenefitEntitlementControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
-        $this->player = Player::factory()->create();
+        $this->player = User::factory()->create();
         $this->benefit = BenefitDefinition::factory()->create([
             'is_active' => true,
             'player_optional' => true,
@@ -41,13 +41,13 @@ class BenefitEntitlementControllerTest extends TestCase
 
         $granted = $this->postJson('/api/v1/manager/benefit-entitlements', [
             'benefit_definition_id' => $this->benefit->id_benefit,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'remaining_uses' => 2,
             'valid_until' => time() + 3600,
         ]);
 
         $granted->assertStatus(201)
-            ->assertJsonPath('data.player_id', $this->player->id_player)
+            ->assertJsonPath('data.player_user_id', $this->player->id_user)
             ->assertJsonPath('data.status', BenefitEntitlementStatus::Active->value)
             ->assertJsonPath('data.source_type', 'manager_grant');
 
@@ -84,7 +84,7 @@ class BenefitEntitlementControllerTest extends TestCase
 
         $this->postJson('/api/v1/manager/benefit-entitlements', [
             'benefit_definition_id' => $inactive->id_benefit,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
         ])->assertStatus(422);
     }
 }

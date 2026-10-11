@@ -21,13 +21,13 @@ class PlayerCustomFieldValueImportRowResource extends JsonResource
             'full_name' => $this->full_name,
             'email' => $this->email,
             'phone' => $this->phone,
-            'player_id' => $this->player_id,
+            'player_user_id' => $this->player_user_id,
             'action' => $this->action,
             'answers_json' => $this->answers_json,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
             'player' => $this->whenLoaded('player', function () {
-                return $this->player ? new PlayerResource($this->player) : null;
+                return $this->player ? new UserSummaryResource($this->player) : null;
             }),
         ];
     }

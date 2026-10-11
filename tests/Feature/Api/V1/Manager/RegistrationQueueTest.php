@@ -16,20 +16,21 @@ use App\Models\EventRegistrationCheckout;
 use App\Models\EventRegistrationPaymentAttempt;
 use App\Models\EventRegistrationPaymentProof;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Services\Cache\PadelizCache;
 use App\Services\RegistrationPayment\CheckoutService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\Support\UsesRedisTaggedCache;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
 
 class RegistrationQueueTest extends TestCase
 {
     use RefreshDatabase;
     use UsesRedisTaggedCache;
 
-    private Player $manager;
+    private User $manager;
 
     private PadelEvent $event;
 
@@ -40,11 +41,11 @@ class RegistrationQueueTest extends TestCase
         parent::setUp();
         $this->forceRedisTaggedCache();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         $this->event = PadelEvent::factory()->create([
-            'date' => now()->addDays(30)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(now()->addDays(30)->format('Y-m-d')),
         ]);
         $division = Division::factory()->create();
         $this->eventDivision = EventDivision::factory()->create([
@@ -167,7 +168,7 @@ class RegistrationQueueTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $open = $this->makeRegistration(['payment_status' => RegistrationPaymentStatus::Unpaid], CheckoutStatus::Open);
-        $playerId = (int) $open->player_id;
+        $playerId = (int) $open->player_user_id;
         $secondDivision = EventDivision::factory()->create([
             'event_id' => $this->event->id_event,
             'division_id' => Division::factory()->create()->id_division,
@@ -175,13 +176,13 @@ class RegistrationQueueTest extends TestCase
             'players_limit' => 50,
         ]);
         $completed = $this->makeRegistration([
-            'player_id' => $playerId,
+            'player_user_id' => $playerId,
             'event_division_id' => $secondDivision->id_event_division,
             'payment_status' => RegistrationPaymentStatus::Paid,
         ], CheckoutStatus::Completed);
         $otherPlayer = $this->makeRegistration();
 
-        $response = $this->getJson('/api/v1/manager/registration-checkouts?filters[player_id]=' . $playerId);
+        $response = $this->getJson('/api/v1/manager/registration-checkouts?filters[player_user_id]=' . $playerId);
         $response->assertStatus(200);
 
         $ids = collect($response->json('data'))->pluck('id_checkout')->all();
@@ -192,7 +193,7 @@ class RegistrationQueueTest extends TestCase
         $this->assertNotContains($this->checkoutId($otherPlayer), $ids);
         $this->assertSame(
             [$playerId],
-            collect($response->json('data'))->pluck('player_id')->unique()->values()->all()
+            collect($response->json('data'))->pluck('player_user_id')->unique()->values()->all()
         );
     }
 
@@ -203,7 +204,7 @@ class RegistrationQueueTest extends TestCase
         $unpaid = $this->makeRegistration(['payment_status' => RegistrationPaymentStatus::Unpaid], CheckoutStatus::Open);
 
         $response = $this->getJson(
-            '/api/v1/manager/registration-checkouts?queue=awaiting_proof&filters[player_id]=' . $unpaid->player_id
+            '/api/v1/manager/registration-checkouts?queue=awaiting_proof&filters[player_user_id]=' . $unpaid->player_user_id
         );
         $response->assertStatus(200);
 
@@ -215,9 +216,9 @@ class RegistrationQueueTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
 
-        $this->getJson('/api/v1/manager/registration-checkouts?filters[player_id]=' . $player->id_player)
+        $this->getJson('/api/v1/manager/registration-checkouts?filters[player_user_id]=' . $player->id_user)
             ->assertStatus(200)
             ->assertJsonPath('data', []);
     }
@@ -226,9 +227,9 @@ class RegistrationQueueTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $this->getJson('/api/v1/manager/registration-checkouts?filters[player_id]=abc')
+        $this->getJson('/api/v1/manager/registration-checkouts?filters[player_user_id]=abc')
             ->assertStatus(422)
-            ->assertJsonValidationErrors(['filters.player_id']);
+            ->assertJsonValidationErrors(['filters.player_user_id']);
     }
 
     public function test_index_without_queue_still_filters_by_event_id(): void
@@ -237,7 +238,7 @@ class RegistrationQueueTest extends TestCase
 
         $inEdition = $this->makeRegistration();
         $otherEdition = PadelEvent::factory()->create([
-            'date' => now()->addDays(40)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(now()->addDays(40)->format('Y-m-d')),
         ]);
         $otherDivision = EventDivision::factory()->create([
             'event_id' => $otherEdition->id_event,
@@ -343,7 +344,7 @@ class RegistrationQueueTest extends TestCase
         $registration = EventRegistration::factory()->create(array_merge([
             'event_id' => $this->event->id_event,
             'event_division_id' => $this->eventDivision->id_event_division,
-            'player_id' => Player::factory()->create()->id_player,
+            'player_user_id' => User::factory()->create()->id_user,
             'lifecycle_status' => RegistrationLifecycleStatus::Active,
             'payment_status' => RegistrationPaymentStatus::Unpaid,
             'payment' => 50,
@@ -351,7 +352,7 @@ class RegistrationQueueTest extends TestCase
 
         $checkout = EventRegistrationCheckout::query()->create([
             'event_id' => $registration->event_id,
-            'player_id' => $registration->player_id,
+            'player_user_id' => $registration->player_user_id,
             'status' => $checkoutStatus,
             'total_amount' => $registration->amountDue(),
             'payment_method' => $registration->payment_method,

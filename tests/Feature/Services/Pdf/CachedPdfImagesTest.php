@@ -6,7 +6,7 @@ namespace Tests\Feature\Services\Pdf;
 
 use App\Models\CachedPdfPairImage;
 use App\Models\CachedPdfPlayerImage;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Illuminate\Support\Facades\Storage;
@@ -28,20 +28,20 @@ final class CachedPdfImagesTest extends TestCase
 
     public function test_pair_four_field_unique_allows_different_collecting_combos(): void
     {
-        $p1 = Player::factory()->create();
-        $p2 = Player::factory()->create();
+        $p1 = User::factory()->create();
+        $p2 = User::factory()->create();
 
         CachedPdfPairImage::query()->create([
-            'player_1_id' => min($p1->id_player, $p2->id_player),
-            'player_2_id' => max($p1->id_player, $p2->id_player),
+            'player_1_user_id' => min($p1->id_user, $p2->id_user),
+            'player_2_user_id' => max($p1->id_user, $p2->id_user),
             'player_1_is_collecting_points' => true,
             'player_2_is_collecting_points' => true,
             'picture_path' => null,
             'inserted_at' => time(),
         ]);
         CachedPdfPairImage::query()->create([
-            'player_1_id' => min($p1->id_player, $p2->id_player),
-            'player_2_id' => max($p1->id_player, $p2->id_player),
+            'player_1_user_id' => min($p1->id_user, $p2->id_user),
+            'player_2_user_id' => max($p1->id_user, $p2->id_user),
             'player_1_is_collecting_points' => true,
             'player_2_is_collecting_points' => false,
             'picture_path' => null,
@@ -52,8 +52,8 @@ final class CachedPdfImagesTest extends TestCase
 
         $this->expectException(\Illuminate\Database\QueryException::class);
         CachedPdfPairImage::query()->create([
-            'player_1_id' => min($p1->id_player, $p2->id_player),
-            'player_2_id' => max($p1->id_player, $p2->id_player),
+            'player_1_user_id' => min($p1->id_user, $p2->id_user),
+            'player_2_user_id' => max($p1->id_user, $p2->id_user),
             'player_1_is_collecting_points' => true,
             'player_2_is_collecting_points' => true,
             'picture_path' => null,
@@ -63,15 +63,15 @@ final class CachedPdfImagesTest extends TestCase
 
     public function test_player_four_field_unique_allows_different_collecting(): void
     {
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         CachedPdfPlayerImage::query()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'player_is_collecting_points' => true,
             'picture_path' => null,
             'inserted_at' => time(),
         ]);
         CachedPdfPlayerImage::query()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'player_is_collecting_points' => false,
             'picture_path' => null,
             'inserted_at' => time(),
@@ -80,7 +80,7 @@ final class CachedPdfImagesTest extends TestCase
 
         $this->expectException(\Illuminate\Database\QueryException::class);
         CachedPdfPlayerImage::query()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'player_is_collecting_points' => true,
             'picture_path' => null,
             'inserted_at' => time(),

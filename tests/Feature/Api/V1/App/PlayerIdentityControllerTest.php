@@ -4,9 +4,9 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\App;
 
-use App\Models\Player;
-use App\Models\PlayerEmail;
-use App\Models\PlayerIdentity;
+use App\Models\User;
+use App\Models\UserEmail;
+use App\Models\UserIdentity;
 use Google\Client as GoogleClient;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -44,10 +44,10 @@ final class PlayerIdentityControllerTest extends TestCase
 
     public function test_list_identities_returns_all_providers(): void
     {
-        $player = Player::factory()->playerOnly()->withGoogleIdentity('g-1')->create();
-        PlayerIdentity::factory()->create([
-            'player_id' => $player->id_player,
-            'provider' => PlayerIdentity::PROVIDER_DEV,
+        $player = User::factory()->playerOnly()->withGoogleIdentity('g-1')->create();
+        UserIdentity::factory()->create([
+            'user_id' => $player->id_user,
+            'provider' => UserIdentity::PROVIDER_DEV,
             'provider_subject' => 'dev:x',
         ]);
         Sanctum::actingAs($player);
@@ -60,7 +60,7 @@ final class PlayerIdentityControllerTest extends TestCase
 
     public function test_link_google_identity_success(): void
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
         $this->mockGoogleToken([
             'sub' => 'link-sub-1',
@@ -76,15 +76,15 @@ final class PlayerIdentityControllerTest extends TestCase
             ->assertJsonPath('data.result_code', 'linked')
             ->assertJsonPath('data.identity.email', 'link1@example.com');
 
-        $this->assertDatabaseHas('player_identities', [
-            'player_id' => $player->id_player,
+        $this->assertDatabaseHas('user_identities', [
+            'user_id' => $player->id_user,
             'provider_subject' => 'link-sub-1',
         ]);
     }
 
     public function test_link_google_idempotent(): void
     {
-        $player = Player::factory()->playerOnly()->withGoogleIdentity('idem-sub')->create();
+        $player = User::factory()->playerOnly()->withGoogleIdentity('idem-sub')->create();
         Sanctum::actingAs($player);
         $this->mockGoogleToken([
             'sub' => 'idem-sub',
@@ -99,13 +99,13 @@ final class PlayerIdentityControllerTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.result_code', 'already_linked');
 
-        $this->assertSame(1, PlayerIdentity::query()->where('provider_subject', 'idem-sub')->count());
+        $this->assertSame(1, UserIdentity::query()->where('provider_subject', 'idem-sub')->count());
     }
 
     public function test_link_google_identity_conflict(): void
     {
-        Player::factory()->playerOnly()->withGoogleIdentity('taken-sub')->create();
-        $player = Player::factory()->playerOnly()->create();
+        User::factory()->playerOnly()->withGoogleIdentity('taken-sub')->create();
+        $player = User::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
         $this->mockGoogleToken([
             'sub' => 'taken-sub',
@@ -123,13 +123,13 @@ final class PlayerIdentityControllerTest extends TestCase
 
     public function test_link_google_contact_conflict(): void
     {
-        $owner = Player::factory()->playerOnly()->create();
-        PlayerEmail::factory()->create([
-            'player_id' => $owner->id_player,
+        $owner = User::factory()->playerOnly()->create();
+        UserEmail::factory()->create([
+            'user_id' => $owner->id_user,
             'email' => 'owned@example.com',
             'is_primary' => true,
         ]);
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
         $this->mockGoogleToken([
             'sub' => 'contact-sub',
@@ -147,7 +147,7 @@ final class PlayerIdentityControllerTest extends TestCase
 
     public function test_link_unsupported_provider(): void
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
 
         $this->postJson('/api/v1/app/auth/identities/apple', [
@@ -157,7 +157,7 @@ final class PlayerIdentityControllerTest extends TestCase
 
     public function test_link_missing_id_token(): void
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
 
         $this->postJson('/api/v1/app/auth/identities/google', [])
@@ -166,7 +166,7 @@ final class PlayerIdentityControllerTest extends TestCase
 
     public function test_link_invalid_id_token(): void
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
         $this->mockInvalidGoogleToken();
 
@@ -177,34 +177,34 @@ final class PlayerIdentityControllerTest extends TestCase
 
     public function test_unlink_second_google_keeps_email(): void
     {
-        $player = Player::factory()->playerOnly()->create();
-        $email = PlayerEmail::factory()->create([
-            'player_id' => $player->id_player,
+        $player = User::factory()->playerOnly()->create();
+        $email = UserEmail::factory()->create([
+            'user_id' => $player->id_user,
             'email' => 'multi@example.com',
             'purposes' => ['contact', 'login'],
             'is_primary' => true,
         ]);
-        $keep = PlayerIdentity::factory()->create([
-            'player_id' => $player->id_player,
-            'provider' => PlayerIdentity::PROVIDER_GOOGLE,
+        $keep = UserIdentity::factory()->create([
+            'user_id' => $player->id_user,
+            'provider' => UserIdentity::PROVIDER_GOOGLE,
             'provider_subject' => 'keep-sub',
-            'email_id' => $email->id_player_email,
+            'email_id' => $email->id_user_email,
         ]);
-        $drop = PlayerIdentity::factory()->create([
-            'player_id' => $player->id_player,
-            'provider' => PlayerIdentity::PROVIDER_GOOGLE,
+        $drop = UserIdentity::factory()->create([
+            'user_id' => $player->id_user,
+            'provider' => UserIdentity::PROVIDER_GOOGLE,
             'provider_subject' => 'drop-sub',
-            'email_id' => $email->id_player_email,
+            'email_id' => $email->id_user_email,
         ]);
         Sanctum::actingAs($player);
 
-        $this->deleteJson("/api/v1/app/auth/identities/{$drop->id_identity}")
+        $this->deleteJson("/api/v1/app/auth/identities/{$drop->id_user_identity}")
             ->assertOk();
 
-        $this->assertDatabaseMissing('player_identities', ['id_identity' => $drop->id_identity]);
-        $this->assertDatabaseHas('player_identities', ['id_identity' => $keep->id_identity]);
-        $this->assertDatabaseHas('player_emails', [
-            'id_player_email' => $email->id_player_email,
+        $this->assertDatabaseMissing('user_identities', ['id_user_identity' => $drop->id_user_identity]);
+        $this->assertDatabaseHas('user_identities', ['id_user_identity' => $keep->id_user_identity]);
+        $this->assertDatabaseHas('user_emails', [
+            'id_user_email' => $email->id_user_email,
             'email' => 'multi@example.com',
         ]);
         $email->refresh();
@@ -213,45 +213,45 @@ final class PlayerIdentityControllerTest extends TestCase
 
     public function test_unlink_last_google_rejected(): void
     {
-        $player = Player::factory()->playerOnly()->withGoogleIdentity('only-g')->create();
+        $player = User::factory()->playerOnly()->withGoogleIdentity('only-g')->create();
         $identity = $player->identities()->first();
         Sanctum::actingAs($player);
 
-        $this->deleteJson("/api/v1/app/auth/identities/{$identity->id_identity}")
+        $this->deleteJson("/api/v1/app/auth/identities/{$identity->id_user_identity}")
             ->assertStatus(422)
             ->assertJsonPath('errors.code', 'last_provider_identity');
     }
 
     public function test_unlink_last_google_rejected_even_with_dev_identity(): void
     {
-        $player = Player::factory()->playerOnly()->withGoogleIdentity('only-g2')->create();
-        PlayerIdentity::factory()->create([
-            'player_id' => $player->id_player,
-            'provider' => PlayerIdentity::PROVIDER_DEV,
+        $player = User::factory()->playerOnly()->withGoogleIdentity('only-g2')->create();
+        UserIdentity::factory()->create([
+            'user_id' => $player->id_user,
+            'provider' => UserIdentity::PROVIDER_DEV,
             'provider_subject' => 'dev:keep',
         ]);
-        $google = $player->identities()->where('provider', PlayerIdentity::PROVIDER_GOOGLE)->first();
+        $google = $player->identities()->where('provider', UserIdentity::PROVIDER_GOOGLE)->first();
         Sanctum::actingAs($player);
 
-        $this->deleteJson("/api/v1/app/auth/identities/{$google->id_identity}")
+        $this->deleteJson("/api/v1/app/auth/identities/{$google->id_user_identity}")
             ->assertStatus(422)
             ->assertJsonPath('errors.code', 'last_provider_identity');
     }
 
     public function test_unlink_another_players_identity_forbidden(): void
     {
-        $owner = Player::factory()->playerOnly()->withGoogleIdentity('owner-sub')->create();
+        $owner = User::factory()->playerOnly()->withGoogleIdentity('owner-sub')->create();
         $identity = $owner->identities()->first();
-        $intruder = Player::factory()->playerOnly()->create();
+        $intruder = User::factory()->playerOnly()->create();
         Sanctum::actingAs($intruder);
 
-        $this->deleteJson("/api/v1/app/auth/identities/{$identity->id_identity}")
+        $this->deleteJson("/api/v1/app/auth/identities/{$identity->id_user_identity}")
             ->assertStatus(403);
     }
 
     public function test_me_includes_identities(): void
     {
-        $player = Player::factory()->playerOnly()->withGoogleIdentity('me-sub')->create();
+        $player = User::factory()->playerOnly()->withGoogleIdentity('me-sub')->create();
         Sanctum::actingAs($player);
 
         $this->getJson('/api/v1/app/auth/me')
@@ -259,7 +259,7 @@ final class PlayerIdentityControllerTest extends TestCase
             ->assertJsonStructure([
                 'data' => [
                     'identities' => [
-                        ['id_identity', 'provider', 'email', 'display_name', 'avatar_url', 'linked_at', 'last_login_at'],
+                        ['id_user_identity', 'provider', 'email', 'display_name', 'avatar_url', 'linked_at', 'last_login_at'],
                     ],
                 ],
             ]);
@@ -267,8 +267,8 @@ final class PlayerIdentityControllerTest extends TestCase
 
     public function test_manager_player_index_does_not_force_identities(): void
     {
-        $manager = Player::factory()->managerOnly()->create();
-        Player::factory()->playerOnly()->withGoogleIdentity('mgr-sub')->create();
+        $manager = User::factory()->managerOnly()->create();
+        User::factory()->playerOnly()->withGoogleIdentity('mgr-sub')->create();
         Sanctum::actingAs($manager);
 
         $response = $this->getJson('/api/v1/manager/players');
@@ -281,34 +281,34 @@ final class PlayerIdentityControllerTest extends TestCase
 
     public function test_unlink_drops_login_purpose_when_email_unreferenced(): void
     {
-        $player = Player::factory()->playerOnly()->create();
-        $emailA = PlayerEmail::factory()->create([
-            'player_id' => $player->id_player,
+        $player = User::factory()->playerOnly()->create();
+        $emailA = UserEmail::factory()->create([
+            'user_id' => $player->id_user,
             'email' => 'a@example.com',
             'purposes' => ['contact', 'login'],
             'is_primary' => true,
         ]);
-        $emailB = PlayerEmail::factory()->create([
-            'player_id' => $player->id_player,
+        $emailB = UserEmail::factory()->create([
+            'user_id' => $player->id_user,
             'email' => 'b@example.com',
             'purposes' => ['contact', 'login'],
             'is_primary' => false,
         ]);
-        PlayerIdentity::factory()->create([
-            'player_id' => $player->id_player,
-            'provider' => PlayerIdentity::PROVIDER_GOOGLE,
+        UserIdentity::factory()->create([
+            'user_id' => $player->id_user,
+            'provider' => UserIdentity::PROVIDER_GOOGLE,
             'provider_subject' => 'keep-a',
-            'email_id' => $emailA->id_player_email,
+            'email_id' => $emailA->id_user_email,
         ]);
-        $drop = PlayerIdentity::factory()->create([
-            'player_id' => $player->id_player,
-            'provider' => PlayerIdentity::PROVIDER_GOOGLE,
+        $drop = UserIdentity::factory()->create([
+            'user_id' => $player->id_user,
+            'provider' => UserIdentity::PROVIDER_GOOGLE,
             'provider_subject' => 'drop-b',
-            'email_id' => $emailB->id_player_email,
+            'email_id' => $emailB->id_user_email,
         ]);
         Sanctum::actingAs($player);
 
-        $this->deleteJson("/api/v1/app/auth/identities/{$drop->id_identity}")->assertOk();
+        $this->deleteJson("/api/v1/app/auth/identities/{$drop->id_user_identity}")->assertOk();
 
         $emailB->refresh();
         $this->assertNotContains('login', $emailB->purposes);

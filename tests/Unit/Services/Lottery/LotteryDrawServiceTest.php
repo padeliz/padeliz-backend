@@ -5,10 +5,13 @@ declare(strict_types=1);
 namespace Tests\Unit\Services\Lottery;
 
 use App\Models\EventParticipation;
+use App\Services\EventCalendarTiming;
 use App\Services\Lottery\LotteryDrawService;
 use App\Services\Lottery\LotteryHtmlHelper;
+use Carbon\Carbon;
 use Illuminate\Support\Collection;
-use PHPUnit\Framework\TestCase;
+use ReflectionMethod;
+use Tests\TestCase;
 
 final class LotteryDrawServiceTest extends TestCase
 {
@@ -53,6 +56,28 @@ final class LotteryDrawServiceTest extends TestCase
         $this->assertSame($text, LotteryHtmlHelper::replaceEditionNextPlaceholders($text, null));
     }
 
+    public function test_format_interval_label_uses_bucharest_clocks_from_unix(): void
+    {
+        $tz = EventCalendarTiming::timezone();
+        $service = new LotteryDrawService();
+        $method = new ReflectionMethod(LotteryDrawService::class, 'formatIntervalLabel');
+        $method->setAccessible(true);
+
+        $overnight = $method->invoke(
+            $service,
+            Carbon::parse('2026-08-14 18:00:00', $tz)->timestamp,
+            Carbon::parse('2026-08-15 00:00:00', $tz)->timestamp,
+        );
+        $this->assertSame('18:00 – 00:00', $overnight);
+
+        $sameDay = $method->invoke(
+            $service,
+            Carbon::parse('2026-08-14 10:00:00', $tz)->timestamp,
+            Carbon::parse('2026-08-14 13:00:00', $tz)->timestamp,
+        );
+        $this->assertSame('10:00 – 13:00', $sameDay);
+    }
+
     private function participation(int $id, ?string $absenceReason, int $eventDivisionId): EventParticipation
     {
         $p = new EventParticipation();
@@ -61,7 +86,7 @@ final class LotteryDrawServiceTest extends TestCase
             'absence_reason' => $absenceReason,
             'event_division_id' => $eventDivisionId,
             'event_id' => 1,
-            'player_id' => $id,
+            'player_user_id' => $id,
         ]);
 
         return $p;

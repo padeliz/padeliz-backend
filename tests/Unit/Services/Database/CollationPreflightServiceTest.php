@@ -21,22 +21,22 @@ final class CollationPreflightServiceTest extends TestCase
 
     public function test_preflight_detects_accent_insensitive_unique_collisions(): void
     {
-        $player = \App\Models\Player::factory()->create([
+        $player = \App\Models\User::factory()->create([
             'first_name' => 'Ștefan',
             'middle_name' => null,
             'last_name' => 'Popescu',
         ]);
 
-        $exists = \App\Models\Player::query()
+        $exists = \App\Models\User::query()
             ->whereRaw(\App\Support\PlayerFullNameSql::expression() . ' = ?', ['Stefan Popescu'])
-            ->whereKey($player->id_player)
+            ->whereKey($player->id_user)
             ->exists();
 
         $this->assertTrue($exists);
 
         $report = (new CollationPreflightService())->formatCollisionReport([
             [
-                'table' => 'pm_players',
+                'table' => 'pm_users',
                 'index' => 'example_unique',
                 'columns' => ['first_name', 'last_name'],
                 'duplicate_count' => 1,
@@ -45,7 +45,7 @@ final class CollationPreflightServiceTest extends TestCase
         ]);
 
         $this->assertStringContainsString('UNIQUE index collisions', $report);
-        $this->assertStringContainsString('pm_players', $report);
+        $this->assertStringContainsString('pm_users', $report);
     }
 
     public function test_format_collision_report_describes_conflicts(): void

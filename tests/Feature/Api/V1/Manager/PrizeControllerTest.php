@@ -8,7 +8,7 @@ use App\Models\Club;
 use App\Models\EventLottery;
 use App\Models\EventLotteryPrize;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\Prize;
 use App\Models\Sponsor;
 use App\Models\SponsorPrize;
@@ -26,7 +26,7 @@ class PrizeControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'first_name' => 'Test', 'middle_name' => null, 'last_name' => 'Manager',
             'user_types' => ['player', 'manager'],
         ]);
@@ -326,7 +326,7 @@ class PrizeControllerTest extends TestCase
 
     public function test_regular_player_cannot_access_prize_management()
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
 
         $response = $this->getJson('/api/v1/manager/prizes');

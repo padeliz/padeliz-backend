@@ -8,7 +8,8 @@ use App\Models\EventDivision;
 use App\Models\EventRegistration;
 use App\Models\EventRegistrationCheckout;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
+use App\Services\EventCalendarTiming;
 use Carbon\Carbon;
 
 final class PricingContext
@@ -18,7 +19,7 @@ final class PricingContext
      * @param  list<\App\Models\ReferralTouchpoint>  $touchpoints
      */
     public function __construct(
-        public readonly Player $player,
+        public readonly User $player,
         public readonly PadelEvent $event,
         public readonly EventDivision $eventDivision,
         public readonly EventRegistration $registration,
@@ -34,9 +35,9 @@ final class PricingContext
 
     public function daysBeforeEditionDate(): int
     {
-        $tz = (string) config('app.timezone', 'UTC');
+        $tz = EventCalendarTiming::timezone();
         $today = Carbon::createFromTimestamp($this->now, $tz)->startOfDay();
-        $editionDate = Carbon::parse((string) $this->event->date, $tz)->startOfDay();
+        $editionDate = Carbon::createFromTimestamp((int) $this->event->event_starts_at, $tz)->startOfDay();
 
         return (int) $today->diffInDays($editionDate, false);
     }

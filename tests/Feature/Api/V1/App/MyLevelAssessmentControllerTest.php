@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\App;
 
 use App\Enums\PlayerCustomFieldValueReviewStatus;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerCustomField;
 use App\Models\PlayerCustomFieldValue;
 use App\Models\PlayerLevel;
@@ -24,13 +24,13 @@ final class MyLevelAssessmentControllerTest extends TestCase
 
     private const BASE = '/api/v1/app/my/level-assessment';
 
-    private Player $player;
+    private User $player;
 
     protected function setUp(): void
     {
         parent::setUp();
         Storage::fake(config('filesystems.user_uploads_disk', 'public'));
-        $this->player = Player::factory()->create();
+        $this->player = User::factory()->create();
         Sanctum::actingAs($this->player);
     }
 
@@ -62,7 +62,12 @@ final class MyLevelAssessmentControllerTest extends TestCase
 
         $this->postJson(self::BASE . '/pending')->assertOk();
 
-        $this->assertSame(1, PlayerLevelAssessment::where('player_id', $this->player->id_player)->count());
+        $this->assertSame(1, PlayerLevelAssessment::where('player_user_id', $this->player->id_user)->count());
+        $this->assertDatabaseHas('player_custom_field_submissions', [
+            'player_user_id' => $this->player->id_user,
+            'submitted_by_player_user_id' => $this->player->id_user,
+            'submitted_by_manager_user_id' => null,
+        ]);
         $this->getJson(self::BASE . '/pending')->assertOk();
         $this->getJson(self::BASE . '/latest')->assertOk();
     }
@@ -148,7 +153,7 @@ final class MyLevelAssessmentControllerTest extends TestCase
         $value = PlayerCustomFieldValue::query()->firstOrFail();
         $this->assertSame(PlayerCustomFieldValueReviewStatus::Pending, $value->review_status);
         $this->assertNull($value->reviewed_at);
-        $this->assertNull($value->reviewed_by_manager_id);
+        $this->assertNull($value->reviewed_by_manager_user_id);
 
         $this->patchJson(self::BASE . '/pending', ['custom_fields' => [$filled->code => '']])->assertOk();
         $this->assertSame('answer', $value->fresh()->value_text);
@@ -190,7 +195,7 @@ final class MyLevelAssessmentControllerTest extends TestCase
         $value = PlayerCustomFieldValue::query()->firstOrFail();
         $this->assertSame(PlayerCustomFieldValueReviewStatus::Discarded, $value->review_status);
         $this->assertNotNull($value->reviewed_at);
-        $this->assertNull($value->reviewed_by_manager_id);
+        $this->assertNull($value->reviewed_by_manager_user_id);
     }
 
     public function test_discard_closes_the_pending_assessment(): void
@@ -208,7 +213,7 @@ final class MyLevelAssessmentControllerTest extends TestCase
     {
         $this->getJson(self::BASE . '/current-level')->assertNotFound();
 
-        PlayerLevel::factory()->level('3.50')->create(['player_id' => $this->player->id_player]);
+        PlayerLevel::factory()->level('3.50')->create(['player_user_id' => $this->player->id_user]);
 
         $this->getJson(self::BASE . '/current-level')
             ->assertOk()
@@ -226,7 +231,7 @@ final class MyLevelAssessmentControllerTest extends TestCase
         $response->assertCreated();
 
         $assessmentId = $response->json('data.id_player_level_assessment');
-        $image = PlayerProfileImage::where('player_id', $this->player->id_player)->firstOrFail();
+        $image = PlayerProfileImage::where('player_user_id', $this->player->id_user)->firstOrFail();
 
         $this->assertSame(PlayerProfileImage::UPLOADED_VIA_APP_LEVEL_ASSESSMENT, $image->uploaded_via);
         $this->assertSame($assessmentId, $image->uploaded_via_level_assessment_id);
@@ -237,14 +242,14 @@ final class MyLevelAssessmentControllerTest extends TestCase
         $this->assertMatchesRegularExpression('#^https?://#i', $imageUrl);
 
         $this->deleteJson(self::BASE . '/pending/profile-image/' . $image->id)->assertOk();
-        $this->assertSame(0, PlayerProfileImage::where('player_id', $this->player->id_player)->count());
+        $this->assertSame(0, PlayerProfileImage::where('player_user_id', $this->player->id_user)->count());
     }
 
     public function test_assessment_image_upload_ignores_other_sources_until_assessment_cap(): void
     {
         for ($i = 0; $i < 5; $i++) {
             PlayerProfileImage::factory()->create([
-                'player_id' => $this->player->id_player,
+                'player_user_id' => $this->player->id_user,
                 'uploaded_via' => PlayerProfileImage::UPLOADED_VIA_APP,
                 'uploaded_via_level_assessment_id' => null,
             ]);
@@ -279,7 +284,7 @@ final class MyLevelAssessmentControllerTest extends TestCase
     public function test_discard_deletes_assessment_linked_images_only(): void
     {
         $kept = PlayerProfileImage::factory()->create([
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'uploaded_via' => PlayerProfileImage::UPLOADED_VIA_APP,
             'uploaded_via_level_assessment_id' => null,
         ]);

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerInvite;
 use App\Models\PlayerInviteEvent;
 use Illuminate\Http\Request;
@@ -29,8 +29,8 @@ class PlayerInviteController extends V1BaseController
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"player_id"},
-     *             @OA\Property(property="player_id", type="integer")
+     *             required={"player_user_id"},
+     *             @OA\Property(property="player_user_id", type="integer")
      *         )
      *     ),
      *     @OA\Response(response=200, description="Invite created; raw token returned once")
@@ -39,16 +39,17 @@ class PlayerInviteController extends V1BaseController
     public function store(Request $request)
     {
         $request->validate([
-            'player_id' => 'required|integer|exists:players,id_player',
+            'player_user_id' => 'required|integer|exists:users,id_user',
+            'player_id' => 'prohibited',
         ]);
 
-        $player = Player::query()->findOrFail($request->integer('player_id'));
+        $player = User::query()->findOrFail($request->integer('player_user_id'));
         $rawToken = Str::random(64);
         $now = time();
 
         $invite = DB::transaction(function () use ($player, $rawToken, $now, $request) {
             $activeInvites = PlayerInvite::query()
-                ->where('player_id', $player->id_player)
+                ->where('player_user_id', $player->id_user)
                 ->active()
                 ->get();
 
@@ -61,22 +62,22 @@ class PlayerInviteController extends V1BaseController
                     invite: $activeInvite,
                     request: $request,
                     resultCode: 'superseded',
-                    actorPlayerId: $request->user()->id_player,
+                    actorManagerUserId: $request->user()->id_user,
                 );
             }
 
             $invite = PlayerInvite::create([
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'token_hash' => PlayerInvite::hashToken($rawToken),
                 'expires_at' => $now + (3 * 24 * 60 * 60),
-                'created_by_player_id' => $request->user()->id_player,
+                'created_by_manager_user_id' => $request->user()->id_user,
             ]);
 
             PlayerInviteEvent::log(
                 event: PlayerInviteEvent::EVENT_CREATED,
                 invite: $invite,
                 request: $request,
-                actorPlayerId: $request->user()->id_player,
+                actorManagerUserId: $request->user()->id_user,
             );
 
             return $invite;
@@ -85,7 +86,7 @@ class PlayerInviteController extends V1BaseController
         return $this->successResponse([
             'invite' => [
                 'id_invite' => $invite->id_invite,
-                'player_id' => $invite->player_id,
+                'player_user_id' => $invite->player_user_id,
                 'expires_at' => $invite->expires_at,
                 'invite_token' => $rawToken,
             ],
@@ -126,13 +127,13 @@ class PlayerInviteController extends V1BaseController
             invite: $playerInvite,
             request: $request,
             resultCode: 'revoked',
-            actorPlayerId: $request->user()->id_player,
+            actorManagerUserId: $request->user()->id_user,
         );
 
         return $this->successResponse([
             'invite' => [
                 'id_invite' => $playerInvite->id_invite,
-                'player_id' => $playerInvite->player_id,
+                'player_user_id' => $playerInvite->player_user_id,
                 'revoked_at' => $playerInvite->revoked_at,
             ],
         ], 'Invite revoked successfully');

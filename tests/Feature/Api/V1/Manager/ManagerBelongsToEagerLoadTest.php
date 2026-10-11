@@ -14,7 +14,7 @@ use App\Models\EventLotteryRule;
 use App\Models\EventParticipation;
 use App\Models\Location;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerLevelAssessment;
 use App\Models\PlayerStudentProof;
 use App\Models\Prize;
@@ -36,7 +36,7 @@ class ManagerBelongsToEagerLoadTest extends TestCase
 
     public function test_manager_show_includes_belongs_to_nests_when_fk_present(): void
     {
-        Sanctum::actingAs(Player::factory()->manager()->create([
+        Sanctum::actingAs(User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]));
 
@@ -69,7 +69,7 @@ class ManagerBelongsToEagerLoadTest extends TestCase
 
     public function test_manager_division_index_includes_its_first_event_nest(): void
     {
-        Sanctum::actingAs(Player::factory()->manager()->create([
+        Sanctum::actingAs(User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]));
 
@@ -93,7 +93,7 @@ class ManagerBelongsToEagerLoadTest extends TestCase
 
     public function test_manager_edition_lottery_show_nests_edition_and_lottery_prizes_without_luckies(): void
     {
-        Sanctum::actingAs(Player::factory()->manager()->create([
+        Sanctum::actingAs(User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]));
 
@@ -146,11 +146,11 @@ class ManagerBelongsToEagerLoadTest extends TestCase
         $studentProof = PlayerStudentProof::factory()->create();
         $location = Location::factory()->create();
         $sponsor = Sponsor::factory()->forClub(\App\Models\Club::factory()->create())->create();
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $now = time();
         DB::table('sponsor_players')->insert([
             'sponsor_id' => $sponsor->id_sponsor,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'inserted_at' => $now,
             'updated_at' => $now,
         ]);

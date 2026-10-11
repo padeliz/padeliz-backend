@@ -5,18 +5,14 @@ declare(strict_types=1);
 namespace Tests\Unit\Services\Pdf;
 
 use App\Models\EventParticipation;
-use App\Models\Player;
+use App\Models\User;
 use App\Services\Pdf\AttendancePdfLayout;
-use Illuminate\Foundation\Testing\RefreshDatabase;
+use PHPUnit\Framework\Attributes\DataProvider;
 use Tests\TestCase;
 
 final class AttendancePdfLayoutTest extends TestCase
 {
-    use RefreshDatabase;
-
-    /**
-     * @dataProvider columnCountProvider
-     */
+    #[DataProvider('columnCountProvider')]
     public function test_column_count_for_ed_count(int $edCount, int $expectedColumns): void
     {
         $this->assertSame($expectedColumns, AttendancePdfLayout::columnCountForEdCount($edCount));
@@ -105,45 +101,58 @@ final class AttendancePdfLayoutTest extends TestCase
 
     public function test_sort_participations_by_player_name_is_case_insensitive(): void
     {
-        $zebra = Player::factory()->create([
-            'first_name' => 'Zebra',
-            'middle_name' => null,
-            'last_name' => 'Player',
-        ]);
-        $alpha = Player::factory()->create([
-            'first_name' => 'alpha',
-            'middle_name' => null,
-            'last_name' => 'Player',
-        ]);
-        $bravo = Player::factory()->create([
-            'first_name' => 'Bravo',
-            'middle_name' => null,
-            'last_name' => 'Player',
-        ]);
+        $zebra = new User(['first_name' => 'Zebra', 'middle_name' => null, 'last_name' => 'Player']);
+        $zebra->id_user = 3;
+        $alpha = new User(['first_name' => 'alpha', 'middle_name' => null, 'last_name' => 'Player']);
+        $alpha->id_user = 1;
+        $bravo = new User(['first_name' => 'Bravo', 'middle_name' => null, 'last_name' => 'Player']);
+        $bravo->id_user = 2;
 
         $participations = [
-            EventParticipation::factory()->make(['player_id' => $zebra->id_player]),
-            EventParticipation::factory()->make(['player_id' => $alpha->id_player]),
-            EventParticipation::factory()->make(['player_id' => $bravo->id_player]),
+            tap(new EventParticipation(), static function (EventParticipation $p) use ($zebra): void {
+                $p->player_user_id = 3;
+                $p->setRelation('player', $zebra);
+            }),
+            tap(new EventParticipation(), static function (EventParticipation $p) use ($alpha): void {
+                $p->player_user_id = 1;
+                $p->setRelation('player', $alpha);
+            }),
+            tap(new EventParticipation(), static function (EventParticipation $p) use ($bravo): void {
+                $p->player_user_id = 2;
+                $p->setRelation('player', $bravo);
+            }),
         ];
-        $participations[0]->setRelation('player', $zebra);
-        $participations[1]->setRelation('player', $alpha);
-        $participations[2]->setRelation('player', $bravo);
 
         $sorted = AttendancePdfLayout::sortParticipationsByPlayerName($participations);
 
         $this->assertSame(
-            [$alpha->id_player, $bravo->id_player, $zebra->id_player],
-            array_map(static fn (EventParticipation $p): int => (int) $p->player_id, $sorted)
+            [1, 2, 3],
+            array_map(static fn (EventParticipation $p): int => (int) $p->player_user_id, $sorted)
         );
     }
 
-    /**
-     * @dataProvider ordinalHeaderDateProvider
-     */
+    #[DataProvider('ordinalHeaderDateProvider')]
     public function test_format_ordinal_header_date(string $input, string $expected): void
     {
         $this->assertSame($expected, AttendancePdfLayout::formatOrdinalHeaderDate($input));
+    }
+
+    #[DataProvider('attendanceHeaderDateProvider')]
+    public function test_format_attendance_header_date(
+        int $startsAt,
+        int $endsAt,
+        int $nrOfDays,
+        string $expectedDate,
+        string $expectedTimes,
+    ): void {
+        $this->assertSame(
+            $expectedDate,
+            AttendancePdfLayout::formatAttendanceHeaderDate($startsAt, $endsAt, $nrOfDays)
+        );
+        $this->assertSame(
+            $expectedTimes,
+            AttendancePdfLayout::formatAttendanceHeaderTimes($startsAt, $endsAt)
+        );
     }
 
     public function test_layout_spacing_constants(): void
@@ -153,9 +162,7 @@ final class AttendancePdfLayoutTest extends TestCase
         $this->assertSame(3, AttendancePdfLayout::PARTICIPANT_GAP_MM);
     }
 
-    /**
-     * @dataProvider columnWidthPercentProvider
-     */
+    #[DataProvider('columnWidthPercentProvider')]
     public function test_column_width_percent(int $columnCount, int $expectedPercent): void
     {
         $this->assertSame($expectedPercent, AttendancePdfLayout::columnWidthPercent($columnCount));
@@ -186,6 +193,33 @@ final class AttendancePdfLayoutTest extends TestCase
             '3rd' => ['2026-04-03', '2026 April 3rd'],
             '11th' => ['2026-05-11', '2026 May 11th'],
             'invalid passthrough' => ['not-a-date', 'not-a-date'],
+        ];
+    }
+
+    /**
+     * @return array<string, array{0: int, 1: int, 2: int, 3: string, 4: string}>
+     */
+    public static function attendanceHeaderDateProvider(): array
+    {
+        $tz = 'Europe/Bucharest';
+
+        $singleStart = \Carbon\Carbon::parse('2026-06-15 10:00:00', $tz)->timestamp;
+        $singleEnd = \Carbon\Carbon::parse('2026-06-15 18:30:00', $tz)->timestamp;
+
+        $sameMonthStart = \Carbon\Carbon::parse('2026-10-11 10:00:00', $tz)->timestamp;
+        $sameMonthEnd = \Carbon\Carbon::parse('2026-10-12 18:00:00', $tz)->timestamp;
+
+        $diffMonthStart = \Carbon\Carbon::parse('2026-10-28 10:00:00', $tz)->timestamp;
+        $diffMonthEnd = \Carbon\Carbon::parse('2026-11-02 18:00:00', $tz)->timestamp;
+
+        $diffYearStart = \Carbon\Carbon::parse('2026-12-31 10:00:00', $tz)->timestamp;
+        $diffYearEnd = \Carbon\Carbon::parse('2027-01-02 18:00:00', $tz)->timestamp;
+
+        return [
+            'single day ordinal' => [$singleStart, $singleEnd, 1, '2026 June 15th', '10:00 – 18:30'],
+            'same month year' => [$sameMonthStart, $sameMonthEnd, 2, '11-12 Oct 2026', '10:00 – 18:00'],
+            'different month same year' => [$diffMonthStart, $diffMonthEnd, 6, '28 Oct - 2 Nov', '10:00 – 18:00'],
+            'different year' => [$diffYearStart, $diffYearEnd, 3, '31 Dec 2026 - 2 Jan 2027', '10:00 – 18:00'],
         ];
     }
 }

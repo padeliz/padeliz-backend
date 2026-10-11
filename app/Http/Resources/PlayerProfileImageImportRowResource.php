@@ -19,7 +19,7 @@ class PlayerProfileImageImportRowResource extends JsonResource
             'player_profile_image_import_id' => $this->player_profile_image_import_id,
             'row_index' => $this->row_index,
             'original_filename' => $this->original_filename,
-            'player_id' => $this->player_id,
+            'player_user_id' => $this->player_user_id,
             'player_profile_image_id' => $this->player_profile_image_id,
             'is_pdf_primary' => (bool) $this->is_pdf_primary,
             'action' => $this->action,

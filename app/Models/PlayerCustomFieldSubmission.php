@@ -14,11 +14,12 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 /**
  * @OA\Schema(
  *     schema="PlayerCustomFieldSubmission",
- *     required={"player_id", "submitted_via"},
+ *     required={"player_user_id", "submitted_via"},
  *     @OA\Property(property="id_player_custom_field_submission", type="integer", format="int64", readOnly=true, title="ID"),
- *     @OA\Property(property="player_id", type="integer", format="int64", title="Player"),
+ *     @OA\Property(property="player_user_id", type="integer", format="int64", title="Player"),
  *     @OA\Property(property="submitted_via", type="string", enum={"app", "manager", "csv"}, title="Submitted Via"),
- *     @OA\Property(property="submitted_by_player_id", type="integer", format="int64", nullable=true, title="Submitted By"),
+ *     @OA\Property(property="submitted_by_player_user_id", type="integer", format="int64", nullable=true, title="Submitted By Player"),
+ *     @OA\Property(property="submitted_by_manager_user_id", type="integer", format="int64", nullable=true, title="Submitted By Manager"),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true, title="Created At"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true, title="Updated At")
  * )
@@ -37,13 +38,13 @@ class PlayerCustomFieldSubmission extends Model
     public static array $searchableFields = [];
 
     public static array $filterableFields = [
-        'player_id',
+        'player_user_id',
         'submitted_via',
     ];
 
     public static array $sortableFields = [
         'id_player_custom_field_submission',
-        'player_id',
+        'player_user_id',
         'submitted_via',
         'inserted_at',
         'updated_at',
@@ -64,26 +65,33 @@ class PlayerCustomFieldSubmission extends Model
     public const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
-        'player_id',
+        'player_user_id',
         'submitted_via',
-        'submitted_by_player_id',
+        'submitted_by_player_user_id',
+        'submitted_by_manager_user_id',
     ];
 
     protected $casts = [
-        'player_id' => 'integer',
-        'submitted_by_player_id' => 'integer',
+        'player_user_id' => 'integer',
+        'submitted_by_player_user_id' => 'integer',
+        'submitted_by_manager_user_id' => 'integer',
         'inserted_at' => 'integer',
         'updated_at' => 'integer',
     ];
 
     public function player(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'player_id', 'id_player');
+        return $this->belongsTo(User::class, 'player_user_id', 'id_user');
     }
 
     public function submittedByPlayer(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'submitted_by_player_id', 'id_player');
+        return $this->belongsTo(User::class, 'submitted_by_player_user_id', 'id_user');
+    }
+
+    public function submittedByManager(): BelongsTo
+    {
+        return $this->belongsTo(User::class, 'submitted_by_manager_user_id', 'id_user');
     }
 
     public function values(): HasMany

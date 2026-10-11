@@ -67,6 +67,6 @@ class EventLotteryLuckyResource extends JsonResource
             return null;
         }
 
-        return CachedPdfPlayerImage::urlForPlayer((int) $player->id_player, $collecting);
+        return CachedPdfPlayerImage::urlForPlayer((int) $player->id_user, $collecting);
     }
 }

@@ -6,7 +6,7 @@ namespace App\Services\PlayerProfileImage;
 
 use App\Models\CachedPdfPairImage;
 use App\Models\CachedPdfPlayerImage;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerProfileImage;
 use Illuminate\Support\Facades\DB;
 
@@ -17,27 +17,27 @@ final class PlayerProfileImagePrimaryService
     ) {
     }
 
-    public function setPdfPrimary(Player $player, PlayerProfileImage $image): void
+    public function setPdfPrimary(User $player, PlayerProfileImage $image): void
     {
-        if ((int) $image->player_id !== (int) $player->id_player) {
+        if ((int) $image->player_user_id !== (int) $player->id_user) {
             throw new \InvalidArgumentException('Profile image does not belong to this player.');
         }
 
         DB::transaction(function () use ($player, $image): void {
             PlayerProfileImage::query()
-                ->where('player_id', $player->id_player)
+                ->where('player_user_id', $player->id_user)
                 ->where('id', '!=', $image->id)
                 ->update(['is_pdf_primary' => false]);
 
             $image->update(['is_pdf_primary' => true]);
-            $this->bustPdfCache((int) $player->id_player);
+            $this->bustPdfCache((int) $player->id_user);
         });
     }
 
-    public function applyPrimaryOnUpload(Player $player, PlayerProfileImage $image, bool $requestedPrimary): void
+    public function applyPrimaryOnUpload(User $player, PlayerProfileImage $image, bool $requestedPrimary): void
     {
         $existingCount = PlayerProfileImage::query()
-            ->where('player_id', $player->id_player)
+            ->where('player_user_id', $player->id_user)
             ->where('id', '!=', $image->id)
             ->count();
 
@@ -56,34 +56,34 @@ final class PlayerProfileImagePrimaryService
         $image->update(['is_pdf_primary' => false]);
     }
 
-    public function promoteSurvivorAfterDelete(Player $player): void
+    public function promoteSurvivorAfterDelete(User $player): void
     {
         $player->load('profileImages');
         if ($player->profileImages->isEmpty()) {
-            $this->bustPdfCache((int) $player->id_player);
+            $this->bustPdfCache((int) $player->id_user);
 
             return;
         }
 
         PlayerProfileImage::query()
-            ->where('player_id', $player->id_player)
+            ->where('player_user_id', $player->id_user)
             ->update(['is_pdf_primary' => false]);
 
         $next = $this->resolver->canonicalFirst($player->profileImages);
         if ($next !== null) {
             $next->update(['is_pdf_primary' => true]);
-            $this->bustPdfCache((int) $player->id_player);
+            $this->bustPdfCache((int) $player->id_user);
         }
     }
 
-    public function wasResolvedPrimary(Player $player, PlayerProfileImage $image): bool
+    public function wasResolvedPrimary(User $player, PlayerProfileImage $image): bool
     {
         $resolved = $this->resolver->resolveForPdf($player);
 
         return $resolved !== null && (int) $resolved->id === (int) $image->id;
     }
 
-    public function handleAfterDelete(Player $player, PlayerProfileImage $deleted): void
+    public function handleAfterDelete(User $player, PlayerProfileImage $deleted): void
     {
         unset($deleted);
         $this->promoteSurvivorAfterDelete($player);
@@ -92,13 +92,13 @@ final class PlayerProfileImagePrimaryService
     public function bustPdfCache(int $playerId): void
     {
         CachedPdfPlayerImage::query()
-            ->where('player_id', $playerId)
+            ->where('player_user_id', $playerId)
             ->delete();
 
         CachedPdfPairImage::query()
             ->where(function ($query) use ($playerId): void {
-                $query->where('player_1_id', $playerId)
-                    ->orWhere('player_2_id', $playerId);
+                $query->where('player_1_user_id', $playerId)
+                    ->orWhere('player_2_user_id', $playerId);
             })
             ->delete();
     }

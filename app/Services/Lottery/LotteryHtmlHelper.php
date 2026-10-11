@@ -5,6 +5,8 @@ declare(strict_types=1);
 namespace App\Services\Lottery;
 
 use App\Models\PadelEvent;
+use App\Services\EventCalendarTiming;
+use Carbon\Carbon;
 
 final class LotteryHtmlHelper
 {
@@ -33,13 +35,10 @@ final class LotteryHtmlHelper
         }
 
         $nextName = (string) ($nextEdition->name ?? '');
-        $date = $nextEdition->date;
-        $nextDateShort = '';
-        if ($date !== null) {
-            $nextDateShort = $date instanceof \DateTimeInterface
-                ? $date->format('d M Y')
-                : date('d M Y', strtotime((string) $date));
-        }
+        $nextDateShort = Carbon::createFromTimestamp(
+            (int) $nextEdition->event_starts_at,
+            EventCalendarTiming::timezone()
+        )->format('d M Y');
 
         return str_replace(
             ['{{edition.next.name}}', '{{edition.next.date.short}}'],

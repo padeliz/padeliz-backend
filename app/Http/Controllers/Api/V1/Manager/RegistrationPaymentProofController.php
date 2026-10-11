@@ -29,7 +29,7 @@ class RegistrationPaymentProofController extends V1BaseController
         try {
             $proof = $this->bankProofService->approve(
                 $proof,
-                (int) $request->user()->id_player,
+                (int) $request->user()->id_user,
                 $validated['review_message'] ?? null
             );
         } catch (InvalidArgumentException $e) {
@@ -56,7 +56,7 @@ class RegistrationPaymentProofController extends V1BaseController
         try {
             $proof = $this->bankProofService->reject(
                 $proof,
-                (int) $request->user()->id_player,
+                (int) $request->user()->id_user,
                 $validated['review_message'] ?? null
             );
         } catch (InvalidArgumentException $e) {

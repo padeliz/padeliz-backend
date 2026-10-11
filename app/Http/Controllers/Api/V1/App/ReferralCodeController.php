@@ -23,13 +23,13 @@ class ReferralCodeController extends \App\Http\Controllers\BaseVersions\V1\V1Bas
         $codes = EventReferralCode::query()
             ->with('invitees')
             ->where('event_id', $eventId)
-            ->where('referrer_player_id', $request->user()->id_player)
+            ->where('referrer_player_user_id', $request->user()->id_user)
             ->orderByDesc('id_referral_code')
             ->get();
 
         return $this->successResponse([
             'remaining_slots' => $this->referralService->remainingSlots(
-                (int) $request->user()->id_player,
+                (int) $request->user()->id_user,
                 $eventId
             ),
             'codes' => $codes,
@@ -39,11 +39,18 @@ class ReferralCodeController extends \App\Http\Controllers\BaseVersions\V1\V1Bas
     public function store(Request $request, PadelEvent $event)
     {
         $eventId = (int) $event->id_event;
+
+        if (time() >= (int) $event->registration_allowed_until) {
+            return $this->validationErrorResponse([
+                'event' => ['Referral codes can no longer be created after registration closes.'],
+            ]);
+        }
+
         $validated = $request->validate([
             'invitees' => 'required|array|min:1',
             'invitees.*.email' => 'nullable|email',
             'invitees.*.phone' => 'nullable|string|max:32',
-            'invitees.*.player_id' => 'nullable|integer|exists:players,id_player',
+            'invitees.*.player_user_id' => 'nullable|integer|exists:users,id_user',
         ]);
 
         try {
@@ -56,14 +63,14 @@ class ReferralCodeController extends \App\Http\Controllers\BaseVersions\V1\V1Bas
             return $this->validationErrorResponse([
                 'invitees' => [$e->getMessage()],
                 'remaining_slots' => [
-                    $this->referralService->remainingSlots((int) $request->user()->id_player, $eventId),
+                    $this->referralService->remainingSlots((int) $request->user()->id_user, $eventId),
                 ],
             ]);
         }
 
         return $this->successResponse([
             'remaining_slots' => $this->referralService->remainingSlots(
-                (int) $request->user()->id_player,
+                (int) $request->user()->id_user,
                 $eventId
             ),
             'code' => $code,
@@ -74,8 +81,15 @@ class ReferralCodeController extends \App\Http\Controllers\BaseVersions\V1\V1Bas
     {
         $code = EventReferralCode::query()
             ->where('id_referral_code', $referralCode)
-            ->where('referrer_player_id', $request->user()->id_player)
+            ->where('referrer_player_user_id', $request->user()->id_user)
             ->firstOrFail();
+
+        $event = PadelEvent::query()->findOrFail((int) $code->event_id);
+        if (time() >= (int) $event->event_starts_at) {
+            return $this->validationErrorResponse([
+                'event' => ['Referral codes can no longer be revoked after the event has started.'],
+            ]);
+        }
 
         if ($code->revoked_at === null) {
             $code->forceFill(['revoked_at' => time()])->save();
@@ -85,7 +99,7 @@ class ReferralCodeController extends \App\Http\Controllers\BaseVersions\V1\V1Bas
 
         return $this->successResponse([
             'remaining_slots' => $this->referralService->remainingSlots(
-                (int) $request->user()->id_player,
+                (int) $request->user()->id_user,
                 $eventId
             ),
             'code' => $code->fresh('invitees'),

@@ -96,7 +96,7 @@ class RegistrationLifecycleService
         app(\App\Services\Referral\ReferralService::class)->releaseOnRefund($registration);
 
         $this->expoPushService->notifyRegistrationStatus(
-            (int) $registration->player_id,
+            (int) $registration->player_user_id,
             'refunded',
             ['registration_id' => $registration->id_registration]
         );
@@ -114,7 +114,7 @@ class RegistrationLifecycleService
         foreach ($registrationIds as $id) {
             $registration = EventRegistration::query()
                 ->where('id_registration', $id)
-                ->where('player_id', $playerId)
+                ->where('player_user_id', $playerId)
                 ->firstOrFail();
             $results[] = $this->cancelByPlayer($registration, $reason);
         }
@@ -181,7 +181,7 @@ class RegistrationLifecycleService
                 $stillUnpaid = EventRegistration::query()
                     ->active()
                     ->where('event_id', $registration->event_id)
-                    ->where('player_id', $registration->player_id)
+                    ->where('player_user_id', $registration->player_user_id)
                     ->where('id_registration', '!=', $registration->id_registration)
                     ->whereIn('payment_status', [
                         RegistrationPaymentStatus::Unpaid->value,
@@ -191,7 +191,7 @@ class RegistrationLifecycleService
                 if (! $stillUnpaid) {
                     app(\App\Services\Referral\ReferralService::class)->clearPendingAttribution(
                         (int) $registration->event_id,
-                        (int) $registration->player_id
+                        (int) $registration->player_user_id
                     );
                 }
             }
@@ -207,13 +207,13 @@ class RegistrationLifecycleService
             $event = $lifecycle === RegistrationLifecycleStatus::Cancelled ? 'cancelled' : 'declined';
             if ($registration->fresh()->payment_status === RegistrationPaymentStatus::RefundPending) {
                 $this->expoPushService->notifyRegistrationStatus(
-                    (int) $registration->player_id,
+                    (int) $registration->player_user_id,
                     'refund_pending',
                     ['registration_id' => $registration->id_registration]
                 );
             }
             $this->expoPushService->notifyRegistrationStatus(
-                (int) $registration->player_id,
+                (int) $registration->player_user_id,
                 $event,
                 ['registration_id' => $registration->id_registration]
             );
@@ -248,7 +248,7 @@ class RegistrationLifecycleService
     {
         EventParticipation::query()
             ->where('event_id', $registration->event_id)
-            ->where('player_id', $registration->player_id)
+            ->where('player_user_id', $registration->player_user_id)
             ->delete();
     }
 

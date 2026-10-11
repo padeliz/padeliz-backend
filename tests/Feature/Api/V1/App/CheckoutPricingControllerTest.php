@@ -16,19 +16,20 @@ use App\Models\EventDivision;
 use App\Models\EventReferralCode;
 use App\Models\EventReferralCodeInvitee;
 use App\Models\PadelEvent;
-use App\Models\Player;
-use App\Models\PlayerEmail;
+use App\Models\User;
+use App\Models\UserEmail;
 use App\Models\PlayerLevel;
 use App\Models\ReferralTouchpoint;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
 
 class CheckoutPricingControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $player;
+    private User $player;
 
     private PadelEvent $event;
 
@@ -40,9 +41,9 @@ class CheckoutPricingControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->player = Player::factory()->playerOnly()->withPrimaryEmail()->create();
+        $this->player = User::factory()->playerOnly()->withPrimaryEmail()->create();
         $this->event = PadelEvent::factory()->create([
-            'date' => now()->addDays(30)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(now()->addDays(30)->format('Y-m-d')),
         ]);
         $this->eventDivision = EventDivision::factory()->create([
             'event_id' => $this->event->id_event,
@@ -50,7 +51,7 @@ class CheckoutPricingControllerTest extends TestCase
             'players_limit' => 10,
             'entry_fee' => 55,
         ]);
-        PlayerLevel::factory()->level('4.50')->create(['player_id' => $this->player->id_player]);
+        PlayerLevel::factory()->level('4.50')->create(['player_user_id' => $this->player->id_user]);
 
         $this->referredBenefit = BenefitDefinition::factory()->create([
             'slug' => 'referred-test-' . uniqid(),
@@ -105,7 +106,7 @@ class CheckoutPricingControllerTest extends TestCase
 
         $this->assertDatabaseMissing('event_referral_attributions', [
             'event_id' => $this->event->id_event,
-            'referred_player_id' => $this->player->id_player,
+            'referred_player_user_id' => $this->player->id_user,
         ]);
     }
 
@@ -124,8 +125,8 @@ class CheckoutPricingControllerTest extends TestCase
 
         $this->assertDatabaseHas('event_referral_attributions', [
             'event_id' => $this->event->id_event,
-            'referred_player_id' => $this->player->id_player,
-            'referrer_player_id' => $referrer->id_player,
+            'referred_player_user_id' => $this->player->id_user,
+            'referrer_player_user_id' => $referrer->id_user,
             'status' => ReferralAttributionStatus::Pending->value,
         ]);
     }
@@ -143,18 +144,18 @@ class CheckoutPricingControllerTest extends TestCase
         $this->patchJson("/api/v1/app/registration-checkouts/{$checkoutId}/benefit-selections", [
             'selected_benefit_ids' => [],
         ])->assertStatus(422)
-            ->assertJsonValidationErrors(['referrer_player_id']);
+            ->assertJsonValidationErrors(['referrer_player_user_id']);
 
         $this->patchJson("/api/v1/app/registration-checkouts/{$checkoutId}/benefit-selections", [
             'selected_benefit_ids' => [],
-            'referrer_player_id' => $referrerB->id_player,
+            'referrer_player_user_id' => $referrerB->id_user,
         ])->assertStatus(200)
             ->assertJsonPath('data.items.0.amount', 45);
 
         $this->assertDatabaseHas('event_referral_attributions', [
             'event_id' => $this->event->id_event,
-            'referred_player_id' => $this->player->id_player,
-            'referrer_player_id' => $referrerB->id_player,
+            'referred_player_user_id' => $this->player->id_user,
+            'referrer_player_user_id' => $referrerB->id_user,
             'status' => ReferralAttributionStatus::Pending->value,
         ]);
     }
@@ -170,7 +171,7 @@ class CheckoutPricingControllerTest extends TestCase
         $this->getJson("/api/v1/app/registration-checkouts/{$checkoutId}/quote")
             ->assertStatus(200)
             ->assertJsonCount(1, 'data.referrer_candidates')
-            ->assertJsonPath('data.referrer_candidates.0.referrer_player_id', $referrer->id_player);
+            ->assertJsonPath('data.referrer_candidates.0.referrer_player_user_id', $referrer->id_user);
     }
 
     private function createCheckout(): int
@@ -181,11 +182,11 @@ class CheckoutPricingControllerTest extends TestCase
         ])->assertStatus(201)->json('data.checkout_id');
     }
 
-    private function makeEligibleReferrer(): Player
+    private function makeEligibleReferrer(): User
     {
-        $referrer = Player::factory()->playerOnly()->create();
+        $referrer = User::factory()->playerOnly()->create();
         $pastEdition = PadelEvent::factory()->create([
-            'date' => now()->subDays(60)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(now()->subDays(60)->format('Y-m-d')),
         ]);
         $pastDivision = EventDivision::factory()->create([
             'event_id' => $pastEdition->id_event,
@@ -193,7 +194,7 @@ class CheckoutPricingControllerTest extends TestCase
         \App\Models\EventParticipation::factory()->create([
             'event_id' => $pastEdition->id_event,
             'event_division_id' => $pastDivision->id_event_division,
-            'player_id' => $referrer->id_player,
+            'player_user_id' => $referrer->id_user,
             'absence_reason' => null,
             'ban_reason' => null,
         ]);
@@ -201,12 +202,12 @@ class CheckoutPricingControllerTest extends TestCase
         return $referrer;
     }
 
-    private function recordEligibleTouchpoint(Player $referrer): void
+    private function recordEligibleTouchpoint(User $referrer): void
     {
-        $email = PlayerEmail::query()->where('player_id', $this->player->id_player)->value('email');
+        $email = UserEmail::query()->where('user_id', $this->player->id_user)->value('email');
         $code = EventReferralCode::factory()->create([
             'event_id' => $this->event->id_event,
-            'referrer_player_id' => $referrer->id_player,
+            'referrer_player_user_id' => $referrer->id_user,
             'expires_at' => time() + 86400,
             'revoked_at' => null,
         ]);
@@ -214,12 +215,12 @@ class CheckoutPricingControllerTest extends TestCase
             'referral_code_id' => $code->id_referral_code,
             'email' => $email,
             'phone' => null,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
         ]);
         ReferralTouchpoint::query()->create([
             'event_id' => $this->event->id_event,
-            'referred_player_id' => $this->player->id_player,
-            'referrer_player_id' => $referrer->id_player,
+            'referred_player_user_id' => $this->player->id_user,
+            'referrer_player_user_id' => $referrer->id_user,
             'referral_code_id' => $code->id_referral_code,
             'discount_eligible' => true,
             'touched_at' => time(),

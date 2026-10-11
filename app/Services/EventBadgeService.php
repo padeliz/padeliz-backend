@@ -9,9 +9,8 @@ use App\Enums\Registration\RegistrationPaymentStatus;
 use App\Models\EventLotteryLucky;
 use App\Models\EventRegistration;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerLevelAssessment;
-use Carbon\Carbon;
 use Illuminate\Support\Collection;
 
 /**
@@ -41,11 +40,9 @@ final class EventBadgeService
      * @param  Collection<int, PadelEvent>  $editions
      * @return array<int, list<Badge>>
      */
-    public function forEvents(Collection $editions, ?Player $player, ?int $now = null): array
+    public function forEvents(Collection $editions, ?User $player, ?int $now = null): array
     {
         $now = $now ?? time();
-        $tz = (string) config('app.timezone', 'Europe/Bucharest');
-        $today = Carbon::now($tz)->format('Y-m-d');
 
         $editionIds = $editions->pluck('id_event')->map(fn ($id) => (int) $id)->all();
         if ($editionIds === []) {
@@ -57,9 +54,9 @@ final class EventBadgeService
         $lotteryEditionIds = [];
 
         if ($player !== null) {
-            $regsByEdition = $this->loadActiveRegistrationsByEdition((int) $player->id_player, $editionIds);
-            $levelAssessmentPending = $this->hasPendingLevelAssessmentInReview((int) $player->id_player);
-            $lotteryEditionIds = $this->loadAcceptedLotteryEditionIds((int) $player->id_player, $editionIds);
+            $regsByEdition = $this->loadActiveRegistrationsByEdition((int) $player->id_user, $editionIds);
+            $levelAssessmentPending = $this->hasPendingLevelAssessmentInReview((int) $player->id_user);
+            $lotteryEditionIds = $this->loadAcceptedLotteryEditionIds((int) $player->id_user, $editionIds);
         }
 
         $spotsByEdition = $this->loadSpotsByEdition($editions);
@@ -67,8 +64,11 @@ final class EventBadgeService
         $result = [];
         foreach ($editions as $event) {
             $id = (int) $event->id_event;
-            $date = (string) ($event->formatted_date ?? $event->date);
-            $timing = $this->classifyTiming($date, $today);
+            $timing = EventCalendarTiming::classify(
+                (int) $event->event_starts_at,
+                (int) $event->event_ends_at,
+                $now
+            );
 
             $badges = [];
 
@@ -173,7 +173,7 @@ final class EventBadgeService
     {
         $rows = EventRegistration::query()
             ->active()
-            ->where('player_id', $playerId)
+            ->where('player_user_id', $playerId)
             ->whereIn('event_id', $editionIds)
             ->get();
 
@@ -191,7 +191,7 @@ final class EventBadgeService
     private function hasPendingLevelAssessmentInReview(int $playerId): bool
     {
         return PlayerLevelAssessment::query()
-            ->where('player_id', $playerId)
+            ->where('player_user_id', $playerId)
             ->where('review_status', AssessmentReviewStatus::Pending->value)
             ->where('ready_for_review', true)
             ->exists();
@@ -206,7 +206,7 @@ final class EventBadgeService
         $ids = EventLotteryLucky::query()
             ->whereNotNull('accepted_at')
             ->whereHas('drawnParticipation', function ($q) use ($playerId, $editionIds) {
-                $q->where('player_id', $playerId)->whereIn('event_id', $editionIds);
+                $q->where('player_user_id', $playerId)->whereIn('event_id', $editionIds);
             })
             ->with('drawnParticipation:id_participation,event_id')
             ->get()
@@ -248,18 +248,6 @@ final class EventBadgeService
         }
 
         return $result;
-    }
-
-    private function classifyTiming(string $dateYmd, string $todayYmd): string
-    {
-        if ($dateYmd > $todayYmd) {
-            return 'upcoming';
-        }
-        if ($dateYmd < $todayYmd) {
-            return 'past';
-        }
-
-        return 'ongoing';
     }
 
     private function registrationWindowOpen(mixed $registrationAllowedUntil, int $now): bool

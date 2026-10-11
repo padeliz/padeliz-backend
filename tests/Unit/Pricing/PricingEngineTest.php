@@ -16,7 +16,7 @@ use App\Models\EventRegistration;
 use App\Models\EventRegistrationCheckout;
 use App\Models\EventRegistrationCheckoutItem;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerStudentProof;
 use Carbon\Carbon;
 use InvalidArgumentException;
@@ -171,14 +171,14 @@ final class PricingEngineTest extends PricingTestCase
         BenefitRedemption::query()->delete();
 
         $global = BenefitDefinition::factory()->fixedRon(10)->withMaxRedemptions(global: 1)->create(['slug' => 'once-global']);
-        $this->createPriorRedemption(Player::factory()->create(), $global, (int) $fixture['event']->id_event);
+        $this->createPriorRedemption(User::factory()->create(), $global, (int) $fixture['event']->id_event);
         $this->assertSame([], $this->pricing->quote($this->makeContext($fixture))['eligible']);
 
         $global->delete();
         BenefitRedemption::query()->delete();
 
         $perEdition = BenefitDefinition::factory()->fixedRon(10)->withMaxRedemptions(perEdition: 1)->create(['slug' => 'once-per-edition']);
-        $this->createPriorRedemption(Player::factory()->create(), $perEdition, (int) $fixture['event']->id_event, (int) $fixture['eventDivision']->id_event_division);
+        $this->createPriorRedemption(User::factory()->create(), $perEdition, (int) $fixture['event']->id_event, (int) $fixture['eventDivision']->id_event_division);
         $this->assertSame([], $this->pricing->quote($this->makeContext($fixture))['eligible']);
 
         $otherFixture = $this->seedRegistrationFixture(payment: 100);
@@ -288,18 +288,18 @@ final class PricingEngineTest extends PricingTestCase
         $this->assertSame([], $this->pricing->quote($this->makeContext($fixture))['eligible']);
 
         $pending = PlayerStudentProof::factory()->create([
-            'player_id' => $fixture['player']->id_player,
+            'player_user_id' => $fixture['player']->id_user,
         ]);
         $this->assertSame([], $this->pricing->quote($this->makeContext($fixture))['eligible']);
 
         $pending->delete();
         PlayerStudentProof::factory()->expired()->create([
-            'player_id' => $fixture['player']->id_player,
+            'player_user_id' => $fixture['player']->id_user,
         ]);
         $this->assertSame([], $this->pricing->quote($this->makeContext($fixture))['eligible']);
 
         PlayerStudentProof::factory()->approved()->create([
-            'player_id' => $fixture['player']->id_player,
+            'player_user_id' => $fixture['player']->id_user,
         ]);
         $allowed = $this->pricing->quote($this->makeContext($fixture));
         $this->assertSame([(int) $benefit->id_benefit], array_column($allowed['applied'], 'benefit_id'));
@@ -331,7 +331,7 @@ final class PricingEngineTest extends PricingTestCase
     }
 
     private function createPriorRedemption(
-        Player $player,
+        User $player,
         BenefitDefinition $benefit,
         int $editionId,
         ?int $eventDivisionId = null,
@@ -345,12 +345,12 @@ final class PricingEngineTest extends PricingTestCase
         $registration = EventRegistration::factory()->create([
             'event_id' => $editionId,
             'event_division_id' => $eventDivisionId,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'payment' => 100,
         ]);
         $checkout = EventRegistrationCheckout::query()->create([
             'event_id' => $editionId,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'status' => CheckoutStatus::Completed,
             'total_amount' => 90,
             'paid_at' => time(),

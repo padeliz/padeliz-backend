@@ -16,7 +16,7 @@ use App\Models\EventRegistration;
 use App\Models\Location;
 use App\Models\Organizer;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerCustomField;
 use App\Models\PlayerCustomFieldOption;
 use App\Models\PlayerCustomFieldValue;
@@ -67,7 +67,7 @@ class CacheServiceProvider extends ServiceProvider
             EventDivision::class,
             EventRegistration::class,
             EventParticipation::class,
-            Player::class,
+            User::class,
             PlayerCustomFieldValue::class,
             EventLottery::class,
             EventLotteryPrize::class,

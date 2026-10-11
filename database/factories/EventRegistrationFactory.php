@@ -9,7 +9,7 @@ use App\Enums\Registration\RegistrationPaymentStatus;
 use App\Models\EventDivision;
 use App\Models\EventRegistration;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class EventRegistrationFactory extends Factory
@@ -22,7 +22,7 @@ class EventRegistrationFactory extends Factory
 
         return [
             'event_id' => $eventDivision->event_id,
-            'player_id' => Player::factory(),
+            'player_user_id' => User::factory(),
             'event_division_id' => $eventDivision->id_event_division,
             'is_minor' => false,
             'is_student' => $this->faker->boolean(30),

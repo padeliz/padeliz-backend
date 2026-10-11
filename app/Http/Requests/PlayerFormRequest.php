@@ -24,7 +24,7 @@ class PlayerFormRequest extends FormRequest
      */
     public function rules(): array
     {
-        $playerId = $this->route('player')?->id_player ?? $this->user()?->id_player;
+        $playerId = $this->route('player')?->id_user ?? $this->user()?->id_user;
 
         $rules = [
             'middle_name' => 'nullable|string|max:50',
@@ -33,9 +33,9 @@ class PlayerFormRequest extends FormRequest
                 'nullable',
                 'email',
                 'max:255',
-                Rule::unique('player_emails', 'email')->where(function ($query) use ($playerId) {
+                Rule::unique('user_emails', 'email')->where(function ($query) use ($playerId) {
                     if ($playerId) {
-                        $query->where('player_id', '!=', $playerId);
+                        $query->where('player_user_id', '!=', $playerId);
                     }
                 }),
             ],
@@ -43,9 +43,9 @@ class PlayerFormRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:30',
-                Rule::unique('player_phones', 'phone')->where(function ($query) use ($playerId) {
+                Rule::unique('user_phones', 'phone')->where(function ($query) use ($playerId) {
                     if ($playerId) {
-                        $query->where('player_id', '!=', $playerId);
+                        $query->where('player_user_id', '!=', $playerId);
                     }
                 }),
             ],

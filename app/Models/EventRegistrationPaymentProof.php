@@ -38,7 +38,7 @@ class EventRegistrationPaymentProof extends Model
         'proof_path',
         'review_status',
         'review_message',
-        'reviewed_by',
+        'reviewed_by_manager_user_id',
         'reviewed_at',
         'coverage',
     ];
@@ -48,7 +48,7 @@ class EventRegistrationPaymentProof extends Model
         'updated_at' => 'integer',
         'reviewed_at' => 'integer',
         'checkout_id' => 'integer',
-        'reviewed_by' => 'integer',
+        'reviewed_by_manager_user_id' => 'integer',
         'coverage' => 'array',
         'review_status' => PaymentProofReviewStatus::class,
     ];
@@ -69,9 +69,9 @@ class EventRegistrationPaymentProof extends Model
         return $this->belongsTo(EventRegistrationCheckout::class, 'checkout_id', 'id_checkout');
     }
 
-    public function reviewer(): BelongsTo
+    public function reviewedByManager(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'reviewed_by', 'id_player');
+        return $this->belongsTo(User::class, 'reviewed_by_manager_user_id', 'id_user');
     }
 
     public function storageDisk(): string

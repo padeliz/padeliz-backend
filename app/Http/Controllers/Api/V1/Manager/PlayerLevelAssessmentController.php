@@ -62,7 +62,7 @@ class PlayerLevelAssessmentController extends V1BaseController
      *         @OA\Schema(
      *             type="object",
      *             additionalProperties=false,
-     *             @OA\Property(property="player_id", type="string", description="Filter by player ID"),
+     *             @OA\Property(property="player_user_id", type="string", description="Filter by player ID"),
      *             @OA\Property(property="review_status", type="string", description="pending, approved, rejected or discarded"),
      *             @OA\Property(property="ready_for_review", type="string", description="Filter by ready flag (use 0 or 1)")
      *         )
@@ -78,7 +78,7 @@ class PlayerLevelAssessmentController extends V1BaseController
      *             type="object",
      *             additionalProperties=false,
      *             @OA\Property(property="id_player_level_assessment", type="string", enum={"asc", "desc"}),
-     *             @OA\Property(property="player_id", type="string", enum={"asc", "desc"}),
+     *             @OA\Property(property="player_user_id", type="string", enum={"asc", "desc"}),
      *             @OA\Property(property="review_status", type="string", enum={"asc", "desc"}),
      *             @OA\Property(property="ready_for_review", type="string", enum={"asc", "desc"}),
      *             @OA\Property(property="submitted_at", type="string", enum={"asc", "desc"}),
@@ -193,7 +193,7 @@ class PlayerLevelAssessmentController extends V1BaseController
             $playerLevelAssessment,
             $level,
             $validated['review_message'] ?? null,
-            (int) $request->user()->id_player
+            (int) $request->user()->id_user
         );
 
         $playerLevelAssessment->unsetRelations()->load(self::SHOW_WITH);
@@ -230,7 +230,7 @@ class PlayerLevelAssessmentController extends V1BaseController
         $this->assessments->reject(
             $playerLevelAssessment,
             $validated['review_message'] ?? null,
-            (int) $request->user()->id_player
+            (int) $request->user()->id_user
         );
 
         $playerLevelAssessment->unsetRelations()->load(self::SHOW_WITH);

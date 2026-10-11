@@ -89,7 +89,7 @@ class SponsorController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
      *             required={"name"},
      *             @OA\Property(property="name", type="string", maxLength=60),
      *             @OA\Property(property="club_id", type="integer", nullable=true),
-     *             @OA\Property(property="player_ids", type="array", @OA\Items(type="integer"))
+     *             @OA\Property(property="player_user_ids", type="array", @OA\Items(type="integer"))
      *         )
      *     ),
      *     @OA\Response(response=201, description="Created")
@@ -98,8 +98,8 @@ class SponsorController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
     public function store(Request $request)
     {
         $validated = $request->validate($this->sponsorValidation($request, null, true));
-        $playerIds = $validated['player_ids'] ?? [];
-        unset($validated['player_ids']);
+        $playerIds = $validated['player_user_ids'] ?? [];
+        unset($validated['player_user_ids']);
 
         $sponsor = Sponsor::create($validated);
         $sponsor->syncPlayerIds($playerIds);
@@ -125,8 +125,8 @@ class SponsorController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
     public function update(Request $request, Sponsor $sponsor)
     {
         $validated = $request->validate($this->sponsorValidation($request, $sponsor, true));
-        $playerIds = $validated['player_ids'] ?? [];
-        unset($validated['player_ids']);
+        $playerIds = $validated['player_user_ids'] ?? [];
+        unset($validated['player_user_ids']);
 
         $sponsor->update($validated);
         $sponsor->syncPlayerIds($playerIds);
@@ -152,9 +152,9 @@ class SponsorController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
     {
         $validated = $request->validate($this->sponsorValidation($request, $sponsor, false));
         $playerIds = null;
-        if (array_key_exists('player_ids', $validated)) {
-            $playerIds = $validated['player_ids'] ?? [];
-            unset($validated['player_ids']);
+        if (array_key_exists('player_user_ids', $validated)) {
+            $playerIds = $validated['player_user_ids'] ?? [];
+            unset($validated['player_user_ids']);
         }
 
         $sponsor->update($validated);
@@ -237,8 +237,9 @@ class SponsorController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCont
         return [
             'name' => [$required, 'string', 'max:60', $uniqueName],
             'club_id' => ['nullable', 'integer', 'exists:clubs,id_club', $uniqueClub],
-            'player_ids' => ($requireCore ? 'nullable' : 'sometimes') . '|array',
-            'player_ids.*' => 'integer|exists:players,id_player',
+            'player_user_ids' => ($requireCore ? 'nullable' : 'sometimes') . '|array',
+            'player_user_ids.*' => 'integer|exists:users,id_user',
+            'player_ids' => 'prohibited',
         ];
     }
 }

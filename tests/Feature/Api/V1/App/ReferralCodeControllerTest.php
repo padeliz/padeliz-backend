@@ -8,17 +8,18 @@ use App\Models\EventDivision;
 use App\Models\EventParticipation;
 use App\Models\EventReferralCode;
 use App\Models\PadelEvent;
-use App\Models\Player;
-use App\Models\PlayerEmail;
+use App\Models\User;
+use App\Models\UserEmail;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
 
 class ReferralCodeControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $referrer;
+    private User $referrer;
 
     private PadelEvent $event;
 
@@ -26,19 +27,19 @@ class ReferralCodeControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->referrer = Player::factory()->playerOnly()->create();
+        $this->referrer = User::factory()->playerOnly()->create();
         $this->event = PadelEvent::factory()->create([
-            'date' => now()->addDays(25)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(now()->addDays(25)->format('Y-m-d')),
         ]);
         $pastEdition = PadelEvent::factory()->create([
-            'date' => now()->subDays(50)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(now()->subDays(50)->format('Y-m-d')),
         ]);
         EventParticipation::factory()->create([
             'event_id' => $pastEdition->id_event,
             'event_division_id' => EventDivision::factory()->create([
                 'event_id' => $pastEdition->id_event,
             ])->id_event_division,
-            'player_id' => $this->referrer->id_player,
+            'player_user_id' => $this->referrer->id_user,
             'absence_reason' => null,
             'ban_reason' => null,
         ]);
@@ -46,22 +47,22 @@ class ReferralCodeControllerTest extends TestCase
 
     public function test_store_creates_code_with_allowlisted_invitees(): void
     {
-        $invitee = Player::factory()->playerOnly()->withPrimaryEmail()->create();
-        $email = PlayerEmail::query()->where('player_id', $invitee->id_player)->value('email');
+        $invitee = User::factory()->playerOnly()->withPrimaryEmail()->create();
+        $email = UserEmail::query()->where('user_id', $invitee->id_user)->value('email');
 
         Sanctum::actingAs($this->referrer);
 
         $response = $this->postJson("/api/v1/app/events/{$this->event->id_event}/referral-codes", [
             'invitees' => [
                 ['email' => $email],
-                ['player_id' => Player::factory()->playerOnly()->withContacts()->create()->id_player],
+                ['player_user_id' => User::factory()->playerOnly()->withContacts()->create()->id_user],
             ],
         ]);
 
         $response->assertStatus(201)
             ->assertJsonPath('data.remaining_slots', 6)
             ->assertJsonPath('data.code.event_id', $this->event->id_event)
-            ->assertJsonPath('data.code.referrer_player_id', $this->referrer->id_player)
+            ->assertJsonPath('data.code.referrer_player_user_id', $this->referrer->id_user)
             ->assertJsonCount(2, 'data.code.invitees');
 
         $this->assertDatabaseCount('event_referral_codes', 1);
@@ -82,11 +83,11 @@ class ReferralCodeControllerTest extends TestCase
     {
         EventReferralCode::factory()->create([
             'event_id' => $this->event->id_event,
-            'referrer_player_id' => $this->referrer->id_player,
+            'referrer_player_user_id' => $this->referrer->id_user,
         ]);
         EventReferralCode::factory()->create([
             'event_id' => $this->event->id_event,
-            'referrer_player_id' => Player::factory()->playerOnly()->create()->id_player,
+            'referrer_player_user_id' => User::factory()->playerOnly()->create()->id_user,
         ]);
 
         Sanctum::actingAs($this->referrer);
@@ -101,7 +102,7 @@ class ReferralCodeControllerTest extends TestCase
     {
         $code = EventReferralCode::factory()->create([
             'event_id' => $this->event->id_event,
-            'referrer_player_id' => $this->referrer->id_player,
+            'referrer_player_user_id' => $this->referrer->id_user,
             'revoked_at' => null,
         ]);
 
@@ -116,7 +117,7 @@ class ReferralCodeControllerTest extends TestCase
 
     public function test_store_requires_clean_participation(): void
     {
-        $newbie = Player::factory()->playerOnly()->create();
+        $newbie = User::factory()->playerOnly()->create();
         Sanctum::actingAs($newbie);
 
         $this->postJson("/api/v1/app/events/{$this->event->id_event}/referral-codes", [
@@ -124,5 +125,36 @@ class ReferralCodeControllerTest extends TestCase
         ])->assertStatus(422)
             ->assertJsonValidationErrors(['invitees'])
             ->assertJsonPath('errors.remaining_slots.0', 6);
+    }
+
+    public function test_store_rejects_after_registration_closes(): void
+    {
+        $this->event->forceFill(['registration_allowed_until' => time() - 60])->save();
+
+        Sanctum::actingAs($this->referrer);
+
+        $this->postJson("/api/v1/app/events/{$this->event->id_event}/referral-codes", [
+            'invitees' => [['email' => 'late@example.test']],
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['event']);
+    }
+
+    public function test_revoke_rejects_after_event_has_started(): void
+    {
+        $this->event->forceFill(['event_starts_at' => time() - 60])->save();
+
+        $code = EventReferralCode::factory()->create([
+            'event_id' => $this->event->id_event,
+            'referrer_player_user_id' => $this->referrer->id_user,
+            'revoked_at' => null,
+        ]);
+
+        Sanctum::actingAs($this->referrer);
+
+        $this->postJson("/api/v1/app/referral-codes/{$code->id_referral_code}/revoke")
+            ->assertStatus(422)
+            ->assertJsonValidationErrors(['event']);
+
+        $this->assertNull($code->fresh()->revoked_at);
     }
 }

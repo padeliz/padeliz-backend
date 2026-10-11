@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Manager;
 
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerCustomField;
 use App\Models\PlayerCustomFieldOption;
 use App\Models\PlayerCustomFieldValue;
@@ -17,13 +17,13 @@ final class PlayerCustomFieldOptionControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create();
+        $this->manager = User::factory()->manager()->create();
         Sanctum::actingAs($this->manager);
     }
 

@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Database\Factories;
 
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerProfileImage;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -18,7 +18,7 @@ class PlayerProfileImageFactory extends Factory
     public function definition(): array
     {
         return [
-            'player_id' => Player::factory(),
+            'player_user_id' => User::factory(),
             'profile_path' => 'player-profile-images/1/profile/placeholder.png',
             'sort_order' => 0,
             'is_pdf_primary' => false,

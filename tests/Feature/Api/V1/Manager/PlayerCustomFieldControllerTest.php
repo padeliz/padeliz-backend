@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\Manager;
 
 use App\Enums\PlayerCustomFieldType;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerCustomField;
 use App\Models\PlayerCustomFieldValue;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -16,13 +16,13 @@ final class PlayerCustomFieldControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create();
+        $this->manager = User::factory()->manager()->create();
     }
 
     public function test_index_requires_manager_auth(): void
@@ -32,7 +32,7 @@ final class PlayerCustomFieldControllerTest extends TestCase
 
     public function test_player_only_is_forbidden(): void
     {
-        Sanctum::actingAs(Player::factory()->playerOnly()->create());
+        Sanctum::actingAs(User::factory()->playerOnly()->create());
 
         $this->getJson('/api/v1/manager/player-custom-fields')->assertForbidden();
     }

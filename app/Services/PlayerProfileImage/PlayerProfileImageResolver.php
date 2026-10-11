@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace App\Services\PlayerProfileImage;
 
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerProfileImage;
 use Illuminate\Support\Collection;
 
 final class PlayerProfileImageResolver
 {
-    public function resolveForPdf(Player $player): ?PlayerProfileImage
+    public function resolveForPdf(User $player): ?PlayerProfileImage
     {
         $player->loadMissing('profileImages');
         $images = $player->profileImages;

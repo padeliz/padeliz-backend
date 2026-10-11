@@ -7,7 +7,7 @@ namespace Tests\Unit\Traits;
 use App\Exceptions\ResourceDeletionException;
 use App\Models\Club;
 use App\Models\Location;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\Sponsor;
 use App\Traits\ApiResponse;
 use App\Traits\HandlesResourceDeletion;
@@ -26,7 +26,7 @@ class HandlesResourceDeletionTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'first_name' => 'Test', 'middle_name' => null, 'last_name' => 'Manager',
             'user_types' => ['player', 'manager'],
         ]);

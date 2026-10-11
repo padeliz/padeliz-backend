@@ -8,7 +8,7 @@ use App\Http\Controllers\BaseVersions\V1\V1BaseController;
 use App\Models\EventDivision;
 use App\Models\EventRegistration;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerStudentProof;
 use App\Services\Pricing\PricingContext;
 use App\Services\Pricing\PricingService;
@@ -41,7 +41,7 @@ class PricingPreviewController extends V1BaseController
     public function preview(Request $request)
     {
         $validated = $request->validate([
-            'player_id' => 'required|integer|exists:players,id_player',
+            'player_user_id' => 'required|integer|exists:users,id_user',
             'event_id' => 'required|integer|exists:events,id_event',
             'event_division_id' => [
                 'required',
@@ -51,16 +51,16 @@ class PricingPreviewController extends V1BaseController
             ],
             'selected_benefit_ids' => 'sometimes|array',
             'selected_benefit_ids.*' => 'integer|exists:benefit_definitions,id_benefit',
-            'referrer_player_id' => 'sometimes|nullable|integer|exists:players,id_player',
+            'referrer_player_user_id' => 'sometimes|nullable|integer|exists:users,id_user',
         ]);
 
-        $player = Player::query()->findOrFail($validated['player_id']);
+        $player = User::query()->findOrFail($validated['player_user_id']);
         $event = PadelEvent::query()->with('location')->findOrFail($validated['event_id']);
         $division = EventDivision::query()->findOrFail($validated['event_division_id']);
 
         $registration = EventRegistration::query()
             ->where('event_id', $event->id_event)
-            ->where('player_id', $player->id_player)
+            ->where('player_user_id', $player->id_user)
             ->where('event_division_id', $division->id_event_division)
             ->active()
             ->orderByDesc('id_registration')
@@ -69,7 +69,7 @@ class PricingPreviewController extends V1BaseController
         if ($registration === null) {
             $registration = new EventRegistration([
                 'event_id' => $event->id_event,
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'event_division_id' => $division->id_event_division,
                 'is_minor' => false,
                 'is_student' => PlayerStudentProof::hasActiveFor($player),
@@ -82,8 +82,8 @@ class PricingPreviewController extends V1BaseController
         $registration->setRelation('eventDivision', $division);
 
         $selectedBenefitIds = array_map('intval', $validated['selected_benefit_ids'] ?? []);
-        $referrerPlayerId = isset($validated['referrer_player_id'])
-            ? (int) $validated['referrer_player_id']
+        $referrerPlayerId = isset($validated['referrer_player_user_id'])
+            ? (int) $validated['referrer_player_user_id']
             : null;
 
         $context = new PricingContext(

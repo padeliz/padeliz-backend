@@ -11,12 +11,12 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @OA\Schema(
  *     schema="PlayerProfileImageImportRow",
- *     required={"player_profile_image_import_id", "row_index", "original_filename", "player_id", "action"},
+ *     required={"player_profile_image_import_id", "row_index", "original_filename", "player_user_id", "action"},
  *     @OA\Property(property="id_player_profile_image_import_row", type="integer", format="int64", readOnly=true, title="ID"),
  *     @OA\Property(property="player_profile_image_import_id", type="integer", format="int64", readOnly=true, title="Import"),
  *     @OA\Property(property="row_index", type="integer", readOnly=true, title="Row"),
  *     @OA\Property(property="original_filename", type="string", maxLength=255, readOnly=true, title="Filename"),
- *     @OA\Property(property="player_id", type="integer", format="int64", readOnly=true, title="Player"),
+ *     @OA\Property(property="player_user_id", type="integer", format="int64", readOnly=true, title="Player"),
  *     @OA\Property(property="player_profile_image_id", type="integer", format="int64", readOnly=true, title="Profile Image"),
  *     @OA\Property(property="is_pdf_primary", type="boolean", readOnly=true, title="PDF Primary"),
  *     @OA\Property(property="action", type="string", readOnly=true, title="Action"),
@@ -35,7 +35,7 @@ class PlayerProfileImageImportRow extends Model
 
     public static array $filterableFields = [
         'player_profile_image_import_id',
-        'player_id',
+        'player_user_id',
         'action',
     ];
 
@@ -64,7 +64,7 @@ class PlayerProfileImageImportRow extends Model
         'player_profile_image_import_id',
         'row_index',
         'original_filename',
-        'player_id',
+        'player_user_id',
         'player_profile_image_id',
         'is_pdf_primary',
         'action',
@@ -73,7 +73,7 @@ class PlayerProfileImageImportRow extends Model
     protected $casts = [
         'player_profile_image_import_id' => 'integer',
         'row_index' => 'integer',
-        'player_id' => 'integer',
+        'player_user_id' => 'integer',
         'player_profile_image_id' => 'integer',
         'is_pdf_primary' => 'boolean',
         'inserted_at' => 'integer',
@@ -91,7 +91,7 @@ class PlayerProfileImageImportRow extends Model
 
     public function player(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'player_id', 'id_player');
+        return $this->belongsTo(User::class, 'player_user_id', 'id_user');
     }
 
     public function profileImage(): BelongsTo

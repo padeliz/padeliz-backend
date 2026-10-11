@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\App;
 
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerProfileImage;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -18,14 +18,14 @@ class PlayerControllerTest extends TestCase
     use RefreshDatabase;
     use FileUploadTestHelper;
 
-    private Player $player;
+    private User $player;
 
     public function setUp(): void
     {
         parent::setUp();
         Storage::fake(config('filesystems.user_uploads_disk', 'public'));
 
-        $this->player = Player::factory()->playerOnly()->create([
+        $this->player = User::factory()->playerOnly()->create([
             'first_name' => 'Test',
             'middle_name' => null,
             'last_name' => 'Player',
@@ -49,7 +49,7 @@ class PlayerControllerTest extends TestCase
                 'success',
                 'message',
                 'data' => [
-                    'id_player',
+                    'id_user',
                     'name',
                 ],
             ])
@@ -61,8 +61,8 @@ class PlayerControllerTest extends TestCase
                 ],
             ]);
 
-        $this->assertDatabaseHas('players', [
-            'id_player' => $this->player->id_player,
+        $this->assertDatabaseHas('users', [
+            'id_user' => $this->player->id_user,
             'first_name' => 'Updated',
             'last_name' => 'Player',
             'created_via' => null,
@@ -74,14 +74,14 @@ class PlayerControllerTest extends TestCase
     {
         Sanctum::actingAs($this->player);
 
-        $response = $this->getJson("/api/v1/app/players/{$this->player->id_player}");
+        $response = $this->getJson("/api/v1/app/players/{$this->player->id_user}");
 
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'success',
                 'message',
                 'data' => [
-                    'id_player',
+                    'id_user',
                     'name',
                     'uploaded_profile_images',
                 ],
@@ -90,7 +90,7 @@ class PlayerControllerTest extends TestCase
                 'success' => true,
                 'message' => 'Player details retrieved successfully',
                 'data' => [
-                    'id_player' => $this->player->id_player,
+                    'id_user' => $this->player->id_user,
                     'name' => 'Test Player',
                 ],
             ]);
@@ -100,7 +100,7 @@ class PlayerControllerTest extends TestCase
     {
         Sanctum::actingAs($this->player);
 
-        $response = $this->putJson("/api/v1/app/players/{$this->player->id_player}", [
+        $response = $this->putJson("/api/v1/app/players/{$this->player->id_user}", [
             'first_name' => 'Updated',
             'middle_name' => 'Player',
             'last_name' => 'Name',
@@ -111,7 +111,7 @@ class PlayerControllerTest extends TestCase
                 'success',
                 'message',
                 'data' => [
-                    'id_player',
+                    'id_user',
                     'name',
                 ],
             ])
@@ -119,7 +119,7 @@ class PlayerControllerTest extends TestCase
                 'success' => true,
                 'message' => 'Player profile updated successfully',
                 'data' => [
-                    'id_player' => $this->player->id_player,
+                    'id_user' => $this->player->id_user,
                     'name' => 'Updated Player Name',
                 ],
             ]);
@@ -129,20 +129,20 @@ class PlayerControllerTest extends TestCase
     {
         Sanctum::actingAs($this->player);
 
-        $otherPlayer = Player::factory()->create([
+        $otherPlayer = User::factory()->create([
             'first_name' => 'Other',
             'middle_name' => null,
             'last_name' => 'Player',
         ]);
 
-        $response = $this->getJson("/api/v1/app/players/{$otherPlayer->id_player}");
+        $response = $this->getJson("/api/v1/app/players/{$otherPlayer->id_user}");
 
         $response->assertStatus(200)
             ->assertJsonStructure([
                 'success',
                 'message',
                 'data' => [
-                    'id_player',
+                    'id_user',
                     'name',
                 ],
             ])
@@ -150,7 +150,7 @@ class PlayerControllerTest extends TestCase
                 'success' => true,
                 'message' => 'Player details retrieved successfully',
                 'data' => [
-                    'id_player' => $otherPlayer->id_player,
+                    'id_user' => $otherPlayer->id_user,
                     'name' => 'Other Player',
                 ],
             ]);
@@ -185,7 +185,7 @@ class PlayerControllerTest extends TestCase
         $this->assertArrayHasKey('url', $data[0]);
 
         $this->assertDatabaseHas('player_profile_images', [
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
         ]);
     }
 
@@ -205,7 +205,7 @@ class PlayerControllerTest extends TestCase
         $response3 = $this->post('/api/v1/app/players/image', ['image' => $file3]);
         $response3->assertStatus(201);
 
-        $this->assertSame(3, PlayerProfileImage::where('player_id', $this->player->id_player)->count());
+        $this->assertSame(3, PlayerProfileImage::where('player_user_id', $this->player->id_user)->count());
     }
 
     public function test_player_cannot_upload_more_than_max_per_player_images()
@@ -217,7 +217,7 @@ class PlayerControllerTest extends TestCase
             $file = $this->createFakeImage("profile{$i}.png");
             $response = $this->post('/api/v1/app/players/image', ['image' => $file]);
             $response->assertStatus(201);
-            $this->assertSame($i, PlayerProfileImage::where('player_id', $this->player->id_player)->count());
+            $this->assertSame($i, PlayerProfileImage::where('player_user_id', $this->player->id_user)->count());
         }
 
         $extra = $this->createFakeImage('profile-extra.png');
@@ -229,7 +229,7 @@ class PlayerControllerTest extends TestCase
                 'message' => 'Maximum number of profile images (' . $max . ') reached. Delete an existing image first.',
             ]);
 
-        $this->assertSame($max, PlayerProfileImage::where('player_id', $this->player->id_player)->count());
+        $this->assertSame($max, PlayerProfileImage::where('player_user_id', $this->player->id_user)->count());
     }
 
     public function test_player_can_delete_profile_image()
@@ -258,7 +258,7 @@ class PlayerControllerTest extends TestCase
                 'message' => 'Image deleted successfully',
             ]);
 
-        $this->assertSame(0, PlayerProfileImage::where('player_id', $this->player->id_player)->count());
+        $this->assertSame(0, PlayerProfileImage::where('player_user_id', $this->player->id_user)->count());
     }
 
     public function test_player_cannot_delete_nonexistent_image()
@@ -274,9 +274,9 @@ class PlayerControllerTest extends TestCase
     {
         Sanctum::actingAs($this->player);
 
-        $other = Player::factory()->create();
+        $other = User::factory()->create();
         $image = PlayerProfileImage::factory()->create([
-            'player_id' => $other->id_player,
+            'player_user_id' => $other->id_user,
             'profile_path' => 'player-profile-images/999/profile/x.png',
             'sort_order' => 0,
         ]);
@@ -317,11 +317,11 @@ class PlayerControllerTest extends TestCase
     {
         Sanctum::actingAs($this->player);
 
-        $otherPlayer = Player::factory()->create([
+        $otherPlayer = User::factory()->create([
             'first_name' => 'Other', 'middle_name' => null, 'last_name' => 'Player',
         ]);
 
-        $response = $this->putJson("/api/v1/app/players/{$otherPlayer->id_player}", [
+        $response = $this->putJson("/api/v1/app/players/{$otherPlayer->id_user}", [
             'first_name' => 'Hacked',
             'last_name' => 'Name',
         ]);

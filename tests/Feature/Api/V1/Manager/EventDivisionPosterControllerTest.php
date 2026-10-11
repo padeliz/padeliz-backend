@@ -12,7 +12,7 @@ use App\Models\EventParticipation;
 use App\Models\GameMatch;
 use App\Models\MatchPlayer;
 use App\Models\MatchSide;
-use App\Models\Player;
+use App\Models\User;
 use App\Services\Pdf\MissingMatchParticipationException;
 use App\Services\Pdf\PosterPdfResult;
 use App\Services\Pdf\PosterPdfService;
@@ -28,7 +28,7 @@ final class EventDivisionPosterControllerTest extends TestCase
 
     public function test_ranking_pdf_succeeds_without_profile_images(): void
     {
-        $manager = Player::factory()->manager()->create([
+        $manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         Sanctum::actingAs($manager);
@@ -43,12 +43,12 @@ final class EventDivisionPosterControllerTest extends TestCase
             'player_matches_repeat' => 1,
         ]);
 
-        $players = Player::factory()->count(4)->create();
+        $players = User::factory()->count(4)->create();
         foreach ($players as $i => $player) {
             EventParticipation::factory()->create([
                 'event_id' => $eventDivision->event_id,
                 'event_division_id' => $eventDivision->id_event_division,
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'is_collecting_points' => true,
                 'absence_reason' => null,
                 'sort_order' => $i,
@@ -76,11 +76,11 @@ final class EventDivisionPosterControllerTest extends TestCase
     {
         [$manager, $eventDivision] = $this->actingManagerWithDivision();
         Storage::fake(config('filesystems.user_uploads_disk', 'public'));
-        foreach (Player::factory()->count(4)->create() as $i => $player) {
+        foreach (User::factory()->count(4)->create() as $i => $player) {
             EventParticipation::factory()->create([
                 'event_id' => $eventDivision->event_id,
                 'event_division_id' => $eventDivision->id_event_division,
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'is_collecting_points' => true,
                 'absence_reason' => null,
                 'sort_order' => $i,
@@ -310,11 +310,11 @@ final class EventDivisionPosterControllerTest extends TestCase
     }
 
     /**
-     * @return array{0: Player, 1: EventDivision}
+     * @return array{0: User, 1: EventDivision}
      */
     private function actingManagerWithDivision(): array
     {
-        $manager = Player::factory()->manager()->create(['user_types' => ['player', 'manager']]);
+        $manager = User::factory()->manager()->create(['user_types' => ['player', 'manager']]);
         Sanctum::actingAs($manager);
         $eventDivision = EventDivision::factory()->create();
         EventDivisionSchedule::factory()->create([
@@ -325,7 +325,7 @@ final class EventDivisionPosterControllerTest extends TestCase
     }
 
     /**
-     * @return array{0: Player, 1: EventDivision, 2: EventDivisionCourt}
+     * @return array{0: User, 1: EventDivision, 2: EventDivisionCourt}
      */
     private function actingManagerWithDivisionAndCourt(): array
     {
@@ -366,14 +366,14 @@ final class EventDivisionPosterControllerTest extends TestCase
         bool $firstCollecting = true,
     ): array {
         Storage::fake(config('filesystems.user_uploads_disk', 'public'));
-        $players = Player::factory()->count(4)->create()->all();
+        $players = User::factory()->count(4)->create()->all();
         $participations = [];
         foreach ($players as $i => $player) {
             $this->attachProfilePng($player);
             $participations[] = EventParticipation::factory()->create([
                 'event_id' => $eventDivision->event_id,
                 'event_division_id' => $eventDivision->id_event_division,
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'is_collecting_points' => $i === 0 ? $firstCollecting : true,
                 'absence_reason' => null,
                 'sort_order' => $i,
@@ -408,7 +408,7 @@ final class EventDivisionPosterControllerTest extends TestCase
                 'match_side_id' => $side->id_match_side,
                 'slot' => $slot,
                 'participation_id' => $omitParticipation ? null : $participations[$idx]->id_participation,
-                'player_id' => $playerIdOnMatchPlayer ? $players[$idx]->id_player : null,
+                'player_user_id' => $playerIdOnMatchPlayer ? $players[$idx]->id_user : null,
                 'inserted_at' => time(),
             ]);
         }
@@ -416,13 +416,13 @@ final class EventDivisionPosterControllerTest extends TestCase
         return $players;
     }
 
-    private function attachProfilePng(Player $player): void
+    private function attachProfilePng(User $player): void
     {
-        $relative = 'player-profile-images/' . $player->id_player . '/profile/avatar.png';
+        $relative = 'player-profile-images/' . $player->id_user . '/profile/avatar.png';
         Storage::disk(config('filesystems.user_uploads_disk', 'public'))
             ->put($relative, PdfFixtures::solidRed40Bytes());
         \App\Models\PlayerProfileImage::query()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'profile_path' => $relative,
             'sort_order' => 0,
             'inserted_at' => time(),

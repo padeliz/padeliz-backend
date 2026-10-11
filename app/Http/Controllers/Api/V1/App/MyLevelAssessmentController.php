@@ -10,7 +10,7 @@ use App\Http\Controllers\BaseVersions\V1\V1BaseController;
 use App\Http\Requests\App\PlayerProfileImageUploadRequest;
 use App\Http\Resources\PlayerLevelAssessmentResource;
 use App\Http\Resources\PlayerLevelResource;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerCustomField;
 use App\Models\PlayerLevelAssessment;
 use App\Models\PlayerProfileImage;
@@ -79,14 +79,14 @@ class MyLevelAssessmentController extends V1BaseController
      */
     public function status(Request $request): JsonResponse
     {
-        $playerId = (int) $request->user()->id_player;
+        $playerId = (int) $request->user()->id_user;
 
-        $latest = PlayerLevelAssessment::where('player_id', $playerId)
+        $latest = PlayerLevelAssessment::where('player_user_id', $playerId)
             ->orderByDesc('inserted_at')
             ->orderByDesc('id_player_level_assessment')
             ->value('review_status');
 
-        $counts = PlayerLevelAssessment::where('player_id', $playerId)
+        $counts = PlayerLevelAssessment::where('player_user_id', $playerId)
             ->select('review_status', DB::raw('COUNT(*) as cnt'))
             ->groupBy('review_status')
             ->pluck('cnt', 'review_status')
@@ -117,7 +117,7 @@ class MyLevelAssessmentController extends V1BaseController
      */
     public function latest(Request $request): JsonResponse
     {
-        $assessment = PlayerLevelAssessment::where('player_id', $request->user()->id_player)
+        $assessment = PlayerLevelAssessment::where('player_user_id', $request->user()->id_user)
             ->orderByDesc('inserted_at')
             ->orderByDesc('id_player_level_assessment')
             ->first();
@@ -141,7 +141,7 @@ class MyLevelAssessmentController extends V1BaseController
      */
     public function showPending(Request $request): JsonResponse
     {
-        $pending = $this->assessments->getPending((int) $request->user()->id_player);
+        $pending = $this->assessments->getPending((int) $request->user()->id_user);
 
         if ($pending === null) {
             return $this->notFoundResponse('No pending level assessment found');
@@ -177,10 +177,10 @@ class MyLevelAssessmentController extends V1BaseController
     {
         $customFields = $this->validatedCustomFields($request);
 
-        /** @var Player $player */
+        /** @var User $player */
         $player = $request->user();
 
-        $existing = $this->assessments->getPending((int) $player->id_player);
+        $existing = $this->assessments->getPending((int) $player->id_user);
 
         if ($existing !== null && $existing->ready_for_review) {
             return $this->lockedResponse();
@@ -189,7 +189,7 @@ class MyLevelAssessmentController extends V1BaseController
         $assessment = $existing ?? $this->assessments->ensurePending($player);
         $created = $existing === null;
 
-        $this->writeCustomFields($assessment, $customFields, (int) $player->id_player);
+        $this->writeCustomFields($assessment, $customFields, (int) $player->id_user);
 
         return $this->assessmentResponse(
             $assessment,
@@ -218,7 +218,7 @@ class MyLevelAssessmentController extends V1BaseController
     {
         $customFields = $this->validatedCustomFields($request);
 
-        /** @var Player $player */
+        /** @var User $player */
         $player = $request->user();
 
         $assessment = $this->assessments->ensurePending($player);
@@ -227,7 +227,7 @@ class MyLevelAssessmentController extends V1BaseController
             return $this->lockedResponse();
         }
 
-        $this->writeCustomFields($assessment, $customFields, (int) $player->id_player);
+        $this->writeCustomFields($assessment, $customFields, (int) $player->id_user);
 
         return $this->assessmentResponse($assessment, 'Pending level assessment updated successfully');
     }
@@ -244,7 +244,7 @@ class MyLevelAssessmentController extends V1BaseController
      */
     public function markReady(Request $request): JsonResponse
     {
-        $pending = $this->assessments->getPending((int) $request->user()->id_player);
+        $pending = $this->assessments->getPending((int) $request->user()->id_user);
 
         if ($pending === null) {
             return $this->notFoundResponse('No pending level assessment found');
@@ -267,7 +267,7 @@ class MyLevelAssessmentController extends V1BaseController
      */
     public function reopen(Request $request): JsonResponse
     {
-        $pending = $this->assessments->getPending((int) $request->user()->id_player);
+        $pending = $this->assessments->getPending((int) $request->user()->id_user);
 
         if ($pending === null) {
             return $this->notFoundResponse('No pending level assessment found');
@@ -289,7 +289,7 @@ class MyLevelAssessmentController extends V1BaseController
      */
     public function discard(Request $request): JsonResponse
     {
-        $pending = $this->assessments->getPending((int) $request->user()->id_player);
+        $pending = $this->assessments->getPending((int) $request->user()->id_user);
 
         if ($pending === null) {
             return $this->successResponse(null, 'No pending level assessment to discard');
@@ -312,7 +312,7 @@ class MyLevelAssessmentController extends V1BaseController
      */
     public function currentLevel(Request $request): JsonResponse
     {
-        $current = $this->playerLevels->currentLevel((int) $request->user()->id_player);
+        $current = $this->playerLevels->currentLevel((int) $request->user()->id_user);
 
         if ($current === null) {
             return $this->notFoundResponse('No player level found');
@@ -343,7 +343,7 @@ class MyLevelAssessmentController extends V1BaseController
      */
     public function storeProfileImage(PlayerProfileImageUploadRequest $request): JsonResponse
     {
-        /** @var Player $player */
+        /** @var User $player */
         $player = $request->user();
 
         $assessment = $this->assessments->ensurePending($player);
@@ -365,7 +365,7 @@ class MyLevelAssessmentController extends V1BaseController
             }
 
             Log::error('MyLevelAssessmentController::storeProfileImage - Error uploading file', [
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'assessment_id' => $assessment->id_player_level_assessment,
                 'error' => $e->getMessage(),
             ]);
@@ -376,7 +376,7 @@ class MyLevelAssessmentController extends V1BaseController
             );
         } catch (\Throwable $e) {
             Log::error('MyLevelAssessmentController::storeProfileImage - Error uploading file', [
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'assessment_id' => $assessment->id_player_level_assessment,
                 'error' => $e->getMessage(),
             ]);
@@ -404,14 +404,14 @@ class MyLevelAssessmentController extends V1BaseController
      */
     public function destroyProfileImage(Request $request, PlayerProfileImage $playerProfileImage): JsonResponse
     {
-        /** @var Player $player */
+        /** @var User $player */
         $player = $request->user();
 
-        $assessment = $this->assessments->getPending((int) $player->id_player);
+        $assessment = $this->assessments->getPending((int) $player->id_user);
 
         if (
             $assessment === null
-            || (int) $playerProfileImage->player_id !== (int) $player->id_player
+            || (int) $playerProfileImage->player_user_id !== (int) $player->id_user
             || (int) $playerProfileImage->uploaded_via_level_assessment_id !== (int) $assessment->id_player_level_assessment
         ) {
             return $this->notFoundResponse('Profile image not found on the pending level assessment');

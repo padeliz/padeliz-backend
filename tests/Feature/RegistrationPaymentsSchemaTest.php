@@ -8,7 +8,7 @@ use App\Enums\Registration\RegistrationLifecycleStatus;
 use App\Enums\Registration\RegistrationPaymentStatus;
 use App\Models\EventDivision;
 use App\Models\EventRegistration;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Schema;
 use Tests\TestCase;
@@ -28,8 +28,8 @@ class RegistrationPaymentsSchemaTest extends TestCase
         $this->assertTrue(Schema::hasColumn('event_registrations', 'paid_at'));
         $this->assertTrue(Schema::hasColumn('event_registrations', 'cancel_reason'));
         $this->assertTrue(Schema::hasColumn('event_registrations', 'decline_reason'));
-        $this->assertTrue(Schema::hasColumn('event_registrations', 'active_player_for_division'));
-        $this->assertTrue(Schema::hasColumn('event_registrations', 'active_player_for_event'));
+        $this->assertTrue(Schema::hasColumn('event_registrations', 'active_player_user_for_division'));
+        $this->assertTrue(Schema::hasColumn('event_registrations', 'active_player_user_for_event'));
 
         $this->assertTrue(Schema::hasTable('event_registration_payment_attempts'));
         $this->assertTrue(Schema::hasColumn('event_registration_payment_attempts', 'checkout_id'));
@@ -47,12 +47,12 @@ class RegistrationPaymentsSchemaTest extends TestCase
     public function test_active_uniqueness_allows_rejoin_after_cancel(): void
     {
         $division = EventDivision::factory()->create();
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
 
         $first = EventRegistration::factory()->create([
             'event_id' => $division->event_id,
             'event_division_id' => $division->id_event_division,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'lifecycle_status' => RegistrationLifecycleStatus::Active,
             'payment_status' => RegistrationPaymentStatus::Unpaid,
         ]);
@@ -65,13 +65,13 @@ class RegistrationPaymentsSchemaTest extends TestCase
         $second = EventRegistration::factory()->create([
             'event_id' => $division->event_id,
             'event_division_id' => $division->id_event_division,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'lifecycle_status' => RegistrationLifecycleStatus::Active,
             'payment_status' => RegistrationPaymentStatus::Unpaid,
         ]);
 
         $this->assertNotSame($first->id_registration, $second->id_registration);
-        $this->assertSame(2, EventRegistration::query()->where('player_id', $player->id_player)->count());
+        $this->assertSame(2, EventRegistration::query()->where('player_user_id', $player->id_user)->count());
     }
 
     public function test_factory_defaults_to_active_unpaid(): void

@@ -7,7 +7,7 @@ namespace Tests\Feature\Api\V1\Manager;
 use App\Models\Division;
 use App\Models\EventParticipation;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Services\Cache\PadelizCache;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -34,14 +34,14 @@ class PlayerControllerTest extends TestCase
 
         app(PadelizCache::class)->flushApplicationTags();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'first_name' => 'Test',
             'middle_name' => null,
             'last_name' => 'Manager',
             'user_types' => ['player', 'manager'],
         ]);
 
-        $this->player = Player::factory()->withContacts()->create([
+        $this->player = User::factory()->withContacts()->create([
             'first_name' => 'Test',
             'middle_name' => null,
             'last_name' => 'Player',
@@ -57,7 +57,7 @@ class PlayerControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         // Create additional players
-        Player::factory()->count(2)->create();
+        User::factory()->count(2)->create();
 
         $response = $this->getJson('/api/v1/manager/players');
 
@@ -65,7 +65,7 @@ class PlayerControllerTest extends TestCase
             ->assertJsonStructure([
                 'data' => [
                     '*' => [
-                        'id_player',
+                        'id_user',
                         'name',
                         'emails',
                         'phones',
@@ -101,17 +101,17 @@ class PlayerControllerTest extends TestCase
         // Create a participation for the player
         EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
         ]);
 
-        $response = $this->getJson("/api/v1/manager/players/{$this->player->id_player}");
+        $response = $this->getJson("/api/v1/manager/players/{$this->player->id_user}");
 
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
                 'message' => 'Player details retrieved successfully',
                 'data' => [
-                    'id_player' => $this->player->id_player,
+                    'id_user' => $this->player->id_user,
                     'name' => 'Test Player',
                 ],
             ]);
@@ -140,12 +140,12 @@ class PlayerControllerTest extends TestCase
                 ],
             ]);
 
-        $this->assertDatabaseHas('players', [
+        $this->assertDatabaseHas('users', [
             'first_name' => 'New',
             'last_name' => 'Player',
             'created_via' => 'manager',
             'created_via_format' => null,
-            'created_via_import_id' => null,
+            'created_via_user_import_id' => null,
         ]);
         $this->assertSame('manager', $response->json('data.created_via'));
         $this->assertNull($response->json('data.created_via_format'));
@@ -162,20 +162,20 @@ class PlayerControllerTest extends TestCase
             'last_name' => 'Player',
         ];
 
-        $response = $this->putJson("/api/v1/manager/players/{$this->player->id_player}", $updateData);
+        $response = $this->putJson("/api/v1/manager/players/{$this->player->id_user}", $updateData);
 
         $response->assertStatus(200)
             ->assertJson([
                 'success' => true,
                 'message' => 'Player updated successfully',
                 'data' => [
-                    'id_player' => $this->player->id_player,
+                    'id_user' => $this->player->id_user,
                     'name' => 'Updated Player',
                 ],
             ]);
 
-        $this->assertDatabaseHas('players', [
-            'id_player' => $this->player->id_player,
+        $this->assertDatabaseHas('users', [
+            'id_user' => $this->player->id_user,
             'first_name' => 'Updated',
             'last_name' => 'Player',
             'created_via' => null,
@@ -188,7 +188,7 @@ class PlayerControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         // Test partial update with only first/last name
-        $response = $this->patchJson("/api/v1/manager/players/{$this->player->id_player}", [
+        $response = $this->patchJson("/api/v1/manager/players/{$this->player->id_user}", [
             'first_name' => 'Partially',
             'middle_name' => 'Updated',
             'last_name' => 'Player',
@@ -204,7 +204,7 @@ class PlayerControllerTest extends TestCase
             ]);
 
         // Test partial update with only the last name
-        $response = $this->patchJson("/api/v1/manager/players/{$this->player->id_player}", [
+        $response = $this->patchJson("/api/v1/manager/players/{$this->player->id_user}", [
             'last_name' => 'Again',
         ]);
 
@@ -223,7 +223,7 @@ class PlayerControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         // Test PUT without required fields
-        $response = $this->putJson("/api/v1/manager/players/{$this->player->id_player}", [
+        $response = $this->putJson("/api/v1/manager/players/{$this->player->id_user}", [
             'last_name' => 'Player',
         ]);
 
@@ -231,7 +231,7 @@ class PlayerControllerTest extends TestCase
             ->assertJsonValidationErrors(['first_name']);
 
         // Test PUT with empty required fields
-        $response = $this->putJson("/api/v1/manager/players/{$this->player->id_player}", [
+        $response = $this->putJson("/api/v1/manager/players/{$this->player->id_user}", [
             'first_name' => '',
         ]);
 
@@ -243,7 +243,7 @@ class PlayerControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $response = $this->deleteJson("/api/v1/manager/players/{$this->player->id_player}");
+        $response = $this->deleteJson("/api/v1/manager/players/{$this->player->id_user}");
 
         $response->assertStatus(200)
             ->assertJson([
@@ -251,8 +251,8 @@ class PlayerControllerTest extends TestCase
                 'message' => 'Player deleted successfully',
             ]);
 
-        $this->assertDatabaseMissing('players', [
-            'id_player' => $this->player->id_player,
+        $this->assertDatabaseMissing('users', [
+            'id_user' => $this->player->id_user,
         ]);
     }
 
@@ -261,11 +261,11 @@ class PlayerControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         // Create additional players
-        $player2 = Player::factory()->create();
-        $player3 = Player::factory()->create();
+        $player2 = User::factory()->create();
+        $player3 = User::factory()->create();
 
         $response = $this->deleteJson('/api/v1/manager/players/bulk', [
-            'player_ids' => [$this->player->id_player, $player2->id_player],
+            'player_user_ids' => [$this->player->id_user, $player2->id_user],
         ]);
 
         $response->assertStatus(200)
@@ -274,14 +274,14 @@ class PlayerControllerTest extends TestCase
                 'message' => 'Players deleted successfully',
             ]);
 
-        $this->assertDatabaseMissing('players', [
-            'id_player' => $this->player->id_player,
+        $this->assertDatabaseMissing('users', [
+            'id_user' => $this->player->id_user,
         ]);
-        $this->assertDatabaseMissing('players', [
-            'id_player' => $player2->id_player,
+        $this->assertDatabaseMissing('users', [
+            'id_user' => $player2->id_user,
         ]);
-        $this->assertDatabaseHas('players', [
-            'id_player' => $player3->id_player,
+        $this->assertDatabaseHas('users', [
+            'id_user' => $player3->id_user,
         ]);
     }
 
@@ -299,8 +299,8 @@ class PlayerControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $needle = 'unique-email-search-' . $this->player->id_player . '@example.test';
-        $this->player->emails()->update(['email' => 'other-' . $this->player->id_player . '@example.test']);
+        $needle = 'unique-email-search-' . $this->player->id_user . '@example.test';
+        $this->player->emails()->update(['email' => 'other-' . $this->player->id_user . '@example.test']);
         $this->player->emails()->create([
             'email' => $needle,
             'purposes' => ['contact'],
@@ -310,31 +310,31 @@ class PlayerControllerTest extends TestCase
         $response = $this->getJson('/api/v1/manager/players?q=' . urlencode($needle));
 
         $response->assertStatus(200);
-        $ids = collect($response->json('data'))->pluck('id_player')->all();
-        $this->assertContains($this->player->id_player, $ids);
-        $this->assertNotContains($this->manager->id_player, $ids);
+        $ids = collect($response->json('data'))->pluck('id_user')->all();
+        $this->assertContains($this->player->id_user, $ids);
+        $this->assertNotContains($this->manager->id_user, $ids);
     }
 
     public function test_manager_search_matches_phone_when_name_does_not(): void
     {
         Sanctum::actingAs($this->manager);
 
-        $needle = '+40999' . str_pad((string) $this->player->id_player, 6, '0', STR_PAD_LEFT);
+        $needle = '+40999' . str_pad((string) $this->player->id_user, 6, '0', STR_PAD_LEFT);
         $this->player->phones()->update(['phone' => $needle]);
 
         $response = $this->getJson('/api/v1/manager/players?q=' . urlencode($needle));
 
         $response->assertStatus(200);
-        $ids = collect($response->json('data'))->pluck('id_player')->all();
-        $this->assertContains($this->player->id_player, $ids);
-        $this->assertNotContains($this->manager->id_player, $ids);
+        $ids = collect($response->json('data'))->pluck('id_user')->all();
+        $this->assertContains($this->player->id_user, $ids);
+        $this->assertNotContains($this->manager->id_user, $ids);
     }
 
     public function test_manager_search_finds_diacritic_first_name_without_accent(): void
     {
         Sanctum::actingAs($this->manager);
 
-        $player = Player::factory()->create([
+        $player = User::factory()->create([
             'first_name' => 'Ștefan',
             'middle_name' => null,
             'last_name' => 'Popescu',
@@ -343,15 +343,15 @@ class PlayerControllerTest extends TestCase
         $response = $this->getJson('/api/v1/manager/players?q=Stefan');
 
         $response->assertStatus(200);
-        $ids = collect($response->json('data'))->pluck('id_player')->all();
-        $this->assertContains($player->id_player, $ids);
+        $ids = collect($response->json('data'))->pluck('id_user')->all();
+        $this->assertContains($player->id_user, $ids);
     }
 
     public function test_manager_search_matches_middle_name(): void
     {
         Sanctum::actingAs($this->manager);
 
-        $player = Player::factory()->create([
+        $player = User::factory()->create([
             'first_name' => 'Ana',
             'middle_name' => 'Maria',
             'last_name' => 'Popescu',
@@ -360,15 +360,15 @@ class PlayerControllerTest extends TestCase
         $response = $this->getJson('/api/v1/manager/players?q=Maria');
 
         $response->assertStatus(200);
-        $ids = collect($response->json('data'))->pluck('id_player')->all();
-        $this->assertContains($player->id_player, $ids);
+        $ids = collect($response->json('data'))->pluck('id_user')->all();
+        $this->assertContains($player->id_user, $ids);
     }
 
     public function test_factory_player_has_null_provenance(): void
     {
         $this->assertNull($this->player->fresh()->created_via);
         $this->assertNull($this->player->fresh()->created_via_format);
-        $this->assertNull($this->player->fresh()->created_via_import_id);
+        $this->assertNull($this->player->fresh()->created_via_user_import_id);
     }
 
     public function test_pdf_avatar_url_prefers_collecting_points_cache(): void
@@ -376,17 +376,17 @@ class PlayerControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         \App\Models\CachedPdfPlayerImage::query()->create([
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'player_is_collecting_points' => false,
             'picture_path' => 'pdf-avatars/other.png',
         ]);
         \App\Models\CachedPdfPlayerImage::query()->create([
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'player_is_collecting_points' => true,
             'picture_path' => 'pdf-avatars/preferred.png',
         ]);
 
-        $response = $this->getJson("/api/v1/manager/players/{$this->player->id_player}");
+        $response = $this->getJson("/api/v1/manager/players/{$this->player->id_user}");
 
         $response->assertStatus(200);
         $url = $response->json('data.pdf_avatar_url');
@@ -398,7 +398,7 @@ class PlayerControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $this->putJson("/api/v1/manager/players/{$this->player->id_player}", [
+        $this->putJson("/api/v1/manager/players/{$this->player->id_user}", [
             'first_name' => 'Updated',
             'middle_name' => null,
             'last_name' => 'Player',
@@ -406,8 +406,8 @@ class PlayerControllerTest extends TestCase
             'created_via_format' => 'playtomic',
         ])->assertStatus(200);
 
-        $this->assertDatabaseHas('players', [
-            'id_player' => $this->player->id_player,
+        $this->assertDatabaseHas('users', [
+            'id_user' => $this->player->id_user,
             'first_name' => 'Updated',
             'created_via' => null,
             'created_via_format' => null,
@@ -439,14 +439,14 @@ class PlayerControllerTest extends TestCase
 
     public function test_unauthorized_user_cannot_access_player_endpoints()
     {
-        $regularPlayer = Player::factory()->create();
+        $regularPlayer = User::factory()->create();
 
         Sanctum::actingAs($regularPlayer);
 
         $response = $this->getJson('/api/v1/manager/players');
         $response->assertStatus(403);
 
-        $response = $this->getJson("/api/v1/manager/players/{$this->player->id_player}");
+        $response = $this->getJson("/api/v1/manager/players/{$this->player->id_user}");
         $response->assertStatus(403);
     }
 
@@ -455,7 +455,7 @@ class PlayerControllerTest extends TestCase
         $response = $this->getJson('/api/v1/manager/players');
         $response->assertStatus(401);
 
-        $response = $this->getJson("/api/v1/manager/players/{$this->player->id_player}");
+        $response = $this->getJson("/api/v1/manager/players/{$this->player->id_user}");
         $response->assertStatus(401);
     }
 
@@ -464,14 +464,14 @@ class PlayerControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         \App\Models\CachedPdfPlayerImage::query()->create([
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'player_is_collecting_points' => true,
-            'picture_path' => 'cached-pdf-player-images/' . $this->player->id_player . '/index.png',
+            'picture_path' => 'cached-pdf-player-images/' . $this->player->id_user . '/index.png',
         ]);
 
         $response = $this->getJson('/api/v1/manager/players');
         $response->assertOk();
-        $row = collect($response->json('data'))->firstWhere('id_player', $this->player->id_player);
+        $row = collect($response->json('data'))->firstWhere('id_user', $this->player->id_user);
         $this->assertNotNull($row);
         $this->assertNotNull($row['pdf_avatar_url']);
     }
@@ -480,16 +480,16 @@ class PlayerControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $warm = $this->getJson("/api/v1/manager/players/{$this->player->id_player}")->assertOk();
+        $warm = $this->getJson("/api/v1/manager/players/{$this->player->id_user}")->assertOk();
         $this->assertNull($warm->json('data.pdf_avatar_url'));
 
         \App\Models\CachedPdfPlayerImage::query()->create([
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'player_is_collecting_points' => true,
-            'picture_path' => 'cached-pdf-player-images/' . $this->player->id_player . '/fresh.png',
+            'picture_path' => 'cached-pdf-player-images/' . $this->player->id_user . '/fresh.png',
         ]);
 
-        $again = $this->getJson("/api/v1/manager/players/{$this->player->id_player}")->assertOk();
+        $again = $this->getJson("/api/v1/manager/players/{$this->player->id_user}")->assertOk();
         $this->assertNotNull($again->json('data.pdf_avatar_url'));
     }
 
@@ -497,21 +497,21 @@ class PlayerControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $warm = $this->getJson("/api/v1/manager/players/{$this->player->id_player}")->assertOk();
+        $warm = $this->getJson("/api/v1/manager/players/{$this->player->id_user}")->assertOk();
         $this->assertSame([], $warm->json('data.cached_pdf_images'));
 
         \App\Models\CachedPdfPlayerImage::query()->create([
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'player_is_collecting_points' => false,
-            'picture_path' => 'cached-pdf-player-images/' . $this->player->id_player . '/false.png',
+            'picture_path' => 'cached-pdf-player-images/' . $this->player->id_user . '/false.png',
         ]);
         \App\Models\CachedPdfPlayerImage::query()->create([
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'player_is_collecting_points' => true,
-            'picture_path' => 'cached-pdf-player-images/' . $this->player->id_player . '/true.png',
+            'picture_path' => 'cached-pdf-player-images/' . $this->player->id_user . '/true.png',
         ]);
 
-        $again = $this->getJson("/api/v1/manager/players/{$this->player->id_player}")->assertOk();
+        $again = $this->getJson("/api/v1/manager/players/{$this->player->id_user}")->assertOk();
         $images = $again->json('data.cached_pdf_images');
 
         $this->assertCount(2, $images);
@@ -519,5 +519,49 @@ class PlayerControllerTest extends TestCase
         $this->assertStringContainsString('true.png', $images[0]['url']);
         $this->assertStringContainsString('false.png', $images[1]['url']);
         $this->assertArrayHasKey('id_cached_pdf_player_image', $images[0]);
+    }
+
+    public function test_index_hides_manager_only_users(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $managerOnly = User::factory()->managerOnly()->create([
+            'first_name' => 'Mgr',
+            'last_name' => 'Only',
+        ]);
+        $playerOnly = User::factory()->playerOnly()->create([
+            'first_name' => 'Visible',
+            'last_name' => 'Player',
+        ]);
+
+        $response = $this->getJson('/api/v1/manager/players');
+        $response->assertOk();
+        $ids = collect($response->json('data'))->pluck('id_user')->all();
+
+        $this->assertContains($playerOnly->id_user, $ids);
+        $this->assertNotContains($managerOnly->id_user, $ids);
+    }
+
+    public function test_show_returns_404_for_manager_only_user(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $managerOnly = User::factory()->managerOnly()->create([
+            'first_name' => 'Mgr',
+            'last_name' => 'Only',
+        ]);
+
+        $this->getJson('/api/v1/manager/players/' . $managerOnly->id_user)
+            ->assertNotFound();
+    }
+
+    public function test_bulk_destroy_rejects_legacy_player_ids(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $this->deleteJson('/api/v1/manager/players/bulk', [
+            'player_ids' => [$this->player->id_user],
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['player_ids']);
     }
 }

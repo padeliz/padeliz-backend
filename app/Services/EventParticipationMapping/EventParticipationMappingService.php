@@ -114,7 +114,7 @@ final class EventParticipationMappingService
 
             foreach ($divisionSpecific as $registration) {
                 $edId = (int) $registration->event_division_id;
-                $playerId = (int) $registration->player_id;
+                $playerId = (int) $registration->player_user_id;
                 $this->createParticipation($editionId, $edId, $playerId, $countsByEdId);
                 $placedPlayerIds[$playerId] = true;
                 $touchedEdIds[] = $edId;
@@ -127,11 +127,11 @@ final class EventParticipationMappingService
                 ->whereNull('event_division_id')
                 ->orderBy('id_registration')
                 ->get()
-                ->filter(fn (EventRegistration $r) => ! isset($placedPlayerIds[(int) $r->player_id]))
+                ->filter(fn (EventRegistration $r) => ! isset($placedPlayerIds[(int) $r->player_user_id]))
                 ->values();
 
             if ($editionWide->isNotEmpty()) {
-                $playerIds = $editionWide->pluck('player_id')->map(fn ($id) => (int) $id)->all();
+                $playerIds = $editionWide->pluck('player_user_id')->map(fn ($id) => (int) $id)->all();
                 $histories = $this->playerEditionHistory->forPlayers(
                     $playerIds,
                     $this->playerEditionHistory->cutoffDateForEdition($event)
@@ -139,23 +139,23 @@ final class EventParticipationMappingService
 
                 $sortedRegistrations = $editionWide
                     ->sort(function (EventRegistration $a, EventRegistration $b) use ($histories) {
-                        $scoreA = $this->skillScore($histories[(int) $a->player_id] ?? []);
-                        $scoreB = $this->skillScore($histories[(int) $b->player_id] ?? []);
+                        $scoreA = $this->skillScore($histories[(int) $a->player_user_id] ?? []);
+                        $scoreB = $this->skillScore($histories[(int) $b->player_user_id] ?? []);
                         if ($scoreA !== $scoreB) {
                             return $scoreA <=> $scoreB;
                         }
-                        $partA = (int) ($histories[(int) $a->player_id]['participated_count'] ?? 0);
-                        $partB = (int) ($histories[(int) $b->player_id]['participated_count'] ?? 0);
+                        $partA = (int) ($histories[(int) $a->player_user_id]['participated_count'] ?? 0);
+                        $partB = (int) ($histories[(int) $b->player_user_id]['participated_count'] ?? 0);
                         if ($partA !== $partB) {
                             return $partB <=> $partA;
                         }
 
-                        return ((int) $a->player_id) <=> ((int) $b->player_id);
+                        return ((int) $a->player_user_id) <=> ((int) $b->player_user_id);
                     })
                     ->values();
 
                 foreach ($sortedRegistrations as $registration) {
-                    $playerId = (int) $registration->player_id;
+                    $playerId = (int) $registration->player_user_id;
                     $history = $histories[$playerId] ?? [];
                     $target = $this->pickEventDivision(
                         $divisions,
@@ -229,7 +229,7 @@ final class EventParticipationMappingService
         EventParticipation::query()->create([
             'event_id' => $editionId,
             'event_division_id' => $eventDivisionId,
-            'player_id' => $playerId,
+            'player_user_id' => $playerId,
             'sort_order' => $sortOrder,
             'is_collecting_points' => true,
         ]);
@@ -403,9 +403,9 @@ final class EventParticipationMappingService
         $registrations = EventRegistration::query()
             ->active()
             ->where('event_id', $event->id_event)
-            ->get(['player_id', 'event_division_id']);
+            ->get(['player_user_id', 'event_division_id']);
 
-        $playerIds = $registrations->pluck('player_id')->unique()->count();
+        $playerIds = $registrations->pluck('player_user_id')->unique()->count();
         $divisionSpecific = $registrations->whereNotNull('event_division_id')->count();
         $editionWide = $registrations->whereNull('event_division_id')->count();
 

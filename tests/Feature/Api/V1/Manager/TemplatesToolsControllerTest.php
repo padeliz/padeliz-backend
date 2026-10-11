@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Manager;
 
-use App\Models\Player;
+use App\Models\User;
 use App\Services\Schedule\TemplateCombinations;
 use App\Services\Schedule\TemplateMatchesRepository;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -15,7 +15,7 @@ class TemplatesToolsControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
     private int $latestVersion;
 
@@ -23,7 +23,7 @@ class TemplatesToolsControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
 
@@ -145,7 +145,7 @@ class TemplatesToolsControllerTest extends TestCase
 
     public function test_requires_manager_auth(): void
     {
-        Sanctum::actingAs(Player::factory()->create(['user_types' => ['player']]));
+        Sanctum::actingAs(User::factory()->create(['user_types' => ['player']]));
 
         $this->getJson('/api/v1/manager/tools/templates/catalog')->assertForbidden();
     }

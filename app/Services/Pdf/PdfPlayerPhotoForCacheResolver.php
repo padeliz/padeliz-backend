@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\Pdf;
 
-use App\Models\Player;
+use App\Models\User;
 use App\Services\PlayerProfileImage\PlayerProfileImageResolver;
 use Illuminate\Support\Facades\Storage;
 
@@ -19,7 +19,7 @@ class PdfPlayerPhotoForCacheResolver
     ) {
     }
 
-    public function resolve(Player $player): PdfPlayerPhotoForCache
+    public function resolve(User $player): PdfPlayerPhotoForCache
     {
         $player->loadMissing('profileImages');
         $profile = $this->profileResolver->resolveForPdf($player);
@@ -32,7 +32,7 @@ class PdfPlayerPhotoForCacheResolver
         }
 
         $temp = $this->initials->createTemp(
-            (int) $player->id_player,
+            (int) $player->id_user,
             (string) $player->name,
         );
 

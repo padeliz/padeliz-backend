@@ -14,13 +14,13 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *     schema="PlayerProfileImageImport",
  *     required={"original_filename"},
  *     @OA\Property(property="id_player_profile_image_import", type="integer", format="int64", readOnly=true, title="ID"),
- *     @OA\Property(property="imported_by_player_id", type="integer", format="int64", nullable=true, readOnly=true, title="Imported By"),
+ *     @OA\Property(property="imported_by_manager_user_id", type="integer", format="int64", nullable=true, readOnly=true, title="Imported By"),
  *     @OA\Property(property="original_filename", type="string", maxLength=255, readOnly=true, title="Filename"),
  *     @OA\Property(property="included_count", type="integer", readOnly=true, title="Included"),
  *     @OA\Property(property="uploaded_count", type="integer", readOnly=true, title="Uploaded"),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true, title="Created At"),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true, title="Updated At"),
- *     @OA\Property(property="importedByPlayer", ref="#/components/schemas/Player", nullable=true, title="Importer"),
+ *     @OA\Property(property="importedByManager", ref="#/components/schemas/User", nullable=true, title="Importer"),
  *     @OA\Property(
  *         property="rows",
  *         type="array",
@@ -39,7 +39,7 @@ class PlayerProfileImageImport extends Model
     ];
 
     public static array $filterableFields = [
-        'imported_by_player_id',
+        'imported_by_manager_user_id',
     ];
 
     public static array $sortableFields = [
@@ -66,23 +66,23 @@ class PlayerProfileImageImport extends Model
     public const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
-        'imported_by_player_id',
+        'imported_by_manager_user_id',
         'original_filename',
         'included_count',
         'uploaded_count',
     ];
 
     protected $casts = [
-        'imported_by_player_id' => 'integer',
+        'imported_by_manager_user_id' => 'integer',
         'included_count' => 'integer',
         'uploaded_count' => 'integer',
         'inserted_at' => 'integer',
         'updated_at' => 'integer',
     ];
 
-    public function importedByPlayer(): BelongsTo
+    public function importedByManager(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'imported_by_player_id', 'id_player');
+        return $this->belongsTo(User::class, 'imported_by_manager_user_id', 'id_user');
     }
 
     public function rows(): HasMany

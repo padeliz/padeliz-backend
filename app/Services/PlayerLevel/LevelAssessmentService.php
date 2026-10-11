@@ -6,7 +6,7 @@ namespace App\Services\PlayerLevel;
 
 use App\Enums\PlayerCustomFieldValueReviewStatus;
 use App\Enums\PlayerLevel\AssessmentReviewStatus;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerCustomFieldSubmission;
 use App\Models\PlayerCustomFieldValue;
 use App\Models\PlayerLevel;
@@ -29,22 +29,22 @@ final class LevelAssessmentService
     /**
      * One pending assessment per player is enforced by a generated unique index.
      */
-    public function ensurePending(Player $player, string $submittedVia = PlayerCustomFieldSubmission::SUBMITTED_VIA_APP): PlayerLevelAssessment
+    public function ensurePending(User $player, string $submittedVia = PlayerCustomFieldSubmission::SUBMITTED_VIA_APP): PlayerLevelAssessment
     {
-        $pending = $this->getPending((int) $player->id_player);
+        $pending = $this->getPending((int) $player->id_user);
         if ($pending !== null) {
             return $pending;
         }
 
         return DB::transaction(function () use ($player, $submittedVia): PlayerLevelAssessment {
             $submission = PlayerCustomFieldSubmission::query()->create([
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'submitted_via' => $submittedVia,
-                'submitted_by_player_id' => $player->id_player,
+                'submitted_by_player_user_id' => $player->id_user,
             ]);
 
             return PlayerLevelAssessment::query()->create([
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'player_custom_field_submission_id' => $submission->id_player_custom_field_submission,
                 'ready_for_review' => false,
                 'review_status' => AssessmentReviewStatus::Pending,
@@ -55,7 +55,7 @@ final class LevelAssessmentService
     public function getPending(int $playerId): ?PlayerLevelAssessment
     {
         return PlayerLevelAssessment::query()
-            ->where('player_id', $playerId)
+            ->where('player_user_id', $playerId)
             ->where('review_status', AssessmentReviewStatus::Pending->value)
             ->first();
     }
@@ -97,7 +97,7 @@ final class LevelAssessmentService
         $this->assertPending($assessment);
 
         return DB::transaction(function () use ($assessment, $message): PlayerLevelAssessment {
-            $player = Player::query()->find((int) $assessment->player_id);
+            $player = User::query()->find((int) $assessment->player_user_id);
             $images = PlayerProfileImage::query()
                 ->where('uploaded_via_level_assessment_id', $assessment->id_player_level_assessment)
                 ->get();
@@ -134,7 +134,7 @@ final class LevelAssessmentService
         return DB::transaction(function () use ($assessment, $level, $message, $reviewedByManagerId): PlayerLevelAssessment {
             $this->close($assessment, AssessmentReviewStatus::Approved, $message, $reviewedByManagerId);
             $this->playerLevels->upsertForAssessment(
-                (int) $assessment->player_id,
+                (int) $assessment->player_user_id,
                 (int) $assessment->id_player_level_assessment,
                 $level
             );
@@ -187,7 +187,7 @@ final class LevelAssessmentService
                 ->update([
                     'review_status' => $this->valueStatusFor($status)->value,
                     'reviewed_at' => $now,
-                    'reviewed_by_manager_id' => $reviewedByManagerId,
+                    'reviewed_by_manager_user_id' => $reviewedByManagerId,
                 ]);
 
             return $assessment;

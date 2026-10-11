@@ -18,7 +18,7 @@ class PlayerStudentProofResource extends JsonResource
 
         return [
             'id_player_student_proof' => $this->id_player_student_proof,
-            'player_id' => $this->player_id,
+            'player_user_id' => $this->player_user_id,
             'student_until' => $studentUntil instanceof \DateTimeInterface
                 ? $studentUntil->format('Y-m-d')
                 : $studentUntil,
@@ -31,7 +31,7 @@ class PlayerStudentProofResource extends JsonResource
             'files' => $this->whenLoaded('files', fn () => PlayerStudentProofFileResource::collection($this->files)->resolve()),
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
-            'player' => $this->whenLoaded('player', fn () => new PlayerResource($this->player)),
+            'player' => $this->whenLoaded('player', fn () => new UserSummaryResource($this->player)),
         ];
     }
 }

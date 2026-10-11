@@ -17,14 +17,14 @@ class EventRegistrationCheckoutResource extends JsonResource
         return [
             'id_checkout' => $this->id_checkout,
             'event_id' => $this->event_id,
-            'player_id' => $this->player_id,
+            'player_user_id' => $this->player_user_id,
             'status' => $this->status?->value ?? $this->status,
             'total_amount' => $this->total_amount,
             'payment_method' => $this->payment_method?->value ?? $this->payment_method,
             'paid_at' => $this->paid_at,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
-            'player' => $this->whenLoaded('player', fn () => new PlayerResource($this->player)),
+            'player' => $this->whenLoaded('player', fn () => new UserSummaryResource($this->player)),
             'event' => $this->whenLoaded('event', fn () => new EventResource($this->event)),
             'items' => $this->whenLoaded('items', function () {
                 return $this->items->map(static function ($item) {

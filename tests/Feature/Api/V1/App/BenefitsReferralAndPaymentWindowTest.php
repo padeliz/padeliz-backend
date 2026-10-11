@@ -11,20 +11,21 @@ use App\Models\EventParticipation;
 use App\Models\EventRegistration;
 use App\Models\EventRegistrationPaymentAttempt;
 use App\Models\PadelEvent;
-use App\Models\Player;
-use App\Models\PlayerEmail;
+use App\Models\User;
+use App\Models\UserEmail;
 use App\Models\PlayerLevel;
 use App\Services\Referral\ReferralService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Http;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
 
 class BenefitsReferralAndPaymentWindowTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $player;
+    private User $player;
 
     private PadelEvent $event;
 
@@ -53,9 +54,9 @@ class BenefitsReferralAndPaymentWindowTest extends TestCase
             'netopia.return_url' => 'https://example.test/api/v1/payments/netopia/return',
         ]);
 
-        $this->player = Player::factory()->playerOnly()->create();
+        $this->player = User::factory()->playerOnly()->create();
         $this->event = PadelEvent::factory()->create([
-            'date' => now()->addDays(30)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(now()->addDays(30)->format('Y-m-d')),
             'registration_allowed_until' => time() + 86400,
             'cancellation_allowed_until' => time() + 86400,
         ]);
@@ -67,7 +68,7 @@ class BenefitsReferralAndPaymentWindowTest extends TestCase
             'players_limit' => 10,
             'entry_fee' => 55,
         ]);
-        PlayerLevel::factory()->level('4.50')->create(['player_id' => $this->player->id_player]);
+        PlayerLevel::factory()->level('4.50')->create(['player_user_id' => $this->player->id_user]);
     }
 
     public function test_unpaid_create_sets_payment_due_at_and_snapshots_division_fee(): void
@@ -207,8 +208,8 @@ class BenefitsReferralAndPaymentWindowTest extends TestCase
         ])->assertStatus(422);
 
         EventParticipation::factory()->create([
-            'event_id' => PadelEvent::factory()->create(['date' => now()->subDays(10)->format('Y-m-d')])->id_event,
-            'player_id' => $this->player->id_player,
+            'event_id' => PadelEvent::factory()->create(UnixEventFactory::eventBounds(now()->subDays(10)->format('Y-m-d')))->id_event,
+            'player_user_id' => $this->player->id_user,
             'absence_reason' => null,
             'ban_reason' => null,
         ]);
@@ -222,10 +223,10 @@ class BenefitsReferralAndPaymentWindowTest extends TestCase
 
     public function test_touchpoint_sets_discount_eligible_on_invitee_match(): void
     {
-        $referrer = Player::factory()->playerOnly()->create();
+        $referrer = User::factory()->playerOnly()->create();
         EventParticipation::factory()->create([
-            'event_id' => PadelEvent::factory()->create(['date' => now()->subDays(5)->format('Y-m-d')])->id_event,
-            'player_id' => $referrer->id_player,
+            'event_id' => PadelEvent::factory()->create(UnixEventFactory::eventBounds(now()->subDays(5)->format('Y-m-d')))->id_event,
+            'player_user_id' => $referrer->id_user,
             'absence_reason' => null,
             'ban_reason' => null,
         ]);
@@ -234,8 +235,8 @@ class BenefitsReferralAndPaymentWindowTest extends TestCase
             ['email' => 'newbie@example.com'],
         ]);
 
-        PlayerEmail::factory()->create([
-            'player_id' => $this->player->id_player,
+        UserEmail::factory()->create([
+            'user_id' => $this->player->id_user,
             'email' => 'newbie@example.com',
         ]);
 

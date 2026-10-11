@@ -10,7 +10,7 @@ use App\Models\BankTransferSettings;
 use App\Models\Division;
 use App\Models\EventDivision;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerLevel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
@@ -18,12 +18,13 @@ use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
 
 class RegistrationPaymentsFlowTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $player;
+    private User $player;
 
     private PadelEvent $event;
 
@@ -60,9 +61,9 @@ class RegistrationPaymentsFlowTest extends TestCase
             'netopia.return_url' => 'https://example.test/api/v1/payments/netopia/return',
         ]);
 
-        $this->player = Player::factory()->playerOnly()->create();
+        $this->player = User::factory()->playerOnly()->create();
         $this->event = PadelEvent::factory()->create([
-            'date' => now()->addDays(30)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(now()->addDays(30)->format('Y-m-d')),
             'registration_allowed_until' => time() + 86400,
             'cancellation_allowed_until' => time() + 86400,
         ]);
@@ -73,7 +74,7 @@ class RegistrationPaymentsFlowTest extends TestCase
             'division_title' => $division->name,
             'players_limit' => 10,
         ]);
-        PlayerLevel::factory()->level('4.50')->create(['player_id' => $this->player->id_player]);
+        PlayerLevel::factory()->level('4.50')->create(['player_user_id' => $this->player->id_user]);
         BankTransferSettings::factory()->create();
     }
 
@@ -99,8 +100,8 @@ class RegistrationPaymentsFlowTest extends TestCase
         ]);
 
         // Same player cannot mix edition-wide; use new player for zero fee
-        $player2 = Player::factory()->playerOnly()->create();
-        PlayerLevel::factory()->level('4.50')->create(['player_id' => $player2->id_player]);
+        $player2 = User::factory()->playerOnly()->create();
+        PlayerLevel::factory()->level('4.50')->create(['player_user_id' => $player2->id_user]);
         Sanctum::actingAs($player2);
 
         $this->postJson('/api/v1/app/event-registrations', [
@@ -161,7 +162,7 @@ class RegistrationPaymentsFlowTest extends TestCase
         $upload->assertStatus(201)->assertJsonPath('data.registration.payment_status', 'awaiting_proof_review');
         $proofId = $upload->json('data.proof.id_payment_proof');
 
-        $manager = Player::factory()->manager()->create();
+        $manager = User::factory()->manager()->create();
         Sanctum::actingAs($manager);
 
         $this->postJson("/api/v1/manager/payment-proofs/{$proofId}/approve")
@@ -171,7 +172,7 @@ class RegistrationPaymentsFlowTest extends TestCase
 
     public function test_declined_blocks_rejoin_cancelled_allows_rejoin(): void
     {
-        $manager = Player::factory()->manager()->create();
+        $manager = User::factory()->manager()->create();
         Sanctum::actingAs($this->player);
         $id = $this->postJson('/api/v1/app/event-registrations', [
             'event_id' => $this->event->id_event,
@@ -189,8 +190,8 @@ class RegistrationPaymentsFlowTest extends TestCase
             'event_division_id' => $this->eventDivision->id_event_division,
         ])->assertStatus(422);
 
-        $player2 = Player::factory()->playerOnly()->create();
-        PlayerLevel::factory()->level('4.50')->create(['player_id' => $player2->id_player]);
+        $player2 = User::factory()->playerOnly()->create();
+        PlayerLevel::factory()->level('4.50')->create(['player_user_id' => $player2->id_user]);
         Sanctum::actingAs($player2);
         $id2 = $this->postJson('/api/v1/app/event-registrations', [
             'event_id' => $this->event->id_event,
@@ -219,7 +220,7 @@ class RegistrationPaymentsFlowTest extends TestCase
         ])->assertStatus(201);
 
         $this->assertDatabaseHas('player_device_tokens', [
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'token' => 'ExponentPushToken[test]',
         ]);
 

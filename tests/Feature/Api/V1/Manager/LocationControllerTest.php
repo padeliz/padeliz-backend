@@ -7,7 +7,7 @@ namespace Tests\Feature\Api\V1\Manager;
 use App\Models\Club;
 use App\Models\Location;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -24,7 +24,7 @@ class LocationControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'first_name' => 'Test', 'middle_name' => null, 'last_name' => 'Manager',
             'user_types' => ['player', 'manager'],
         ]);
@@ -459,7 +459,7 @@ class LocationControllerTest extends TestCase
 
     public function test_regular_player_cannot_access_location_management()
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
 
         $response = $this->getJson('/api/v1/manager/locations');

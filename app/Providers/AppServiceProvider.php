@@ -9,11 +9,12 @@ use App\Integrations\RankedinBpt\BptTopPlayersService;
 use App\Integrations\RankedinBpt\Contracts\BptTopPlayersReportBuilder;
 use App\Integrations\RankedinBpt\RankedinBptClient;
 use App\Models\PadelEvent;
+use App\Models\User;
 use App\Services\Cache\PadelizCache;
 use App\Services\PlayerCustomField\Formats\GoogleFormMiniTourWelcomeCsvFormat;
 use App\Services\PlayerCustomField\PlayerCustomFieldValueCsvFormatRegistry;
-use App\Services\PlayerImport\Formats\PlaytomicPlayerCsvFormat;
-use App\Services\PlayerImport\PlayerCsvFormatRegistry;
+use App\Services\UserImport\Formats\PlaytomicUserCsvFormat;
+use App\Services\UserImport\UserCsvFormatRegistry;
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\ServiceProvider;
 
@@ -39,9 +40,9 @@ class AppServiceProvider extends ServiceProvider
             return new BptTopPlayersService($client, new BptDivisionMapper(), $cfg);
         });
 
-        $this->app->singleton(PlayerCsvFormatRegistry::class, function (): PlayerCsvFormatRegistry {
-            return new PlayerCsvFormatRegistry([
-                new PlaytomicPlayerCsvFormat(),
+        $this->app->singleton(UserCsvFormatRegistry::class, function (): UserCsvFormatRegistry {
+            return new UserCsvFormatRegistry([
+                new PlaytomicUserCsvFormat(),
             ]);
         });
 
@@ -63,6 +64,14 @@ class AppServiceProvider extends ServiceProvider
 
         Route::bind('event', static function (string $value): PadelEvent {
             return PadelEvent::query()->whereKey($value)->firstOrFail();
+        });
+
+        // Directory routes use {player} but resolve User rows that include the player type.
+        Route::bind('player', static function (string $value): User {
+            return User::query()
+                ->whereKey($value)
+                ->directoryPlayers()
+                ->firstOrFail();
         });
     }
 }

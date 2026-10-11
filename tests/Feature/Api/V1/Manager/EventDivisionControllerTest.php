@@ -7,9 +7,11 @@ namespace Tests\Feature\Api\V1\Manager;
 use App\Models\Division;
 use App\Models\EventDivision;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
+use App\Services\EventCalendarTiming;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\Support\UnixEventFactory;
 use Tests\TestCase;
 
 class EventDivisionControllerTest extends TestCase
@@ -26,7 +28,7 @@ class EventDivisionControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'first_name' => 'Test', 'middle_name' => null, 'last_name' => 'Manager',
             'user_types' => ['player', 'manager'],
         ]);
@@ -38,6 +40,14 @@ class EventDivisionControllerTest extends TestCase
         $this->division = Division::factory()->create([
             'name' => 'Test Division',
         ]);
+    }
+
+    /**
+     * @return array{playing_starts_at: int, playing_ends_at: int}
+     */
+    private function playingWindow(string $startClock, string $endClock): array
+    {
+        return UnixEventFactory::playingBounds($this->event, $startClock, $endClock);
     }
 
     public function test_manager_can_view_event_divisions()
@@ -57,8 +67,8 @@ class EventDivisionControllerTest extends TestCase
                         'division_id',
                         'players_limit',
                         'division_title',
-                        'playing_start_time',
-                        'playing_end_time',
+                        'playing_starts_at',
+                        'playing_ends_at',
                         'skill_order',
                     ],
                 ],
@@ -114,8 +124,7 @@ class EventDivisionControllerTest extends TestCase
             'players_limit' => 32,
             'entry_fee' => 55,
             'division_title' => 'Adults Explorers A',
-            'playing_start_time' => '09:00:00',
-            'playing_end_time' => '17:00:00',
+            ...$this->playingWindow('09:00:00', '17:00:00'),
         ];
 
         $response = $this->postJson('/api/v1/manager/event-divisions', $eventDivisionData);
@@ -144,14 +153,15 @@ class EventDivisionControllerTest extends TestCase
             'division_id' => $this->division->id_division,
         ]);
 
+        $window = $this->playingWindow('10:00:00', '18:00:00');
         $updateData = [
             'event_id' => $this->event->id_event,
             'division_id' => $this->division->id_division,
             'players_limit' => 32,
             'entry_fee' => 55,
             'division_title' => 'Adults Explorers B',
-            'playing_start_time' => '10:00:00',
-            'playing_end_time' => '18:00:00',
+            'check_in_at' => $window['playing_starts_at'],
+            ...$window,
         ];
 
         $response = $this->putJson("/api/v1/manager/event-divisions/{$eventDivision->id_event_division}", $updateData);
@@ -213,7 +223,14 @@ class EventDivisionControllerTest extends TestCase
         $response = $this->putJson("/api/v1/manager/event-divisions/{$eventDivision->id_event_division}", []);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['event_id', 'division_id', 'players_limit', 'division_title', 'playing_start_time', 'playing_end_time']);
+            ->assertJsonValidationErrors([
+                'event_id',
+                'division_id',
+                'players_limit',
+                'division_title',
+                'playing_starts_at',
+                'playing_ends_at',
+            ]);
     }
 
     public function test_manager_can_delete_edition_division()
@@ -254,8 +271,7 @@ class EventDivisionControllerTest extends TestCase
             'players_limit' => 32,
             'entry_fee' => 55,
             'division_title' => 'Novice High',
-            'playing_start_time' => '10:00:00',
-            'playing_end_time' => '18:00:00',
+            ...$this->playingWindow('10:00:00', '18:00:00'),
         ]);
 
         $response->assertStatus(201)
@@ -290,14 +306,15 @@ class EventDivisionControllerTest extends TestCase
             'division_title' => 'Other',
         ]);
 
+        $window = $this->playingWindow('10:00:00', '18:00:00');
         $response = $this->putJson("/api/v1/manager/event-divisions/{$eventDivision2->id_event_division}", [
             'event_id' => $this->event->id_event,
             'division_id' => $this->division->id_division,
             'players_limit' => 32,
             'entry_fee' => 55,
             'division_title' => 'Novice High',
-            'playing_start_time' => '10:00:00',
-            'playing_end_time' => '18:00:00',
+            'check_in_at' => $window['playing_starts_at'],
+            ...$window,
         ]);
 
         $response->assertStatus(200)
@@ -313,7 +330,7 @@ class EventDivisionControllerTest extends TestCase
         $response = $this->postJson('/api/v1/manager/event-divisions', []);
 
         $response->assertStatus(422)
-            ->assertJsonValidationErrors(['event_id', 'division_id', 'players_limit', 'entry_fee', 'playing_start_time', 'playing_end_time'])
+            ->assertJsonValidationErrors(['event_id', 'division_id', 'players_limit', 'entry_fee', 'playing_starts_at', 'playing_ends_at'])
             ->assertJsonMissingValidationErrors(['division_title']);
     }
 
@@ -326,8 +343,7 @@ class EventDivisionControllerTest extends TestCase
             'division_id' => $this->division->id_division,
             'players_limit' => 16,
             'entry_fee' => 55,
-            'playing_start_time' => '09:00:00',
-            'playing_end_time' => '17:00:00',
+            ...$this->playingWindow('09:00:00', '17:00:00'),
         ]);
 
         $response->assertStatus(201)
@@ -343,8 +359,7 @@ class EventDivisionControllerTest extends TestCase
             'division_id' => $this->division->id_division,
             'players_limit' => 16,
             'entry_fee' => 55,
-            'playing_start_time' => '09:00:00',
-            'playing_end_time' => '17:00:00',
+            ...$this->playingWindow('09:00:00', '17:00:00'),
         ]);
         $first->assertStatus(201)->assertJsonPath('data.skill_order', 0);
 
@@ -353,8 +368,7 @@ class EventDivisionControllerTest extends TestCase
             'division_id' => Division::factory()->create()->id_division,
             'players_limit' => 16,
             'entry_fee' => 55,
-            'playing_start_time' => '09:00:00',
-            'playing_end_time' => '17:00:00',
+            ...$this->playingWindow('09:00:00', '17:00:00'),
         ]);
         $second->assertStatus(201)->assertJsonPath('data.skill_order', 1);
 
@@ -364,8 +378,7 @@ class EventDivisionControllerTest extends TestCase
             'players_limit' => 16,
             'entry_fee' => 55,
             'skill_order' => 0,
-            'playing_start_time' => '09:00:00',
-            'playing_end_time' => '17:00:00',
+            ...$this->playingWindow('09:00:00', '17:00:00'),
         ]);
         $explicit->assertStatus(201)->assertJsonPath('data.skill_order', 0);
     }
@@ -379,8 +392,7 @@ class EventDivisionControllerTest extends TestCase
             'division_id' => $this->division->id_division,
             'players_limit' => 16,
             'entry_fee' => 55,
-            'playing_start_time' => '09:00:00',
-            'playing_end_time' => '17:00:00',
+            ...$this->playingWindow('09:00:00', '17:00:00'),
         ]);
 
         $response->assertStatus(201);
@@ -422,8 +434,7 @@ class EventDivisionControllerTest extends TestCase
             'players_limit' => 16,
             'entry_fee' => 55,
             'division_title' => 'Knobs Division',
-            'playing_start_time' => '09:00:00',
-            'playing_end_time' => '17:00:00',
+            ...$this->playingWindow('09:00:00', '17:00:00'),
             $key => 4,
         ]);
 
@@ -448,8 +459,7 @@ class EventDivisionControllerTest extends TestCase
             'players_limit' => 16,
             'entry_fee' => 55,
             'division_title' => 'Knobs Division',
-            'playing_start_time' => '09:00:00',
-            'playing_end_time' => '17:00:00',
+            ...$this->playingWindow('09:00:00', '17:00:00'),
             $key => 4,
         ])->assertStatus(422)->assertJsonValidationErrors([$key]);
 
@@ -628,13 +638,18 @@ class EventDivisionControllerTest extends TestCase
             'players_limit' => 16,
             'entry_fee' => 55,
             'division_title' => 'Overnight Division',
-            'playing_start_time' => '17:00:00',
-            'playing_end_time' => '09:00:00',
+            ...$this->playingWindow('17:00:00', '09:00:00'),
         ]);
 
-        $overnight->assertStatus(201)
-            ->assertJsonPath('data.playing_start_time', '17:00:00')
-            ->assertJsonPath('data.playing_end_time', '09:00:00');
+        $overnight->assertStatus(201);
+        $this->assertSame(
+            '17:00',
+            EventCalendarTiming::formatHi((int) $overnight->json('data.playing_starts_at'))
+        );
+        $this->assertSame(
+            '09:00',
+            EventCalendarTiming::formatHi((int) $overnight->json('data.playing_ends_at'))
+        );
 
         $otherDivision = \App\Models\Division::factory()->create();
         $toMidnight = $this->postJson('/api/v1/manager/event-divisions', [
@@ -643,12 +658,14 @@ class EventDivisionControllerTest extends TestCase
             'players_limit' => 16,
             'entry_fee' => 55,
             'division_title' => 'Until midnight Division',
-            'playing_start_time' => '18:00:00',
-            'playing_end_time' => '00:00:00',
+            ...$this->playingWindow('18:00:00', '00:00:00'),
         ]);
 
-        $toMidnight->assertStatus(201)
-            ->assertJsonPath('data.playing_end_time', '00:00:00');
+        $toMidnight->assertStatus(201);
+        $this->assertSame(
+            '00:00',
+            EventCalendarTiming::formatHi((int) $toMidnight->json('data.playing_ends_at'))
+        );
 
         $thirdDivision = \App\Models\Division::factory()->create();
         $fullDay = $this->postJson('/api/v1/manager/event-divisions', [
@@ -657,15 +674,46 @@ class EventDivisionControllerTest extends TestCase
             'players_limit' => 16,
             'entry_fee' => 55,
             'division_title' => 'Full day Division',
-            'playing_start_time' => '00:00:00',
-            'playing_end_time' => '23:59:59',
+            ...$this->playingWindow('00:00:00', '23:59:59'),
         ]);
 
-        $fullDay->assertStatus(201)
-            ->assertJsonPath('data.playing_end_time', '23:59:59');
+        $fullDay->assertStatus(201);
+        $this->assertSame(
+            '23:59',
+            EventCalendarTiming::formatHi((int) $fullDay->json('data.playing_ends_at'))
+        );
     }
 
-    public function test_edition_division_creation_rejects_24_00_and_equal_clocks(): void
+    public function test_edition_division_creation_rejects_equal_or_inverted_playing_bounds(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $window = $this->playingWindow('18:00:00', '20:00:00');
+
+        $this->postJson('/api/v1/manager/event-divisions', [
+            'event_id' => $this->event->id_event,
+            'division_id' => $this->division->id_division,
+            'players_limit' => 16,
+            'entry_fee' => 55,
+            'division_title' => 'Equal bounds',
+            'playing_starts_at' => $window['playing_starts_at'],
+            'playing_ends_at' => $window['playing_starts_at'],
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['playing_ends_at']);
+
+        $this->postJson('/api/v1/manager/event-divisions', [
+            'event_id' => $this->event->id_event,
+            'division_id' => $this->division->id_division,
+            'players_limit' => 16,
+            'entry_fee' => 55,
+            'division_title' => 'Inverted bounds',
+            'playing_starts_at' => $window['playing_ends_at'],
+            'playing_ends_at' => $window['playing_starts_at'],
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['playing_ends_at']);
+    }
+
+    public function test_edition_division_creation_rejects_legacy_playing_time_fields(): void
     {
         Sanctum::actingAs($this->manager);
 
@@ -674,40 +722,11 @@ class EventDivisionControllerTest extends TestCase
             'division_id' => $this->division->id_division,
             'players_limit' => 16,
             'entry_fee' => 55,
-            'division_title' => 'Bad end',
-            'playing_start_time' => '18:00:00',
-            'playing_end_time' => '24:00:00',
-        ])->assertStatus(422)
-            ->assertJsonValidationErrors(['playing_end_time']);
-
-        $this->postJson('/api/v1/manager/event-divisions', [
-            'event_id' => $this->event->id_event,
-            'division_id' => $this->division->id_division,
-            'players_limit' => 16,
-            'entry_fee' => 55,
-            'division_title' => 'Equal clocks',
-            'playing_start_time' => '12:00:00',
-            'playing_end_time' => '12:00:00',
-        ])->assertStatus(422)
-            ->assertJsonValidationErrors(['playing_end_time']);
-    }
-
-    public function test_edition_division_creation_rejects_invalid_time_shape(): void
-    {
-        Sanctum::actingAs($this->manager);
-
-        $response = $this->postJson('/api/v1/manager/event-divisions', [
-            'event_id' => $this->event->id_event,
-            'division_id' => $this->division->id_division,
-            'players_limit' => 16,
-            'entry_fee' => 55,
-            'division_title' => 'Bad times',
-            'playing_start_time' => '25:00:00',
+            'division_title' => 'Legacy times',
+            'playing_start_time' => '09:00:00',
             'playing_end_time' => '18:00:00',
-        ]);
-
-        $response->assertStatus(422)
-            ->assertJsonValidationErrors(['playing_start_time']);
+        ])->assertStatus(422)
+            ->assertJsonValidationErrors(['playing_start_time', 'playing_end_time']);
     }
 
     public function test_edition_division_update_validation()
@@ -733,7 +752,7 @@ class EventDivisionControllerTest extends TestCase
 
     public function test_regular_player_cannot_access_edition_division_management()
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
 
         $response = $this->getJson('/api/v1/manager/event-divisions');

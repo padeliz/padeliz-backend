@@ -19,7 +19,7 @@ final class PlayerLevelService
     public function currentLevel(int $playerId): ?PlayerLevel
     {
         return PlayerLevel::query()
-            ->where('player_id', $playerId)
+            ->where('player_user_id', $playerId)
             ->orderByDesc('inserted_at')
             ->orderByDesc('id_player_level')
             ->first();
@@ -126,7 +126,7 @@ final class PlayerLevelService
 
         if ($playerLevel === null) {
             return PlayerLevel::query()->create([
-                'player_id' => $playerId,
+                'player_user_id' => $playerId,
                 'level' => $normalized,
                 'player_level_assessment_id' => $assessmentId,
                 'event_participation_id' => $participationId,
@@ -134,7 +134,7 @@ final class PlayerLevelService
         }
 
         $playerLevel->fill([
-            'player_id' => $playerId,
+            'player_user_id' => $playerId,
             'level' => $normalized,
         ])->save();
 

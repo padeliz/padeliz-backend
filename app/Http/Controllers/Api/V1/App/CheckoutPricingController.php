@@ -34,7 +34,7 @@ class CheckoutPricingController extends \App\Http\Controllers\BaseVersions\V1\V1
 
         $pending = EventReferralAttribution::query()
             ->where('event_id', $checkoutModel->event_id)
-            ->where('referred_player_id', $checkoutModel->player_id)
+            ->where('referred_player_user_id', $checkoutModel->player_user_id)
             ->where('status', ReferralAttributionStatus::Pending->value)
             ->first();
 
@@ -53,7 +53,7 @@ class CheckoutPricingController extends \App\Http\Controllers\BaseVersions\V1\V1
             $context = $this->pricingService->buildContextForRegistration(
                 $reg,
                 $selectedBenefitIds,
-                $pending?->referrer_player_id !== null ? (int) $pending->referrer_player_id : null,
+                $pending?->referrer_player_user_id !== null ? (int) $pending->referrer_player_user_id : null,
                 $pending !== null,
             );
             $quote = $this->pricingService->quote($context);
@@ -81,7 +81,7 @@ class CheckoutPricingController extends \App\Http\Controllers\BaseVersions\V1\V1
         $validated = $request->validate([
             'selected_benefit_ids' => 'nullable|array',
             'selected_benefit_ids.*' => 'integer',
-            'referrer_player_id' => 'nullable|integer|exists:players,id_player',
+            'referrer_player_user_id' => 'nullable|integer|exists:users,id_user',
         ]);
 
         $selectedBenefitIds = array_map('intval', $validated['selected_benefit_ids'] ?? []);
@@ -98,17 +98,17 @@ class CheckoutPricingController extends \App\Http\Controllers\BaseVersions\V1\V1
                     $request->user(),
                     (int) $checkoutModel->event_id
                 );
-                $candidateIds = collect($candidates)->pluck('referrer_player_id')->all();
+                $candidateIds = collect($candidates)->pluck('referrer_player_user_id')->all();
 
-                $referrerId = isset($validated['referrer_player_id'])
-                    ? (int) $validated['referrer_player_id']
+                $referrerId = isset($validated['referrer_player_user_id'])
+                    ? (int) $validated['referrer_player_user_id']
                     : null;
                 $attribution = null;
 
                 if (count($candidateIds) === 0) {
                     $this->referralService->clearPendingAttribution(
                         (int) $checkoutModel->event_id,
-                        (int) $checkoutModel->player_id
+                        (int) $checkoutModel->player_user_id
                     );
                     $referrerId = null;
                 } elseif (count($candidateIds) === 1) {
@@ -143,7 +143,7 @@ class CheckoutPricingController extends \App\Http\Controllers\BaseVersions\V1\V1
                 return $this->checkoutService->recomputeTotals($checkoutModel->fresh(['items.registration']));
             });
         } catch (InvalidArgumentException $e) {
-            return $this->validationErrorResponse(['referrer_player_id' => [$e->getMessage()]]);
+            return $this->validationErrorResponse(['referrer_player_user_id' => [$e->getMessage()]]);
         }
 
         return $this->resourceResponse(
@@ -157,7 +157,7 @@ class CheckoutPricingController extends \App\Http\Controllers\BaseVersions\V1\V1
     private function ownedCheckout(Request $request, int $checkoutId): EventRegistrationCheckout
     {
         $checkout = EventRegistrationCheckout::query()->findOrFail($checkoutId);
-        $this->checkoutService->assertOwnedBy($checkout, (int) $request->user()->id_player);
+        $this->checkoutService->assertOwnedBy($checkout, (int) $request->user()->id_user);
 
         return $checkout->load(['items.registration']);
     }

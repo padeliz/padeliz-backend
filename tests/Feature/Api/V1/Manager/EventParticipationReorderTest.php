@@ -8,7 +8,7 @@ use App\Models\Division;
 use App\Models\EventDivision;
 use App\Models\EventParticipation;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -19,7 +19,7 @@ class EventParticipationReorderTest extends TestCase
 
     public function test_reorders_and_moves_participations_within_edition(): void
     {
-        $manager = Player::factory()->manager()->create([
+        $manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         Sanctum::actingAs($manager);
@@ -80,7 +80,7 @@ class EventParticipationReorderTest extends TestCase
 
     public function test_rejects_when_edition_is_finalized(): void
     {
-        $manager = Player::factory()->manager()->create([
+        $manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         Sanctum::actingAs($manager);

@@ -41,9 +41,9 @@ final class PlayerEventHistoryService
         /** @var Collection<int, EventParticipation> $past */
         $past = EventParticipation::query()
             ->with(['event', 'eventDivision.division'])
-            ->whereIn('player_id', $playerIds)
+            ->whereIn('player_user_id', $playerIds)
             ->whereHas('event', function ($q) use ($cutoffDateYmd) {
-                $q->whereDate('date', '<', $cutoffDateYmd);
+                EventCalendarTiming::applyEndsBeforeDay($q, $cutoffDateYmd);
             })
             ->get();
 
@@ -63,7 +63,7 @@ final class PlayerEventHistoryService
             ->groupBy('event_division_id')
             ->pluck('c', 'event_division_id');
 
-        $byPlayer = $past->groupBy('player_id');
+        $byPlayer = $past->groupBy('player_user_id');
 
         foreach ($byPlayer as $playerId => $rows) {
             $playerId = (int) $playerId;
@@ -160,11 +160,7 @@ final class PlayerEventHistoryService
 
     public function cutoffDateForEdition(PadelEvent $event): string
     {
-        if ($event->date instanceof \DateTimeInterface) {
-            return $event->date->format('Y-m-d');
-        }
-
-        return (string) $event->formatted_date;
+        return EventCalendarTiming::dayYmd((int) $event->event_starts_at);
     }
 
     /**
@@ -310,14 +306,11 @@ final class PlayerEventHistoryService
     private function editionDateYmd(EventParticipation $row): string
     {
         $event = $row->event;
-        if ($event === null) {
+        if ($event === null || $event->event_starts_at === null) {
             return '';
         }
-        if ($event->date instanceof \DateTimeInterface) {
-            return $event->date->format('Y-m-d');
-        }
 
-        return (string) ($event->formatted_date ?? '');
+        return EventCalendarTiming::dayYmd((int) $event->event_starts_at);
     }
 
     private function editionName(EventParticipation $row): string

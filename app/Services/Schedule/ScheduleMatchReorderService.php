@@ -7,6 +7,7 @@ namespace App\Services\Schedule;
 use App\Models\EventDivision;
 use App\Models\EventDivisionCourt;
 use App\Models\GameMatch;
+use App\Services\EventCalendarTiming;
 use App\Services\Pdf\EventDivisionPosterInvalidator;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
@@ -153,8 +154,8 @@ final class ScheduleMatchReorderService
             $schedule = $eventDivision->requireSchedule();
 
             $slots = RoundClockCalculator::slots(
-                (string) $eventDivision->formatted_playing_start_time,
-                (string) $eventDivision->formatted_playing_end_time,
+                EventCalendarTiming::formatHi((int) $eventDivision->playing_starts_at),
+                EventCalendarTiming::formatHi((int) $eventDivision->playing_ends_at),
                 $roundsTotal,
                 (bool) $schedule->include_final,
                 (bool) $schedule->has_demonstrative_match,

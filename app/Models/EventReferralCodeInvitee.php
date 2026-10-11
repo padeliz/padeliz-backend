@@ -28,12 +28,12 @@ class EventReferralCodeInvitee extends Model
         'referral_code_id',
         'email',
         'phone',
-        'player_id',
+        'player_user_id',
     ];
 
     protected $casts = [
         'referral_code_id' => 'integer',
-        'player_id' => 'integer',
+        'player_user_id' => 'integer',
         'inserted_at' => 'integer',
         'updated_at' => 'integer',
     ];
@@ -45,6 +45,6 @@ class EventReferralCodeInvitee extends Model
 
     public function player(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'player_id', 'id_player');
+        return $this->belongsTo(User::class, 'player_user_id', 'id_user');
     }
 }

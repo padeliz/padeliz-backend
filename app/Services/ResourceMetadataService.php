@@ -163,6 +163,18 @@ class ResourceMetadataService
             return 'events';
         }
 
+        // Account aggregate is OpenAPI "User" but product directory stays /players.
+        // Emails/phones/identities keep product player-* paths.
+        $productPaths = [
+            'User' => 'players',
+            'UserEmail' => 'player-emails',
+            'UserPhone' => 'player-phones',
+            'UserIdentity' => 'player-identities',
+        ];
+        if (isset($productPaths[$modelName])) {
+            return $productPaths[$modelName];
+        }
+
         $kebabCase = Str::kebab($modelName);
 
         // For hyphenated strings, only pluralize the last word
@@ -404,6 +416,16 @@ class ResourceMetadataService
      */
     private function getRelationshipName(string $field): string
     {
+        // Users FKs are *user_id (or user_id); role relations drop the user segment
+        // (player_user_id → player, imported_by_manager_user_id → importedByManager).
+        if (str_ends_with($field, '_user_id')) {
+            return Str::camel(substr($field, 0, -strlen('_user_id')));
+        }
+
+        if ($field === 'user_id') {
+            return 'user';
+        }
+
         // Remove _id suffix and convert to camelCase
         $name = str_replace('_id', '', $field);
 

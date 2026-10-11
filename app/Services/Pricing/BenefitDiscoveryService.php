@@ -32,7 +32,7 @@ final class BenefitDiscoveryService
 
         $entitlements = BenefitEntitlement::query()
             ->with('benefitDefinition.conditions')
-            ->where('player_id', $context->player->id_player)
+            ->where('player_user_id', $context->player->id_user)
             ->where('status', 'active')
             ->where(function ($q) use ($context) {
                 $q->whereNull('valid_from')->orWhere('valid_from', '<=', $context->now);
@@ -141,14 +141,14 @@ final class BenefitDiscoveryService
 
             $ok = match ($type) {
                 BenefitConditionType::StudentProofActive => PlayerStudentProof::query()
-                    ->where('player_id', $context->player->id_player)
+                    ->where('player_user_id', $context->player->id_user)
                     ->active($context->now)
                     ->exists(),
                 BenefitConditionType::DaysBeforeEditionDate => $context->daysBeforeEditionDate() >= (int) ($params['min_days'] ?? 0),
                 BenefitConditionType::ReferrerSelected => $context->hasReferrerSelected,
                 BenefitConditionType::NoPriorPaidRegistrationInEdition => ! $this->hasPriorPaidRegistration(
                     (int) $context->event->id_event,
-                    (int) $context->player->id_player,
+                    (int) $context->player->id_user,
                     (int) $context->registration->id_registration
                 ),
                 default => false,
@@ -166,13 +166,13 @@ final class BenefitDiscoveryService
     {
         return EventRegistration::query()
             ->where('event_id', $editionId)
-            ->where('player_id', $playerId)
+            ->where('player_user_id', $playerId)
             ->where('id_registration', '!=', $excludeRegistrationId)
             ->where('payment_status', RegistrationPaymentStatus::Paid->value)
             ->exists()
             || EventRegistration::query()
                 ->where('event_id', $editionId)
-                ->where('player_id', $playerId)
+                ->where('player_user_id', $playerId)
                 ->where('id_registration', '!=', $excludeRegistrationId)
                 ->whereIn('payment_status', [
                     RegistrationPaymentStatus::Refunded->value,
@@ -186,7 +186,7 @@ final class BenefitDiscoveryService
         if ($benefit->max_redemptions_per_player !== null) {
             $count = BenefitRedemption::query()
                 ->where('benefit_definition_id', $benefit->id_benefit)
-                ->whereHas('checkoutItem.registration', fn ($q) => $q->where('player_id', $context->player->id_player))
+                ->whereHas('checkoutItem.registration', fn ($q) => $q->where('player_user_id', $context->player->id_user))
                 ->count();
             if ($count >= (int) $benefit->max_redemptions_per_player) {
                 return false;

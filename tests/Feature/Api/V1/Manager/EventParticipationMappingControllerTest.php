@@ -13,21 +13,22 @@ use App\Models\EventParticipation;
 use App\Models\EventRegistration;
 use App\Models\GameMatch;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
 
 final class EventParticipationMappingControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'first_name' => 'Test',
             'middle_name' => null,
             'last_name' => 'Manager',
@@ -45,11 +46,11 @@ final class EventParticipationMappingControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
         $event = PadelEvent::factory()->create(['finalized_at' => null]);
         $ed = EventDivision::factory()->create(['event_id' => $event->id_event]);
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         EventRegistration::factory()->create([
             'event_id' => $event->id_event,
             'event_division_id' => $ed->id_event_division,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'is_student' => false,
             'payment' => 50,
         ]);
@@ -103,7 +104,7 @@ final class EventParticipationMappingControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $event = PadelEvent::factory()->create(['date' => '2026-06-15', 'finalized_at' => null]);
+        $event = PadelEvent::factory()->create(UnixEventFactory::eventBounds('2026-06-15') + ['finalized_at' => null]);
         $divisionA = Division::factory()->create();
         $divisionB = Division::factory()->create();
         $edSpecific = EventDivision::factory()->create([
@@ -121,19 +122,19 @@ final class EventParticipationMappingControllerTest extends TestCase
             'players_limit' => 16,
         ]);
 
-        $specificPlayer = Player::factory()->create();
-        $widePlayer = Player::factory()->create();
+        $specificPlayer = User::factory()->create();
+        $widePlayer = User::factory()->create();
 
         EventRegistration::factory()->create([
             'event_id' => $event->id_event,
-            'player_id' => $specificPlayer->id_player,
+            'player_user_id' => $specificPlayer->id_user,
             'event_division_id' => $edSpecific->id_event_division,
             'is_student' => false,
             'payment' => 50,
         ]);
         EventRegistration::factory()->create([
             'event_id' => $event->id_event,
-            'player_id' => $widePlayer->id_player,
+            'player_user_id' => $widePlayer->id_user,
             'event_division_id' => $edWide->id_event_division,
             'is_student' => false,
             'payment' => 50,
@@ -145,12 +146,12 @@ final class EventParticipationMappingControllerTest extends TestCase
 
         $this->assertDatabaseHas('event_participations', [
             'event_id' => $event->id_event,
-            'player_id' => $specificPlayer->id_player,
+            'player_user_id' => $specificPlayer->id_user,
             'event_division_id' => $edSpecific->id_event_division,
         ]);
         $this->assertDatabaseHas('event_participations', [
             'event_id' => $event->id_event,
-            'player_id' => $widePlayer->id_player,
+            'player_user_id' => $widePlayer->id_user,
             'event_division_id' => $edWide->id_event_division,
         ]);
     }
@@ -197,14 +198,14 @@ final class EventParticipationMappingControllerTest extends TestCase
         $advancersDivision = Division::factory()->create(['name' => 'Advancers']);
         $explorersDivision = Division::factory()->create(['name' => 'Explorers']);
 
-        $pastEdition = PadelEvent::factory()->create(['date' => '2026-01-01']);
+        $pastEdition = PadelEvent::factory()->create(UnixEventFactory::eventBounds('2026-01-01'));
         $pastAdvancersEd = EventDivision::factory()->create([
             'event_id' => $pastEdition->id_event,
             'division_id' => $advancersDivision->id_division,
             'division_title' => 'Advancers',
         ]);
 
-        $event = PadelEvent::factory()->create(['date' => '2026-06-15', 'finalized_at' => null]);
+        $event = PadelEvent::factory()->create(UnixEventFactory::eventBounds('2026-06-15') + ['finalized_at' => null]);
         $advancersEd = EventDivision::factory()->create([
             'event_id' => $event->id_event,
             'division_id' => $advancersDivision->id_division,
@@ -220,10 +221,10 @@ final class EventParticipationMappingControllerTest extends TestCase
             'players_limit' => 10,
         ]);
 
-        $players = Player::factory()->count(3)->create();
+        $players = User::factory()->count(3)->create();
         foreach ($players as $player) {
             EventParticipation::factory()->create([
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'event_id' => $pastEdition->id_event,
                 'event_division_id' => $pastAdvancersEd->id_event_division,
                 'absence_reason' => null,
@@ -232,7 +233,7 @@ final class EventParticipationMappingControllerTest extends TestCase
             EventRegistration::factory()->create([
                 'event_id' => $event->id_event,
                 'event_division_id' => $advancersEd->id_event_division,
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'is_student' => false,
                 'payment' => 50,
             ]);

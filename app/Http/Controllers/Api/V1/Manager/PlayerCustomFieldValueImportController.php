@@ -6,8 +6,8 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
 use App\Http\Resources\PlayerCustomFieldValueImportResource;
-use App\Http\Resources\PlayerResource;
-use App\Models\Player;
+use App\Http\Resources\UserResource;
+use App\Models\User;
 use App\Models\PlayerCustomFieldValueImport;
 use App\Services\PlayerCustomField\PlayerCustomFieldValueImportFailedException;
 use App\Services\PlayerCustomField\PlayerCustomFieldValueImportService;
@@ -55,14 +55,14 @@ class PlayerCustomFieldValueImportController extends V1BaseController
         foreach ($preview['rows'] as $row) {
             $mapping = $row['mapping'];
             $playerIds = array_values(array_unique(array_filter(array_merge(
-                $mapping['player_id'] !== null ? [$mapping['player_id']] : [],
+                $mapping['player_user_id'] !== null ? [$mapping['player_user_id']] : [],
                 $mapping['candidate_ids'],
                 $mapping['name_match_ids'],
             ))));
 
             $players = empty($playerIds)
                 ? collect()
-                : Player::query()->whereIn('id_player', $playerIds)->get()->keyBy('id_player');
+                : User::query()->whereIn('id_user', $playerIds)->get()->keyBy('id_user');
 
             $rows[] = [
                 'index' => $row['index'],
@@ -75,7 +75,7 @@ class PlayerCustomFieldValueImportController extends V1BaseController
                     'status' => $mapping['status'],
                     'matched_by' => $mapping['matched_by'],
                     'player' => $this->playerPayload(
-                        $mapping['player_id'] !== null ? $players->get($mapping['player_id']) : null
+                        $mapping['player_user_id'] !== null ? $players->get($mapping['player_user_id']) : null
                     ),
                     'candidates' => array_values(array_filter(array_map(
                         fn (int $id) => $this->playerPayload($players->get($id)),
@@ -118,12 +118,12 @@ class PlayerCustomFieldValueImportController extends V1BaseController
             'rows.*.full_name' => 'nullable|string|max:255',
             'rows.*.email' => 'nullable|string|max:255',
             'rows.*.phone' => 'nullable|string|max:30',
-            'rows.*.player_id' => 'required|integer',
+            'rows.*.player_user_id' => 'required|integer',
             'rows.*.answers' => 'required|array',
         ]);
 
         try {
-            $import = $this->importService->save($validated, (int) $request->user()->id_player);
+            $import = $this->importService->save($validated, (int) $request->user()->id_user);
         } catch (PlayerCustomFieldValueImportFailedException $e) {
             return $this->errorResponse($e->getMessage(), $e->status, $e->errors);
         } catch (ValidationException $e) {
@@ -148,7 +148,7 @@ class PlayerCustomFieldValueImportController extends V1BaseController
      */
     public function index(Request $request)
     {
-        $query = PlayerCustomFieldValueImport::with(['importedByPlayer', 'event']);
+        $query = PlayerCustomFieldValueImport::with(['importedByManager', 'event']);
 
         $this->applyAdvancedPagination(
             $query,
@@ -185,7 +185,7 @@ class PlayerCustomFieldValueImportController extends V1BaseController
      */
     public function show(PlayerCustomFieldValueImport $playerCustomFieldValueImport): JsonResponse
     {
-        $playerCustomFieldValueImport->load(['rows.player', 'importedByPlayer', 'event']);
+        $playerCustomFieldValueImport->load(['rows.player', 'importedByManager', 'event']);
 
         return $this->resourceResponse(
             new PlayerCustomFieldValueImportResource($playerCustomFieldValueImport),
@@ -196,12 +196,12 @@ class PlayerCustomFieldValueImportController extends V1BaseController
     /**
      * @return null|array<string, mixed>
      */
-    private function playerPayload(?Player $player): ?array
+    private function playerPayload(?User $player): ?array
     {
         if ($player === null) {
             return null;
         }
 
-        return (new PlayerResource($player))->resolve();
+        return (new UserResource($player))->resolve();
     }
 }

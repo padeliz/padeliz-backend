@@ -6,7 +6,7 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
 use App\Http\Resources\PlayerCustomFieldValueResource;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerCustomField;
 use App\Models\PlayerCustomFieldSubmission;
 use App\Models\PlayerCustomFieldValue;
@@ -37,10 +37,10 @@ class PlayerCustomFieldValueController extends V1BaseController
      *     @OA\Response(response=200, description="Successful operation")
      * )
      */
-    public function index(Request $request, Player $player)
+    public function index(Request $request, User $player)
     {
         $query = PlayerCustomFieldValue::query()
-            ->where('player_id', $player->id_player)
+            ->where('player_user_id', $player->id_user)
             ->with(['field', 'submission', 'selectedOptions']);
 
         $this->applyAdvancedPagination(
@@ -76,7 +76,7 @@ class PlayerCustomFieldValueController extends V1BaseController
      *     @OA\Response(response=201, description="Created")
      * )
      */
-    public function store(Request $request, Player $player): JsonResponse
+    public function store(Request $request, User $player): JsonResponse
     {
         $validated = $request->validate([
             'player_custom_field_id' => 'required|integer|exists:player_custom_fields,id_player_custom_field',
@@ -97,18 +97,18 @@ class PlayerCustomFieldValueController extends V1BaseController
         $submission = $this->resolveSubmission($player, $request, $validated['submission_id'] ?? null);
 
         $this->writer->write(
-            (int) $player->id_player,
+            (int) $player->id_user,
             $field,
             (int) $submission->id_player_custom_field_submission,
             $validated,
             PlayerCustomFieldValue::SUBMITTED_VIA_MANAGER,
-            (int) $request->user()->id_player,
+            (int) $request->user()->id_user,
             null,
             false,
         );
 
         $value = PlayerCustomFieldValue::query()
-            ->where('player_id', $player->id_player)
+            ->where('player_user_id', $player->id_user)
             ->where('player_custom_field_id', $field->id_player_custom_field)
             ->where('submission_id', $submission->id_player_custom_field_submission)
             ->orderByDesc('id_player_custom_field_value')
@@ -132,7 +132,7 @@ class PlayerCustomFieldValueController extends V1BaseController
      * )
      */
     public function show(
-        Player $player,
+        User $player,
         PlayerCustomFieldValue $playerCustomFieldValue,
     ): JsonResponse {
         $this->assertValueBelongsToPlayer($player, $playerCustomFieldValue);
@@ -145,21 +145,21 @@ class PlayerCustomFieldValueController extends V1BaseController
     }
 
     private function resolveSubmission(
-        Player $player,
+        User $player,
         Request $request,
         ?int $submissionId,
     ): PlayerCustomFieldSubmission {
         if ($submissionId === null) {
             return PlayerCustomFieldSubmission::create([
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'submitted_via' => PlayerCustomFieldSubmission::SUBMITTED_VIA_MANAGER,
-                'submitted_by_player_id' => (int) $request->user()->id_player,
+                'submitted_by_manager_user_id' => (int) $request->user()->id_user,
             ]);
         }
 
         $submission = PlayerCustomFieldSubmission::query()->findOrFail($submissionId);
 
-        if ((int) $submission->player_id !== (int) $player->id_player) {
+        if ((int) $submission->player_user_id !== (int) $player->id_user) {
             throw ValidationException::withMessages([
                 'submission_id' => ['The submission does not belong to this player.'],
             ]);
@@ -168,9 +168,9 @@ class PlayerCustomFieldValueController extends V1BaseController
         return $submission;
     }
 
-    private function assertValueBelongsToPlayer(Player $player, PlayerCustomFieldValue $value): void
+    private function assertValueBelongsToPlayer(User $player, PlayerCustomFieldValue $value): void
     {
-        if ((int) $value->player_id !== (int) $player->id_player) {
+        if ((int) $value->player_user_id !== (int) $player->id_user) {
             abort(404);
         }
     }

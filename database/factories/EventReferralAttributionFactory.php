@@ -8,7 +8,7 @@ use App\Enums\Referral\ReferralAttributionStatus;
 use App\Models\EventReferralAttribution;
 use App\Models\EventReferralCode;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class EventReferralAttributionFactory extends Factory
@@ -21,8 +21,8 @@ class EventReferralAttributionFactory extends Factory
 
         return [
             'event_id' => $referralCode->event_id,
-            'referred_player_id' => Player::factory(),
-            'referrer_player_id' => $referralCode->referrer_player_id,
+            'referred_player_user_id' => User::factory(),
+            'referrer_player_user_id' => $referralCode->referrer_player_user_id,
             'referral_code_id' => $referralCode->id_referral_code,
             'checkout_id' => null,
             'status' => ReferralAttributionStatus::Pending,

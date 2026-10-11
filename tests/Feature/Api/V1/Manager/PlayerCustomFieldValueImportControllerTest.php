@@ -5,11 +5,11 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerCustomFieldValue;
 use App\Models\PlayerCustomFieldValueImport;
-use App\Models\PlayerEmail;
-use App\Models\PlayerPhone;
+use App\Models\UserEmail;
+use App\Models\UserPhone;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Laravel\Sanctum\Sanctum;
@@ -19,13 +19,13 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
     protected function setUp(): void
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create();
+        $this->manager = User::factory()->manager()->create();
     }
 
     public function test_preview_requires_manager_auth(): void
@@ -39,7 +39,7 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $player = Player::factory()->create([
+        $player = User::factory()->create([
             'first_name' => 'Ana',
             'last_name' => 'Demo',
         ]);
@@ -60,7 +60,7 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
         $rows = $response->json('data.rows');
         $this->assertCount(2, $rows);
         $this->assertSame('mapped', $rows[0]['mapping']['status']);
-        $this->assertSame($player->id_player, $rows[0]['mapping']['player']['id_player']);
+        $this->assertSame($player->id_user, $rows[0]['mapping']['player']['id_user']);
         $this->assertSame('1998', $rows[0]['answers']['year_of_birth']);
         $this->assertSame('female', $rows[0]['answers']['gender']);
         $this->assertArrayNotHasKey('padel_matches_played', $rows[0]['answers']);
@@ -85,13 +85,13 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $player = Player::factory()->create([
+        $player = User::factory()->create([
             'first_name' => 'Ana',
             'last_name' => 'Demo',
         ]);
         $this->setContacts($player, 'ana.demo@example.test', '+40712000001');
-        $playersBefore = Player::count();
-        $emailsBefore = PlayerEmail::count();
+        $playersBefore = User::count();
+        $emailsBefore = UserEmail::count();
 
         $response = $this->postJson('/api/v1/manager/players/custom-field-values/import', [
             'format' => 'google_form_minitour_welcome',
@@ -101,7 +101,7 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
                 'full_name' => 'Ana Demo',
                 'email' => 'ana.demo@example.test',
                 'phone' => '+40712000001',
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'answers' => [
                     'year_of_birth' => '1998',
                     'gender' => 'Female',
@@ -117,10 +117,10 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
             ->assertJsonPath('data.values_replaced_count', 0)
             ->assertJsonPath('data.rows.0.action', 'imported');
 
-        $this->assertSame($playersBefore, Player::count());
-        $this->assertSame($emailsBefore, PlayerEmail::count());
+        $this->assertSame($playersBefore, User::count());
+        $this->assertSame($emailsBefore, UserEmail::count());
 
-        $value = PlayerCustomFieldValue::query()->where('player_id', $player->id_player)->firstOrFail();
+        $value = PlayerCustomFieldValue::query()->where('player_user_id', $player->id_user)->firstOrFail();
         $this->assertSame('csv', $value->submitted_via);
         $this->assertNotNull($value->created_via_import_id);
 
@@ -138,7 +138,7 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $event = PadelEvent::factory()->create();
 
         $payload = [
@@ -150,7 +150,7 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
                 'full_name' => 'Ana Demo',
                 'email' => '',
                 'phone' => '',
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'answers' => ['playtomic_id' => '5'],
             ]],
         ];
@@ -172,7 +172,7 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
             2,
             PlayerCustomFieldValue::query()
                 ->where('review_status', 'validated')
-                ->whereNull('reviewed_by_manager_id')
+                ->whereNull('reviewed_by_manager_user_id')
                 ->whereNotNull('reviewed_at')
                 ->count()
         );
@@ -202,7 +202,7 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $import = $this->postJson('/api/v1/manager/players/custom-field-values/import', [
             'format' => 'google_form_minitour_welcome',
             'filename' => 'hist.csv',
@@ -211,7 +211,7 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
                 'full_name' => 'Ana',
                 'email' => '',
                 'phone' => '',
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'answers' => ['year_of_birth' => '1995'],
             ]],
         ])->assertCreated()->json('data');
@@ -252,7 +252,7 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $experience = '[{"sport":"padel","level":"amateur","matches_played":12}]';
 
         $this->postJson('/api/v1/manager/players/custom-field-values/import', [
@@ -263,7 +263,7 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
                 'full_name' => 'Ana',
                 'email' => '',
                 'phone' => '',
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'answers' => ['racket_experience' => $experience],
             ]],
         ])->assertCreated()->assertJsonPath('data.values_new_count', 1);
@@ -278,7 +278,7 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
 
         $this->postJson('/api/v1/manager/players/custom-field-values/import', [
             'format' => 'google_form_minitour_welcome',
@@ -288,7 +288,7 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
                 'full_name' => 'Ana',
                 'email' => '',
                 'phone' => '',
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'answers' => ['gender' => 'robot'],
             ]],
         ])->assertStatus(422);
@@ -297,10 +297,10 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
         $this->assertSame(0, PlayerCustomFieldValue::count());
     }
 
-    private function currentValue(Player $player, string $code): PlayerCustomFieldValue
+    private function currentValue(User $player, string $code): PlayerCustomFieldValue
     {
         return PlayerCustomFieldValue::query()
-            ->where('player_id', $player->id_player)
+            ->where('player_user_id', $player->id_user)
             ->whereHas('field', fn ($query) => $query->where('code', $code))
             ->latestValidatedFirst()
             ->firstOrFail();
@@ -318,16 +318,16 @@ final class PlayerCustomFieldValueImportControllerTest extends TestCase
         return UploadedFile::fake()->createWithContent($name, $contents);
     }
 
-    private function setContacts(Player $player, string $email, string $phone): void
+    private function setContacts(User $player, string $email, string $phone): void
     {
-        PlayerEmail::factory()->create([
-            'player_id' => $player->id_player,
+        UserEmail::factory()->create([
+            'user_id' => $player->id_user,
             'email' => $email,
             'purposes' => ['contact'],
             'is_primary' => true,
         ]);
-        PlayerPhone::factory()->create([
-            'player_id' => $player->id_player,
+        UserPhone::factory()->create([
+            'user_id' => $player->id_user,
             'phone' => $phone,
             'purposes' => ['contact'],
             'is_primary' => true,

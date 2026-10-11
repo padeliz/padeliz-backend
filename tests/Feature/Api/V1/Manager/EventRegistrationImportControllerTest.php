@@ -8,9 +8,9 @@ use App\Models\Division;
 use App\Models\EventDivision;
 use App\Models\EventRegistration;
 use App\Models\PadelEvent;
-use App\Models\Player;
-use App\Models\PlayerEmail;
-use App\Models\PlayerPhone;
+use App\Models\User;
+use App\Models\UserEmail;
+use App\Models\UserPhone;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Http\UploadedFile;
 use Laravel\Sanctum\Sanctum;
@@ -20,7 +20,7 @@ class EventRegistrationImportControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
     private PadelEvent $event;
 
@@ -30,7 +30,7 @@ class EventRegistrationImportControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'first_name' => 'Test',
             'middle_name' => null,
             'last_name' => 'Manager',
@@ -76,20 +76,20 @@ class EventRegistrationImportControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $importDivisionPlayer = Player::factory()->create([
+        $importDivisionPlayer = User::factory()->create([
             'first_name' => 'Mara',
             'last_name' => 'Popescu',
         ]);
         $this->setContacts($importDivisionPlayer, 'mara@example.test', '+40700000001');
         EventRegistration::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $importDivisionPlayer->id_player,
+            'player_user_id' => $importDivisionPlayer->id_user,
             'event_division_id' => $this->importDivision->id_event_division,
             'is_student' => false,
             'payment' => 77,
         ]);
 
-        $divisionPlayer = Player::factory()->create([
+        $divisionPlayer = User::factory()->create([
             'first_name' => 'Vlad',
             'last_name' => 'Mitu',
         ]);
@@ -102,7 +102,7 @@ class EventRegistrationImportControllerTest extends TestCase
         ]);
         EventRegistration::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $divisionPlayer->id_player,
+            'player_user_id' => $divisionPlayer->id_user,
             'event_division_id' => $eventDivision->id_event_division,
             'is_student' => false,
             'payment' => 55,
@@ -124,7 +124,7 @@ class EventRegistrationImportControllerTest extends TestCase
     public function test_preview_already_registered_false_when_not_registered(): void
     {
         Sanctum::actingAs($this->manager);
-        $player = Player::factory()->create([
+        $player = User::factory()->create([
             'first_name' => 'Mara',
             'last_name' => 'Popescu',
         ]);
@@ -151,7 +151,7 @@ class EventRegistrationImportControllerTest extends TestCase
             'first_name' => 'Mara',
             'email' => 'mara@example.test',
             'phone' => '',
-            'player_id' => Player::factory()->create()->id_player,
+            'player_user_id' => User::factory()->create()->id_user,
             'status' => 'mapped',
         ]]))->assertStatus(409)
             ->assertJsonFragment(['PadelEvent is finalized.']);
@@ -160,8 +160,8 @@ class EventRegistrationImportControllerTest extends TestCase
     public function test_save_requires_edition_division_and_uses_division_entry_fee(): void
     {
         Sanctum::actingAs($this->manager);
-        $player = Player::factory()->create();
-        $playersBefore = Player::count();
+        $player = User::factory()->create();
+        $playersBefore = User::count();
         $regsBefore = EventRegistration::count();
 
         $response = $this->postJson($this->importUrl(), $this->importPayload([[
@@ -171,7 +171,7 @@ class EventRegistrationImportControllerTest extends TestCase
             'last_name' => 'Popescu',
             'email' => 'mara@example.test',
             'phone' => '+40712345678',
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'status' => 'mapped',
         ]]));
 
@@ -181,14 +181,14 @@ class EventRegistrationImportControllerTest extends TestCase
             ->assertJsonPath('data.skipped_unmapped', 0)
             ->assertJsonPath('data.skipped_conflict', 0)
             ->assertJsonPath('data.rows.0.action', 'registered')
-            ->assertJsonPath('data.rows.0.player_id', $player->id_player);
+            ->assertJsonPath('data.rows.0.player_user_id', $player->id_user);
 
-        $this->assertSame($playersBefore, Player::count());
+        $this->assertSame($playersBefore, User::count());
         $this->assertSame($regsBefore + 1, EventRegistration::count());
 
         $registration = EventRegistration::query()
             ->where('event_id', $this->event->id_event)
-            ->where('player_id', $player->id_player)
+            ->where('player_user_id', $player->id_user)
             ->first();
         $this->assertNotNull($registration);
         $this->assertSame(
@@ -206,7 +206,7 @@ class EventRegistrationImportControllerTest extends TestCase
     public function test_save_rejects_missing_event_division_id(): void
     {
         Sanctum::actingAs($this->manager);
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
 
         $this->postJson($this->importUrl(), [
             'format' => 'playtomic',
@@ -214,7 +214,7 @@ class EventRegistrationImportControllerTest extends TestCase
                 'index' => 0,
                 'first_name' => 'Mara',
                 'email' => 'mara@example.test',
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'status' => 'mapped',
             ]],
         ])->assertStatus(422)
@@ -226,7 +226,7 @@ class EventRegistrationImportControllerTest extends TestCase
     public function test_save_does_not_create_players(): void
     {
         Sanctum::actingAs($this->manager);
-        $playersBefore = Player::count();
+        $playersBefore = User::count();
 
         $this->postJson($this->importUrl(), $this->importPayload([[
             'index' => 0,
@@ -234,41 +234,41 @@ class EventRegistrationImportControllerTest extends TestCase
             'last_name' => 'New',
             'email' => 'brand.new@example.test',
             'phone' => '',
-            'player_id' => null,
+            'player_user_id' => null,
             'status' => 'unmapped',
         ]]))->assertCreated()
             ->assertJsonPath('data.registered', 0)
             ->assertJsonPath('data.skipped_unmapped', 1);
 
-        $this->assertSame($playersBefore, Player::count());
+        $this->assertSame($playersBefore, User::count());
         $this->assertSame(0, EventRegistration::count());
     }
 
     public function test_save_skips_unmapped_and_null_player_id(): void
     {
         Sanctum::actingAs($this->manager);
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
 
         $response = $this->postJson($this->importUrl(), $this->importPayload([
             [
                 'index' => 0,
                 'first_name' => 'A',
                 'email' => 'a@example.test',
-                'player_id' => null,
+                'player_user_id' => null,
                 'status' => 'unmapped',
             ],
             [
                 'index' => 1,
                 'first_name' => 'B',
                 'email' => 'b@example.test',
-                'player_id' => null,
+                'player_user_id' => null,
                 'status' => 'mapped',
             ],
             [
                 'index' => 2,
                 'first_name' => 'C',
                 'email' => 'c@example.test',
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'status' => 'mapped',
             ],
         ]));
@@ -284,15 +284,15 @@ class EventRegistrationImportControllerTest extends TestCase
     public function test_save_skips_conflict_status(): void
     {
         Sanctum::actingAs($this->manager);
-        $emailOwner = Player::factory()->create();
-        $phoneOwner = Player::factory()->create();
+        $emailOwner = User::factory()->create();
+        $phoneOwner = User::factory()->create();
 
         $response = $this->postJson($this->importUrl(), $this->importPayload([[
             'index' => 0,
             'first_name' => 'Conflict',
             'email' => 'a@example.test',
             'phone' => '+40700000051',
-            'player_id' => $emailOwner->id_player,
+            'player_user_id' => $emailOwner->id_user,
             'status' => 'conflict',
         ]]));
 
@@ -302,16 +302,16 @@ class EventRegistrationImportControllerTest extends TestCase
             ->assertJsonPath('data.rows.0.action', 'skipped_conflict');
 
         $this->assertSame(0, EventRegistration::count());
-        $this->assertTrue(Player::query()->whereKey($phoneOwner->id_player)->exists());
+        $this->assertTrue(User::query()->whereKey($phoneOwner->id_user)->exists());
     }
 
     public function test_save_skips_already_registered_in_db(): void
     {
         Sanctum::actingAs($this->manager);
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         EventRegistration::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_division_id' => $this->importDivision->id_event_division,
             'is_student' => false,
             'payment' => 77,
@@ -321,7 +321,7 @@ class EventRegistrationImportControllerTest extends TestCase
             'index' => 0,
             'first_name' => 'Mara',
             'email' => 'mara@example.test',
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'status' => 'mapped',
         ]]))->assertCreated()
             ->assertJsonPath('data.registered', 0)
@@ -334,21 +334,21 @@ class EventRegistrationImportControllerTest extends TestCase
     public function test_save_duplicate_player_id_in_batch_registers_first_skips_second(): void
     {
         Sanctum::actingAs($this->manager);
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
 
         $response = $this->postJson($this->importUrl(), $this->importPayload([
             [
                 'index' => 0,
                 'first_name' => 'Mara',
                 'email' => 'mara@example.test',
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'status' => 'mapped',
             ],
             [
                 'index' => 1,
                 'first_name' => 'Mara',
                 'email' => 'mara.alt@example.test',
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'status' => 'mapped',
             ],
         ]));
@@ -427,16 +427,16 @@ class EventRegistrationImportControllerTest extends TestCase
         return UploadedFile::fake()->createWithContent($name, $contents);
     }
 
-    private function setContacts(Player $player, string $email, string $phone): void
+    private function setContacts(User $player, string $email, string $phone): void
     {
-        PlayerEmail::factory()->create([
-            'player_id' => $player->id_player,
+        UserEmail::factory()->create([
+            'user_id' => $player->id_user,
             'email' => $email,
             'purposes' => ['contact'],
             'is_primary' => true,
         ]);
-        PlayerPhone::factory()->create([
-            'player_id' => $player->id_player,
+        UserPhone::factory()->create([
+            'user_id' => $player->id_user,
             'phone' => $phone,
             'purposes' => ['contact'],
             'is_primary' => true,

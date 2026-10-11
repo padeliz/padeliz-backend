@@ -9,7 +9,7 @@ use App\Models\EventDivision;
 use App\Models\EventParticipation;
 use App\Models\Level;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -24,7 +24,7 @@ class DivisionControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'first_name' => 'Test', 'middle_name' => null, 'last_name' => 'Manager',
             'user_types' => ['player', 'manager'],
         ]);
@@ -341,7 +341,7 @@ class DivisionControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $division = Division::factory()->create();
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $event = PadelEvent::factory()->create();
         $eventDivision = EventDivision::factory()->create([
             'event_id' => $event->id_event,
@@ -349,7 +349,7 @@ class DivisionControllerTest extends TestCase
         ]);
         EventParticipation::factory()->create([
             'event_id' => $event->id_event,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_division_id' => $eventDivision->id_event_division,
         ]);
 
@@ -574,7 +574,7 @@ class DivisionControllerTest extends TestCase
 
     public function test_regular_player_cannot_access_division_management()
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
 
         $response = $this->getJson('/api/v1/manager/divisions');

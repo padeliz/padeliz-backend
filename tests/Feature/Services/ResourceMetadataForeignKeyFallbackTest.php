@@ -36,7 +36,7 @@ class ResourceMetadataForeignKeyFallbackTest extends TestCase
 
     public function test_edition_lottery_rule_metadata_endpoint_loads(): void
     {
-        $manager = \App\Models\Player::factory()->manager()->create([
+        $manager = \App\Models\User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         \Laravel\Sanctum\Sanctum::actingAs($manager);

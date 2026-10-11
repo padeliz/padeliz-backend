@@ -6,7 +6,7 @@ namespace Tests\Feature\Api\V1\Manager;
 
 use App\Models\Club;
 use App\Models\Location;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\Sponsor;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -22,7 +22,7 @@ class ClubDeletionIntegrationTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'first_name' => 'Test', 'middle_name' => null, 'last_name' => 'Manager',
             'user_types' => ['player', 'manager'],
         ]);

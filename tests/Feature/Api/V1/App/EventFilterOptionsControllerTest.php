@@ -12,10 +12,11 @@ use App\Models\EventParticipation;
 use App\Models\EventRegistration;
 use App\Models\Location;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
 
 class EventFilterOptionsControllerTest extends TestCase
 {
@@ -44,11 +45,11 @@ class EventFilterOptionsControllerTest extends TestCase
         $clubOut = Club::factory()->create(['name' => 'Outside']);
 
         PadelEvent::factory()->forLocation(Location::factory()->forClub($clubB)->create())
-            ->create(['date' => '2026-04-10']);
+            ->create(UnixEventFactory::eventBounds('2026-04-10'));
         PadelEvent::factory()->forLocation(Location::factory()->forClub($clubA)->create())
-            ->create(['date' => '2026-04-20']);
+            ->create(UnixEventFactory::eventBounds('2026-04-20'));
         PadelEvent::factory()->forLocation(Location::factory()->forClub($clubOut)->create())
-            ->create(['date' => '2026-05-05']);
+            ->create(UnixEventFactory::eventBounds('2026-05-05'));
 
         $response = $this->getJson('/api/v1/app/events/filter-options?' . http_build_query([
             'date_from' => '2026-04-01',
@@ -68,7 +69,7 @@ class EventFilterOptionsControllerTest extends TestCase
     {
         $club = Club::factory()->create();
         PadelEvent::factory()->forLocation(Location::factory()->forClub($club)->create())
-            ->create(['date' => '2026-04-12']);
+            ->create(UnixEventFactory::eventBounds('2026-04-12'));
 
         $this->getJson('/api/v1/app/events/filter-options?' . http_build_query([
             'date_from' => '2026-04-01',
@@ -81,42 +82,42 @@ class EventFilterOptionsControllerTest extends TestCase
 
     public function test_authenticated_unpaid_count_and_lottery_flag(): void
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
 
-        $unpaidEdition = PadelEvent::factory()->create(['date' => '2026-04-10']);
+        $unpaidEdition = PadelEvent::factory()->create(UnixEventFactory::eventBounds('2026-04-10'));
         $unpaidDivision = EventDivision::factory()->create(['event_id' => $unpaidEdition->id_event]);
         EventRegistration::factory()->forEvent($unpaidEdition)->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_division_id' => $unpaidDivision->id_event_division,
             'payment_status' => RegistrationPaymentStatus::Unpaid,
             'payment' => 55,
             'payment_due_at' => time() + 3600,
         ]);
 
-        $awaitingEdition = PadelEvent::factory()->create(['date' => '2026-04-11']);
+        $awaitingEdition = PadelEvent::factory()->create(UnixEventFactory::eventBounds('2026-04-11'));
         $awaitingDivision = EventDivision::factory()->create(['event_id' => $awaitingEdition->id_event]);
         EventRegistration::factory()->forEvent($awaitingEdition)->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_division_id' => $awaitingDivision->id_event_division,
             'payment_status' => RegistrationPaymentStatus::AwaitingProofReview,
             'payment' => 40,
             'payment_due_at' => time() + 3600,
         ]);
 
-        $paidEdition = PadelEvent::factory()->create(['date' => '2026-04-12']);
+        $paidEdition = PadelEvent::factory()->create(UnixEventFactory::eventBounds('2026-04-12'));
         $paidDivision = EventDivision::factory()->create(['event_id' => $paidEdition->id_event]);
         EventRegistration::factory()->forEvent($paidEdition)->paid()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_division_id' => $paidDivision->id_event_division,
             'payment' => 55,
         ]);
 
-        $lotteryEdition = PadelEvent::factory()->create(['date' => '2026-04-15']);
+        $lotteryEdition = PadelEvent::factory()->create(UnixEventFactory::eventBounds('2026-04-15'));
         $lotteryDivision = EventDivision::factory()->create(['event_id' => $lotteryEdition->id_event]);
         $participation = EventParticipation::factory()->create([
             'event_id' => $lotteryEdition->id_event,
             'event_division_id' => $lotteryDivision->id_event_division,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
         ]);
         EventLotteryLucky::factory()->create([
             'drawn_participation_id' => $participation->id_participation,
@@ -137,13 +138,13 @@ class EventFilterOptionsControllerTest extends TestCase
 
     public function test_authenticated_lottery_false_when_not_accepted(): void
     {
-        $player = Player::factory()->playerOnly()->create();
-        $event = PadelEvent::factory()->create(['date' => '2026-04-15']);
+        $player = User::factory()->playerOnly()->create();
+        $event = PadelEvent::factory()->create(UnixEventFactory::eventBounds('2026-04-15'));
         $division = EventDivision::factory()->create(['event_id' => $event->id_event]);
         $participation = EventParticipation::factory()->create([
             'event_id' => $event->id_event,
             'event_division_id' => $division->id_event_division,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
         ]);
         EventLotteryLucky::factory()->create([
             'drawn_participation_id' => $participation->id_participation,

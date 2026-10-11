@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Traits;
 
 use App\Models\Club;
-use App\Models\Player;
+use App\Models\User;
 use App\Traits\HasResourceMetadata;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
@@ -16,7 +16,7 @@ class HasResourceMetadataTest extends TestCase
 
     public function test_get_resource_name_returns_correct_plural_snake_case(): void
     {
-        $this->assertEquals('players', Player::getResourceName());
+        $this->assertEquals('players', User::getResourceName());
         $this->assertEquals('clubs', Club::getResourceName());
     }
 
@@ -28,7 +28,7 @@ class HasResourceMetadataTest extends TestCase
             'last_name',
         ];
 
-        $this->assertEquals($expectedFields, Player::getSearchableFields());
+        $this->assertEquals($expectedFields, User::getSearchableFields());
     }
 
     public function test_get_searchable_fields_returns_empty_array_when_not_defined(): void
@@ -47,7 +47,7 @@ class HasResourceMetadataTest extends TestCase
             'user_types',
         ];
 
-        $this->assertEquals($expectedFields, Player::getFilterableFields());
+        $this->assertEquals($expectedFields, User::getFilterableFields());
     }
 
     public function test_get_filterable_fields_returns_empty_array_when_not_defined(): void
@@ -63,14 +63,14 @@ class HasResourceMetadataTest extends TestCase
     public function test_get_sortable_fields_returns_defined_fields(): void
     {
         $expectedFields = [
-            'id_player',
+            'id_user',
             'first_name',
             'last_name',
             'inserted_at',
             'updated_at',
         ];
 
-        $this->assertEquals($expectedFields, Player::getSortableFields());
+        $this->assertEquals($expectedFields, User::getSortableFields());
     }
 
     public function test_get_sortable_fields_returns_empty_array_when_not_defined(): void
@@ -85,50 +85,50 @@ class HasResourceMetadataTest extends TestCase
 
     public function test_is_searchable_field_returns_true_for_valid_field(): void
     {
-        $this->assertTrue(Player::isSearchableField('first_name'));
-        $this->assertTrue(Player::isSearchableField('middle_name'));
-        $this->assertTrue(Player::isSearchableField('last_name'));
+        $this->assertTrue(User::isSearchableField('first_name'));
+        $this->assertTrue(User::isSearchableField('middle_name'));
+        $this->assertTrue(User::isSearchableField('last_name'));
     }
 
     public function test_is_searchable_field_returns_false_for_invalid_field(): void
     {
-        $this->assertFalse(Player::isSearchableField('invalid_field'));
-        $this->assertFalse(Player::isSearchableField('user_types'));
-        $this->assertFalse(Player::isSearchableField('name'));
-        $this->assertFalse(Player::isSearchableField(''));
+        $this->assertFalse(User::isSearchableField('invalid_field'));
+        $this->assertFalse(User::isSearchableField('user_types'));
+        $this->assertFalse(User::isSearchableField('name'));
+        $this->assertFalse(User::isSearchableField(''));
     }
 
     public function test_is_filterable_field_returns_true_for_valid_field(): void
     {
-        $this->assertTrue(Player::isFilterableField('user_types'));
+        $this->assertTrue(User::isFilterableField('user_types'));
     }
 
     public function test_is_filterable_field_returns_false_for_invalid_field(): void
     {
-        $this->assertFalse(Player::isFilterableField('invalid_field'));
-        $this->assertFalse(Player::isFilterableField('name'));
-        $this->assertFalse(Player::isFilterableField(''));
+        $this->assertFalse(User::isFilterableField('invalid_field'));
+        $this->assertFalse(User::isFilterableField('name'));
+        $this->assertFalse(User::isFilterableField(''));
     }
 
     public function test_is_sortable_field_returns_true_for_valid_field(): void
     {
-        $this->assertTrue(Player::isSortableField('id_player'));
-        $this->assertTrue(Player::isSortableField('first_name'));
-        $this->assertTrue(Player::isSortableField('inserted_at'));
+        $this->assertTrue(User::isSortableField('id_user'));
+        $this->assertTrue(User::isSortableField('first_name'));
+        $this->assertTrue(User::isSortableField('inserted_at'));
     }
 
     public function test_is_sortable_field_returns_false_for_invalid_field(): void
     {
-        $this->assertFalse(Player::isSortableField('invalid_field'));
-        $this->assertFalse(Player::isSortableField('nonexistent_field'));
-        $this->assertFalse(Player::isSortableField('name'));
-        $this->assertFalse(Player::isSortableField('middle_name'));
-        $this->assertFalse(Player::isSortableField(''));
+        $this->assertFalse(User::isSortableField('invalid_field'));
+        $this->assertFalse(User::isSortableField('nonexistent_field'));
+        $this->assertFalse(User::isSortableField('name'));
+        $this->assertFalse(User::isSortableField('middle_name'));
+        $this->assertFalse(User::isSortableField(''));
     }
 
     public function test_get_metadata_returns_complete_metadata_structure(): void
     {
-        $metadata = Player::getMetadata();
+        $metadata = User::getMetadata();
 
         $this->assertArrayHasKey('resource', $metadata);
         $this->assertArrayHasKey('searchable_fields', $metadata);
@@ -146,7 +146,7 @@ class HasResourceMetadataTest extends TestCase
 
     public function test_get_list_fields_returns_empty_array_when_not_defined(): void
     {
-        $this->assertEquals([], Player::getListFields());
+        $this->assertEquals([], User::getListFields());
 
         $testModel = new class () extends \Illuminate\Database\Eloquent\Model {
             use HasResourceMetadata;
@@ -160,7 +160,7 @@ class HasResourceMetadataTest extends TestCase
         $this->assertEquals(
             [
                 'player.profile_image_url',
-                'player_id',
+                'player_user_id',
                 'event_division_id',
             ],
             \App\Models\EventRegistration::getListFields()
@@ -170,13 +170,13 @@ class HasResourceMetadataTest extends TestCase
 
     public function test_get_metadata_returns_correct_values(): void
     {
-        $metadata = Player::getMetadata();
+        $metadata = User::getMetadata();
 
         $this->assertEquals('players', $metadata['resource']);
-        $this->assertEquals(Player::getSearchableFields(), $metadata['searchable_fields']);
-        $this->assertEquals(Player::getFilterableFields(), $metadata['filterable_fields']);
-        $this->assertEquals(Player::getSortableFields(), $metadata['sortable_fields']);
-        $this->assertEquals(Player::getListFields(), $metadata['list_fields']);
+        $this->assertEquals(User::getSearchableFields(), $metadata['searchable_fields']);
+        $this->assertEquals(User::getFilterableFields(), $metadata['filterable_fields']);
+        $this->assertEquals(User::getSortableFields(), $metadata['sortable_fields']);
+        $this->assertEquals(User::getListFields(), $metadata['list_fields']);
     }
 
     public function test_get_metadata_works_with_model_without_fields(): void
@@ -274,31 +274,31 @@ class HasResourceMetadataTest extends TestCase
     public function test_case_sensitivity_in_field_checking(): void
     {
         // Test that field checking is case-sensitive
-        $this->assertTrue(Player::isSearchableField('first_name'));
-        $this->assertFalse(Player::isSearchableField('First_Name'));
-        $this->assertFalse(Player::isSearchableField('FIRST_NAME'));
-        $this->assertFalse(Player::isSearchableField('name'));
-        $this->assertFalse(Player::isSortableField('name'));
+        $this->assertTrue(User::isSearchableField('first_name'));
+        $this->assertFalse(User::isSearchableField('First_Name'));
+        $this->assertFalse(User::isSearchableField('FIRST_NAME'));
+        $this->assertFalse(User::isSearchableField('name'));
+        $this->assertFalse(User::isSortableField('name'));
 
-        $this->assertTrue(Player::isFilterableField('user_types'));
-        $this->assertFalse(Player::isFilterableField('User_Types'));
-        $this->assertFalse(Player::isFilterableField('USER_TYPES'));
+        $this->assertTrue(User::isFilterableField('user_types'));
+        $this->assertFalse(User::isFilterableField('User_Types'));
+        $this->assertFalse(User::isFilterableField('USER_TYPES'));
     }
 
     public function test_empty_string_handling(): void
     {
         // Test that empty strings are handled correctly
-        $this->assertFalse(Player::isSearchableField(''));
-        $this->assertFalse(Player::isFilterableField(''));
-        $this->assertFalse(Player::isSortableField(''));
+        $this->assertFalse(User::isSearchableField(''));
+        $this->assertFalse(User::isFilterableField(''));
+        $this->assertFalse(User::isSortableField(''));
     }
 
     public function test_null_handling(): void
     {
         // Test that null values are handled correctly
         // Note: These methods expect string parameters, so null should be cast to string
-        $this->assertFalse(Player::isSearchableField((string) null));
-        $this->assertFalse(Player::isFilterableField((string) null));
-        $this->assertFalse(Player::isSortableField((string) null));
+        $this->assertFalse(User::isSearchableField((string) null));
+        $this->assertFalse(User::isFilterableField((string) null));
+        $this->assertFalse(User::isSortableField((string) null));
     }
 }

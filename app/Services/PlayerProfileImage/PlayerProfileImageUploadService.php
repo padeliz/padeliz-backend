@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services\PlayerProfileImage;
 
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerProfileImage;
 use Illuminate\Http\UploadedFile;
 use Illuminate\Support\Facades\DB;
@@ -26,7 +26,7 @@ final class PlayerProfileImageUploadService
      *     is_pdf_primary?: bool
      * }  $provenance
      */
-    public function upload(Player $player, UploadedFile $file, array $provenance): PlayerProfileImage
+    public function upload(User $player, UploadedFile $file, array $provenance): PlayerProfileImage
     {
         $this->assertWithinCaps($player, $provenance['uploaded_via_level_assessment_id'] ?? null);
 
@@ -45,7 +45,7 @@ final class PlayerProfileImageUploadService
             $sortOrder = $player->profileImages()->count();
 
             $image = PlayerProfileImage::create([
-                'player_id' => $player->id_player,
+                'player_user_id' => $player->id_user,
                 'profile_path' => '',
                 'sort_order' => $sortOrder,
                 'uploaded_via' => $provenance['uploaded_via'],
@@ -73,7 +73,7 @@ final class PlayerProfileImageUploadService
         });
     }
 
-    public function assertWithinCaps(Player $player, ?int $levelAssessmentId): void
+    public function assertWithinCaps(User $player, ?int $levelAssessmentId): void
     {
         if ($player->profileImages()->count() >= PlayerProfileImage::MAX_PER_PLAYER) {
             throw new \RuntimeException(

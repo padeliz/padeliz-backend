@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Manager;
 
-use App\Models\Player;
+use App\Models\User;
 use App\Models\Prize;
 use App\Models\Sponsor;
 use App\Models\SponsorPrize;
@@ -19,7 +19,7 @@ class SponsorPrizeControllerTest extends TestCase
     use RefreshDatabase;
     use FileUploadTestHelper;
 
-    private Player $manager;
+    private User $manager;
 
     private Sponsor $sponsor;
 
@@ -31,7 +31,7 @@ class SponsorPrizeControllerTest extends TestCase
 
         Storage::fake(config('filesystems.user_uploads_disk', 'public'));
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         $this->sponsor = Sponsor::factory()->create();

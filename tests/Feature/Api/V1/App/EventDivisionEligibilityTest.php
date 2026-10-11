@@ -7,11 +7,12 @@ namespace Tests\Feature\Api\V1\App;
 use App\Models\Division;
 use App\Models\EventDivision;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerLevel;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
 
 final class EventDivisionEligibilityTest extends TestCase
 {
@@ -25,7 +26,7 @@ final class EventDivisionEligibilityTest extends TestCase
 
         config(['responsecache.enabled' => false]);
         $this->event = PadelEvent::factory()->create([
-            'date' => now()->addDays(30)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(now()->addDays(30)->format('Y-m-d')),
         ]);
     }
 
@@ -63,7 +64,7 @@ final class EventDivisionEligibilityTest extends TestCase
 
     public function test_player_without_any_level_is_never_eligible(): void
     {
-        Sanctum::actingAs(Player::factory()->playerOnly()->create());
+        Sanctum::actingAs(User::factory()->playerOnly()->create());
         $this->division(null, null, 'open');
         $this->division('4.99', '4.00', 'bounded');
 
@@ -72,9 +73,9 @@ final class EventDivisionEligibilityTest extends TestCase
 
     public function test_eligibility_follows_the_inverted_level_bounds(): void
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
-        PlayerLevel::factory()->level('4.50')->create(['player_id' => $player->id_player]);
+        PlayerLevel::factory()->level('4.50')->create(['player_user_id' => $player->id_user]);
 
         $this->division('4.99', '4.00', 'inside');
         $this->division('3.99', '3.00', 'too-strong-division');
@@ -91,9 +92,9 @@ final class EventDivisionEligibilityTest extends TestCase
 
     public function test_unconstrained_bounds_only_need_some_level(): void
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
-        PlayerLevel::factory()->level('1.50')->create(['player_id' => $player->id_player]);
+        PlayerLevel::factory()->level('1.50')->create(['player_user_id' => $player->id_user]);
 
         $this->division(null, null, 'open');
         $this->division(null, '4.00', 'only-max');
@@ -108,14 +109,14 @@ final class EventDivisionEligibilityTest extends TestCase
 
     public function test_the_latest_player_level_is_the_one_used(): void
     {
-        $player = Player::factory()->playerOnly()->create();
+        $player = User::factory()->playerOnly()->create();
         Sanctum::actingAs($player);
         PlayerLevel::factory()->level('1.50')->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'inserted_at' => time() - 1000,
         ]);
         PlayerLevel::factory()->level('4.50')->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'inserted_at' => time(),
         ]);
 

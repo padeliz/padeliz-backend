@@ -13,7 +13,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
 /**
  * @OA\Schema(
  *     schema="EventParticipation",
- *     required={"event_id", "player_id", "event_division_id"},
+ *     required={"event_id", "player_user_id", "event_division_id"},
  *     @OA\Property(
  *         property="id_participation",
  *         type="integer",
@@ -31,7 +31,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  *         description="Foreign key - References PadelEvent.id_event"
  *     ),
  *     @OA\Property(
- *         property="player_id",
+ *         property="player_user_id",
  *         type="integer",
  *         format="int64",
  *         minimum=1,
@@ -102,7 +102,7 @@ use Illuminate\Database\Eloquent\Relations\HasOne;
  *     ),
  *     @OA\Property(
  *         property="player",
- *         ref="#/components/schemas/Player",
+ *         ref="#/components/schemas/User",
  *         title="Player",
  *         description="Related player object",
  *         nullable=true
@@ -134,7 +134,7 @@ class EventParticipation extends Model
      */
     public static array $filterableFields = [
         'event_id',
-        'player_id',
+        'player_user_id',
         'event_division_id',
         'sort_order',
         'is_collecting_points',
@@ -146,7 +146,7 @@ class EventParticipation extends Model
     public static array $sortableFields = [
         'id_participation',
         'event_id',
-        'player_id',
+        'player_user_id',
         'event_division_id',
         'sort_order',
         'is_collecting_points',
@@ -172,7 +172,7 @@ class EventParticipation extends Model
 
     protected $fillable = [
         'event_id',
-        'player_id',
+        'player_user_id',
         'event_division_id',
         'sort_order',
         'is_collecting_points',
@@ -194,7 +194,7 @@ class EventParticipation extends Model
 
     public function player(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'player_id');
+        return $this->belongsTo(User::class, 'player_user_id');
     }
 
     public function eventDivision(): BelongsTo

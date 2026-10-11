@@ -6,6 +6,7 @@ namespace App\Http\Controllers\Api\V1\App;
 
 use App\Models\EventParticipation;
 use App\Models\PadelEvent;
+use App\Services\EventCalendarTiming;
 use Illuminate\Http\Request;
 
 /**
@@ -19,7 +20,7 @@ class EventHistoryController extends \App\Http\Controllers\BaseVersions\V1\V1Bas
     /**
      * @OA\Get(
      *     path="/api/v1/app/my/event-history",
-     *     summary="Paginated edition-aggregated participation history",
+     *     summary="Paginated edition-aggregated participation history (calendar Past only)",
      *     tags={"🐥 App: Event History"},
      *     security={{"sanctum":{}}},
      *     @OA\Parameter(ref="#/components/parameters/page"),
@@ -29,13 +30,15 @@ class EventHistoryController extends \App\Http\Controllers\BaseVersions\V1\V1Bas
      */
     public function index(Request $request)
     {
-        $playerId = (int) $request->user()->id_player;
+        $playerId = (int) $request->user()->id_user;
 
         $editionPage = PadelEvent::query()
             ->whereHas('participations', function ($q) use ($playerId) {
-                $q->where('player_id', $playerId);
+                $q->where('player_user_id', $playerId);
             })
-            ->orderByDesc('date')
+            ->tap(static fn ($q) => EventCalendarTiming::applyCalendarPast($q))
+            ->orderByDesc('event_starts_at')
+            ->orderByDesc('id_event')
             ->paginate($this->paginationLimit);
 
         $pageEditionIds = $editionPage->getCollection()
@@ -44,10 +47,10 @@ class EventHistoryController extends \App\Http\Controllers\BaseVersions\V1\V1Bas
             ->all();
 
         $participations = EventParticipation::query()
-            ->where('player_id', $playerId)
+            ->where('player_user_id', $playerId)
             ->whereIn('event_id', $pageEditionIds)
             ->with([
-                'event:id_event,name,date,slug',
+                'event:id_event,name,event_starts_at,event_ends_at,slug',
                 'eventDivision.division:id_division,name',
             ])
             ->get()
@@ -80,7 +83,9 @@ class EventHistoryController extends \App\Http\Controllers\BaseVersions\V1\V1Bas
                 'id_event' => (int) $event->id_event,
                 'name' => (string) $event->name,
                 'slug' => $event->slug !== null && $event->slug !== '' ? (string) $event->slug : null,
-                'date' => (string) ($event->formatted_date ?? $event->date),
+                'event_starts_at' => (int) $event->event_starts_at,
+                'event_ends_at' => (int) $event->event_ends_at,
+                'date' => EventCalendarTiming::dayYmd((int) $event->event_starts_at),
                 'division_titles' => $titles,
             ];
         }

@@ -15,7 +15,7 @@ use App\Models\GameMatch;
 use App\Models\MatchPlayer;
 use App\Models\MatchSide;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
@@ -24,7 +24,7 @@ class EventDivisionReplacementControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
     private PadelEvent $event;
 
@@ -41,7 +41,7 @@ class EventDivisionReplacementControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
 
@@ -69,7 +69,7 @@ class EventDivisionReplacementControllerTest extends TestCase
             $this->participations[] = EventParticipation::factory()->create([
                 'event_id' => $this->event->id_event,
                 'event_division_id' => $this->eventDivision->id_event_division,
-                'player_id' => Player::factory()->create()->id_player,
+                'player_user_id' => User::factory()->create()->id_user,
                 'sort_order' => $i,
                 'is_collecting_points' => true,
             ]);
@@ -92,25 +92,25 @@ class EventDivisionReplacementControllerTest extends TestCase
             'match_side_id' => $left->id_match_side,
             'slot' => 0,
             'participation_id' => $this->participations[0]->id_participation,
-            'player_id' => $this->participations[0]->player_id,
+            'player_user_id' => $this->participations[0]->player_user_id,
         ]);
         MatchPlayer::create([
             'match_side_id' => $left->id_match_side,
             'slot' => 1,
             'participation_id' => $this->participations[1]->id_participation,
-            'player_id' => $this->participations[1]->player_id,
+            'player_user_id' => $this->participations[1]->player_user_id,
         ]);
         MatchPlayer::create([
             'match_side_id' => $right->id_match_side,
             'slot' => 0,
             'participation_id' => $this->participations[2]->id_participation,
-            'player_id' => $this->participations[2]->player_id,
+            'player_user_id' => $this->participations[2]->player_user_id,
         ]);
         MatchPlayer::create([
             'match_side_id' => $right->id_match_side,
             'slot' => 1,
             'participation_id' => $this->participations[3]->id_participation,
-            'player_id' => $this->participations[3]->player_id,
+            'player_user_id' => $this->participations[3]->player_user_id,
         ]);
     }
 
@@ -142,7 +142,7 @@ class EventDivisionReplacementControllerTest extends TestCase
 
         $slot = MatchPlayer::query()->where('participation_id', $originalId)->firstOrFail();
         $this->assertSame($originalId, (int) $slot->participation_id);
-        $this->assertSame((int) $this->participations[0]->player_id, (int) $slot->player_id);
+        $this->assertSame((int) $this->participations[0]->player_user_id, (int) $slot->player_user_id);
         $this->assertArrayNotHasKey('got_replaced', $slot->getAttributes());
 
         $this->getJson("/api/v1/manager/event-divisions/{$edId}/replacements")
@@ -159,7 +159,7 @@ class EventDivisionReplacementControllerTest extends TestCase
         ]);
         $slotAfter = MatchPlayer::query()->where('participation_id', $originalId)->firstOrFail();
         $this->assertSame($originalId, (int) $slotAfter->participation_id);
-        $this->assertSame((int) $this->participations[0]->player_id, (int) $slotAfter->player_id);
+        $this->assertSame((int) $this->participations[0]->player_user_id, (int) $slotAfter->player_user_id);
     }
 
     public function test_finalize_blocks_replacements(): void
@@ -195,7 +195,7 @@ class EventDivisionReplacementControllerTest extends TestCase
 
         $this->postJson("/api/v1/manager/event-divisions/{$edId}/replacements", [
             'original_participation_id' => $this->participations[0]->id_participation,
-            'substitute_player_id' => Player::factory()->create()->id_player,
+            'substitute_player_user_id' => User::factory()->create()->id_user,
             'match_id' => $this->match->id_match,
         ])->assertStatus(409);
     }
@@ -248,13 +248,13 @@ class EventDivisionReplacementControllerTest extends TestCase
         $otherPartA = EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
             'event_division_id' => $otherEd->id_event_division,
-            'player_id' => Player::factory()->create()->id_player,
+            'player_user_id' => User::factory()->create()->id_user,
             'sort_order' => 0,
         ]);
         $otherPartB = EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
             'event_division_id' => $otherEd->id_event_division,
-            'player_id' => Player::factory()->create()->id_player,
+            'player_user_id' => User::factory()->create()->id_user,
             'sort_order' => 1,
         ]);
         $this->postJson("/api/v1/manager/event-divisions/{$otherEd->id_event_division}/replacements", [
@@ -269,8 +269,8 @@ class EventDivisionReplacementControllerTest extends TestCase
         $data = $response->json('data');
         $this->assertCount(2, $data);
         $this->assertNotNull($data[0]['event_division']['id_event_division'] ?? null);
-        $this->assertNotNull($data[0]['original_participation']['player']['id_player'] ?? null);
-        $this->assertNotNull($data[0]['substitute_participation']['player']['id_player'] ?? null);
+        $this->assertNotNull($data[0]['original_participation']['player']['id_user'] ?? null);
+        $this->assertNotNull($data[0]['substitute_participation']['player']['id_user'] ?? null);
     }
 
     public function test_create_with_neither_substitute(): void
@@ -285,20 +285,20 @@ class EventDivisionReplacementControllerTest extends TestCase
 
         $create->assertStatus(201)
             ->assertJsonPath('data.substitute_participation_id', null)
-            ->assertJsonPath('data.substitute_player_id', null);
+            ->assertJsonPath('data.substitute_player_user_id', null);
     }
 
     public function test_create_with_only_guest_substitute(): void
     {
         Sanctum::actingAs($this->manager);
 
-        $guestId = Player::factory()->create()->id_player;
+        $guestId = User::factory()->create()->id_user;
         $edId = $this->eventDivision->id_event_division;
         $this->postJson("/api/v1/manager/event-divisions/{$edId}/replacements", [
             'original_participation_id' => $this->participations[0]->id_participation,
-            'substitute_player_id' => $guestId,
+            'substitute_player_user_id' => $guestId,
         ])->assertStatus(201)
-            ->assertJsonPath('data.substitute_player_id', $guestId)
+            ->assertJsonPath('data.substitute_player_user_id', $guestId)
             ->assertJsonPath('data.substitute_participation_id', null);
     }
 
@@ -310,7 +310,7 @@ class EventDivisionReplacementControllerTest extends TestCase
         $this->postJson("/api/v1/manager/event-divisions/{$edId}/replacements", [
             'original_participation_id' => $this->participations[0]->id_participation,
             'substitute_participation_id' => $this->participations[1]->id_participation,
-            'substitute_player_id' => Player::factory()->create()->id_player,
+            'substitute_player_user_id' => User::factory()->create()->id_user,
         ])->assertStatus(422);
     }
 
@@ -370,7 +370,7 @@ class EventDivisionReplacementControllerTest extends TestCase
         Sanctum::actingAs($this->manager);
 
         $edId = $this->eventDivision->id_event_division;
-        $guestId = Player::factory()->create()->id_player;
+        $guestId = User::factory()->create()->id_user;
         $create = $this->postJson("/api/v1/manager/event-divisions/{$edId}/replacements", [
             'original_participation_id' => $this->participations[0]->id_participation,
             'substitute_participation_id' => $this->participations[1]->id_participation,
@@ -379,9 +379,9 @@ class EventDivisionReplacementControllerTest extends TestCase
         $id = (int) $create->json('data.id_replacement');
 
         $this->patchJson("/api/v1/manager/event-division-replacements/{$id}", [
-            'substitute_player_id' => $guestId,
+            'substitute_player_user_id' => $guestId,
         ])->assertOk()
-            ->assertJsonPath('data.substitute_player_id', $guestId)
+            ->assertJsonPath('data.substitute_player_user_id', $guestId)
             ->assertJsonPath('data.substitute_participation_id', null);
     }
 
@@ -398,10 +398,10 @@ class EventDivisionReplacementControllerTest extends TestCase
 
         $this->patchJson("/api/v1/manager/event-division-replacements/{$id}", [
             'substitute_participation_id' => null,
-            'substitute_player_id' => null,
+            'substitute_player_user_id' => null,
         ])->assertOk()
             ->assertJsonPath('data.substitute_participation_id', null)
-            ->assertJsonPath('data.substitute_player_id', null);
+            ->assertJsonPath('data.substitute_player_user_id', null);
     }
 
     public function test_patch_match_id_null_is_division_wide(): void
@@ -507,14 +507,14 @@ class EventDivisionReplacementControllerTest extends TestCase
         $substitute->update(['is_collecting_points' => false]);
 
         \App\Models\CachedPdfPlayerImage::query()->create([
-            'player_id' => $original->player_id,
+            'player_user_id' => $original->player_user_id,
             'player_is_collecting_points' => true,
-            'picture_path' => 'cached-pdf-player-images/' . $original->player_id . '/true.png',
+            'picture_path' => 'cached-pdf-player-images/' . $original->player_user_id . '/true.png',
         ]);
         \App\Models\CachedPdfPlayerImage::query()->create([
-            'player_id' => $substitute->player_id,
+            'player_user_id' => $substitute->player_user_id,
             'player_is_collecting_points' => true,
-            'picture_path' => 'cached-pdf-player-images/' . $substitute->player_id . '/true-only.png',
+            'picture_path' => 'cached-pdf-player-images/' . $substitute->player_user_id . '/true-only.png',
         ]);
 
         $edId = $this->eventDivision->id_event_division;
@@ -534,17 +534,17 @@ class EventDivisionReplacementControllerTest extends TestCase
     {
         Sanctum::actingAs($this->manager);
 
-        $guest = Player::factory()->create();
+        $guest = User::factory()->create();
         \App\Models\CachedPdfPlayerImage::query()->create([
-            'player_id' => $guest->id_player,
+            'player_user_id' => $guest->id_user,
             'player_is_collecting_points' => true,
-            'picture_path' => 'cached-pdf-player-images/' . $guest->id_player . '/guest.png',
+            'picture_path' => 'cached-pdf-player-images/' . $guest->id_user . '/guest.png',
         ]);
 
         $edId = $this->eventDivision->id_event_division;
         $create = $this->postJson("/api/v1/manager/event-divisions/{$edId}/replacements", [
             'original_participation_id' => $this->participations[0]->id_participation,
-            'substitute_player_id' => $guest->id_player,
+            'substitute_player_user_id' => $guest->id_user,
         ])->assertStatus(201);
 
         $this->assertNotNull($create->json('data.substitute_player.pdf_avatar_url'));

@@ -17,7 +17,7 @@ class PlayerLevelAssessmentResource extends JsonResource
     {
         return [
             'id_player_level_assessment' => $this->id_player_level_assessment,
-            'player_id' => $this->player_id,
+            'player_user_id' => $this->player_user_id,
             'player_custom_field_submission_id' => $this->player_custom_field_submission_id,
             'submitted_at' => $this->submitted_at,
             'resubmitted_at' => $this->resubmitted_at,
@@ -28,14 +28,14 @@ class PlayerLevelAssessmentResource extends JsonResource
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
             'player' => $this->whenLoaded('player', function () {
-                return new PlayerResource($this->player);
+                return new UserSummaryResource($this->player);
             }),
             'submission' => $this->whenLoaded('submission', function () {
                 return [
                     'id_player_custom_field_submission' => $this->submission->id_player_custom_field_submission,
-                    'player_id' => $this->submission->player_id,
+                    'player_user_id' => $this->submission->player_user_id,
                     'submitted_via' => $this->submission->submitted_via,
-                    'submitted_by_player_id' => $this->submission->submitted_by_player_id,
+                    'submitted_by_player_user_id' => $this->submission->submitted_by_player_user_id,
                     'inserted_at' => $this->submission->inserted_at,
                     'values' => $this->submission->relationLoaded('values')
                         ? PlayerCustomFieldValueResource::collection($this->submission->values)

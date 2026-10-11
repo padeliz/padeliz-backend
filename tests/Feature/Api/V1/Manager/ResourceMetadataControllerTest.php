@@ -9,11 +9,12 @@ use App\Models\Division;
 use App\Models\EventParticipation;
 use App\Models\Location;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerLevelAssessment;
 use App\Models\Prize;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
 
 class ResourceMetadataControllerTest extends TestCase
 {
@@ -22,16 +23,16 @@ class ResourceMetadataControllerTest extends TestCase
     public function test_get_player_metadata_endpoint(): void
     {
         // Create a manager user
-        /** @var Player $manager */
-        $manager = Player::factory()->create();
+        /** @var User $manager */
+        $manager = User::factory()->create();
         $manager->addUserType('manager');
 
         // Create some test data
-        Player::factory()->create(['first_name' => 'John', 'middle_name' => null, 'last_name' => 'Doe']);
-        Player::factory()->create(['first_name' => 'Jane', 'middle_name' => null, 'last_name' => 'Smith']);
+        User::factory()->create(['first_name' => 'John', 'middle_name' => null, 'last_name' => 'Doe']);
+        User::factory()->create(['first_name' => 'Jane', 'middle_name' => null, 'last_name' => 'Smith']);
 
         $response = $this->actingAs($manager)
-            ->getJson('/api/v1/manager/metadata/Player');
+            ->getJson('/api/v1/manager/metadata/User');
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -53,7 +54,7 @@ class ResourceMetadataControllerTest extends TestCase
                 'success' => true,
                 'data' => [
                     'version' => 'v1',
-                    'schema_name' => 'Player',
+                    'schema_name' => 'User',
                 ],
             ]);
 
@@ -70,8 +71,8 @@ class ResourceMetadataControllerTest extends TestCase
     public function test_get_club_metadata_endpoint(): void
     {
         // Create a manager user
-        /** @var Player $manager */
-        $manager = Player::factory()->create();
+        /** @var User $manager */
+        $manager = User::factory()->create();
         $manager->addUserType('manager');
 
         // Create some test data
@@ -121,8 +122,8 @@ class ResourceMetadataControllerTest extends TestCase
     public function test_get_location_metadata_with_foreign_key(): void
     {
         // Create a manager user
-        /** @var Player $manager */
-        $manager = Player::factory()->create();
+        /** @var User $manager */
+        $manager = User::factory()->create();
         $manager->addUserType('manager');
 
         // Create test data with relationships
@@ -174,8 +175,8 @@ class ResourceMetadataControllerTest extends TestCase
     public function test_invalid_schema_returns_404(): void
     {
         // Create a manager user
-        /** @var Player $manager */
-        $manager = Player::factory()->create();
+        /** @var User $manager */
+        $manager = User::factory()->create();
         $manager->addUserType('manager');
 
         $response = $this->actingAs($manager)
@@ -194,8 +195,8 @@ class ResourceMetadataControllerTest extends TestCase
     public function test_invalid_schema_name_returns_422(): void
     {
         // Create a manager user
-        /** @var Player $manager */
-        $manager = Player::factory()->create();
+        /** @var User $manager */
+        $manager = User::factory()->create();
         $manager->addUserType('manager');
 
         $response = $this->actingAs($manager)
@@ -214,8 +215,8 @@ class ResourceMetadataControllerTest extends TestCase
 
     public function test_dotted_schema_name_returns_422(): void
     {
-        /** @var Player $manager */
-        $manager = Player::factory()->create();
+        /** @var User $manager */
+        $manager = User::factory()->create();
         $manager->addUserType('manager');
 
         $response = $this->actingAs($manager)
@@ -229,8 +230,8 @@ class ResourceMetadataControllerTest extends TestCase
 
     public function test_get_challenge_session_metadata_endpoint(): void
     {
-        /** @var Player $manager */
-        $manager = Player::factory()->create();
+        /** @var User $manager */
+        $manager = User::factory()->create();
         $manager->addUserType('manager');
 
         $response = $this->actingAs($manager)
@@ -274,7 +275,7 @@ class ResourceMetadataControllerTest extends TestCase
 
     public function test_unauthenticated_request_returns_401(): void
     {
-        $response = $this->getJson('/api/v1/manager/metadata/Player');
+        $response = $this->getJson('/api/v1/manager/metadata/User');
 
         $response->assertStatus(401);
     }
@@ -282,24 +283,24 @@ class ResourceMetadataControllerTest extends TestCase
     public function test_non_manager_user_returns_403(): void
     {
         // Create a regular player (not manager)
-        /** @var Player $player */
-        $player = Player::factory()->create();
+        /** @var User $player */
+        $player = User::factory()->create();
         $player->addUserType('player');
 
         $response = $this->actingAs($player)
-            ->getJson('/api/v1/manager/metadata/Player');
+            ->getJson('/api/v1/manager/metadata/User');
 
         $response->assertStatus(403);
     }
 
     public function test_metadata_delete_routes_removed(): void
     {
-        /** @var Player $manager */
-        $manager = Player::factory()->create();
+        /** @var User $manager */
+        $manager = User::factory()->create();
         $manager->addUserType('manager');
 
         $this->actingAs($manager)
-            ->deleteJson('/api/v1/manager/metadata/Player/cache')
+            ->deleteJson('/api/v1/manager/metadata/User/cache')
             ->assertStatus(404);
 
         $this->actingAs($manager)
@@ -314,8 +315,8 @@ class ResourceMetadataControllerTest extends TestCase
     public function test_get_metadata_for_all_models(string $modelName, string $expectedSchemaName): void
     {
         // Create a manager user
-        /** @var Player $manager */
-        $manager = Player::factory()->create();
+        /** @var User $manager */
+        $manager = User::factory()->create();
         $manager->addUserType('manager');
 
         $response = $this->actingAs($manager)
@@ -368,7 +369,7 @@ class ResourceMetadataControllerTest extends TestCase
             'EventParticipation' => ['EventParticipation', 'EventParticipation'],
             'EventRegistration' => ['EventRegistration', 'EventRegistration'],
             'Location' => ['Location', 'Location'],
-            'Player' => ['Player', 'Player'],
+            'User' => ['User', 'User'],
             'PlayerLevelAssessment' => ['PlayerLevelAssessment', 'PlayerLevelAssessment'],
             'Prize' => ['Prize', 'Prize'],
         ];
@@ -377,8 +378,8 @@ class ResourceMetadataControllerTest extends TestCase
     public function test_division_metadata_endpoint(): void
     {
         // Create a manager user
-        /** @var Player $manager */
-        $manager = Player::factory()->create();
+        /** @var User $manager */
+        $manager = User::factory()->create();
         $manager->addUserType('manager');
 
         // Create test data
@@ -406,13 +407,13 @@ class ResourceMetadataControllerTest extends TestCase
     public function test_edition_metadata_endpoint(): void
     {
         // Create a manager user
-        /** @var Player $manager */
-        $manager = Player::factory()->create();
+        /** @var User $manager */
+        $manager = User::factory()->create();
         $manager->addUserType('manager');
 
         // Create test data
-        PadelEvent::factory()->create(['name' => 'Summer 2024', 'date' => '2024-06-01']);
-        PadelEvent::factory()->create(['name' => 'Winter 2024', 'date' => '2024-12-01']);
+        PadelEvent::factory()->create(UnixEventFactory::eventBounds('2024-06-01') + ['name' => 'Summer 2024']);
+        PadelEvent::factory()->create(UnixEventFactory::eventBounds('2024-12-01') + ['name' => 'Winter 2024']);
 
         $response = $this->actingAs($manager)
             ->getJson('/api/v1/manager/metadata/Event');
@@ -434,12 +435,12 @@ class ResourceMetadataControllerTest extends TestCase
     public function test_edition_participation_metadata_endpoint(): void
     {
         // Create a manager user
-        /** @var Player $manager */
-        $manager = Player::factory()->create();
+        /** @var User $manager */
+        $manager = User::factory()->create();
         $manager->addUserType('manager');
 
         // Create test data with relationships
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $event = PadelEvent::factory()->create();
         $division = Division::factory()->create();
 
@@ -450,7 +451,7 @@ class ResourceMetadataControllerTest extends TestCase
         ]);
 
         EventParticipation::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'event_id' => $event->id_event,
             'event_division_id' => $eventDivision->id_event_division,
         ]);
@@ -468,14 +469,14 @@ class ResourceMetadataControllerTest extends TestCase
             ]);
 
         $filterableFields = $response->json('data.filterable_fields');
-        $this->assertArrayHasKey('player_id', $filterableFields);
+        $this->assertArrayHasKey('player_user_id', $filterableFields);
         $this->assertArrayHasKey('event_id', $filterableFields);
         $this->assertArrayHasKey('event_division_id', $filterableFields);
 
         // Test foreign key relationships
-        if (isset($filterableFields['player_id']['type']) && $filterableFields['player_id']['type'] === 'foreign_key') {
-            $this->assertEquals('Player', $filterableFields['player_id']['related_schema_name']);
-            $this->assertEquals('first_name', $filterableFields['player_id']['related_schema_field']);
+        if (isset($filterableFields['player_user_id']['type']) && $filterableFields['player_user_id']['type'] === 'foreign_key') {
+            $this->assertEquals('User', $filterableFields['player_user_id']['related_schema_name']);
+            $this->assertEquals('first_name', $filterableFields['player_user_id']['related_schema_field']);
         }
 
         $this->assertArrayNotHasKey('is_minor', $filterableFields);
@@ -491,7 +492,7 @@ class ResourceMetadataControllerTest extends TestCase
 
     public function test_edition_registration_metadata_endpoint(): void
     {
-        $manager = Player::factory()->create();
+        $manager = User::factory()->create();
         $manager->addUserType('manager');
 
         $response = $this->actingAs($manager)
@@ -501,7 +502,7 @@ class ResourceMetadataControllerTest extends TestCase
             ->assertJsonPath('data.schema_name', 'EventRegistration');
 
         $filterableFields = $response->json('data.filterable_fields');
-        $this->assertArrayHasKey('player_id', $filterableFields);
+        $this->assertArrayHasKey('player_user_id', $filterableFields);
         $this->assertArrayHasKey('event_id', $filterableFields);
         $this->assertArrayHasKey('event_division_id', $filterableFields);
         $this->assertArrayHasKey('is_minor', $filterableFields);
@@ -517,7 +518,7 @@ class ResourceMetadataControllerTest extends TestCase
 
     public function test_edition_registration_checkout_metadata_endpoint(): void
     {
-        $manager = Player::factory()->create();
+        $manager = User::factory()->create();
         $manager->addUserType('manager');
 
         $response = $this->actingAs($manager)
@@ -527,7 +528,7 @@ class ResourceMetadataControllerTest extends TestCase
             ->assertJsonPath('data.schema_name', 'EventRegistrationCheckout');
 
         $filterableFields = $response->json('data.filterable_fields');
-        $this->assertArrayHasKey('player_id', $filterableFields);
+        $this->assertArrayHasKey('player_user_id', $filterableFields);
         $this->assertArrayHasKey('event_id', $filterableFields);
         $this->assertArrayHasKey('status', $filterableFields);
         $this->assertArrayHasKey('total_amount', $filterableFields);
@@ -540,22 +541,22 @@ class ResourceMetadataControllerTest extends TestCase
         $this->assertArrayHasKey('status', $swagger['properties']);
         $this->assertArrayHasKey('total_amount', $swagger['properties']);
         $this->assertContains('event_id', $swagger['required'] ?? []);
-        $this->assertContains('player_id', $swagger['required'] ?? []);
+        $this->assertContains('player_user_id', $swagger['required'] ?? []);
         $this->assertContains('status', $swagger['required'] ?? []);
         $this->assertContains('total_amount', $swagger['required'] ?? []);
     }
 
     public function test_player_metadata_links_emails_phones_and_identities(): void
     {
-        $manager = Player::factory()->create();
+        $manager = User::factory()->create();
         $manager->addUserType('manager');
 
-        $response = $this->actingAs($manager)->getJson('/api/v1/manager/metadata/Player');
+        $response = $this->actingAs($manager)->getJson('/api/v1/manager/metadata/User');
 
         $response->assertStatus(200);
         $properties = $response->json('data.swagger_schema.properties');
 
-        foreach (['emails' => 'PlayerEmail', 'phones' => 'PlayerPhone', 'identities' => 'PlayerIdentity'] as $field => $schema) {
+        foreach (['emails' => 'UserEmail', 'phones' => 'UserPhone', 'identities' => 'UserIdentity'] as $field => $schema) {
             $this->assertSame('array', $properties[$field]['type'] ?? null, $field);
             $this->assertSame('#/components/schemas/' . $schema, $properties[$field]['items']['$ref'] ?? null, $field);
         }
@@ -566,7 +567,7 @@ class ResourceMetadataControllerTest extends TestCase
      */
     public function test_player_child_metadata_is_filterable_by_player(string $schema, string $resourcePath, string $displayField): void
     {
-        $manager = Player::factory()->create();
+        $manager = User::factory()->create();
         $manager->addUserType('manager');
 
         $response = $this->actingAs($manager)->getJson('/api/v1/manager/metadata/' . $schema);
@@ -575,8 +576,8 @@ class ResourceMetadataControllerTest extends TestCase
             ->assertJsonPath('data.schema_name', $schema)
             ->assertJsonPath('data.resource_path', $resourcePath)
             ->assertJsonPath('data.display_field', $displayField)
-            ->assertJsonPath('data.filterable_fields.player_id.type', 'foreign_key')
-            ->assertJsonPath('data.filterable_fields.player_id.related_schema_name', 'Player');
+            ->assertJsonPath('data.filterable_fields.user_id.type', 'foreign_key')
+            ->assertJsonPath('data.filterable_fields.user_id.related_schema_name', 'User');
         $this->assertNotNull($response->json('data.swagger_schema'));
     }
 
@@ -586,17 +587,17 @@ class ResourceMetadataControllerTest extends TestCase
     public static function linkedPlayerChildSchemas(): array
     {
         return [
-            'phones' => ['PlayerPhone', 'player-phones', 'phone'],
-            'emails' => ['PlayerEmail', 'player-emails', 'email'],
-            'identities' => ['PlayerIdentity', 'player-identities', 'display_name'],
+            'phones' => ['UserPhone', 'player-phones', 'phone'],
+            'emails' => ['UserEmail', 'player-emails', 'email'],
+            'identities' => ['UserIdentity', 'player-identities', 'display_name'],
         ];
     }
 
     public function test_player_level_assessment_metadata_endpoint(): void
     {
         // Create a manager user
-        /** @var Player $manager */
-        $manager = Player::factory()->create();
+        /** @var User $manager */
+        $manager = User::factory()->create();
         $manager->addUserType('manager');
 
         PlayerLevelAssessment::factory()->readyForReview()->create();
@@ -622,8 +623,8 @@ class ResourceMetadataControllerTest extends TestCase
     public function test_prize_metadata_endpoint(): void
     {
         // Create a manager user
-        /** @var Player $manager */
-        $manager = Player::factory()->create();
+        /** @var User $manager */
+        $manager = User::factory()->create();
         $manager->addUserType('manager');
 
         // Create test data
@@ -650,8 +651,8 @@ class ResourceMetadataControllerTest extends TestCase
     public function test_request_body_structure_validation(): void
     {
         // Create a manager user
-        /** @var Player $manager */
-        $manager = Player::factory()->create();
+        /** @var User $manager */
+        $manager = User::factory()->create();
         $manager->addUserType('manager');
 
         $response = $this->actingAs($manager)
@@ -680,12 +681,12 @@ class ResourceMetadataControllerTest extends TestCase
     public function test_swagger_schema_structure(): void
     {
         // Create a manager user
-        /** @var Player $manager */
-        $manager = Player::factory()->create();
+        /** @var User $manager */
+        $manager = User::factory()->create();
         $manager->addUserType('manager');
 
         $response = $this->actingAs($manager)
-            ->getJson('/api/v1/manager/metadata/Player');
+            ->getJson('/api/v1/manager/metadata/User');
 
         $swaggerSchema = $response->json('data.swagger_schema');
 
@@ -700,14 +701,14 @@ class ResourceMetadataControllerTest extends TestCase
     public function test_display_field_functionality(): void
     {
         // Create a manager user
-        /** @var Player $manager */
-        $manager = Player::factory()->create();
+        /** @var User $manager */
+        $manager = User::factory()->create();
         $manager->addUserType('manager');
 
         // Test models with display_field set to first searchable field
         $modelsWithDisplayField = [
             'Club' => 'name',
-            'Player' => 'name',
+            'User' => 'name',
             'Location' => 'name',
             'Division' => 'name',
             'Event' => 'name',
@@ -753,8 +754,8 @@ class ResourceMetadataControllerTest extends TestCase
 
     public function test_get_player_profile_image_import_metadata_endpoint(): void
     {
-        /** @var Player $manager */
-        $manager = Player::factory()->create();
+        /** @var User $manager */
+        $manager = User::factory()->create();
         $manager->addUserType('manager');
 
         $response = $this->actingAs($manager)
@@ -772,14 +773,14 @@ class ResourceMetadataControllerTest extends TestCase
 
         $this->assertNotNull($response->json('data.swagger_schema'));
         $properties = $response->json('data.swagger_schema.properties');
-        $this->assertArrayHasKey('importedByPlayer', $properties);
+        $this->assertArrayHasKey('importedByManager', $properties);
         $this->assertArrayHasKey('rows', $properties);
     }
 
     public function test_get_player_profile_image_import_row_metadata_endpoint(): void
     {
-        /** @var Player $manager */
-        $manager = Player::factory()->create();
+        /** @var User $manager */
+        $manager = User::factory()->create();
         $manager->addUserType('manager');
 
         $response = $this->actingAs($manager)

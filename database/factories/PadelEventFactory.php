@@ -16,16 +16,30 @@ class PadelEventFactory extends Factory
 
     public function definition()
     {
-        $date = $this->faker->dateTimeBetween('-1 year', '+3 months')->format('Y-m-d');
+        $tz = (string) config('app.timezone', 'Europe/Bucharest');
+        $day = $this->faker->dateTimeBetween('-1 year', '+3 months')->format('Y-m-d');
+        $startHour = $this->faker->numberBetween(12, 18);
+        $endHour = min(23, $startHour + $this->faker->numberBetween(2, 4));
+        $startsAt = Carbon::createFromFormat(
+            'Y-m-d H:i:s',
+            sprintf('%s %02d:%02d:00', $day, $startHour, $this->faker->randomElement([0, 30])),
+            $tz
+        )->timestamp;
+        $endsAt = Carbon::createFromFormat(
+            'Y-m-d H:i:s',
+            sprintf('%s %02d:%02d:00', $day, $endHour, $this->faker->randomElement([0, 30])),
+            $tz
+        )->timestamp;
+        if ($endsAt <= $startsAt) {
+            $endsAt = $startsAt + 3600;
+        }
 
         return [
             'name' => '#' . $this->faker->unique()->numberBetween(1, 1000000),
             'description' => '<p>Update this description.</p>',
-            'cover_path' => 'events/factory/cover.png',
-            'date' => $date,
+            'event_starts_at' => $startsAt,
+            'event_ends_at' => $endsAt,
             'location_id' => Location::factory(),
-            'arriving_time' => Carbon::createFromTime($this->faker->numberBetween(12, 19), $this->faker->randomElement([00, 30]))->format('H:i:s'),
-            'closing_time' => Carbon::createFromTime($this->faker->numberBetween(16, 21), $this->faker->randomElement([00, 30]))->format('H:i:s'),
             'finalized_at' => null,
             'inserted_at' => $this->faker->numberBetween(time() - (3 * 365 * 24 * 60 * 60), time()),
         ];
@@ -34,24 +48,20 @@ class PadelEventFactory extends Factory
     public function configure(): static
     {
         return $this->afterMaking(function (PadelEvent $event) {
-            $dateYmd = $event->date instanceof \DateTimeInterface
-                ? $event->date->format('Y-m-d')
-                : substr((string) $event->date, 0, 10);
-            // Signed INT columns cannot store post-Y2038 unix timestamps.
-            $intMax = 2147483647;
-            $cap = min(EventDeadlineTimestamps::startOfEditionDay($dateYmd), $intMax);
+            $startsAt = (int) $event->event_starts_at;
+            $cap = max(0, $startsAt - 1);
 
             if ($event->registration_allowed_until === null) {
-                $event->registration_allowed_until = EventDeadlineTimestamps::defaultDeadline($dateYmd);
+                $event->registration_allowed_until = EventDeadlineTimestamps::defaultDeadline($startsAt);
             }
             if ($event->cancellation_allowed_until === null) {
                 $event->cancellation_allowed_until = $event->registration_allowed_until;
             }
 
-            $registration = min((int) $event->registration_allowed_until, $cap, $intMax);
-            $cancellation = min((int) $event->cancellation_allowed_until, $registration, $intMax);
-            $event->registration_allowed_until = $registration;
-            $event->cancellation_allowed_until = $cancellation;
+            $registration = min((int) $event->registration_allowed_until, $cap);
+            $cancellation = min((int) $event->cancellation_allowed_until, $registration);
+            $event->registration_allowed_until = max(0, $registration);
+            $event->cancellation_allowed_until = max(0, $cancellation);
         });
     }
 

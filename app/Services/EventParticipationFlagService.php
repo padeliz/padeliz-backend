@@ -39,7 +39,7 @@ final class EventParticipationFlagService
 
         $registeredPlayerIds = EventRegistration::query()
             ->where('event_id', $editionId)
-            ->pluck('player_id')
+            ->pluck('player_user_id')
             ->map(fn ($id) => (int) $id)
             ->unique()
             ->values()
@@ -47,7 +47,7 @@ final class EventParticipationFlagService
 
         $participatingPlayerIds = EventParticipation::query()
             ->where('event_id', $editionId)
-            ->pluck('player_id')
+            ->pluck('player_user_id')
             ->map(fn ($id) => (int) $id)
             ->unique()
             ->values()
@@ -65,14 +65,14 @@ final class EventParticipationFlagService
 
         $countsByPlayerId = EventParticipation::query()
             ->where('event_id', $editionId)
-            ->selectRaw('player_id, COUNT(*) as c')
-            ->groupBy('player_id')
-            ->pluck('c', 'player_id');
+            ->selectRaw('player_user_id, COUNT(*) as c')
+            ->groupBy('player_user_id')
+            ->pluck('c', 'player_user_id');
 
         $flagsByParticipationId = [];
         foreach ($participations as $participation) {
             $flags = [];
-            $playerId = (int) $participation->player_id;
+            $playerId = (int) $participation->player_user_id;
             if (((int) ($countsByPlayerId[$playerId] ?? 0)) > 1) {
                 $flags[] = 'duplicate';
             }

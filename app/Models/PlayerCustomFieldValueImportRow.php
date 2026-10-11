@@ -12,19 +12,19 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 /**
  * @OA\Schema(
  *     schema="PlayerCustomFieldValueImportRow",
- *     required={"player_custom_field_value_import_id", "row_index", "player_id", "action"},
+ *     required={"player_custom_field_value_import_id", "row_index", "player_user_id", "action"},
  *     @OA\Property(property="id_player_custom_field_value_import_row", type="integer", format="int64", readOnly=true),
  *     @OA\Property(property="player_custom_field_value_import_id", type="integer", format="int64"),
  *     @OA\Property(property="row_index", type="integer"),
  *     @OA\Property(property="full_name", type="string", nullable=true),
  *     @OA\Property(property="email", type="string", nullable=true),
  *     @OA\Property(property="phone", type="string", nullable=true),
- *     @OA\Property(property="player_id", type="integer", format="int64"),
+ *     @OA\Property(property="player_user_id", type="integer", format="int64"),
  *     @OA\Property(property="action", type="string", enum={"imported"}),
  *     @OA\Property(property="answers_json", type="object"),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true),
  *     @OA\Property(property="updated_at", type="integer", format="timestamp", nullable=true, readOnly=true),
- *     @OA\Property(property="player", ref="#/components/schemas/Player", nullable=true)
+ *     @OA\Property(property="player", ref="#/components/schemas/User", nullable=true)
  * )
  */
 class PlayerCustomFieldValueImportRow extends Model
@@ -42,14 +42,14 @@ class PlayerCustomFieldValueImportRow extends Model
 
     public static array $filterableFields = [
         'player_custom_field_value_import_id',
-        'player_id',
+        'player_user_id',
         'action',
     ];
 
     public static array $sortableFields = [
         'id_player_custom_field_value_import_row',
         'row_index',
-        'player_id',
+        'player_user_id',
         'inserted_at',
     ];
 
@@ -73,7 +73,7 @@ class PlayerCustomFieldValueImportRow extends Model
         'full_name',
         'email',
         'phone',
-        'player_id',
+        'player_user_id',
         'action',
         'answers_json',
     ];
@@ -81,7 +81,7 @@ class PlayerCustomFieldValueImportRow extends Model
     protected $casts = [
         'player_custom_field_value_import_id' => 'integer',
         'row_index' => 'integer',
-        'player_id' => 'integer',
+        'player_user_id' => 'integer',
         'answers_json' => 'array',
         'inserted_at' => 'integer',
         'updated_at' => 'integer',
@@ -98,6 +98,6 @@ class PlayerCustomFieldValueImportRow extends Model
 
     public function player(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'player_id', 'id_player');
+        return $this->belongsTo(User::class, 'player_user_id', 'id_user');
     }
 }

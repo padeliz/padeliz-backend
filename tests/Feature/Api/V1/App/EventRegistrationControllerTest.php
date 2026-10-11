@@ -9,18 +9,20 @@ use App\Models\EventDivision;
 use App\Models\EventParticipation;
 use App\Models\EventRegistration;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerLevel;
 use App\Models\PlayerStudentProof;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
+use Carbon\Carbon;
 
 class EventRegistrationControllerTest extends TestCase
 {
     use RefreshDatabase;
 
-    protected Player $player;
+    protected User $player;
 
     protected PadelEvent $event;
 
@@ -30,9 +32,9 @@ class EventRegistrationControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->player = Player::factory()->playerOnly()->create();
+        $this->player = User::factory()->playerOnly()->create();
         $this->event = PadelEvent::factory()->create([
-            'date' => now()->addDays(30)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(now()->addDays(30)->format('Y-m-d')),
         ]);
         $division = Division::factory()->create();
         $this->eventDivision = EventDivision::factory()->create([
@@ -43,7 +45,7 @@ class EventRegistrationControllerTest extends TestCase
             'entry_fee' => 55,
         ]);
 
-        PlayerLevel::factory()->level('4.50')->create(['player_id' => $this->player->id_player]);
+        PlayerLevel::factory()->level('4.50')->create(['player_user_id' => $this->player->id_user]);
     }
 
     public function test_store_rejects_when_registration_deadline_passed(): void
@@ -75,7 +77,7 @@ class EventRegistrationControllerTest extends TestCase
                 'success' => true,
                 'message' => 'Registration created',
                 'data' => [
-                    'player_id' => $this->player->id_player,
+                    'player_user_id' => $this->player->id_user,
                     'event_id' => $this->event->id_event,
                     'event_division_id' => $this->eventDivision->id_event_division,
                     'is_minor' => false,
@@ -112,21 +114,21 @@ class EventRegistrationControllerTest extends TestCase
     public function test_store_ignores_player_id_in_body(): void
     {
         Sanctum::actingAs($this->player);
-        $other = Player::factory()->playerOnly()->create();
+        $other = User::factory()->playerOnly()->create();
 
         $response = $this->postJson('/api/v1/app/event-registrations', [
             'event_id' => $this->event->id_event,
-            'player_id' => $other->id_player,
+            'player_user_id' => $other->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ]);
 
         $response->assertStatus(201)
-            ->assertJsonPath('data.player_id', $this->player->id_player);
+            ->assertJsonPath('data.player_user_id', $this->player->id_user);
     }
 
     public function test_store_snapshots_division_entry_fee_and_marks_student_flag(): void
     {
-        PlayerStudentProof::factory()->approved()->create(['player_id' => $this->player->id_player]);
+        PlayerStudentProof::factory()->approved()->create(['player_user_id' => $this->player->id_user]);
         Sanctum::actingAs($this->player);
 
         $response = $this->postJson('/api/v1/app/event-registrations', [
@@ -145,7 +147,7 @@ class EventRegistrationControllerTest extends TestCase
     {
         EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ]);
         Sanctum::actingAs($this->player);
@@ -158,21 +160,25 @@ class EventRegistrationControllerTest extends TestCase
         $this->assertDatabaseCount('event_participations', 1);
     }
 
-    public function test_store_rejects_past_and_today_dates(): void
+    public function test_store_allows_when_registration_open_even_if_event_day_is_today(): void
     {
         Sanctum::actingAs($this->player);
 
-        $this->event->update(['date' => now()->subDay()->format('Y-m-d')]);
-        $this->postJson('/api/v1/app/event-registrations', [
-            'event_id' => $this->event->id_event,
-            'event_division_id' => $this->eventDivision->id_event_division,
-        ])->assertStatus(422);
+        $tz = (string) config('app.timezone', 'Europe/Bucharest');
+        $now = time();
+        $startsAt = \Carbon\Carbon::now($tz)->setTime(18, 0)->timestamp;
+        $endsAt = $startsAt + 3600;
+        $this->event->update([
+            'event_starts_at' => $startsAt,
+            'event_ends_at' => $endsAt,
+            'registration_allowed_until' => $now + 3600,
+            'cancellation_allowed_until' => $now + 3600,
+        ]);
 
-        $this->event->update(['date' => now()->format('Y-m-d')]);
         $this->postJson('/api/v1/app/event-registrations', [
             'event_id' => $this->event->id_event,
             'event_division_id' => $this->eventDivision->id_event_division,
-        ])->assertStatus(422);
+        ])->assertStatus(201);
     }
 
     public function test_store_allows_future_date_even_if_finalized(): void
@@ -188,7 +194,7 @@ class EventRegistrationControllerTest extends TestCase
 
     public function test_store_forbidden_without_player_level(): void
     {
-        PlayerLevel::query()->where('player_id', $this->player->id_player)->delete();
+        PlayerLevel::query()->where('player_user_id', $this->player->id_user)->delete();
         Sanctum::actingAs($this->player);
 
         $this->postJson('/api/v1/app/event-registrations', [
@@ -284,7 +290,7 @@ class EventRegistrationControllerTest extends TestCase
     public function test_same_player_can_register_on_two_different_events(): void
     {
         Sanctum::actingAs($this->player);
-        $otherEdition = PadelEvent::factory()->create(['date' => now()->addDays(40)->format('Y-m-d')]);
+        $otherEdition = PadelEvent::factory()->create(UnixEventFactory::eventBounds(now()->addDays(40)->format('Y-m-d')));
         $otherDivision = EventDivision::factory()->create([
             'event_id' => $otherEdition->id_event,
             'players_limit' => 10,
@@ -308,7 +314,7 @@ class EventRegistrationControllerTest extends TestCase
         EventRegistration::factory()->create([
             'event_id' => $this->event->id_event,
             'event_division_id' => $this->eventDivision->id_event_division,
-            'player_id' => Player::factory(),
+            'player_user_id' => User::factory(),
             'is_student' => false,
             'payment' => 55,
         ]);
@@ -326,7 +332,7 @@ class EventRegistrationControllerTest extends TestCase
         EventRegistration::factory()->create([
             'event_id' => $this->event->id_event,
             'event_division_id' => $this->eventDivision->id_event_division,
-            'player_id' => Player::factory(),
+            'player_user_id' => User::factory(),
             'is_student' => false,
             'payment' => 55,
         ]);
@@ -344,7 +350,7 @@ class EventRegistrationControllerTest extends TestCase
         EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
             'event_division_id' => $this->eventDivision->id_event_division,
-            'player_id' => Player::factory(),
+            'player_user_id' => User::factory(),
         ]);
         Sanctum::actingAs($this->player);
 
@@ -363,12 +369,12 @@ class EventRegistrationControllerTest extends TestCase
         ]);
         $participation = EventParticipation::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
         ]);
         $registration = EventRegistration::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
             'is_student' => false,
             'payment' => 55,
@@ -399,10 +405,10 @@ class EventRegistrationControllerTest extends TestCase
 
     public function test_destroy_other_players_registration_is_404(): void
     {
-        $other = Player::factory()->playerOnly()->create();
+        $other = User::factory()->playerOnly()->create();
         $registration = EventRegistration::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $other->id_player,
+            'player_user_id' => $other->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
             'is_student' => false,
             'payment' => 55,
@@ -422,7 +428,7 @@ class EventRegistrationControllerTest extends TestCase
         Sanctum::actingAs($this->player);
         $registration = EventRegistration::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
             'is_student' => false,
             'payment' => 55,
@@ -446,7 +452,7 @@ class EventRegistrationControllerTest extends TestCase
         Sanctum::actingAs($this->player);
         $registration = EventRegistration::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
             'is_student' => false,
             'payment' => 55,
@@ -479,7 +485,7 @@ class EventRegistrationControllerTest extends TestCase
         Sanctum::actingAs($this->player);
         $registration = EventRegistration::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
             'is_student' => false,
             'payment' => 55,
@@ -500,7 +506,7 @@ class EventRegistrationControllerTest extends TestCase
         Sanctum::actingAs($this->player);
         EventRegistration::factory()->create([
             'event_id' => $this->event->id_event,
-            'player_id' => $this->player->id_player,
+            'player_user_id' => $this->player->id_user,
             'event_division_id' => $this->eventDivision->id_event_division,
             'is_student' => false,
             'payment' => 55,

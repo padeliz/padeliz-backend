@@ -15,7 +15,7 @@ use App\Models\GameMatch;
 use App\Models\MatchPlayer;
 use App\Models\MatchSide;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Services\Standings\StandingsRecalculator;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -25,7 +25,7 @@ class StandingsRecalculatorTest extends TestCase
 {
     use RefreshDatabase;
 
-    private Player $manager;
+    private User $manager;
 
     private EventDivision $eventDivision;
 
@@ -40,7 +40,7 @@ class StandingsRecalculatorTest extends TestCase
     {
         parent::setUp();
 
-        $this->manager = Player::factory()->manager()->create([
+        $this->manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
 
@@ -63,7 +63,7 @@ class StandingsRecalculatorTest extends TestCase
             $this->participations[] = EventParticipation::factory()->create([
                 'event_id' => $event->id_event,
                 'event_division_id' => $this->eventDivision->id_event_division,
-                'player_id' => Player::factory()->create()->id_player,
+                'player_user_id' => User::factory()->create()->id_user,
                 'sort_order' => $i,
                 'is_collecting_points' => true,
                 'absence_reason' => null,
@@ -88,25 +88,25 @@ class StandingsRecalculatorTest extends TestCase
             'match_side_id' => $left->id_match_side,
             'slot' => 0,
             'participation_id' => $this->participations[0]->id_participation,
-            'player_id' => $this->participations[0]->player_id,
+            'player_user_id' => $this->participations[0]->player_user_id,
         ]);
         MatchPlayer::create([
             'match_side_id' => $left->id_match_side,
             'slot' => 1,
             'participation_id' => $this->participations[1]->id_participation,
-            'player_id' => $this->participations[1]->player_id,
+            'player_user_id' => $this->participations[1]->player_user_id,
         ]);
         MatchPlayer::create([
             'match_side_id' => $right->id_match_side,
             'slot' => 0,
             'participation_id' => $this->participations[2]->id_participation,
-            'player_id' => $this->participations[2]->player_id,
+            'player_user_id' => $this->participations[2]->player_user_id,
         ]);
         MatchPlayer::create([
             'match_side_id' => $right->id_match_side,
             'slot' => 1,
             'participation_id' => $this->participations[3]->id_participation,
-            'player_id' => $this->participations[3]->player_id,
+            'player_user_id' => $this->participations[3]->player_user_id,
         ]);
     }
 
@@ -232,7 +232,7 @@ class StandingsRecalculatorTest extends TestCase
             'event_division_id' => $this->eventDivision->id_event_division,
             'original_participation_id' => $this->participations[3]->id_participation,
             'substitute_participation_id' => null,
-            'substitute_player_id' => null,
+            'substitute_player_user_id' => null,
             'match_id' => $this->match->id_match,
         ]);
 
@@ -278,25 +278,25 @@ class StandingsRecalculatorTest extends TestCase
             'match_side_id' => $left->id_match_side,
             'slot' => 0,
             'participation_id' => $this->participations[0]->id_participation,
-            'player_id' => $this->participations[0]->player_id,
+            'player_user_id' => $this->participations[0]->player_user_id,
         ]);
         MatchPlayer::create([
             'match_side_id' => $left->id_match_side,
             'slot' => 1,
             'participation_id' => $this->participations[1]->id_participation,
-            'player_id' => $this->participations[1]->player_id,
+            'player_user_id' => $this->participations[1]->player_user_id,
         ]);
         MatchPlayer::create([
             'match_side_id' => $right->id_match_side,
             'slot' => 0,
             'participation_id' => $this->participations[2]->id_participation,
-            'player_id' => $this->participations[2]->player_id,
+            'player_user_id' => $this->participations[2]->player_user_id,
         ]);
         MatchPlayer::create([
             'match_side_id' => $right->id_match_side,
             'slot' => 1,
             'participation_id' => $this->participations[3]->id_participation,
-            'player_id' => $this->participations[3]->player_id,
+            'player_user_id' => $this->participations[3]->player_user_id,
         ]);
 
         return $match;

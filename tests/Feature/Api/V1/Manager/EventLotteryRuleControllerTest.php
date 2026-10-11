@@ -10,7 +10,7 @@ use App\Models\EventLotteryPrize;
 use App\Models\EventLotteryRule;
 use App\Models\EventParticipation;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\Prize;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
@@ -45,7 +45,7 @@ class EventLotteryRuleControllerTest extends TestCase
 
     public function test_rule_index_and_show_include_lottery_prize_name_without_rules_cycle(): void
     {
-        $manager = Player::factory()->manager()->create([
+        $manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         Sanctum::actingAs($manager);
@@ -71,7 +71,7 @@ class EventLotteryRuleControllerTest extends TestCase
 
     public function test_rule_index_omits_luckies_even_when_with_luckies_is_sent(): void
     {
-        $manager = Player::factory()->manager()->create([
+        $manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         Sanctum::actingAs($manager);
@@ -79,10 +79,10 @@ class EventLotteryRuleControllerTest extends TestCase
         $event = PadelEvent::factory()->create();
         [, $rule] = $this->createPrizeLineWithRule($event, 'Towel', 1);
 
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $participation = EventParticipation::factory()->create([
             'event_id' => $event->id_event,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
         ]);
         EventLotteryLucky::factory()->create([
             'lottery_rule_id' => $rule->id_lottery_rule,
@@ -100,7 +100,7 @@ class EventLotteryRuleControllerTest extends TestCase
 
     public function test_rule_show_omits_luckies(): void
     {
-        $manager = Player::factory()->manager()->create([
+        $manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         Sanctum::actingAs($manager);
@@ -108,10 +108,10 @@ class EventLotteryRuleControllerTest extends TestCase
         $event = PadelEvent::factory()->create();
         [, $rule] = $this->createPrizeLineWithRule($event, 'Towel', 1);
 
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $participation = EventParticipation::factory()->create([
             'event_id' => $event->id_event,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
         ]);
         EventLotteryLucky::factory()->create([
             'lottery_rule_id' => $rule->id_lottery_rule,
@@ -127,7 +127,7 @@ class EventLotteryRuleControllerTest extends TestCase
 
     public function test_index_and_show_expose_luckies_count(): void
     {
-        $manager = Player::factory()->manager()->create([
+        $manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         Sanctum::actingAs($manager);
@@ -160,7 +160,7 @@ class EventLotteryRuleControllerTest extends TestCase
 
     public function test_cud_returns_409_when_edition_finalized(): void
     {
-        $manager = Player::factory()->manager()->create([
+        $manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         Sanctum::actingAs($manager);
@@ -193,7 +193,7 @@ class EventLotteryRuleControllerTest extends TestCase
 
     public function test_reorder_rewrites_orderliness(): void
     {
-        $manager = Player::factory()->manager()->create([
+        $manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         Sanctum::actingAs($manager);
@@ -230,7 +230,7 @@ class EventLotteryRuleControllerTest extends TestCase
 
     public function test_reorder_rejects_incomplete_ids_and_guards(): void
     {
-        $manager = Player::factory()->manager()->create([
+        $manager = User::factory()->manager()->create([
             'user_types' => ['player', 'manager'],
         ]);
         Sanctum::actingAs($manager);

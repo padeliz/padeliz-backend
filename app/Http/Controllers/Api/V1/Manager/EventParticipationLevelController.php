@@ -75,7 +75,7 @@ class EventParticipationLevelController extends V1BaseController
         $input = $request->input('level');
 
         $level = $this->playerLevels->upsertForParticipation(
-            (int) $eventParticipation->player_id,
+            (int) $eventParticipation->player_user_id,
             (int) $eventParticipation->id_participation,
             is_string($input) ? $input : (float) $input
         );

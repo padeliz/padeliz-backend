@@ -41,7 +41,7 @@ class PlayerProfileImage extends Model
     public const UPDATED_AT = 'updated_at';
 
     protected $fillable = [
-        'player_id',
+        'player_user_id',
         'profile_path',
         'sort_order',
         'uploaded_via',
@@ -55,7 +55,7 @@ class PlayerProfileImage extends Model
         'inserted_at' => 'integer',
         'updated_at' => 'integer',
         'sort_order' => 'integer',
-        'player_id' => 'integer',
+        'player_user_id' => 'integer',
         'uploaded_via_import_id' => 'integer',
         'uploaded_via_level_assessment_id' => 'integer',
         'is_pdf_primary' => 'boolean',
@@ -74,7 +74,7 @@ class PlayerProfileImage extends Model
 
     public function player(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'player_id', 'id_player');
+        return $this->belongsTo(User::class, 'player_user_id', 'id_user');
     }
 
     public function uploadedViaLevelAssessment(): BelongsTo

@@ -17,12 +17,12 @@ use App\Services\Cache\ScheduleReadCache;
 use App\Services\Pdf\CachedPdfAvatarAttacher;
 use App\Services\Pdf\EventDivisionPosterInvalidator;
 use App\Services\Schedule\EventDivisionScheduleFormService;
-use App\Services\Schedule\PlayingWindow;
 use App\Services\Schedule\PointsPerMatchCalculator;
 use App\Services\Schedule\ScheduleBoardMetricsService;
 use App\Services\Schedule\ScheduleGenerationService;
 use App\Services\Schedule\ScheduleMatchPersister;
 use App\Services\Schedule\ScheduleMatchReorderService;
+use Carbon\Carbon;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Validation\Rule;
@@ -347,7 +347,7 @@ class EventDivisionScheduleController extends \App\Http\Controllers\BaseVersions
 
                 $byPlayerId = [];
                 foreach ($participations as $participation) {
-                    $byPlayerId[(int) $participation->player_id] = $participation;
+                    $byPlayerId[(int) $participation->player_user_id] = $participation;
                 }
 
                 $matches = $this->matchPersister->persistRegularMatches($eventDivision, $preview, $byPlayerId);
@@ -536,10 +536,10 @@ class EventDivisionScheduleController extends \App\Http\Controllers\BaseVersions
      */
     private function rejectPlayingTimes(Request $request)
     {
-        foreach (['playing_start_time', 'playing_end_time'] as $key) {
+        foreach (['playing_start_time', 'playing_end_time', 'playing_starts_at', 'playing_ends_at', 'check_in_at'] as $key) {
             if ($request->has($key)) {
                 return $this->errorResponse(
-                    'playing_start_time and playing_end_time are managed on the edition division, not on the schedule.',
+                    'Playing times are managed on the edition division (playing_starts_at / playing_ends_at), not on the schedule.',
                     422
                 );
             }
@@ -592,7 +592,7 @@ class EventDivisionScheduleController extends \App\Http\Controllers\BaseVersions
             throw new InvalidArgumentException('PadelEvent division has no participations to schedule.');
         }
 
-        $playerIds = $participations->pluck('player_id')->map(static fn ($id): int => (int) $id)->all();
+        $playerIds = $participations->pluck('player_user_id')->map(static fn ($id): int => (int) $id)->all();
 
         if (! empty($overrides['court_ids'])) {
             $courtNames = [];
@@ -619,8 +619,8 @@ class EventDivisionScheduleController extends \App\Http\Controllers\BaseVersions
             throw new InvalidArgumentException('At least one court is required for schedule preview.');
         }
 
-        $timeStart = $this->toHi($eventDivision->formatted_playing_start_time);
-        $timeEnd = $this->toHi($eventDivision->formatted_playing_end_time);
+        $timeStart = $this->playingClockHi((int) ($eventDivision->playing_starts_at ?? 0));
+        $timeEnd = $this->playingClockHi((int) ($eventDivision->playing_ends_at ?? 0));
         $opponents = (int) ($schedule->player_opponents_nr ?? 0);
         $repeat = (int) ($schedule->player_matches_repeat ?? 1);
         $includeFinal = (bool) $schedule->include_final;
@@ -715,8 +715,8 @@ class EventDivisionScheduleController extends \App\Http\Controllers\BaseVersions
             return null;
         }
 
-        $idA = (int) ($a['player_id'] ?? $a['player']['id_player'] ?? 0);
-        $idB = (int) ($b['player_id'] ?? $b['player']['id_player'] ?? 0);
+        $idA = (int) ($a['player_user_id'] ?? $a['player']['id_user'] ?? 0);
+        $idB = (int) ($b['player_user_id'] ?? $b['player']['id_user'] ?? 0);
 
         if ($idA < 1 || $idB < 1) {
             return null;
@@ -738,8 +738,8 @@ class EventDivisionScheduleController extends \App\Http\Controllers\BaseVersions
         }
 
         $cached = CachedPdfPairImage::query()
-            ->where('player_1_id', $p1)
-            ->where('player_2_id', $p2)
+            ->where('player_1_user_id', $p1)
+            ->where('player_2_user_id', $p2)
             ->where('player_1_is_collecting_points', $c1)
             ->where('player_2_is_collecting_points', $c2)
             ->first();
@@ -747,17 +747,17 @@ class EventDivisionScheduleController extends \App\Http\Controllers\BaseVersions
         return $cached?->url;
     }
 
-    private function toHi(?string $time): string
+    /**
+     * Mode A adapter: schedule generation still consumes local H:i clocks.
+     */
+    private function playingClockHi(int $unix): string
     {
-        if ($time === null || $time === '') {
+        if ($unix < 1) {
             throw new InvalidArgumentException('Playing start/end time is required.');
         }
 
-        $clock = PlayingWindow::toClockString($time);
-        if ($clock === null || $clock === '') {
-            throw new InvalidArgumentException('Playing start/end time is required.');
-        }
+        $tz = (string) config('app.timezone', 'Europe/Bucharest');
 
-        return substr($clock, 0, 5);
+        return Carbon::createFromTimestamp($unix, $tz)->format('H:i');
     }
 }

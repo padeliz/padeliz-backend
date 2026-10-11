@@ -15,10 +15,10 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 /**
  * @OA\Schema(
  *     schema="BenefitEntitlement",
- *     required={"benefit_definition_id", "player_id", "source_type", "status"},
+ *     required={"benefit_definition_id", "player_user_id", "source_type", "status"},
  *     @OA\Property(property="id_entitlement", type="integer", format="int64", readOnly=true, title="ID"),
  *     @OA\Property(property="benefit_definition_id", type="integer", format="int64", title="Benefit Definition"),
- *     @OA\Property(property="player_id", type="integer", format="int64", title="Player"),
+ *     @OA\Property(property="player_user_id", type="integer", format="int64", title="Player"),
  *     @OA\Property(property="remaining_uses", type="integer", nullable=true, title="Remaining Uses"),
  *     @OA\Property(property="valid_from", type="integer", format="timestamp", nullable=true, title="Valid From"),
  *     @OA\Property(property="valid_until", type="integer", format="timestamp", nullable=true, title="Valid Until"),
@@ -38,7 +38,7 @@ class BenefitEntitlement extends Model
 
     public static array $filterableFields = [
         'benefit_definition_id',
-        'player_id',
+        'player_user_id',
         'source_type',
         'status',
     ];
@@ -46,7 +46,7 @@ class BenefitEntitlement extends Model
     public static array $sortableFields = [
         'id_entitlement',
         'benefit_definition_id',
-        'player_id',
+        'player_user_id',
         'remaining_uses',
         'valid_from',
         'valid_until',
@@ -72,7 +72,7 @@ class BenefitEntitlement extends Model
 
     protected $fillable = [
         'benefit_definition_id',
-        'player_id',
+        'player_user_id',
         'remaining_uses',
         'valid_from',
         'valid_until',
@@ -83,7 +83,7 @@ class BenefitEntitlement extends Model
 
     protected $casts = [
         'benefit_definition_id' => 'integer',
-        'player_id' => 'integer',
+        'player_user_id' => 'integer',
         'remaining_uses' => 'integer',
         'valid_from' => 'integer',
         'valid_until' => 'integer',
@@ -101,7 +101,7 @@ class BenefitEntitlement extends Model
 
     public function player(): BelongsTo
     {
-        return $this->belongsTo(Player::class, 'player_id', 'id_player');
+        return $this->belongsTo(User::class, 'player_user_id', 'id_user');
     }
 
     public function redemptions(): HasMany

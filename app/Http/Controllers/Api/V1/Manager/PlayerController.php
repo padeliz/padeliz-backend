@@ -5,9 +5,9 @@ declare(strict_types=1);
 namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
-use App\Http\Resources\PlayerResource;
-use App\Models\Player;
-use App\Models\PlayerPhone;
+use App\Http\Resources\UserResource;
+use App\Models\User;
+use App\Models\UserPhone;
 use App\Services\Pdf\CachedPdfAvatarAttacher;
 use App\Services\Pdf\PdfCachedImageGenerator;
 use App\Traits\CachesManagerResourceReads;
@@ -75,7 +75,7 @@ class PlayerController extends V1BaseController
      *         @OA\Schema(
      *             type="object",
      *             additionalProperties=false,
-     *             @OA\Property(property="id_player", type="string", enum={"asc", "desc"}, description="Sort by player ID"),
+     *             @OA\Property(property="id_user", type="string", enum={"asc", "desc"}, description="Sort by player ID"),
      *             @OA\Property(property="first_name", type="string", enum={"asc", "desc"}, description="Sort by first name"),
      *             @OA\Property(property="last_name", type="string", enum={"asc", "desc"}, description="Sort by last name"),
      *             @OA\Property(property="inserted_at", type="string", enum={"asc", "desc"}, description="Sort by creation date"),
@@ -92,7 +92,7 @@ class PlayerController extends V1BaseController
      *                     @OA\Property(
      *                         property="data",
      *                         type="array",
-     *                         @OA\Items(ref="#/components/schemas/Player")
+     *                         @OA\Items(ref="#/components/schemas/User")
      *                     )
      *                 )
      *             }
@@ -118,14 +118,14 @@ class PlayerController extends V1BaseController
     public function index(Request $request)
     {
         $payload = $this->cachedManagerIndex('players', $request, [], function () use ($request) {
-            $query = Player::with(['participations']);
+            $query = User::query()->directoryPlayers()->with(['participations']);
 
             $this->applyAdvancedPagination(
                 $query,
                 $request,
-                Player::$searchableFields,
-                Player::$filterableFields,
-                Player::$sortableFields,
+                User::$searchableFields,
+                User::$filterableFields,
+                User::$sortableFields,
                 function ($q, string $searchTerm): void {
                     $q->orWhereHas('emails', function ($emailQuery) use ($searchTerm) {
                         $emailQuery->where('email', 'LIKE', "%{$searchTerm}%");
@@ -139,12 +139,12 @@ class PlayerController extends V1BaseController
             $paginationParams = $this->getPaginationParams($request);
 
             if (! $request->has('sort_by')) {
-                $query->orderBy('id_player', 'desc');
+                $query->orderBy('id_user', 'desc');
             }
 
             $players = $query->paginate($paginationParams['per_page'], ['*'], 'page', $paginationParams['page']);
 
-            return PlayerResource::collection($players)->response()->getData(true);
+            return UserResource::collection($players)->response()->getData(true);
         });
 
         if (is_array($payload) && isset($payload['data']) && is_array($payload['data'])) {
@@ -175,7 +175,7 @@ class PlayerController extends V1BaseController
      *                 @OA\Schema(
      *                     @OA\Property(
      *                         property="data",
-     *                         ref="#/components/schemas/Player"
+     *                         ref="#/components/schemas/User"
      *                     )
      *                 )
      *             }
@@ -188,12 +188,12 @@ class PlayerController extends V1BaseController
      *     )
      * )
      */
-    public function show(Player $player)
+    public function show(User $player)
     {
-        $data = $this->cachedManagerShow('players', (int) $player->id_player, function () use ($player) {
+        $data = $this->cachedManagerShow('players', (int) $player->id_user, function () use ($player) {
             $player->load(['participations']);
 
-            return (new PlayerResource($player))->resolve();
+            return (new UserResource($player))->resolve();
         });
 
         if (is_array($data)) {
@@ -227,7 +227,7 @@ class PlayerController extends V1BaseController
      *             allOf={
      *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
      *                 @OA\Schema(
-     *                     @OA\Property(property="data", ref="#/components/schemas/Player")
+     *                     @OA\Property(property="data", ref="#/components/schemas/User")
      *                 )
      *             }
      *         )
@@ -260,7 +260,7 @@ class PlayerController extends V1BaseController
             'first_name' => 'required|string|max:50',
             'middle_name' => 'nullable|string|max:50',
             'last_name' => 'nullable|string|max:50',
-            'phone' => ['nullable', 'string', 'max:30', Rule::unique('player_phones', 'phone')],
+            'phone' => ['nullable', 'string', 'max:30', Rule::unique('user_phones', 'phone')],
             'user_types' => 'nullable|array',
             'user_types.*' => 'string|in:player,manager,admin',
         ]);
@@ -269,13 +269,13 @@ class PlayerController extends V1BaseController
         unset($validated['phone']);
         $validated['created_via'] = 'manager';
         $validated['created_via_format'] = null;
-        $validated['created_via_import_id'] = null;
+        $validated['created_via_user_import_id'] = null;
 
-        $player = Player::create($validated);
+        $player = User::create($validated);
 
         if ($phone) {
-            PlayerPhone::create([
-                'player_id' => $player->id_player,
+            UserPhone::create([
+                'user_id' => $player->id_user,
                 'phone' => $phone,
                 'purposes' => ['contact'],
                 'is_primary' => true,
@@ -285,7 +285,7 @@ class PlayerController extends V1BaseController
         $player->load(['emails', 'phones']);
 
         return $this->resourceResponse(
-            new PlayerResource($player),
+            new UserResource($player),
             'Player created successfully',
             201
         );
@@ -320,7 +320,7 @@ class PlayerController extends V1BaseController
      *             allOf={
      *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
      *                 @OA\Schema(
-     *                     @OA\Property(property="data", ref="#/components/schemas/Player")
+     *                     @OA\Property(property="data", ref="#/components/schemas/User")
      *                 )
      *             }
      *         )
@@ -352,7 +352,7 @@ class PlayerController extends V1BaseController
      *     )
      * )
      */
-    public function update(Request $request, Player $player)
+    public function update(Request $request, User $player)
     {
         $validated = $request->validate([
             'first_name' => 'required|string|max:50',
@@ -362,7 +362,7 @@ class PlayerController extends V1BaseController
                 'nullable',
                 'string',
                 'max:30',
-                Rule::unique('player_phones', 'phone')->where(fn ($q) => $q->where('player_id', '!=', $player->id_player)),
+                Rule::unique('user_phones', 'phone')->where(fn ($q) => $q->where('user_id', '!=', $player->id_user)),
             ],
             'user_types' => 'nullable|array',
             'user_types.*' => 'string|in:player,manager,admin',
@@ -376,7 +376,7 @@ class PlayerController extends V1BaseController
         $player->load(['emails', 'phones']);
 
         return $this->resourceResponse(
-            new PlayerResource($player),
+            new UserResource($player),
             'Player updated successfully'
         );
     }
@@ -410,7 +410,7 @@ class PlayerController extends V1BaseController
      *             allOf={
      *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
      *                 @OA\Schema(
-     *                     @OA\Property(property="data", ref="#/components/schemas/Player")
+     *                     @OA\Property(property="data", ref="#/components/schemas/User")
      *                 )
      *             }
      *         )
@@ -442,7 +442,7 @@ class PlayerController extends V1BaseController
      *     )
      * )
      */
-    public function patch(Request $request, Player $player)
+    public function patch(Request $request, User $player)
     {
         $validated = $request->validate([
             'first_name' => 'sometimes|required|string|max:50',
@@ -453,7 +453,7 @@ class PlayerController extends V1BaseController
                 'nullable',
                 'string',
                 'max:30',
-                Rule::unique('player_phones', 'phone')->where(fn ($q) => $q->where('player_id', '!=', $player->id_player)),
+                Rule::unique('user_phones', 'phone')->where(fn ($q) => $q->where('user_id', '!=', $player->id_user)),
             ],
             'user_types' => 'nullable|array',
             'user_types.*' => 'string|in:player,manager,admin',
@@ -472,12 +472,12 @@ class PlayerController extends V1BaseController
         $player->load(['emails', 'phones']);
 
         return $this->resourceResponse(
-            new PlayerResource($player),
+            new UserResource($player),
             'Player partially updated successfully'
         );
     }
 
-    private function syncPrimaryPhone(Player $player, ?string $phone): void
+    private function syncPrimaryPhone(User $player, ?string $phone): void
     {
         if ($phone === null || $phone === '') {
             return;
@@ -492,8 +492,8 @@ class PlayerController extends V1BaseController
             return;
         }
 
-        PlayerPhone::create([
-            'player_id' => $player->id_player,
+        UserPhone::create([
+            'user_id' => $player->id_user,
             'phone' => $phone,
             'purposes' => ['contact'],
             'is_primary' => true,
@@ -556,7 +556,7 @@ class PlayerController extends V1BaseController
      *     )
      * )
      */
-    public function destroy(Player $player)
+    public function destroy(User $player)
     {
         return $this->deleteResourceWithResponse(
             $player,
@@ -575,9 +575,9 @@ class PlayerController extends V1BaseController
      *     @OA\RequestBody(
      *         required=true,
      *         @OA\JsonContent(
-     *             required={"player_ids"},
+     *             required={"player_user_ids"},
      *             @OA\Property(
-     *                 property="player_ids",
+     *                 property="player_user_ids",
      *                 type="array",
      *                 description="Array of player IDs to delete",
      *                 @OA\Items(type="integer")
@@ -674,13 +674,14 @@ class PlayerController extends V1BaseController
     public function bulkDestroy(Request $request)
     {
         $request->validate([
-            'player_ids' => 'required|array|min:1',
-            'player_ids.*' => 'integer',
+            'player_user_ids' => 'required|array|min:1',
+            'player_user_ids.*' => 'integer',
+            'player_ids' => 'prohibited',
         ]);
 
         return $this->deleteBulkResourcesWithResponse(
-            $request->player_ids,
-            Player::class,
+            $request->player_user_ids,
+            User::class,
             ['sponsors' => 'sponsors_count'],
             'player',
             'Players deleted successfully'
@@ -706,7 +707,7 @@ class PlayerController extends V1BaseController
      *     @OA\Response(response=422, description="Validation error or avatar generation failure")
      * )
      */
-    public function generatePdfAvatar(Request $request, Player $player): JsonResponse
+    public function generatePdfAvatar(Request $request, User $player): JsonResponse
     {
         $validated = $request->validate([
             'is_collecting_points' => ['required', 'boolean'],
@@ -719,7 +720,7 @@ class PlayerController extends V1BaseController
         } catch (\Throwable $e) {
             return response()->json([
                 'message' => $e->getMessage() !== '' ? $e->getMessage() : 'Failed to generate PDF avatar.',
-                'player_ids' => [(int) $player->id_player],
+                'player_user_ids' => [(int) $player->id_user],
                 'code' => 'pdf_avatar_failed',
             ], 422);
         }

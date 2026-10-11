@@ -10,10 +10,11 @@ use App\Enums\Registration\RegistrationPaymentMethod;
 use App\Models\EventRegistrationCheckout;
 use App\Models\EventRegistrationPaymentProof;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Services\RegistrationPayment\CheckoutService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
 
 class CheckoutResetProofMessageTest extends TestCase
 {
@@ -21,15 +22,15 @@ class CheckoutResetProofMessageTest extends TestCase
 
     public function test_reset_payment_path_sets_proof_cancelled_by_first_name(): void
     {
-        $player = Player::factory()->playerOnly()->create([
+        $player = User::factory()->playerOnly()->create([
             'first_name' => 'Andrei',
         ]);
         $event = PadelEvent::factory()->create([
-            'date' => now()->addDays(20)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(now()->addDays(20)->format('Y-m-d')),
         ]);
         $checkout = EventRegistrationCheckout::query()->create([
             'event_id' => $event->id_event,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'status' => CheckoutStatus::AwaitingProof,
             'total_amount' => 50,
             'payment_method' => RegistrationPaymentMethod::BankTransfer,
@@ -51,15 +52,15 @@ class CheckoutResetProofMessageTest extends TestCase
 
     public function test_reset_payment_path_falls_back_to_player_when_first_name_empty(): void
     {
-        $player = Player::factory()->playerOnly()->create([
+        $player = User::factory()->playerOnly()->create([
             'first_name' => ' ',
         ]);
         $event = PadelEvent::factory()->create([
-            'date' => now()->addDays(20)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds(now()->addDays(20)->format('Y-m-d')),
         ]);
         $checkout = EventRegistrationCheckout::query()->create([
             'event_id' => $event->id_event,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'status' => CheckoutStatus::AwaitingProof,
             'total_amount' => 50,
             'payment_method' => RegistrationPaymentMethod::BankTransfer,

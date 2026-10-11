@@ -92,19 +92,17 @@ return new class () extends Migration {
             $table->string('name', 25);
             $table->string('slug')->nullable();
             $table->text('description');
-            $table->string('cover_path', 512)->nullable();
-            $table->date('date');
+            $table->unsignedInteger('event_starts_at');
+            $table->unsignedInteger('event_ends_at');
             $table->foreignId('location_id')->constrained('locations', 'id_location');
             $table->foreignId('organizer_id')
                 ->nullable()
                 ->constrained('organizers', 'id_organizer')
                 ->restrictOnDelete();
             $table->boolean('include_club_host_on_pdf')->default(true);
-            $table->time('arriving_time');
-            $table->time('closing_time');
             $table->integer('finalized_at')->nullable();
-            $table->integer('registration_allowed_until');
-            $table->integer('cancellation_allowed_until');
+            $table->unsignedInteger('registration_allowed_until');
+            $table->unsignedInteger('cancellation_allowed_until');
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
         });
@@ -115,8 +113,8 @@ return new class () extends Migration {
                 ->on('events');
         });
 
-        Schema::create('players', function (Blueprint $table) {
-            $table->id('id_player');
+        Schema::create('users', function (Blueprint $table) {
+            $table->id('id_user');
             $table->string('first_name', 50);
             $table->string('middle_name', 50)->nullable();
             $table->string('last_name', 50)->nullable();
@@ -128,9 +126,9 @@ return new class () extends Migration {
             $table->integer('updated_at')->nullable();
         });
 
-        Schema::create('player_emails', function (Blueprint $table) {
-            $table->id('id_player_email');
-            $table->foreignId('player_id')->constrained('players', 'id_player')->cascadeOnDelete();
+        Schema::create('user_emails', function (Blueprint $table) {
+            $table->id('id_user_email');
+            $table->foreignId('user_id')->constrained('users', 'id_user')->cascadeOnDelete();
             $table->string('email', 255)->unique();
             $table->json('purposes');
             $table->boolean('is_primary')->default(false);
@@ -139,9 +137,9 @@ return new class () extends Migration {
             $table->integer('updated_at')->nullable();
         });
 
-        Schema::create('player_phones', function (Blueprint $table) {
-            $table->id('id_player_phone');
-            $table->foreignId('player_id')->constrained('players', 'id_player')->cascadeOnDelete();
+        Schema::create('user_phones', function (Blueprint $table) {
+            $table->id('id_user_phone');
+            $table->foreignId('user_id')->constrained('users', 'id_user')->cascadeOnDelete();
             $table->string('phone', 30)->unique();
             $table->json('purposes');
             $table->boolean('is_primary')->default(false);
@@ -150,13 +148,13 @@ return new class () extends Migration {
             $table->integer('updated_at')->nullable();
         });
 
-        Schema::create('player_identities', function (Blueprint $table) {
-            $table->id('id_identity');
-            $table->foreignId('player_id')->constrained('players', 'id_player')->cascadeOnDelete();
+        Schema::create('user_identities', function (Blueprint $table) {
+            $table->id('id_user_identity');
+            $table->foreignId('user_id')->constrained('users', 'id_user')->cascadeOnDelete();
             $table->enum('provider', ['google', 'apple', 'sms', 'dev']);
             $table->string('provider_subject', 255);
-            $table->foreignId('email_id')->nullable()->constrained('player_emails', 'id_player_email')->nullOnDelete();
-            $table->foreignId('phone_id')->nullable()->constrained('player_phones', 'id_player_phone')->nullOnDelete();
+            $table->foreignId('email_id')->nullable()->constrained('user_emails', 'id_user_email')->nullOnDelete();
+            $table->foreignId('phone_id')->nullable()->constrained('user_phones', 'id_user_phone')->nullOnDelete();
             $table->string('display_name', 255)->nullable();
             $table->string('avatar_url', 512)->nullable();
             $table->boolean('is_avatar_primary')->default(false);
@@ -164,7 +162,7 @@ return new class () extends Migration {
             $table->integer('last_login_at')->nullable();
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
-            $table->unique(['provider', 'provider_subject'], 'uq_player_identity_provider_subject');
+            $table->unique(['provider', 'provider_subject'], 'uq_user_identity_provider_subject');
         });
 
         Schema::create('media_sources', function (Blueprint $table) {
@@ -178,49 +176,52 @@ return new class () extends Migration {
 
         Schema::create('player_media_sources', function (Blueprint $table) {
             $table->id('id_player_media_source');
-            $table->unsignedBigInteger('player_id');
+            $table->unsignedBigInteger('player_user_id');
             $table->unsignedBigInteger('media_source_id');
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
-            $table->unique(['player_id', 'media_source_id'], 'uq_player_media_sources');
-            $table->foreign('player_id', 'fk_pms_player')
-                ->references('id_player')->on('players')->cascadeOnDelete();
+            $table->unique(['player_user_id', 'media_source_id'], 'uq_player_media_sources');
+            $table->foreign('player_user_id', 'fk_pms_player')
+                ->references('id_user')->on('users')->cascadeOnDelete();
             $table->foreign('media_source_id', 'fk_pms_source')
                 ->references('id_media_source')->on('media_sources')->cascadeOnDelete();
         });
 
         Schema::create('player_friends_sources', function (Blueprint $table) {
             $table->id('id_player_friends_source');
-            $table->unsignedBigInteger('player_id');
-            $table->unsignedBigInteger('friend_player_id')->nullable();
+            $table->unsignedBigInteger('player_user_id');
+            $table->unsignedBigInteger('friend_player_user_id')->nullable();
             $table->string('full_name', 120)->nullable();
             $table->string('email', 255)->nullable();
             $table->string('phone', 30)->nullable();
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
-            $table->index('player_id', 'player_friends_sources_player_idx');
-            $table->foreign('player_id', 'fk_pfs_player')
-                ->references('id_player')->on('players')->cascadeOnDelete();
-            $table->foreign('friend_player_id', 'fk_pfs_friend')
-                ->references('id_player')->on('players')->nullOnDelete();
+            $table->index('player_user_id', 'player_friends_sources_player_user_idx');
+            $table->foreign('player_user_id', 'fk_pfs_player')
+                ->references('id_user')->on('users')->cascadeOnDelete();
+            $table->foreign('friend_player_user_id', 'fk_pfs_friend')
+                ->references('id_user')->on('users')->nullOnDelete();
         });
 
         Schema::create('player_custom_field_submissions', function (Blueprint $table) {
             $table->id('id_player_custom_field_submission');
-            $table->unsignedBigInteger('player_id');
+            $table->unsignedBigInteger('player_user_id');
             $table->string('submitted_via', 32);
-            $table->unsignedBigInteger('submitted_by_player_id')->nullable();
+            $table->unsignedBigInteger('submitted_by_player_user_id')->nullable();
+            $table->unsignedBigInteger('submitted_by_manager_user_id')->nullable();
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
-            $table->foreign('player_id', 'fk_pcfs_player')
-                ->references('id_player')->on('players')->cascadeOnDelete();
-            $table->foreign('submitted_by_player_id', 'fk_pcfs_submitted_by')
-                ->references('id_player')->on('players')->nullOnDelete();
+            $table->foreign('player_user_id', 'fk_pcfs_player')
+                ->references('id_user')->on('users')->cascadeOnDelete();
+            $table->foreign('submitted_by_player_user_id', 'fk_pcfs_submitted_by_player')
+                ->references('id_user')->on('users')->nullOnDelete();
+            $table->foreign('submitted_by_manager_user_id', 'fk_pcfs_submitted_by_manager')
+                ->references('id_user')->on('users')->nullOnDelete();
         });
 
         Schema::create('player_level_assessments', function (Blueprint $table) {
             $table->id('id_player_level_assessment');
-            $table->unsignedBigInteger('player_id');
+            $table->unsignedBigInteger('player_user_id');
             $table->unsignedBigInteger('player_custom_field_submission_id');
             $table->integer('submitted_at')->nullable();
             $table->integer('resubmitted_at')->nullable();
@@ -230,10 +231,10 @@ return new class () extends Migration {
             $table->text('review_message')->nullable();
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
-            $table->index(['player_id', 'review_status'], 'pla_player_status_idx');
-            // No ON DELETE CASCADE: incompatible with generated pending_player_id.
-            $table->foreign('player_id', 'fk_pla_player')
-                ->references('id_player')->on('players');
+            $table->index(['player_user_id', 'review_status'], 'pla_player_user_status_idx');
+            // No ON DELETE CASCADE: incompatible with generated pending_player_user_id.
+            $table->foreign('player_user_id', 'fk_pla_player')
+                ->references('id_user')->on('users');
             $table->foreign('player_custom_field_submission_id', 'fk_pla_submission')
                 ->references('id_player_custom_field_submission')
                 ->on('player_custom_field_submissions');
@@ -241,17 +242,17 @@ return new class () extends Migration {
 
         DB::statement(
             "ALTER TABLE `{$prefix}player_level_assessments` " .
-            'ADD COLUMN `pending_player_id` BIGINT UNSIGNED ' .
-            "GENERATED ALWAYS AS (CASE WHEN `review_status` = 'pending' THEN `player_id` ELSE NULL END) STORED"
+            'ADD COLUMN `pending_player_user_id` BIGINT UNSIGNED ' .
+            "GENERATED ALWAYS AS (CASE WHEN `review_status` = 'pending' THEN `player_user_id` ELSE NULL END) STORED"
         );
         DB::statement(
             'CREATE UNIQUE INDEX `pla_one_pending_per_player` ' .
-            "ON `{$prefix}player_level_assessments` (`pending_player_id`)"
+            "ON `{$prefix}player_level_assessments` (`pending_player_user_id`)"
         );
 
         Schema::create('player_student_proofs', function (Blueprint $table) {
             $table->id('id_player_student_proof');
-            $table->unsignedBigInteger('player_id');
+            $table->unsignedBigInteger('player_user_id');
             $table->date('student_until');
             $table->unsignedTinyInteger('sort_order')->default(0);
             $table->boolean('ready_for_review')->default(false);
@@ -261,19 +262,19 @@ return new class () extends Migration {
             $table->integer('submitted_at')->nullable();
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
-            $table->index(['player_id', 'review_status'], 'psp_player_status_idx');
-            $table->foreign('player_id', 'fk_psp_player')
-                ->references('id_player')->on('players');
+            $table->index(['player_user_id', 'review_status'], 'psp_player_user_status_idx');
+            $table->foreign('player_user_id', 'fk_psp_player')
+                ->references('id_user')->on('users');
         });
 
         DB::statement(
             "ALTER TABLE `{$prefix}player_student_proofs` " .
-            'ADD COLUMN `pending_player_id` BIGINT UNSIGNED ' .
-            "GENERATED ALWAYS AS (CASE WHEN `review_status` = 'pending' THEN `player_id` ELSE NULL END) STORED"
+            'ADD COLUMN `pending_player_user_id` BIGINT UNSIGNED ' .
+            "GENERATED ALWAYS AS (CASE WHEN `review_status` = 'pending' THEN `player_user_id` ELSE NULL END) STORED"
         );
         DB::statement(
             'CREATE UNIQUE INDEX `psp_one_pending_per_player` ' .
-            "ON `{$prefix}player_student_proofs` (`pending_player_id`)"
+            "ON `{$prefix}player_student_proofs` (`pending_player_user_id`)"
         );
 
         Schema::create('player_student_proof_files', function (Blueprint $table) {
@@ -291,28 +292,29 @@ return new class () extends Migration {
 
         Schema::create('player_invites', function (Blueprint $table) {
             $table->id('id_invite');
-            $table->foreignId('player_id')->constrained('players', 'id_player')->cascadeOnDelete();
+            $table->foreignId('player_user_id')->constrained('users', 'id_user')->cascadeOnDelete();
             $table->string('token_hash', 64)->unique();
             $table->integer('expires_at');
             $table->integer('accepted_at')->nullable();
             $table->integer('revoked_at')->nullable();
-            $table->foreignId('created_by_player_id')->nullable()->constrained('players', 'id_player')->nullOnDelete();
+            $table->foreignId('created_by_manager_user_id')->nullable()->constrained('users', 'id_user')->nullOnDelete();
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
-            $table->index('player_id', 'player_invites_player_id_idx');
+            $table->index('player_user_id', 'player_invites_player_user_id_idx');
         });
 
         Schema::create('player_invite_events', function (Blueprint $table) {
             $table->id('id_invite_event');
             $table->foreignId('invite_id')->nullable()->constrained('player_invites', 'id_invite')->nullOnDelete();
-            $table->foreignId('player_id')->nullable()->constrained('players', 'id_player')->nullOnDelete();
+            $table->foreignId('player_user_id')->nullable()->constrained('users', 'id_user')->nullOnDelete();
             $table->enum('event', ['created', 'redeem_started', 'redeem_succeeded', 'redeem_failed', 'revoked']);
             $table->string('result_code', 64)->nullable();
             $table->enum('provider', ['google', 'apple', 'sms', 'dev'])->nullable();
             $table->string('provider_subject', 255)->nullable();
             $table->enum('contact_kind', ['email', 'phone'])->nullable();
             $table->string('contact_value_hash', 64)->nullable();
-            $table->foreignId('actor_player_id')->nullable()->constrained('players', 'id_player')->nullOnDelete();
+            $table->foreignId('actor_player_user_id')->nullable()->constrained('users', 'id_user')->nullOnDelete();
+            $table->foreignId('actor_manager_user_id')->nullable()->constrained('users', 'id_user')->nullOnDelete();
             $table->string('ip', 45)->nullable();
             $table->string('user_agent', 512)->nullable();
             $table->json('meta')->nullable();
@@ -321,22 +323,22 @@ return new class () extends Migration {
 
         Schema::create('player_profile_image_imports', function (Blueprint $table) {
             $table->id('id_player_profile_image_import');
-            $table->unsignedBigInteger('imported_by_player_id')->nullable();
+            $table->unsignedBigInteger('imported_by_manager_user_id')->nullable();
             $table->string('original_filename', 255);
             $table->unsignedInteger('included_count')->default(0);
             $table->unsignedInteger('uploaded_count')->default(0);
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
 
-            $table->foreign('imported_by_player_id', 'ppii_imported_by_fk')
-                ->references('id_player')
-                ->on('players')
+            $table->foreign('imported_by_manager_user_id', 'ppii_imported_by_fk')
+                ->references('id_user')
+                ->on('users')
                 ->nullOnDelete();
         });
 
         Schema::create('player_profile_images', function (Blueprint $table) {
             $table->id();
-            $table->foreignId('player_id')->constrained('players', 'id_player')->cascadeOnDelete();
+            $table->foreignId('player_user_id')->constrained('users', 'id_user')->cascadeOnDelete();
             $table->string('profile_path', 512);
             $table->unsignedTinyInteger('sort_order');
             $table->string('uploaded_via', 32)->nullable();
@@ -346,7 +348,7 @@ return new class () extends Migration {
             $table->boolean('is_pdf_primary')->default(false);
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
-            $table->index('player_id', 'player_profile_images_player_id_idx');
+            $table->index('player_user_id', 'player_profile_images_player_user_id_idx');
             $table->foreign('uploaded_via_import_id', 'ppi_uploaded_via_import_fk')
                 ->references('id_player_profile_image_import')
                 ->on('player_profile_image_imports')
@@ -361,7 +363,7 @@ return new class () extends Migration {
             $table = Schema::getConnection()->getTablePrefix() . 'player_profile_images';
             DB::statement(
                 'CREATE UNIQUE INDEX player_profile_images_one_pdf_primary '
-                . 'ON `' . $table . '` ((IF(is_pdf_primary, player_id, NULL)))'
+                . 'ON `' . $table . '` ((IF(is_pdf_primary, player_user_id, NULL)))'
             );
         }
 
@@ -370,7 +372,7 @@ return new class () extends Migration {
             $table->unsignedBigInteger('player_profile_image_import_id');
             $table->unsignedInteger('row_index');
             $table->string('original_filename', 255);
-            $table->unsignedBigInteger('player_id');
+            $table->unsignedBigInteger('player_user_id');
             $table->unsignedBigInteger('player_profile_image_id');
             $table->boolean('is_pdf_primary')->default(false);
             $table->string('action', 32)->default('uploaded');
@@ -381,9 +383,9 @@ return new class () extends Migration {
                 ->references('id_player_profile_image_import')
                 ->on('player_profile_image_imports')
                 ->cascadeOnDelete();
-            $table->foreign('player_id', 'ppii_rows_player_fk')
-                ->references('id_player')
-                ->on('players')
+            $table->foreign('player_user_id', 'ppii_rows_player_fk')
+                ->references('id_user')
+                ->on('users')
                 ->cascadeOnDelete();
             $table->foreign('player_profile_image_id', 'ppii_rows_image_fk')
                 ->references('id')
@@ -391,11 +393,11 @@ return new class () extends Migration {
                 ->cascadeOnDelete();
         });
 
-        Schema::create('player_imports', function (Blueprint $table) {
-            $table->id('id_player_import');
-            $table->foreignId('imported_by_player_id')
+        Schema::create('user_imports', function (Blueprint $table) {
+            $table->id('id_user_import');
+            $table->foreignId('imported_by_manager_user_id')
                 ->nullable()
-                ->constrained('players', 'id_player')
+                ->constrained('users', 'id_user')
                 ->nullOnDelete();
             $table->string('format', 32);
             $table->string('original_filename', 255);
@@ -406,18 +408,18 @@ return new class () extends Migration {
             $table->integer('updated_at')->nullable();
         });
 
-        Schema::table('players', function (Blueprint $table) {
-            $table->foreignId('created_via_import_id')
+        Schema::table('users', function (Blueprint $table) {
+            $table->foreignId('created_via_user_import_id')
                 ->nullable()
                 ->after('created_via_format')
-                ->constrained('player_imports', 'id_player_import')
+                ->constrained('user_imports', 'id_user_import')
                 ->nullOnDelete();
         });
 
-        Schema::create('player_import_rows', function (Blueprint $table) {
-            $table->id('id_player_import_row');
-            $table->foreignId('player_import_id')
-                ->constrained('player_imports', 'id_player_import')
+        Schema::create('user_import_rows', function (Blueprint $table) {
+            $table->id('id_user_import_row');
+            $table->foreignId('user_import_id')
+                ->constrained('user_imports', 'id_user_import')
                 ->cascadeOnDelete();
             $table->unsignedInteger('row_index');
             $table->string('first_name', 50)->nullable();
@@ -425,9 +427,9 @@ return new class () extends Migration {
             $table->string('last_name', 50)->nullable();
             $table->string('email', 255)->nullable();
             $table->string('phone', 30)->nullable();
-            $table->foreignId('player_id')
+            $table->foreignId('user_id')
                 ->nullable()
-                ->constrained('players', 'id_player')
+                ->constrained('users', 'id_user')
                 ->nullOnDelete();
             $table->string('action', 16);
             $table->integer('inserted_at');
@@ -436,12 +438,12 @@ return new class () extends Migration {
 
         Schema::create('player_device_tokens', function (Blueprint $table) {
             $table->id('id_player_device_token');
-            $table->foreignId('player_id')->constrained('players', 'id_player')->cascadeOnDelete();
+            $table->foreignId('player_user_id')->constrained('users', 'id_user')->cascadeOnDelete();
             $table->string('token', 512)->unique();
             $table->string('platform', 32)->nullable();
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
-            $table->index('player_id', 'player_device_tokens_player_id_idx');
+            $table->index('player_user_id', 'player_device_tokens_player_user_id_idx');
         });
 
         Schema::create('event_divisions', function (Blueprint $table) {
@@ -454,11 +456,23 @@ return new class () extends Migration {
             $table->unsignedInteger('skill_order')->default(0);
             $table->decimal('level_min', 3, 2)->nullable();
             $table->decimal('level_max', 3, 2)->nullable();
-            $table->time('playing_start_time');
-            $table->time('playing_end_time');
+            $table->unsignedInteger('check_in_at')->nullable();
+            $table->unsignedInteger('playing_starts_at');
+            $table->unsignedInteger('playing_ends_at');
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
             $table->index(['event_id', 'skill_order'], 'event_divisions_event_skill_order_idx');
+        });
+
+        Schema::create('event_cover_images', function (Blueprint $table) {
+            $table->id('id_event_cover_image');
+            $table->foreignId('event_id')->constrained('events', 'id_event')->cascadeOnDelete();
+            $table->string('cover_path', 512);
+            $table->float('aspect_ratio');
+            $table->unsignedInteger('sort_order');
+            $table->integer('inserted_at')->nullable();
+            $table->integer('updated_at')->nullable();
+            $table->index(['event_id', 'sort_order'], 'event_cover_images_event_sort_idx');
         });
 
         Schema::create('event_division_schedules', function (Blueprint $table) {
@@ -517,7 +531,7 @@ return new class () extends Migration {
         Schema::create('event_participations', function (Blueprint $table) {
             $table->id('id_participation');
             $table->foreignId('event_id')->constrained('events', 'id_event');
-            $table->foreignId('player_id')->constrained('players', 'id_player');
+            $table->foreignId('player_user_id')->constrained('users', 'id_user');
             $table->foreignId('event_division_id')->constrained('event_divisions', 'id_event_division');
             $table->unsignedSmallInteger('sort_order')->default(0);
             $table->boolean('is_collecting_points')->default(true);
@@ -525,12 +539,12 @@ return new class () extends Migration {
             $table->enum('ban_reason', ['LEFT SUDDENLY', 'AGGRESSIVE PLAYER', 'LIBIDINOUS', ''])->nullable();
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
-            $table->unique(['event_division_id', 'player_id'], 'uq_participation_ed_player');
+            $table->unique(['event_division_id', 'player_user_id'], 'uq_participation_ed_player_user');
         });
 
         Schema::create('player_levels', function (Blueprint $table) {
             $table->id('id_player_level');
-            $table->unsignedBigInteger('player_id');
+            $table->unsignedBigInteger('player_user_id');
             $table->decimal('level', 3, 2);
             $table->unsignedBigInteger('player_level_assessment_id')->nullable();
             $table->unsignedBigInteger('event_participation_id')->nullable();
@@ -538,9 +552,9 @@ return new class () extends Migration {
             $table->integer('updated_at')->nullable();
             $table->unique('player_level_assessment_id', 'uq_player_levels_assessment');
             $table->unique('event_participation_id', 'uq_player_levels_participation');
-            $table->index(['player_id', 'inserted_at'], 'player_levels_player_inserted_idx');
-            $table->foreign('player_id', 'fk_player_levels_player')
-                ->references('id_player')->on('players')->cascadeOnDelete();
+            $table->index(['player_user_id', 'inserted_at'], 'player_levels_player_user_inserted_idx');
+            $table->foreign('player_user_id', 'fk_player_levels_player')
+                ->references('id_user')->on('users')->cascadeOnDelete();
             $table->foreign('player_level_assessment_id', 'fk_player_levels_assessment')
                 ->references('id_player_level_assessment')
                 ->on('player_level_assessments')
@@ -554,7 +568,7 @@ return new class () extends Migration {
         Schema::create('event_registrations', function (Blueprint $table) {
             $table->id('id_registration');
             $table->foreignId('event_id')->constrained('events', 'id_event');
-            $table->foreignId('player_id')->constrained('players', 'id_player');
+            $table->foreignId('player_user_id')->constrained('users', 'id_user');
             $table->foreignId('event_division_id')
                 ->constrained('event_divisions', 'id_event_division');
             $table->boolean('is_minor')->default(false);
@@ -575,21 +589,21 @@ return new class () extends Migration {
 
         DB::statement(
             "ALTER TABLE `{$prefix}event_registrations` " .
-            'ADD COLUMN `active_player_for_division` BIGINT UNSIGNED ' .
-            "GENERATED ALWAYS AS (CASE WHEN `lifecycle_status` = 'active' AND `event_division_id` IS NOT NULL THEN `player_id` ELSE NULL END) STORED"
+            'ADD COLUMN `active_player_user_for_division` BIGINT UNSIGNED ' .
+            "GENERATED ALWAYS AS (CASE WHEN `lifecycle_status` = 'active' AND `event_division_id` IS NOT NULL THEN `player_user_id` ELSE NULL END) STORED"
         );
         DB::statement(
             'CREATE UNIQUE INDEX `event_registrations_one_active_per_division_player` ' .
-            "ON `{$prefix}event_registrations` (`event_division_id`, `active_player_for_division`)"
+            "ON `{$prefix}event_registrations` (`event_division_id`, `active_player_user_for_division`)"
         );
         DB::statement(
             "ALTER TABLE `{$prefix}event_registrations` " .
-            'ADD COLUMN `active_player_for_event` BIGINT UNSIGNED ' .
-            "GENERATED ALWAYS AS (CASE WHEN `lifecycle_status` = 'active' AND `event_division_id` IS NULL THEN `player_id` ELSE NULL END) STORED"
+            'ADD COLUMN `active_player_user_for_event` BIGINT UNSIGNED ' .
+            "GENERATED ALWAYS AS (CASE WHEN `lifecycle_status` = 'active' AND `event_division_id` IS NULL THEN `player_user_id` ELSE NULL END) STORED"
         );
         DB::statement(
             'CREATE UNIQUE INDEX `event_registrations_one_active_event_wide` ' .
-            "ON `{$prefix}event_registrations` (`event_id`, `active_player_for_event`)"
+            "ON `{$prefix}event_registrations` (`event_id`, `active_player_user_for_event`)"
         );
 
         Schema::create('event_registration_checkouts', function (Blueprint $table) {
@@ -597,8 +611,8 @@ return new class () extends Migration {
             $table->foreignId('event_id')
                 ->constrained('events', 'id_event')
                 ->cascadeOnDelete();
-            $table->foreignId('player_id')
-                ->constrained('players', 'id_player')
+            $table->foreignId('player_user_id')
+                ->constrained('users', 'id_user')
                 ->cascadeOnDelete();
             $table->string('status', 32);
             $table->integer('total_amount')->default(0)->comment('ron payable total');
@@ -606,7 +620,7 @@ return new class () extends Migration {
             $table->integer('paid_at')->nullable();
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
-            $table->index(['player_id', 'event_id', 'status'], 'checkouts_player_event_status_idx');
+            $table->index(['player_user_id', 'event_id', 'status'], 'checkouts_player_user_event_status_idx');
         });
 
         Schema::create('event_registration_checkout_items', function (Blueprint $table) {
@@ -654,10 +668,9 @@ return new class () extends Migration {
             $table->string('proof_path', 512);
             $table->string('review_status', 32)->default('pending');
             $table->string('review_message', 1000)->nullable();
-            $table->foreignId('reviewed_by')
-                ->nullable()
-                ->constrained('players', 'id_player')
-                ->nullOnDelete();
+            $table->unsignedBigInteger('reviewed_by_manager_user_id')->nullable();
+            $table->foreign('reviewed_by_manager_user_id', 'erpp_reviewed_by_manager_user_fk')
+                ->references('id_user')->on('users')->nullOnDelete();
             $table->integer('reviewed_at')->nullable();
             $table->json('coverage')->nullable();
             $table->integer('inserted_at')->nullable();
@@ -734,10 +747,10 @@ return new class () extends Migration {
         Schema::create('sponsor_players', function (Blueprint $table) {
             $table->id('id_sponsor_player');
             $table->foreignId('sponsor_id')->constrained('sponsors', 'id_sponsor');
-            $table->foreignId('player_id')->constrained('players', 'id_player');
+            $table->foreignId('player_user_id')->constrained('users', 'id_user');
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
-            $table->unique(['sponsor_id', 'player_id']);
+            $table->unique(['sponsor_id', 'player_user_id']);
         });
 
         Schema::create('sponsor_prizes', function (Blueprint $table) {
@@ -844,7 +857,7 @@ return new class () extends Migration {
             $table->foreignId('match_side_id')->constrained('match_sides', 'id_match_side')->cascadeOnDelete();
             $table->tinyInteger('slot');
             $table->foreignId('participation_id')->nullable()->constrained('event_participations', 'id_participation');
-            $table->foreignId('player_id')->nullable()->constrained('players', 'id_player');
+            $table->foreignId('player_user_id')->nullable()->constrained('users', 'id_user');
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
             $table->unique(['match_side_id', 'slot'], 'uq_match_side_slot');
@@ -867,7 +880,7 @@ return new class () extends Migration {
             $table->unsignedBigInteger('event_division_id');
             $table->unsignedBigInteger('original_participation_id');
             $table->unsignedBigInteger('substitute_participation_id')->nullable();
-            $table->unsignedBigInteger('substitute_player_id')->nullable();
+            $table->unsignedBigInteger('substitute_player_user_id')->nullable();
             $table->unsignedBigInteger('match_id')->nullable();
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
@@ -881,8 +894,8 @@ return new class () extends Migration {
                 ->references('id_participation')->on('event_participations');
             $table->foreign('substitute_participation_id', 'fk_repl_sub_part')
                 ->references('id_participation')->on('event_participations');
-            $table->foreign('substitute_player_id', 'fk_repl_sub_player')
-                ->references('id_player')->on('players');
+            $table->foreign('substitute_player_user_id', 'fk_repl_sub_player')
+                ->references('id_user')->on('users');
             $table->foreign('match_id', 'fk_repl_match')
                 ->references('id_match')->on('matches');
         });
@@ -890,13 +903,13 @@ return new class () extends Migration {
         DB::statement(
             "ALTER TABLE `{$prefix}event_division_replacements` " .
             'ADD CONSTRAINT `chk_repl_at_most_one_substitute` ' .
-            'CHECK (`substitute_participation_id` IS NULL OR `substitute_player_id` IS NULL)'
+            'CHECK (`substitute_participation_id` IS NULL OR `substitute_player_user_id` IS NULL)'
         );
 
         Schema::create('cached_pdf_pair_images', function (Blueprint $table) {
             $table->id('id_cached_pdf_pair_image');
-            $table->foreignId('player_1_id')->constrained('players', 'id_player');
-            $table->foreignId('player_2_id')->constrained('players', 'id_player');
+            $table->foreignId('player_1_user_id')->constrained('users', 'id_user');
+            $table->foreignId('player_2_user_id')->constrained('users', 'id_user');
             $table->boolean('player_1_is_collecting_points')->default(true);
             $table->boolean('player_2_is_collecting_points')->default(true);
             $table->string('picture_path', 512)->nullable();
@@ -914,8 +927,8 @@ return new class () extends Migration {
                 ->nullOnDelete();
             $table->unique(
                 [
-                    'player_1_id',
-                    'player_2_id',
+                    'player_1_user_id',
+                    'player_2_user_id',
                     'player_1_is_collecting_points',
                     'player_2_is_collecting_points',
                 ],
@@ -925,7 +938,7 @@ return new class () extends Migration {
 
         Schema::create('cached_pdf_player_images', function (Blueprint $table) {
             $table->id('id_cached_pdf_player_image');
-            $table->foreignId('player_id')->constrained('players', 'id_player');
+            $table->foreignId('player_user_id')->constrained('users', 'id_user');
             $table->boolean('player_is_collecting_points')->default(true);
             $table->string('picture_path', 512)->nullable();
             $table->unsignedBigInteger('source_player_profile_image_id')->nullable();
@@ -936,7 +949,7 @@ return new class () extends Migration {
                 ->on('player_profile_images')
                 ->nullOnDelete();
             $table->unique(
-                ['player_id', 'player_is_collecting_points'],
+                ['player_user_id', 'player_is_collecting_points'],
                 'uq_cached_pdf_player_images_combo'
             );
         });
@@ -979,7 +992,7 @@ return new class () extends Migration {
 
         Schema::create('player_custom_field_value_imports', function (Blueprint $table) {
             $table->id('id_player_custom_field_value_import');
-            $table->unsignedBigInteger('imported_by_player_id')->nullable();
+            $table->unsignedBigInteger('imported_by_manager_user_id')->nullable();
             $table->string('format', 64);
             $table->string('original_filename', 255);
             $table->unsignedBigInteger('event_id')->nullable();
@@ -988,9 +1001,9 @@ return new class () extends Migration {
             $table->unsignedInteger('values_replaced_count')->default(0);
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
-            $table->foreign('imported_by_player_id', 'fk_pcfvi_importer')
-                ->references('id_player')
-                ->on('players')
+            $table->foreign('imported_by_manager_user_id', 'fk_pcfvi_importer')
+                ->references('id_user')
+                ->on('users')
                 ->nullOnDelete();
             $table->foreign('event_id', 'fk_pcfvi_event')
                 ->references('id_event')
@@ -1005,7 +1018,7 @@ return new class () extends Migration {
             $table->string('full_name', 255)->nullable();
             $table->string('email', 255)->nullable();
             $table->string('phone', 30)->nullable();
-            $table->unsignedBigInteger('player_id');
+            $table->unsignedBigInteger('player_user_id');
             $table->string('action', 16);
             $table->json('answers_json');
             $table->integer('inserted_at');
@@ -1015,15 +1028,15 @@ return new class () extends Migration {
                 ->references('id_player_custom_field_value_import')
                 ->on('player_custom_field_value_imports')
                 ->cascadeOnDelete();
-            $table->foreign('player_id', 'fk_pcfvir_player')
-                ->references('id_player')
-                ->on('players')
+            $table->foreign('player_user_id', 'fk_pcfvir_player')
+                ->references('id_user')
+                ->on('users')
                 ->cascadeOnDelete();
         });
 
         Schema::create('player_custom_field_values', function (Blueprint $table) {
             $table->id('id_player_custom_field_value');
-            $table->unsignedBigInteger('player_id');
+            $table->unsignedBigInteger('player_user_id');
             $table->unsignedBigInteger('player_custom_field_id');
             $table->unsignedBigInteger('submission_id');
             $table->text('value_text')->nullable();
@@ -1031,23 +1044,24 @@ return new class () extends Migration {
             $table->boolean('value_boolean')->nullable();
             $table->date('value_date')->nullable();
             $table->json('value_json')->nullable();
-            $table->unsignedBigInteger('submitted_by_player_id')->nullable();
             $table->string('submitted_via', 16);
+            $table->unsignedBigInteger('submitted_by_player_user_id')->nullable();
+            $table->unsignedBigInteger('submitted_by_manager_user_id')->nullable();
             $table->unsignedBigInteger('created_via_import_id')->nullable();
             $table->enum('review_status', ['pending', 'validated', 'rejected', 'discarded'])->default('pending');
             $table->integer('reviewed_at')->nullable();
-            $table->unsignedBigInteger('reviewed_by_manager_id')->nullable();
+            $table->unsignedBigInteger('reviewed_by_manager_user_id')->nullable();
             $table->integer('inserted_at');
             $table->integer('updated_at')->nullable();
-            $table->index(['player_id', 'player_custom_field_id'], 'pcfv_player_field_idx');
+            $table->index(['player_user_id', 'player_custom_field_id'], 'pcfv_player_user_field_idx');
             $table->index('player_custom_field_id', 'pcfv_field_idx');
             $table->index(
-                ['player_id', 'player_custom_field_id', 'review_status', 'reviewed_at'],
+                ['player_user_id', 'player_custom_field_id', 'review_status', 'reviewed_at'],
                 'pcfv_current_idx'
             );
-            $table->foreign('player_id', 'fk_pcfv_player')
-                ->references('id_player')
-                ->on('players')
+            $table->foreign('player_user_id', 'fk_pcfv_player')
+                ->references('id_user')
+                ->on('users')
                 ->cascadeOnDelete();
             $table->foreign('player_custom_field_id', 'fk_pcfv_field')
                 ->references('id_player_custom_field')
@@ -1057,17 +1071,21 @@ return new class () extends Migration {
                 ->references('id_player_custom_field_submission')
                 ->on('player_custom_field_submissions')
                 ->restrictOnDelete();
-            $table->foreign('submitted_by_player_id', 'fk_pcfv_submitted_by')
-                ->references('id_player')
-                ->on('players')
+            $table->foreign('submitted_by_player_user_id', 'fk_pcfv_submitted_by_player')
+                ->references('id_user')
+                ->on('users')
+                ->nullOnDelete();
+            $table->foreign('submitted_by_manager_user_id', 'fk_pcfv_submitted_by_manager')
+                ->references('id_user')
+                ->on('users')
                 ->nullOnDelete();
             $table->foreign('created_via_import_id', 'fk_pcfv_import')
                 ->references('id_player_custom_field_value_import')
                 ->on('player_custom_field_value_imports')
                 ->nullOnDelete();
-            $table->foreign('reviewed_by_manager_id', 'fk_pcfv_reviewed_by')
-                ->references('id_player')
-                ->on('players')
+            $table->foreign('reviewed_by_manager_user_id', 'fk_pcfv_reviewed_by')
+                ->references('id_user')
+                ->on('users')
                 ->nullOnDelete();
         });
 
@@ -1158,8 +1176,8 @@ return new class () extends Migration {
             $table->foreignId('benefit_definition_id')
                 ->constrained('benefit_definitions', 'id_benefit')
                 ->cascadeOnDelete();
-            $table->foreignId('player_id')
-                ->constrained('players', 'id_player')
+            $table->foreignId('player_user_id')
+                ->constrained('users', 'id_user')
                 ->cascadeOnDelete();
             $table->unsignedInteger('remaining_uses')->nullable();
             $table->integer('valid_from')->nullable();
@@ -1169,8 +1187,8 @@ return new class () extends Migration {
             $table->string('status', 16)->default('active');
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
-            $table->index(['player_id', 'status'], 'benefit_entitlements_player_status_idx');
-            $table->index(['benefit_definition_id', 'player_id'], 'benefit_entitlements_benefit_player_idx');
+            $table->index(['player_user_id', 'status'], 'benefit_entitlements_player_user_status_idx');
+            $table->index(['benefit_definition_id', 'player_user_id'], 'benefit_entitlements_benefit_player_user_idx');
         });
 
         Schema::create('event_referral_settings', function (Blueprint $table) {
@@ -1189,8 +1207,8 @@ return new class () extends Migration {
             $table->foreignId('event_id')
                 ->constrained('events', 'id_event')
                 ->cascadeOnDelete();
-            $table->foreignId('referrer_player_id')
-                ->constrained('players', 'id_player')
+            $table->foreignId('referrer_player_user_id')
+                ->constrained('users', 'id_user')
                 ->cascadeOnDelete();
             $table->string('code', 32);
             $table->integer('expires_at');
@@ -1198,7 +1216,7 @@ return new class () extends Migration {
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
             $table->unique(['event_id', 'code'], 'event_referral_codes_event_code_uq');
-            $table->index(['referrer_player_id', 'event_id'], 'event_referral_codes_referrer_event_idx');
+            $table->index(['referrer_player_user_id', 'event_id'], 'event_referral_codes_referrer_event_idx');
         });
 
         Schema::create('event_referral_code_invitees', function (Blueprint $table) {
@@ -1208,9 +1226,9 @@ return new class () extends Migration {
                 ->cascadeOnDelete();
             $table->string('email', 255)->nullable();
             $table->string('phone', 30)->nullable();
-            $table->foreignId('player_id')
+            $table->foreignId('player_user_id')
                 ->nullable()
-                ->constrained('players', 'id_player')
+                ->constrained('users', 'id_user')
                 ->nullOnDelete();
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
@@ -1222,11 +1240,11 @@ return new class () extends Migration {
             $table->foreignId('event_id')
                 ->constrained('events', 'id_event')
                 ->cascadeOnDelete();
-            $table->foreignId('referred_player_id')
-                ->constrained('players', 'id_player')
+            $table->foreignId('referred_player_user_id')
+                ->constrained('users', 'id_user')
                 ->cascadeOnDelete();
-            $table->foreignId('referrer_player_id')
-                ->constrained('players', 'id_player')
+            $table->foreignId('referrer_player_user_id')
+                ->constrained('users', 'id_user')
                 ->cascadeOnDelete();
             $table->foreignId('referral_code_id')
                 ->constrained('event_referral_codes', 'id_referral_code')
@@ -1237,7 +1255,7 @@ return new class () extends Migration {
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
             $table->index(
-                ['event_id', 'referred_player_id', 'discount_eligible'],
+                ['event_id', 'referred_player_user_id', 'discount_eligible'],
                 'referral_touchpoints_event_referred_eligible_idx'
             );
         });
@@ -1247,11 +1265,11 @@ return new class () extends Migration {
             $table->foreignId('event_id')
                 ->constrained('events', 'id_event')
                 ->cascadeOnDelete();
-            $table->foreignId('referred_player_id')
-                ->constrained('players', 'id_player')
+            $table->foreignId('referred_player_user_id')
+                ->constrained('users', 'id_user')
                 ->cascadeOnDelete();
-            $table->foreignId('referrer_player_id')
-                ->constrained('players', 'id_player')
+            $table->foreignId('referrer_player_user_id')
+                ->constrained('users', 'id_user')
                 ->cascadeOnDelete();
             $table->foreignId('referral_code_id')
                 ->nullable()
@@ -1264,8 +1282,8 @@ return new class () extends Migration {
             $table->string('status', 16);
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
-            $table->unique(['event_id', 'referred_player_id'], 'event_referral_attributions_event_referred_uq');
-            $table->index(['referrer_player_id', 'event_id', 'status'], 'event_referral_attributions_referrer_status_idx');
+            $table->unique(['event_id', 'referred_player_user_id'], 'event_referral_attributions_event_referred_uq');
+            $table->index(['referrer_player_user_id', 'event_id', 'status'], 'event_referral_attributions_referrer_status_idx');
         });
 
         Schema::create('benefit_redemptions', function (Blueprint $table) {
@@ -1595,6 +1613,7 @@ return new class () extends Migration {
         Schema::dropIfExists('event_division_courts');
         Schema::dropIfExists('event_division_schedules');
         Schema::dropIfExists('event_divisions');
+        Schema::dropIfExists('event_cover_images');
         Schema::dropIfExists('player_device_tokens');
         Schema::dropIfExists('player_profile_image_import_rows');
         if (Schema::getConnection()->getDriverName() === 'mysql') {
@@ -1612,15 +1631,15 @@ return new class () extends Migration {
         Schema::dropIfExists('player_friends_sources');
         Schema::dropIfExists('player_media_sources');
         Schema::dropIfExists('media_sources');
-        Schema::dropIfExists('player_identities');
-        Schema::dropIfExists('player_phones');
-        Schema::dropIfExists('player_emails');
-        Schema::dropIfExists('player_import_rows');
-        Schema::table('players', function (Blueprint $table) {
-            $table->dropConstrainedForeignId('created_via_import_id');
+        Schema::dropIfExists('user_identities');
+        Schema::dropIfExists('user_phones');
+        Schema::dropIfExists('user_emails');
+        Schema::dropIfExists('user_import_rows');
+        Schema::table('users', function (Blueprint $table) {
+            $table->dropConstrainedForeignId('created_via_user_import_id');
         });
-        Schema::dropIfExists('player_imports');
-        Schema::dropIfExists('players');
+        Schema::dropIfExists('user_imports');
+        Schema::dropIfExists('users');
         Schema::table('divisions', function (Blueprint $table) {
             $table->dropForeign('fk_divisions_its_first_event');
         });

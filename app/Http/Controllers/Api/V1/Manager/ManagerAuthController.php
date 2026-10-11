@@ -6,10 +6,10 @@ namespace App\Http\Controllers\Api\V1\Manager;
 
 use App\Exceptions\InvalidGoogleTokenException;
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
-use App\Http\Resources\PlayerResource;
-use App\Models\Player;
-use App\Models\PlayerEmail;
-use App\Models\PlayerIdentity;
+use App\Http\Resources\UserResource;
+use App\Models\User;
+use App\Models\UserEmail;
+use App\Models\UserIdentity;
 use App\Services\AuthLogger;
 use Google\Client as GoogleClient;
 use Illuminate\Http\Request;
@@ -51,7 +51,7 @@ class ManagerAuthController extends V1BaseController
      *                 @OA\Schema(
      *                     @OA\Property(property="data", type="object",
      *                         @OA\Property(property="token", type="string"),
-     *                         @OA\Property(property="player", ref="#/components/schemas/Player"),
+     *                         @OA\Property(property="user", ref="#/components/schemas/User"),
      *                         @OA\Property(property="user_type", type="string", example="manager")
      *                     )
      *                 )
@@ -78,8 +78,8 @@ class ManagerAuthController extends V1BaseController
                 throw new InvalidGoogleTokenException();
             }
 
-            $identity = PlayerIdentity::query()
-                ->where('provider', PlayerIdentity::PROVIDER_GOOGLE)
+            $identity = UserIdentity::query()
+                ->where('provider', UserIdentity::PROVIDER_GOOGLE)
                 ->where('provider_subject', (string) $payload['sub'])
                 ->first();
 
@@ -87,7 +87,7 @@ class ManagerAuthController extends V1BaseController
                 return $this->errorResponse('User not found. Please register first.', 404);
             }
 
-            $player = $identity->player;
+            $player = $identity->user;
 
             if (! $player->hasUserType('manager')) {
                 return $this->errorResponse('User does not have manager privileges.', 403);
@@ -99,7 +99,7 @@ class ManagerAuthController extends V1BaseController
 
             return $this->successResponse([
                 'token' => $token,
-                'player' => new PlayerResource($player),
+                'user' => new UserResource($player->loadMissing(['emails', 'phones', 'identities'])),
                 'user_type' => 'manager',
             ], 'Manager authenticated successfully');
         } catch (\Exception $e) {
@@ -147,7 +147,7 @@ class ManagerAuthController extends V1BaseController
      *             allOf={
      *                 @OA\Schema(ref="#/components/schemas/ApiResponse"),
      *                 @OA\Schema(
-     *                     @OA\Property(property="data", ref="#/components/schemas/Player")
+     *                     @OA\Property(property="data", ref="#/components/schemas/User")
      *                 )
      *             }
      *         )
@@ -157,7 +157,7 @@ class ManagerAuthController extends V1BaseController
     public function me(Request $request)
     {
         return $this->resourceResponse(
-            new PlayerResource($request->user()),
+            new UserResource($request->user()->loadMissing(['emails', 'phones', 'identities'])),
             'Manager profile retrieved successfully'
         );
     }
@@ -183,7 +183,7 @@ class ManagerAuthController extends V1BaseController
      *                 @OA\Schema(
      *                     @OA\Property(property="data", type="object",
      *                         @OA\Property(property="token", type="string"),
-     *                         @OA\Property(property="player", ref="#/components/schemas/Player"),
+     *                         @OA\Property(property="user", ref="#/components/schemas/User"),
      *                         @OA\Property(property="user_type", type="string", example="manager")
      *                     )
      *                 )
@@ -209,31 +209,31 @@ class ManagerAuthController extends V1BaseController
 
         $email = strtolower(trim($request->string('email')->toString()));
 
-        $player = Player::query()
+        $player = User::query()
             ->whereHas('emails', fn ($q) => $q->where('email', $email))
             ->first();
 
         if (! $player) {
             $player = DB::transaction(function () use ($email) {
-                $created = Player::create([
+                $created = User::create([
                     'first_name' => 'Dev',
                     'last_name' => 'Manager',
                     'user_types' => ['player', 'manager'],
                 ]);
 
-                $emailRow = PlayerEmail::create([
-                    'player_id' => $created->id_player,
+                $emailRow = UserEmail::create([
+                    'user_id' => $created->id_user,
                     'email' => $email,
                     'purposes' => ['contact', 'login'],
                     'is_primary' => true,
                     'verified_at' => time(),
                 ]);
 
-                PlayerIdentity::create([
-                    'player_id' => $created->id_player,
-                    'provider' => PlayerIdentity::PROVIDER_DEV,
+                UserIdentity::create([
+                    'user_id' => $created->id_user,
+                    'provider' => UserIdentity::PROVIDER_DEV,
                     'provider_subject' => 'dev:' . $email,
-                    'email_id' => $emailRow->id_player_email,
+                    'email_id' => $emailRow->id_user_email,
                     'display_name' => 'Dev Manager',
                     'linked_at' => time(),
                     'last_login_at' => time(),
@@ -251,7 +251,7 @@ class ManagerAuthController extends V1BaseController
 
         return $this->successResponse([
             'token' => $token,
-            'player' => new PlayerResource($player->fresh()),
+            'user' => new UserResource($player->fresh()->loadMissing(['emails', 'phones', 'identities'])),
             'user_type' => 'manager',
         ], 'Manager logged in successfully');
     }

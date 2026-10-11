@@ -14,9 +14,8 @@ use App\Models\EventLotteryRule;
 use App\Models\EventParticipation;
 use App\Models\PadelEvent;
 use App\Models\SponsorPrize;
-use App\Services\Schedule\PlayingWindow;
+use App\Services\EventCalendarTiming;
 use Illuminate\Database\Eloquent\Builder;
-use Illuminate\Support\Carbon;
 use Illuminate\Support\Collection;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Storage;
@@ -29,9 +28,12 @@ final class LotteryDrawService
      *
      * Already-drawn is per lottery when $lotteryId is set.
      *
+     * When $playingStartsAtGate is set, a participation is eligible if the event's
+     * Bucharest start day is today-or-past, or its division playing_starts_at ≤ gate.
+     *
      * @return Builder<EventParticipation>
      */
-    public function eligibleParticipationsQuery(int $editionId, ?int $preferEventDivisionId = null, ?string $playingStartTimeGate = null, ?int $lotteryId = null): Builder
+    public function eligibleParticipationsQuery(int $editionId, ?int $preferEventDivisionId = null, ?int $playingStartsAtGate = null, ?int $lotteryId = null): Builder
     {
         $replacedParticipationIds = EventDivisionReplacement::query()
             ->whereNull('match_id')
@@ -65,18 +67,19 @@ final class LotteryDrawService
             ->when($replacedParticipationIds !== [], fn (Builder $q) => $q->whereNotIn('id_participation', $replacedParticipationIds))
             ->when($drawnParticipationIds !== [], fn (Builder $q) => $q->whereNotIn('id_participation', $drawnParticipationIds));
 
-        if ($playingStartTimeGate !== null) {
-            $query->where(function (Builder $q) use ($playingStartTimeGate): void {
-                $q->whereExists(function ($sub): void {
+        if ($playingStartsAtGate !== null) {
+            $tomorrowStart = EventCalendarTiming::endExclusiveUnix(EventCalendarTiming::todayYmd());
+            $query->where(function (Builder $q) use ($playingStartsAtGate, $tomorrowStart): void {
+                $q->whereExists(function ($sub) use ($tomorrowStart): void {
                     $sub->select(DB::raw(1))
                         ->from('events')
                         ->whereColumn('events.id_event', 'event_participations.event_id')
-                        ->whereDate('events.date', '<=', Carbon::today()->toDateString());
-                })->orWhereExists(function ($sub) use ($playingStartTimeGate): void {
+                        ->where('events.event_starts_at', '<', $tomorrowStart);
+                })->orWhereExists(function ($sub) use ($playingStartsAtGate): void {
                     $sub->select(DB::raw(1))
                         ->from('event_divisions')
                         ->whereColumn('event_divisions.id_event_division', 'event_participations.event_division_id')
-                        ->where('event_divisions.playing_start_time', '<=', $playingStartTimeGate);
+                        ->where('event_divisions.playing_starts_at', '<=', $playingStartsAtGate);
                 });
             });
         }
@@ -134,7 +137,7 @@ final class LotteryDrawService
     public function liveState(EventLottery $lottery): array
     {
         $event = $lottery->event()->with('location')->firstOrFail();
-        $nextEdition = PadelEvent::query()->whereDate('date', '>', Carbon::today()->toDateString())->orderBy('date')->first();
+        $nextEdition = $this->nextEdition($event);
 
         $pending = $this->currentPendingLucky($lottery);
 
@@ -158,16 +161,8 @@ final class LotteryDrawService
             return [
                 'status' => 'pending',
                 ...$this->lotteryBrandingUrls(),
-                'event' => [
-                    'id_event' => $event->id_event,
-                    'name' => $event->name,
-                    'date' => optional($event->date)?->format('Y-m-d') ?? (string) $event->getRawOriginal('date'),
-                ],
-                'next_edition' => $nextEdition ? [
-                    'id_event' => $nextEdition->id_event,
-                    'name' => $nextEdition->name,
-                    'date' => optional($nextEdition->date)?->format('Y-m-d') ?? (string) $nextEdition->getRawOriginal('date'),
-                ] : null,
+                'event' => $this->serializeEditionSummary($event),
+                'next_edition' => $nextEdition ? $this->serializeEditionSummary($nextEdition) : null,
                 'lucky' => $this->serializeLucky($pending, $event, $nextEdition),
                 'accepted' => [],
             ];
@@ -185,16 +180,8 @@ final class LotteryDrawService
         return [
             'status' => 'finished',
             ...$this->lotteryBrandingUrls(),
-            'event' => [
-                'id_event' => $event->id_event,
-                'name' => $event->name,
-                'date' => optional($event->date)?->format('Y-m-d') ?? (string) $event->getRawOriginal('date'),
-            ],
-            'next_edition' => $nextEdition ? [
-                'id_event' => $nextEdition->id_event,
-                'name' => $nextEdition->name,
-                'date' => optional($nextEdition->date)?->format('Y-m-d') ?? (string) $nextEdition->getRawOriginal('date'),
-            ] : null,
+            'event' => $this->serializeEditionSummary($event),
+            'next_edition' => $nextEdition ? $this->serializeEditionSummary($nextEdition) : null,
             'lucky' => null,
             'accepted' => $accepted,
         ];
@@ -233,18 +220,16 @@ final class LotteryDrawService
             $rule = $lucky->lotteryRule()->with('lotteryPrize')->first();
             $lotteryId = $rule?->lotteryPrize?->lottery_id;
             $preferDivisionId = $rule?->event_division_id;
-            $gateTime = null;
+            $gateUnix = time();
             if ($preferDivisionId) {
-                $gateTime = EventDivision::query()->whereKey($preferDivisionId)->value('playing_start_time');
-                $gateTime = $gateTime ? Carbon::parse((string) $gateTime)->format('H:i:s') : date('H:i:s');
-            } else {
-                $gateTime = date('H:i:s');
+                $divisionStart = EventDivision::query()->whereKey($preferDivisionId)->value('playing_starts_at');
+                $gateUnix = $divisionStart !== null ? (int) $divisionStart : time();
             }
 
             $participation = $this->eligibleParticipationsQuery(
                 (int) $event->id_event,
                 $preferDivisionId !== null ? (int) $preferDivisionId : null,
-                $gateTime,
+                $gateUnix,
                 $lotteryId !== null ? (int) $lotteryId : null,
             )->first();
 
@@ -296,11 +281,20 @@ final class LotteryDrawService
                     return $existing;
                 }
 
-                $currentTime = date('H:i:s');
+                $now = time();
+                // Match reject(): when the rule targets a division, gate with that
+                // division's playing_starts_at so upcoming editions stay drawable
+                // after the first accept (createFirstDraw uses a null gate).
+                $gateUnix = $now;
+                if ($rule->event_division_id !== null) {
+                    $divisionStart = $rule->eventDivision?->playing_starts_at;
+                    $gateUnix = $divisionStart !== null ? (int) $divisionStart : $now;
+                }
+
                 $participation = $this->eligibleParticipationsQuery(
                     (int) $event->id_event,
                     $rule->event_division_id !== null ? (int) $rule->event_division_id : null,
-                    $currentTime,
+                    $gateUnix,
                     (int) $lottery->id_lottery,
                 )->with('eventDivision')->first();
 
@@ -308,7 +302,7 @@ final class LotteryDrawService
                     continue;
                 }
 
-                $availableAt = $this->computeNextAvailableAt($event, $participation, $currentTime, $lottery);
+                $availableAt = $this->computeNextAvailableAt($event, $participation, $now, $lottery);
 
                 return EventLotteryLucky::query()->create([
                     'lottery_rule_id' => $rule->id_lottery_rule,
@@ -327,18 +321,21 @@ final class LotteryDrawService
      */
     public function prizesBoard(EventLottery $lottery): array
     {
-        $event = $lottery->event()->with('location')->firstOrFail();
-        $nextEdition = PadelEvent::query()->whereDate('date', '>', Carbon::today()->toDateString())->orderBy('date')->first();
+        $event = $lottery->event()->firstOrFail();
+        $nextEdition = $this->nextEdition($event);
 
         $rules = $this->sortedRulesForLottery($lottery);
 
         $grouped = [];
         foreach ($rules as $rule) {
-            $start = $rule->eventDivision?->playing_start_time;
-            $end = $rule->eventDivision?->playing_end_time;
+            $start = $rule->eventDivision?->playing_starts_at;
+            $end = $rule->eventDivision?->playing_ends_at;
             $key = $rule->event_division_id === null
                 ? '__unscheduled__'
-                : $this->prizesBoardIntervalKey($start, $end);
+                : $this->prizesBoardIntervalKey(
+                    $start !== null ? (int) $start : null,
+                    $end !== null ? (int) $end : null,
+                );
             $grouped[$key][] = $rule;
         }
 
@@ -350,7 +347,7 @@ final class LotteryDrawService
                 return -1;
             }
 
-            return strcmp(explode('|', $a)[0], explode('|', $b)[0]);
+            return ((int) explode('|', $a)[0]) <=> ((int) explode('|', $b)[0]);
         });
 
         $intervals = [];
@@ -441,10 +438,9 @@ final class LotteryDrawService
             throw new RuntimeException('No eligible participations for this edition.');
         }
 
-        $start = $firstRule->eventDivision?->playing_start_time;
-        $editionDate = optional($event->date)?->format('Y-m-d') ?? (string) $event->getRawOriginal('date');
-        $target = $start
-            ? Carbon::parse($editionDate . ' ' . Carbon::parse((string) $start)->format('H:i:s'))->addMinutes(20)->getTimestamp()
+        $start = $firstRule->eventDivision?->playing_starts_at;
+        $target = $start !== null
+            ? (int) $start + (20 * 60)
             : time() + 10;
 
         return EventLotteryLucky::query()->create([
@@ -479,6 +475,34 @@ final class LotteryDrawService
     }
 
     /**
+     * Next edition after $current: Upcoming (Bucharest day of event_starts_at > today)
+     * and strictly later than $current. Never returns $current itself.
+     */
+    private function nextEdition(PadelEvent $current): ?PadelEvent
+    {
+        $upcomingFrom = EventCalendarTiming::endExclusiveUnix(EventCalendarTiming::todayYmd());
+
+        return PadelEvent::query()
+            ->where('id_event', '!=', $current->id_event)
+            ->where('event_starts_at', '>=', $upcomingFrom)
+            ->where('event_starts_at', '>', (int) $current->event_starts_at)
+            ->orderBy('event_starts_at')
+            ->first();
+    }
+
+    /**
+     * @return array{id_event: int, name: mixed, date: string}
+     */
+    private function serializeEditionSummary(PadelEvent $event): array
+    {
+        return [
+            'id_event' => $event->id_event,
+            'name' => $event->name,
+            'date' => EventCalendarTiming::dayYmd((int) $event->event_starts_at),
+        ];
+    }
+
+    /**
      * @return Collection<int, EventLotteryRule>
      */
     private function sortedRulesForLottery(EventLottery $lottery): Collection
@@ -495,22 +519,27 @@ final class LotteryDrawService
             ->get();
 
         return $rules->sortBy(function (EventLotteryRule $rule): array {
-            $start = $rule->eventDivision?->playing_start_time;
+            $start = $rule->eventDivision?->playing_starts_at;
 
             return [
                 $start === null ? 1 : 0,
-                (string) $start,
+                (int) ($start ?? 0),
                 (int) $rule->orderliness,
                 (int) $rule->id_lottery_rule,
             ];
         })->values();
     }
 
-    private function computeNextAvailableAt(PadelEvent $event, EventParticipation $participation, string $currentTime, ?EventLottery $lottery = null): int
-    {
+    private function computeNextAvailableAt(
+        PadelEvent $event,
+        EventParticipation $participation,
+        ?int $now = null,
+        ?EventLottery $lottery = null,
+    ): int {
+        $now = $now ?? time();
         $participation->loadMissing('eventDivision');
-        $drawnStart = $participation->eventDivision?->playing_start_time;
-        $drawnStartStr = PlayingWindow::toClockString($drawnStart) ?? PlayingWindow::normalizeStoredTime($currentTime);
+        $drawnStart = $participation->eventDivision?->playing_starts_at;
+        $drawnStartUnix = $drawnStart !== null ? (int) $drawnStart : $now;
 
         $rulesQuery = EventLotteryRule::query()
             ->when(
@@ -518,11 +547,11 @@ final class LotteryDrawService
                 fn (Builder $q) => $q->whereHas('lotteryPrize', fn (Builder $lp) => $lp->where('lottery_id', $lottery->id_lottery)),
                 fn (Builder $q) => $q->whereHas('lotteryPrize.lottery', fn (Builder $l) => $l->where('event_id', $event->id_event)),
             )
-            ->where(function (Builder $q) use ($currentTime, $drawnStartStr): void {
+            ->where(function (Builder $q) use ($now, $drawnStartUnix): void {
                 $q->whereNull('event_division_id')
-                    ->orWhereHas('eventDivision', function (Builder $ed) use ($currentTime, $drawnStartStr): void {
-                        $ed->where('playing_start_time', '<=', $currentTime)
-                            ->orWhere('playing_start_time', '=', $drawnStartStr);
+                    ->orWhereHas('eventDivision', function (Builder $ed) use ($now, $drawnStartUnix): void {
+                        $ed->where('playing_starts_at', '<=', $now)
+                            ->orWhere('playing_starts_at', '=', $drawnStartUnix);
                     });
             });
 
@@ -535,11 +564,11 @@ final class LotteryDrawService
                 fn (Builder $q) => $q->whereHas('lotteryRule.lotteryPrize.lottery', fn (Builder $l) => $l->where('event_id', $event->id_event)),
             )
             ->whereNull('rejected_at')
-            ->whereHas('lotteryRule.eventDivision', function (Builder $ed) use ($currentTime, $drawnStartStr, $event): void {
+            ->whereHas('lotteryRule.eventDivision', function (Builder $ed) use ($now, $drawnStartUnix, $event): void {
                 $ed->where('event_id', $event->id_event)
-                    ->where(function (Builder $q) use ($currentTime, $drawnStartStr): void {
-                        $q->where('playing_start_time', '<=', $currentTime)
-                            ->orWhere('playing_start_time', '=', $drawnStartStr);
+                    ->where(function (Builder $q) use ($now, $drawnStartUnix): void {
+                        $q->where('playing_starts_at', '<=', $now)
+                            ->orWhere('playing_starts_at', '=', $drawnStartUnix);
                     });
             });
 
@@ -547,51 +576,30 @@ final class LotteryDrawService
 
         $remaining = max(1, $sumOfPrizeQuantity - $nonRejectedCount);
 
-        $editionDate = optional($event->date)?->format('Y-m-d') ?? (string) $event->getRawOriginal('date');
-        $currentClock = PlayingWindow::normalizeStoredTime($currentTime);
-
         $endingEnds = [];
         $eventDivisions = EventDivision::query()
             ->where('event_id', $event->id_event)
-            ->get(['playing_start_time', 'playing_end_time']);
+            ->get(['playing_starts_at', 'playing_ends_at']);
 
         foreach ($eventDivisions as $ed) {
-            $start = PlayingWindow::toClockString($ed->getAttributes()['playing_start_time'] ?? null);
-            $end = PlayingWindow::toClockString($ed->getAttributes()['playing_end_time'] ?? null);
-            if ($start === null || $end === null) {
-                continue;
-            }
-
-            $include = PlayingWindow::isActiveAt($start, $end, $currentClock, $editionDate)
-                || $start === $drawnStartStr;
+            $start = (int) $ed->playing_starts_at;
+            $end = (int) $ed->playing_ends_at;
+            $include = ($now >= $start && $now < $end) || $start === $drawnStartUnix;
             if (! $include) {
                 continue;
             }
 
-            $resolved = PlayingWindow::resolveInterval($start, $end, $editionDate);
-            $endingEnds[] = $resolved['end'];
+            $endingEnds[] = $end;
         }
 
         if ($endingEnds === []) {
-            return time() + 10;
+            return $now + 10;
         }
 
-        $adjustedNow = max(
-            Carbon::parse($editionDate . ' ' . $drawnStartStr)->addMinutes(20)->getTimestamp(),
-            time()
-        );
+        $adjustedNow = max($drawnStartUnix + (20 * 60), $now);
 
-        $soonestEnd = null;
-        foreach ($endingEnds as $endDt) {
-            if ($soonestEnd === null || $endDt < $soonestEnd) {
-                $soonestEnd = $endDt;
-            }
-        }
-        if ($soonestEnd === null) {
-            return time() + 10;
-        }
-
-        $intervalEnding = max(time(), $soonestEnd->getTimestamp() - (30 * 60));
+        $soonestEnd = min($endingEnds);
+        $intervalEnding = max($now, $soonestEnd - (30 * 60));
         $secondsLeft = $intervalEnding - $adjustedNow;
 
         return $adjustedNow + (int) max(15, round($secondsLeft / $remaining));
@@ -615,7 +623,7 @@ final class LotteryDrawService
         if ($player !== null) {
             $collecting = (bool) ($lucky->drawnParticipation?->is_collecting_points ?? false);
             $cached = CachedPdfPlayerImage::query()
-                ->where('player_id', (int) $player->id_player)
+                ->where('player_user_id', (int) $player->id_user)
                 ->where('player_is_collecting_points', $collecting)
                 ->first();
             $avatarUrl = $cached?->url;
@@ -633,7 +641,7 @@ final class LotteryDrawService
             'prize_index' => 1 + $acceptedForPrizeLine,
             'prize_quantity' => (int) ($line?->prize_quantity ?? 0),
             'player' => [
-                'id_player' => $lucky->drawnParticipation?->player_id,
+                'id_user' => $lucky->drawnParticipation?->player_user_id,
                 'name' => $player?->name,
                 'avatar_url' => $avatarUrl,
             ],
@@ -730,27 +738,25 @@ final class LotteryDrawService
         return 'pending';
     }
 
-    private function prizesBoardIntervalKey(mixed $start, mixed $end): string
+    private function prizesBoardIntervalKey(?int $start, ?int $end): string
     {
-        $startClock = PlayingWindow::toClockString($start) ?? '';
-        $endClock = PlayingWindow::toClockString($end) ?? '';
-
-        return $startClock . '|' . $endClock;
+        return (string) ($start ?? 0) . '|' . (string) ($end ?? 0);
     }
 
     private function formatIntervalLabelFromKey(string $key): string
     {
-        [$start, $end] = array_pad(explode('|', $key, 2), 2, '');
+        [$start, $end] = array_pad(explode('|', $key, 2), 2, '0');
 
-        return $this->formatIntervalLabel($start !== '' ? $start : null, $end !== '' ? $end : null);
+        return $this->formatIntervalLabel(
+            $start !== '' && $start !== '0' ? (int) $start : null,
+            $end !== '' && $end !== '0' ? (int) $end : null,
+        );
     }
 
-    private function formatIntervalLabel(mixed $start, mixed $end): string
+    private function formatIntervalLabel(?int $start, ?int $end): string
     {
-        $startClock = PlayingWindow::toClockString($start);
-        $endClock = PlayingWindow::toClockString($end);
-        $startLabel = $startClock !== null ? substr($startClock, 0, 5) : '?';
-        $endLabel = $endClock !== null ? substr($endClock, 0, 5) : '?';
+        $startLabel = $start !== null ? EventCalendarTiming::formatHi($start) : '?';
+        $endLabel = $end !== null ? EventCalendarTiming::formatHi($end) : '?';
 
         return $startLabel . ' – ' . $endLabel;
     }

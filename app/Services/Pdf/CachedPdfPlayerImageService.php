@@ -32,7 +32,7 @@ class CachedPdfPlayerImageService
     ): string {
         if ($persist) {
             $row = CachedPdfPlayerImage::query()->firstOrNew([
-                'player_id' => $playerId,
+                'player_user_id' => $playerId,
                 'player_is_collecting_points' => $playerIsCollecting,
             ]);
 

@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Models\EventParticipation;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerLevel;
 use App\Models\PlayerLevelAssessment;
 use Illuminate\Database\Eloquent\Factories\Factory;
@@ -19,13 +19,13 @@ class PlayerLevelFactory extends Factory
 
     public function definition(): array
     {
-        $player = Player::factory();
+        $player = User::factory();
 
         return [
-            'player_id' => $player,
+            'player_user_id' => $player,
             'level' => sprintf('%d.%02d', $this->faker->numberBetween(1, 5), $this->faker->numberBetween(0, 99)),
             'player_level_assessment_id' => PlayerLevelAssessment::factory()->approved()->state([
-                'player_id' => $player,
+                'player_user_id' => $player,
             ]),
             'event_participation_id' => null,
             'inserted_at' => time(),
@@ -36,8 +36,8 @@ class PlayerLevelFactory extends Factory
     public function fromAssessment(PlayerLevelAssessment $assessment): static
     {
         return $this->state(fn (): array => [
-            'player_id' => $assessment->player_id,
-            'player_level_assessment_id' => $assessment->id_player_level_assessment,
+            'player_user_id' => $assessment->player_user_id,
+            'player_level_assessment_id' => $assessment->id_user_level_assessment,
             'event_participation_id' => null,
         ]);
     }
@@ -45,7 +45,7 @@ class PlayerLevelFactory extends Factory
     public function fromParticipation(EventParticipation $participation): static
     {
         return $this->state(fn (): array => [
-            'player_id' => $participation->player_id,
+            'player_user_id' => $participation->player_user_id,
             'player_level_assessment_id' => null,
             'event_participation_id' => $participation->id_participation,
         ]);

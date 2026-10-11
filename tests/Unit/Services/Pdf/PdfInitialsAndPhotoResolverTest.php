@@ -4,7 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services\Pdf;
 
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerProfileImage;
 use App\Services\Pdf\PdfInitialsPlaceholderImageService;
 use App\Services\Pdf\PdfPlayerPhotoForCacheResolver;
@@ -62,13 +62,13 @@ final class PdfInitialsAndPhotoResolverTest extends TestCase
 
     public function test_resolver_returns_profile_path_and_id_when_usable(): void
     {
-        $player = Player::factory()->create(['first_name' => 'Ana', 'last_name' => 'Pop']);
-        $relative = 'player-profile-images/' . $player->id_player . '/profile/ok.png';
+        $player = User::factory()->create(['first_name' => 'Ana', 'last_name' => 'Pop']);
+        $relative = 'player-profile-images/' . $player->id_user . '/profile/ok.png';
         $png = $this->solidPngBytes();
         Storage::disk(config('filesystems.user_uploads_disk', 'public'))->put($relative, $png);
 
         $image = PlayerProfileImage::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'profile_path' => $relative,
             'is_pdf_primary' => true,
             'sort_order' => 0,
@@ -82,7 +82,7 @@ final class PdfInitialsAndPhotoResolverTest extends TestCase
 
     public function test_resolver_uses_initials_when_missing_profile(): void
     {
-        $player = Player::factory()->create(['first_name' => 'No', 'last_name' => 'Photo']);
+        $player = User::factory()->create(['first_name' => 'No', 'last_name' => 'Photo']);
         $resolved = (new PdfPlayerPhotoForCacheResolver())->resolve($player);
         $this->temps[] = $resolved->absolutePath;
 
@@ -93,12 +93,12 @@ final class PdfInitialsAndPhotoResolverTest extends TestCase
 
     public function test_resolver_uses_initials_when_profile_unreadable(): void
     {
-        $player = Player::factory()->create(['first_name' => 'Bad', 'last_name' => 'File']);
-        $relative = 'player-profile-images/' . $player->id_player . '/profile/bad.jpg';
+        $player = User::factory()->create(['first_name' => 'Bad', 'last_name' => 'File']);
+        $relative = 'player-profile-images/' . $player->id_user . '/profile/bad.jpg';
         Storage::disk(config('filesystems.user_uploads_disk', 'public'))->put($relative, ' ');
 
         PlayerProfileImage::factory()->create([
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'profile_path' => $relative,
             'is_pdf_primary' => true,
             'sort_order' => 0,

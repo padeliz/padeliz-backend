@@ -14,13 +14,14 @@ use App\Models\EventRegistrationCheckout;
 use App\Models\EventRegistrationCheckoutItem;
 use App\Models\Location;
 use App\Models\PadelEvent;
-use App\Models\Player;
+use App\Models\User;
 use App\Services\Pricing\BenefitDiscoveryService;
 use App\Services\Pricing\PricingContext;
 use App\Services\Pricing\PricingService;
 use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
+use Tests\Support\UnixEventFactory;
 
 abstract class PricingTestCase extends TestCase
 {
@@ -58,24 +59,24 @@ abstract class PricingTestCase extends TestCase
         $club ??= Club::factory()->create();
         $location = Location::factory()->forClub($club)->create();
         $event = PadelEvent::factory()->forLocation($location)->create([
-            'date' => $editionDate ?? Carbon::now()->addDays(14)->format('Y-m-d'),
+            ...UnixEventFactory::eventBounds($editionDate ?? Carbon::now()->addDays(14)->format('Y-m-d')),
         ]);
         $eventDivision = EventDivision::factory()->create([
             'event_id' => $event->id_event,
             'entry_fee' => $payment,
         ]);
-        $player = Player::factory()->create();
+        $player = User::factory()->create();
         $registration = EventRegistration::factory()->create([
             'event_id' => $event->id_event,
             'event_division_id' => $eventDivision->id_event_division,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'payment' => $payment,
             'payment_status' => $paymentStatus,
             'is_student' => false,
         ]);
         $checkout = EventRegistrationCheckout::query()->create([
             'event_id' => $event->id_event,
-            'player_id' => $player->id_player,
+            'player_user_id' => $player->id_user,
             'status' => CheckoutStatus::Open,
             'total_amount' => $payment,
             'payment_method' => null,

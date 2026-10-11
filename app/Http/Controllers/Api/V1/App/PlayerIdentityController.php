@@ -6,15 +6,15 @@ namespace App\Http\Controllers\Api\V1\App;
 
 use App\Exceptions\InvalidGoogleTokenException;
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
-use App\Http\Resources\PlayerIdentityResource;
-use App\Models\PlayerIdentity;
-use App\Services\PlayerIdentity\ContactConflictException;
-use App\Services\PlayerIdentity\GoogleIdTokenVerifier;
-use App\Services\PlayerIdentity\IdentityConflictException;
-use App\Services\PlayerIdentity\LastProviderIdentityException;
-use App\Services\PlayerIdentity\PlayerAvatarResolver;
-use App\Services\PlayerIdentity\PlayerIdentityLinker;
-use App\Services\PlayerIdentity\PlayerIdentityUnlinker;
+use App\Http\Resources\UserIdentityResource;
+use App\Models\UserIdentity;
+use App\Services\UserIdentity\ContactConflictException;
+use App\Services\UserIdentity\GoogleIdTokenVerifier;
+use App\Services\UserIdentity\IdentityConflictException;
+use App\Services\UserIdentity\LastProviderIdentityException;
+use App\Services\UserIdentity\UserAvatarResolver;
+use App\Services\UserIdentity\UserIdentityLinker;
+use App\Services\UserIdentity\UserIdentityUnlinker;
 use Illuminate\Http\Request;
 
 /**
@@ -41,11 +41,11 @@ class PlayerIdentityController extends V1BaseController
             ->identities()
             ->with('email')
             ->orderBy('linked_at')
-            ->orderBy('id_identity')
+            ->orderBy('id_user_identity')
             ->get();
 
         return $this->successResponse(
-            PlayerIdentityResource::collection($identities)->resolve(),
+            UserIdentityResource::collection($identities)->resolve(),
             'Identities retrieved successfully'
         );
     }
@@ -79,11 +79,11 @@ class PlayerIdentityController extends V1BaseController
         Request $request,
         string $provider,
         GoogleIdTokenVerifier $tokenVerifier,
-        PlayerIdentityLinker $linker,
+        UserIdentityLinker $linker,
     ) {
         $provider = strtolower($provider);
 
-        if ($provider !== PlayerIdentity::PROVIDER_GOOGLE) {
+        if ($provider !== UserIdentity::PROVIDER_GOOGLE) {
             return $this->errorResponse('Unsupported provider. Only google is available in this pass.', 422);
         }
 
@@ -102,7 +102,7 @@ class PlayerIdentityController extends V1BaseController
         try {
             $result = $linker->link(
                 player: $player,
-                provider: PlayerIdentity::PROVIDER_GOOGLE,
+                provider: UserIdentity::PROVIDER_GOOGLE,
                 subject: $claims['sub'],
                 email: $claims['email'],
                 displayName: $claims['name'],
@@ -122,7 +122,7 @@ class PlayerIdentityController extends V1BaseController
         $identity = $result->identity->loadMissing('email');
 
         return $this->successResponse([
-            'identity' => (new PlayerIdentityResource($identity))->resolve(),
+            'identity' => (new UserIdentityResource($identity))->resolve(),
             'result_code' => $result->wasAlreadyLinked() ? 'already_linked' : 'linked',
         ], $result->wasAlreadyLinked()
             ? 'Identity already linked'
@@ -148,12 +148,12 @@ class PlayerIdentityController extends V1BaseController
      */
     public function destroy(
         Request $request,
-        PlayerIdentity $playerIdentity,
-        PlayerIdentityUnlinker $unlinker,
+        UserIdentity $playerIdentity,
+        UserIdentityUnlinker $unlinker,
     ) {
         $player = $request->user();
 
-        if ((int) $playerIdentity->player_id !== (int) $player->id_player) {
+        if ((int) $playerIdentity->user_id !== (int) $player->id_user) {
             return $this->forbiddenResponse('You cannot unlink this identity.');
         }
 
@@ -183,17 +183,17 @@ class PlayerIdentityController extends V1BaseController
      */
     public function setAvatarPrimary(
         Request $request,
-        PlayerIdentity $playerIdentity,
-        PlayerAvatarResolver $avatars,
+        UserIdentity $playerIdentity,
+        UserAvatarResolver $avatars,
     ) {
         $player = $request->user();
 
-        if ((int) $playerIdentity->player_id !== (int) $player->id_player) {
+        if ((int) $playerIdentity->user_id !== (int) $player->id_user) {
             return $this->forbiddenResponse('You cannot change this identity.');
         }
 
         if (
-            $playerIdentity->provider !== PlayerIdentity::PROVIDER_GOOGLE
+            $playerIdentity->provider !== UserIdentity::PROVIDER_GOOGLE
             || $playerIdentity->avatar_url === null
             || $playerIdentity->avatar_url === ''
         ) {
@@ -205,7 +205,7 @@ class PlayerIdentityController extends V1BaseController
         $identity = $avatars->setPrimary($player, $playerIdentity)->loadMissing('email');
 
         return $this->successResponse(
-            (new PlayerIdentityResource($identity))->resolve(),
+            (new UserIdentityResource($identity))->resolve(),
             'Primary avatar identity updated successfully'
         );
     }

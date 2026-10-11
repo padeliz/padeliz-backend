@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Database\Factories;
 
 use App\Models\MediaSource;
-use App\Models\Player;
+use App\Models\User;
 use App\Models\PlayerMediaSource;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
@@ -19,7 +19,7 @@ class PlayerMediaSourceFactory extends Factory
     public function definition(): array
     {
         return [
-            'player_id' => Player::factory(),
+            'player_user_id' => User::factory(),
             'media_source_id' => MediaSource::factory(),
             'inserted_at' => time(),
             'updated_at' => null,

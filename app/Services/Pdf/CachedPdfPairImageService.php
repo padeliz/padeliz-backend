@@ -61,8 +61,8 @@ class CachedPdfPairImageService
 
         if ($persist) {
             $pair = CachedPdfPairImage::query()->firstOrNew([
-                'player_1_id' => $leftId,
-                'player_2_id' => $rightId,
+                'player_1_user_id' => $leftId,
+                'player_2_user_id' => $rightId,
                 'player_1_is_collecting_points' => $leftCollecting,
                 'player_2_is_collecting_points' => $rightCollecting,
             ]);

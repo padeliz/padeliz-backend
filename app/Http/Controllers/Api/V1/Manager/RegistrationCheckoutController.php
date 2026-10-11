@@ -19,7 +19,7 @@ class RegistrationCheckoutController extends V1BaseController
 
     /**
      * Queue triage (`queue=`) is the default and required view. A player-scoped view
-     * (`filters[player_id]`, the Player > Checkouts tab) lists every checkout of that
+     * (`filters[player_user_id]`, the Player > Checkouts tab) lists every checkout of that
      * player instead: no queue is required and queue triage is skipped.
      */
     public function index(Request $request)
@@ -43,7 +43,7 @@ class RegistrationCheckoutController extends V1BaseController
             ->orderByDesc('id_checkout');
 
         if ($playerId !== null) {
-            $query->where('player_id', $playerId);
+            $query->where('player_user_id', $playerId);
         } else {
             $this->queueService->applyQueue($query, $validated['queue']);
         }
@@ -61,14 +61,14 @@ class RegistrationCheckoutController extends V1BaseController
     {
         $filters = $request->input('filters');
 
-        if (! is_array($filters) || ! array_key_exists('player_id', $filters) || $filters['player_id'] === '' || $filters['player_id'] === null) {
+        if (! is_array($filters) || ! array_key_exists('player_user_id', $filters) || $filters['player_user_id'] === '' || $filters['player_user_id'] === null) {
             return null;
         }
 
         $request->validate([
-            'filters.player_id' => 'integer|min:1',
+            'filters.player_user_id' => 'integer|min:1',
         ]);
 
-        return (int) $filters['player_id'];
+        return (int) $filters['player_user_id'];
     }
 }
