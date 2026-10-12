@@ -1,0 +1,70 @@
+#!/usr/bin/env sh
+# Enable Compose profile netopia-ipn-relay when the sibling relay repo exists
+# and NETOPIA_IS_LIVE is not truthy. Must match Padeliz\NetopiaIpnRelay\ComposeProfileDecision.
+set -eu
+
+SCRIPT_DIR=$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)
+DEVCONTAINER_DIR=$(CDPATH= cd -- "$SCRIPT_DIR/.." && pwd)
+BACKEND_DIR=$(CDPATH= cd -- "$DEVCONTAINER_DIR/.." && pwd)
+META_DIR=$(CDPATH= cd -- "$BACKEND_DIR/.." && pwd)
+RELAY_DIR="$META_DIR/padeliz-netopia-ipn-relay"
+ENV_FILE="$BACKEND_DIR/.env"
+COMPOSE_ENV="$DEVCONTAINER_DIR/.env"
+PROFILE_NAME="netopia-ipn-relay"
+
+is_live_truthy() {
+  value=$(printf '%s' "$1" | tr '[:upper:]' '[:lower:]' | tr -d '[:space:]')
+  case "$value" in
+    true|1|yes) return 0 ;;
+    *) return 1 ;;
+  esac
+}
+
+read_netopia_is_live() {
+  if [ ! -f "$ENV_FILE" ]; then
+    printf ''
+    return
+  fi
+  # shellcheck disable=SC2162
+  while IFS= read line || [ -n "$line" ]; do
+    case "$line" in
+      NETOPIA_IS_LIVE=*)
+        printf '%s' "${line#NETOPIA_IS_LIVE=}"
+        return
+        ;;
+    esac
+  done < "$ENV_FILE"
+  printf ''
+}
+
+repo_exists=0
+if [ -d "$RELAY_DIR" ]; then
+  repo_exists=1
+fi
+
+live_value=$(read_netopia_is_live)
+enable=0
+if [ "$repo_exists" -eq 1 ] && ! is_live_truthy "$live_value"; then
+  enable=1
+fi
+
+# Rewrite COMPOSE_PROFILES in .devcontainer/.env without dropping unrelated keys.
+tmp=$(mktemp)
+if [ -f "$COMPOSE_ENV" ]; then
+  # shellcheck disable=SC2162
+  while IFS= read line || [ -n "$line" ]; do
+    case "$line" in
+      COMPOSE_PROFILES=*) ;;
+      *) printf '%s\n' "$line" >> "$tmp" ;;
+    esac
+  done < "$COMPOSE_ENV"
+fi
+
+if [ "$enable" -eq 1 ]; then
+  printf 'COMPOSE_PROFILES=%s\n' "$PROFILE_NAME" >> "$tmp"
+  echo "sync-netopia-ipn-relay-profile: enabled profile '$PROFILE_NAME' (repo present, NETOPIA_IS_LIVE not live)"
+else
+  echo "sync-netopia-ipn-relay-profile: profile disabled (repo_exists=$repo_exists NETOPIA_IS_LIVE='${live_value}')"
+fi
+
+mv "$tmp" "$COMPOSE_ENV"

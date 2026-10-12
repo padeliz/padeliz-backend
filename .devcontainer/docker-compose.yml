@@ -1,5 +1,3 @@
-version: '3.8'
-
 name: padeliz-backend
 
 services:
@@ -103,10 +101,37 @@ services:
     networks:
       - backend-network
     healthcheck:
-      test: ["CMD", "wget", "--quiet", "--tries=1", "--spider", "http://localhost:80"]
+      test: ["CMD", "curl", "-fsS", "-o", "/dev/null", "http://localhost:80/"]
       interval: 30s
       timeout: 10s
       retries: 3
+
+  # Optional local Netopia IPN relay (sandbox only). Enabled via profile
+  # netopia-ipn-relay when padeliz-netopia-ipn-relay exists and NETOPIA_IS_LIVE is not truthy.
+  # See .devcontainer/scripts/sync-netopia-ipn-relay-profile
+  netopia-ipn-relay:
+    profiles: ["netopia-ipn-relay"]
+    build:
+      context: ../../padeliz-netopia-ipn-relay
+      dockerfile: Dockerfile
+    container_name: padeliz-backend-netopia-ipn-relay
+    restart: on-failure
+    env_file:
+      - ../.env
+    environment:
+      - DB_HOST=db
+      - DB_PORT=3306
+      - IPN_URL=http://nginx/api/v1/webhooks/netopia/ipn
+      - LOG_LEVEL=${LOG_LEVEL:-info}
+    networks:
+      - backend-network
+    depends_on:
+      db:
+        condition: service_healthy
+      app:
+        condition: service_healthy
+      nginx:
+        condition: service_healthy
 
 networks:
   backend-network:
