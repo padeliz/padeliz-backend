@@ -23,25 +23,25 @@ final class EventCalendarTiming
         return (string) config('app.timezone', 'Europe/Bucharest');
     }
 
-    public static function todayYmd(?int $now = null): string
+    public static function todayYmd(?int $now = null, ?string $timezone = null): string
     {
-        return Carbon::createFromTimestamp($now ?? time(), self::timezone())->toDateString();
+        return Carbon::createFromTimestamp($now ?? time(), $timezone ?? self::timezone())->toDateString();
     }
 
-    public static function dayYmd(int $unix): string
+    public static function dayYmd(int $unix, ?string $timezone = null): string
     {
-        return Carbon::createFromTimestamp($unix, self::timezone())->toDateString();
+        return Carbon::createFromTimestamp($unix, $timezone ?? self::timezone())->toDateString();
     }
 
     /** Bucharest wall clock H:i for schedule engines (Mode A / reorder). */
-    public static function formatHi(int $unix): string
+    public static function formatHi(int $unix, ?string $timezone = null): string
     {
-        return Carbon::createFromTimestamp($unix, self::timezone())->format('H:i');
+        return Carbon::createFromTimestamp($unix, $timezone ?? self::timezone())->format('H:i');
     }
 
-    public static function startOfDayUnix(string $dateYmd): int
+    public static function startOfDayUnix(string $dateYmd, ?string $timezone = null): int
     {
-        return Carbon::createFromFormat('Y-m-d', $dateYmd, self::timezone())
+        return Carbon::createFromFormat('Y-m-d', $dateYmd, $timezone ?? self::timezone())
             ->startOfDay()
             ->timestamp;
     }
@@ -49,19 +49,19 @@ final class EventCalendarTiming
     /**
      * Exclusive end bound: start of the calendar day after $dateYmd.
      */
-    public static function endExclusiveUnix(string $dateYmd): int
+    public static function endExclusiveUnix(string $dateYmd, ?string $timezone = null): int
     {
-        return Carbon::createFromFormat('Y-m-d', $dateYmd, self::timezone())
+        return Carbon::createFromFormat('Y-m-d', $dateYmd, $timezone ?? self::timezone())
             ->addDay()
             ->startOfDay()
             ->timestamp;
     }
 
-    public static function classify(int $eventStartsAt, int $eventEndsAt, ?int $now = null): string
+    public static function classify(int $eventStartsAt, int $eventEndsAt, ?int $now = null, ?string $timezone = null): string
     {
-        $today = self::todayYmd($now);
-        $startsDay = self::dayYmd($eventStartsAt);
-        $endsDay = self::dayYmd($eventEndsAt);
+        $today = self::todayYmd($now, $timezone);
+        $startsDay = self::dayYmd($eventStartsAt, $timezone);
+        $endsDay = self::dayYmd($eventEndsAt, $timezone);
 
         if ($today > $endsDay) {
             return self::PAST;
@@ -73,10 +73,11 @@ final class EventCalendarTiming
         return self::ONGOING;
     }
 
-    public static function eventNrOfDays(int $eventStartsAt, int $eventEndsAt): int
+    public static function eventNrOfDays(int $eventStartsAt, int $eventEndsAt, ?string $timezone = null): int
     {
-        $start = Carbon::createFromTimestamp($eventStartsAt, self::timezone())->startOfDay();
-        $end = Carbon::createFromTimestamp($eventEndsAt, self::timezone())->startOfDay();
+        $tz = $timezone ?? self::timezone();
+        $start = Carbon::createFromTimestamp($eventStartsAt, $tz)->startOfDay();
+        $end = Carbon::createFromTimestamp($eventEndsAt, $tz)->startOfDay();
 
         return (int) $start->diffInDays($end) + 1;
     }
@@ -84,10 +85,15 @@ final class EventCalendarTiming
     /**
      * Inclusive Bucharest calendar-day overlap with [dateFrom, dateTo].
      */
-    public static function overlapsDateRange(int $eventStartsAt, int $eventEndsAt, string $dateFrom, string $dateTo): bool
-    {
-        $startsDay = self::dayYmd($eventStartsAt);
-        $endsDay = self::dayYmd($eventEndsAt);
+    public static function overlapsDateRange(
+        int $eventStartsAt,
+        int $eventEndsAt,
+        string $dateFrom,
+        string $dateTo,
+        ?string $timezone = null,
+    ): bool {
+        $startsDay = self::dayYmd($eventStartsAt, $timezone);
+        $endsDay = self::dayYmd($eventEndsAt, $timezone);
 
         return $startsDay <= $dateTo && $endsDay >= $dateFrom;
     }

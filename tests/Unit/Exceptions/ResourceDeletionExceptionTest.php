@@ -5,7 +5,7 @@ declare(strict_types=1);
 namespace Tests\Unit\Exceptions;
 
 use App\Exceptions\ResourceDeletionException;
-use Tests\TestCase;
+use PHPUnit\Framework\TestCase;
 
 class ResourceDeletionExceptionTest extends TestCase
 {

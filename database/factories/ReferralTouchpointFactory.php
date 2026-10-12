@@ -6,8 +6,8 @@ namespace Database\Factories;
 
 use App\Models\EventReferralCode;
 use App\Models\PadelEvent;
-use App\Models\User;
 use App\Models\ReferralTouchpoint;
+use App\Models\User;
 use Illuminate\Database\Eloquent\Factories\Factory;
 
 class ReferralTouchpointFactory extends Factory
@@ -16,13 +16,15 @@ class ReferralTouchpointFactory extends Factory
 
     public function definition()
     {
-        $referralCode = EventReferralCode::factory()->create();
-
         return [
-            'event_id' => $referralCode->event_id,
+            'referral_code_id' => EventReferralCode::factory(),
+            'event_id' => fn (array $attributes) => EventReferralCode::query()
+                ->whereKey($attributes['referral_code_id'])
+                ->value('event_id'),
             'referred_player_user_id' => User::factory(),
-            'referrer_player_user_id' => $referralCode->referrer_player_user_id,
-            'referral_code_id' => $referralCode->id_referral_code,
+            'referrer_player_user_id' => fn (array $attributes) => EventReferralCode::query()
+                ->whereKey($attributes['referral_code_id'])
+                ->value('referrer_player_user_id'),
             'discount_eligible' => true,
             'touched_at' => time(),
             'client_metadata' => null,

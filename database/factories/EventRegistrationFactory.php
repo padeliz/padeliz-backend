@@ -18,12 +18,12 @@ class EventRegistrationFactory extends Factory
 
     public function definition()
     {
-        $eventDivision = EventDivision::factory()->create();
-
         return [
-            'event_id' => $eventDivision->event_id,
+            'event_division_id' => EventDivision::factory(),
+            'event_id' => fn (array $attributes) => EventDivision::query()
+                ->whereKey($attributes['event_division_id'])
+                ->value('event_id'),
             'player_user_id' => User::factory(),
-            'event_division_id' => $eventDivision->id_event_division,
             'is_minor' => false,
             'is_student' => $this->faker->boolean(30),
             'payment' => $this->faker->numberBetween(35, 55),
@@ -40,6 +40,14 @@ class EventRegistrationFactory extends Factory
     {
         return $this->state(fn () => [
             'event_id' => $event->id_event,
+        ]);
+    }
+
+    public function forEventDivision(EventDivision $eventDivision): static
+    {
+        return $this->state(fn () => [
+            'event_division_id' => $eventDivision->id_event_division,
+            'event_id' => $eventDivision->event_id,
         ]);
     }
 

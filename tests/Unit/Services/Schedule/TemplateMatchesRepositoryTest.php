@@ -7,7 +7,7 @@ namespace Tests\Unit\Services\Schedule;
 use App\Services\Schedule\Exception\TemplateMatchesNotFoundException;
 use App\Services\Schedule\TemplateMatches;
 use App\Services\Schedule\TemplateMatchesRepository;
-use Tests\TestCase;
+use PHPUnit\Framework\TestCase;
 
 final class TemplateMatchesRepositoryTest extends TestCase
 {

@@ -15,14 +15,11 @@ class GameMatchFactory extends Factory
 
     public function definition()
     {
-        $eventDivision = EventDivision::factory()->create();
-        $eventDivisionCourt = EventDivisionCourt::factory()->create([
-            'event_division_id' => $eventDivision->id_event_division,
-        ]);
-
         return [
-            'event_division_id' => $eventDivision->id_event_division,
-            'event_division_court_id' => $eventDivisionCourt->id_event_division_court,
+            'event_division_court_id' => EventDivisionCourt::factory(),
+            'event_division_id' => fn (array $attributes) => EventDivisionCourt::query()
+                ->whereKey($attributes['event_division_court_id'])
+                ->value('event_division_id'),
             'match_kind' => $this->faker->randomElement(['REGULAR', 'FINAL', 'DEMONSTRATIVE']),
             'sequence_no' => $this->faker->numberBetween(1, 20),
             'scheduled_start' => null,
@@ -30,5 +27,15 @@ class GameMatchFactory extends Factory
             'points_target' => $this->faker->optional()->numberBetween(10, 24),
             'inserted_at' => time(),
         ];
+    }
+
+    public function forEventDivision(EventDivision $eventDivision): static
+    {
+        return $this->state(fn () => [
+            'event_division_id' => $eventDivision->id_event_division,
+            'event_division_court_id' => EventDivisionCourt::factory()->state([
+                'event_division_id' => $eventDivision->id_event_division,
+            ]),
+        ]);
     }
 }

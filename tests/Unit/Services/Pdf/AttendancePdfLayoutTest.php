@@ -5,13 +5,15 @@ declare(strict_types=1);
 namespace Tests\Unit\Services\Pdf;
 
 use App\Models\EventParticipation;
-use App\Models\User;
 use App\Services\Pdf\AttendancePdfLayout;
+use Carbon\Carbon;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Tests\TestCase;
+use PHPUnit\Framework\TestCase;
 
 final class AttendancePdfLayoutTest extends TestCase
 {
+    private const TZ = 'Europe/Bucharest';
+
     #[DataProvider('columnCountProvider')]
     public function test_column_count_for_ed_count(int $edCount, int $expectedColumns): void
     {
@@ -101,29 +103,29 @@ final class AttendancePdfLayoutTest extends TestCase
 
     public function test_sort_participations_by_player_name_is_case_insensitive(): void
     {
-        $zebra = new User(['first_name' => 'Zebra', 'middle_name' => null, 'last_name' => 'Player']);
-        $zebra->id_user = 3;
-        $alpha = new User(['first_name' => 'alpha', 'middle_name' => null, 'last_name' => 'Player']);
-        $alpha->id_user = 1;
-        $bravo = new User(['first_name' => 'Bravo', 'middle_name' => null, 'last_name' => 'Player']);
-        $bravo->id_user = 2;
+        $zebra = new class {
+            public string $name = 'Zebra Player';
+        };
+        $alpha = new class {
+            public string $name = 'alpha Player';
+        };
+        $bravo = new class {
+            public string $name = 'Bravo Player';
+        };
 
-        $participations = [
-            tap(new EventParticipation(), static function (EventParticipation $p) use ($zebra): void {
-                $p->player_user_id = 3;
-                $p->setRelation('player', $zebra);
-            }),
-            tap(new EventParticipation(), static function (EventParticipation $p) use ($alpha): void {
-                $p->player_user_id = 1;
-                $p->setRelation('player', $alpha);
-            }),
-            tap(new EventParticipation(), static function (EventParticipation $p) use ($bravo): void {
-                $p->player_user_id = 2;
-                $p->setRelation('player', $bravo);
-            }),
-        ];
+        $make = static function (int $playerUserId, object $player): EventParticipation {
+            $participation = new EventParticipation();
+            $participation->player_user_id = $playerUserId;
+            $participation->setRelation('player', $player);
 
-        $sorted = AttendancePdfLayout::sortParticipationsByPlayerName($participations);
+            return $participation;
+        };
+
+        $sorted = AttendancePdfLayout::sortParticipationsByPlayerName([
+            $make(3, $zebra),
+            $make(1, $alpha),
+            $make(2, $bravo),
+        ]);
 
         $this->assertSame(
             [1, 2, 3],
@@ -134,7 +136,10 @@ final class AttendancePdfLayoutTest extends TestCase
     #[DataProvider('ordinalHeaderDateProvider')]
     public function test_format_ordinal_header_date(string $input, string $expected): void
     {
-        $this->assertSame($expected, AttendancePdfLayout::formatOrdinalHeaderDate($input));
+        $this->assertSame(
+            $expected,
+            AttendancePdfLayout::formatOrdinalHeaderDate($input, self::TZ)
+        );
     }
 
     #[DataProvider('attendanceHeaderDateProvider')]
@@ -147,11 +152,11 @@ final class AttendancePdfLayoutTest extends TestCase
     ): void {
         $this->assertSame(
             $expectedDate,
-            AttendancePdfLayout::formatAttendanceHeaderDate($startsAt, $endsAt, $nrOfDays)
+            AttendancePdfLayout::formatAttendanceHeaderDate($startsAt, $endsAt, $nrOfDays, self::TZ)
         );
         $this->assertSame(
             $expectedTimes,
-            AttendancePdfLayout::formatAttendanceHeaderTimes($startsAt, $endsAt)
+            AttendancePdfLayout::formatAttendanceHeaderTimes($startsAt, $endsAt, self::TZ)
         );
     }
 
@@ -201,19 +206,19 @@ final class AttendancePdfLayoutTest extends TestCase
      */
     public static function attendanceHeaderDateProvider(): array
     {
-        $tz = 'Europe/Bucharest';
+        $tz = self::TZ;
 
-        $singleStart = \Carbon\Carbon::parse('2026-06-15 10:00:00', $tz)->timestamp;
-        $singleEnd = \Carbon\Carbon::parse('2026-06-15 18:30:00', $tz)->timestamp;
+        $singleStart = Carbon::parse('2026-06-15 10:00:00', $tz)->timestamp;
+        $singleEnd = Carbon::parse('2026-06-15 18:30:00', $tz)->timestamp;
 
-        $sameMonthStart = \Carbon\Carbon::parse('2026-10-11 10:00:00', $tz)->timestamp;
-        $sameMonthEnd = \Carbon\Carbon::parse('2026-10-12 18:00:00', $tz)->timestamp;
+        $sameMonthStart = Carbon::parse('2026-10-11 10:00:00', $tz)->timestamp;
+        $sameMonthEnd = Carbon::parse('2026-10-12 18:00:00', $tz)->timestamp;
 
-        $diffMonthStart = \Carbon\Carbon::parse('2026-10-28 10:00:00', $tz)->timestamp;
-        $diffMonthEnd = \Carbon\Carbon::parse('2026-11-02 18:00:00', $tz)->timestamp;
+        $diffMonthStart = Carbon::parse('2026-10-28 10:00:00', $tz)->timestamp;
+        $diffMonthEnd = Carbon::parse('2026-11-02 18:00:00', $tz)->timestamp;
 
-        $diffYearStart = \Carbon\Carbon::parse('2026-12-31 10:00:00', $tz)->timestamp;
-        $diffYearEnd = \Carbon\Carbon::parse('2027-01-02 18:00:00', $tz)->timestamp;
+        $diffYearStart = Carbon::parse('2026-12-31 10:00:00', $tz)->timestamp;
+        $diffYearEnd = Carbon::parse('2027-01-02 18:00:00', $tz)->timestamp;
 
         return [
             'single day ordinal' => [$singleStart, $singleEnd, 1, '2026 June 15th', '10:00 – 18:30'],

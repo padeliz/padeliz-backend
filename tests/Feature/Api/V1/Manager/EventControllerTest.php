@@ -4,8 +4,6 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\Manager;
 
-use App\Models\Club;
-use App\Models\Division;
 use App\Models\EventDivision;
 use App\Models\EventDivisionPoster;
 use App\Models\Location;
@@ -15,8 +13,9 @@ use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
 use Tests\Helpers\EventUnixTestHelper;
-use Tests\TestCase;
+use Tests\Support\ManagerEventFixtures;
 use Tests\Support\UnixEventFactory;
+use Tests\TestCase;
 use Carbon\Carbon;
 
 class EventControllerTest extends TestCase
@@ -24,55 +23,43 @@ class EventControllerTest extends TestCase
     use RefreshDatabase;
     use EventUnixTestHelper;
 
-    private $manager;
-
-    private $club;
-
-    private $location;
-
-    private $event;
-
-    private $division;
-
-    public function setUp(): void
+    /**
+     * @return array{0: User, 1: Location, 2: PadelEvent}
+     */
+    private function managerEventWithCover(): array
     {
-        parent::setUp();
-
-        $this->manager = User::factory()->manager()->create([
-            'first_name' => 'Test', 'middle_name' => null, 'last_name' => 'Manager',
-            'user_types' => ['player', 'manager'],
+        $manager = ManagerEventFixtures::manager([
+            'first_name' => 'Test',
+            'middle_name' => null,
+            'last_name' => 'Manager',
         ]);
-
-        $this->club = Club::factory()->create([
-            'name' => 'Test Club',
-            'city' => 'Test City',
-        ]);
-
-        $this->location = Location::factory()->create([
-            'club_id' => $this->club->id_club,
-            'name' => 'Test Location',
-            'address' => 'Test Address',
-        ]);
-
-        $this->event = PadelEvent::factory()->create([
-            'location_id' => $this->location->id_location,
-            'name' => 'Test PadelEvent',
+        [, $location, $event] = ManagerEventFixtures::eventWithLocation([
             ...UnixEventFactory::eventBounds(now()->addDays(30)->format('Y-m-d')),
         ]);
-        $this->attachCover($this->event);
+        $this->attachCover($event);
 
-        $this->division = Division::factory()->create([
-            'name' => 'Test Division',
-            'color' => '#FF0000',
+        return [$manager, $location, $event];
+    }
+
+    /**
+     * @return array{0: User, 1: Location}
+     */
+    private function actingManagerWithLocation(): array
+    {
+        $manager = ManagerEventFixtures::actingManager([
+            'first_name' => 'Test',
+            'middle_name' => null,
+            'last_name' => 'Manager',
         ]);
+        [, $location] = ManagerEventFixtures::clubWithLocation();
+
+        return [$manager, $location];
     }
 
     public function test_manager_can_view_events()
     {
-        Sanctum::actingAs($this->manager);
+        ManagerEventFixtures::actingManager();
 
-        Division::query()->delete();
-        PadelEvent::query()->delete();
         PadelEvent::factory()->count(5)->create();
 
         $response = $this->getJson('/api/v1/manager/events');
@@ -114,9 +101,10 @@ class EventControllerTest extends TestCase
 
     public function test_manager_can_view_specific_edition()
     {
-        Sanctum::actingAs($this->manager);
+        [$manager, $location, $event] = $this->managerEventWithCover();
+        Sanctum::actingAs($manager);
 
-        $response = $this->getJson("/api/v1/manager/events/{$this->event->id_event}");
+        $response = $this->getJson("/api/v1/manager/events/{$event->id_event}");
 
         $response->assertStatus(200)
             ->assertJsonStructure([
@@ -138,7 +126,7 @@ class EventControllerTest extends TestCase
                 'success' => true,
                 'message' => 'PadelEvent details retrieved successfully',
                 'data' => [
-                    'id_event' => $this->event->id_event,
+                    'id_event' => $event->id_event,
                     'name' => 'Test PadelEvent',
                 ],
             ]);
@@ -163,7 +151,7 @@ class EventControllerTest extends TestCase
 
     public function test_edition_not_found()
     {
-        Sanctum::actingAs($this->manager);
+        ManagerEventFixtures::actingManager();
 
         $response = $this->getJson('/api/v1/manager/events/99999');
 
@@ -172,7 +160,7 @@ class EventControllerTest extends TestCase
 
     public function test_event_divisions_not_found()
     {
-        Sanctum::actingAs($this->manager);
+        ManagerEventFixtures::actingManager();
 
         $response = $this->getJson('/api/v1/manager/events/99999/divisions');
 
@@ -181,10 +169,10 @@ class EventControllerTest extends TestCase
 
     public function test_manager_can_update_edition()
     {
-        Sanctum::actingAs($this->manager);
+        [, $location] = $this->actingManagerWithLocation();
 
         $event = PadelEvent::factory()->create([
-            'location_id' => $this->location->id_location,
+            'location_id' => $location->id_location,
             'name' => 'Original PadelEvent',
             ...UnixEventFactory::eventBounds(now()->addDays(30)->format('Y-m-d')),
         ]);
@@ -195,7 +183,7 @@ class EventControllerTest extends TestCase
         $updateData = [
             'name' => 'Updated PadelEvent',
             'description' => '<p>Updated description.</p>',
-            'location_id' => $this->location->id_location,
+            'location_id' => $location->id_location,
             ...$window,
             ...$this->deadlineFieldsForStartsAt($window['event_starts_at']),
         ];
@@ -215,10 +203,10 @@ class EventControllerTest extends TestCase
 
     public function test_manager_can_partially_update_edition()
     {
-        Sanctum::actingAs($this->manager);
+        [, $location] = $this->actingManagerWithLocation();
 
         $event = PadelEvent::factory()->create([
-            'location_id' => $this->location->id_location,
+            'location_id' => $location->id_location,
             'name' => 'Original PadelEvent',
             ...UnixEventFactory::eventBounds(now()->addDays(30)->format('Y-m-d')),
         ]);
@@ -256,10 +244,10 @@ class EventControllerTest extends TestCase
 
     public function test_manager_cannot_update_edition_without_required_fields()
     {
-        Sanctum::actingAs($this->manager);
+        [, $location] = $this->actingManagerWithLocation();
 
         $event = PadelEvent::factory()->create([
-            'location_id' => $this->location->id_location,
+            'location_id' => $location->id_location,
         ]);
         $this->attachCover($event);
 
@@ -283,7 +271,7 @@ class EventControllerTest extends TestCase
 
     public function test_edition_creation_defaults_branding(): void
     {
-        Sanctum::actingAs($this->manager);
+        [, $location] = $this->actingManagerWithLocation();
 
         $ymd = now()->addDays(5)->format('Y-m-d');
         $window = $this->eventWindow($ymd);
@@ -291,7 +279,7 @@ class EventControllerTest extends TestCase
         $response = $this->postJson('/api/v1/manager/events', [
             'name' => 'Branding Defaults',
             'description' => '<p>Branding defaults description.</p>',
-            'location_id' => $this->location->id_location,
+            'location_id' => $location->id_location,
             ...$window,
             ...$this->deadlineFieldsForStartsAt($window['event_starts_at']),
         ]);
@@ -309,7 +297,7 @@ class EventControllerTest extends TestCase
 
     public function test_manager_can_create_edition_with_branding(): void
     {
-        Sanctum::actingAs($this->manager);
+        [, $location] = $this->actingManagerWithLocation();
 
         $organizer = Organizer::factory()->create(['name' => 'Branding Tour']);
         $ymd = now()->addDays(5)->format('Y-m-d');
@@ -318,7 +306,7 @@ class EventControllerTest extends TestCase
         $response = $this->postJson('/api/v1/manager/events', [
             'name' => 'Branded PadelEvent',
             'description' => '<p>Branded edition description.</p>',
-            'location_id' => $this->location->id_location,
+            'location_id' => $location->id_location,
             'organizer_id' => $organizer->id_organizer,
             'include_club_host_on_pdf' => false,
             ...$window,
@@ -333,9 +321,10 @@ class EventControllerTest extends TestCase
 
     public function test_edition_branding_rejects_unknown_organizer(): void
     {
-        Sanctum::actingAs($this->manager);
+        [$manager, , $event] = $this->managerEventWithCover();
+        Sanctum::actingAs($manager);
 
-        $this->patchJson("/api/v1/manager/events/{$this->event->id_event}", [
+        $this->patchJson("/api/v1/manager/events/{$event->id_event}", [
             'organizer_id' => 99999,
         ])->assertStatus(422)
             ->assertJsonValidationErrors(['organizer_id']);
@@ -343,11 +332,12 @@ class EventControllerTest extends TestCase
 
     public function test_manager_can_patch_edition_branding(): void
     {
-        Sanctum::actingAs($this->manager);
+        [$manager, , $event] = $this->managerEventWithCover();
+        Sanctum::actingAs($manager);
 
         $organizer = Organizer::factory()->create();
 
-        $this->patchJson("/api/v1/manager/events/{$this->event->id_event}", [
+        $this->patchJson("/api/v1/manager/events/{$event->id_event}", [
             'organizer_id' => $organizer->id_organizer,
             'include_club_host_on_pdf' => false,
         ])->assertStatus(200)
@@ -355,13 +345,13 @@ class EventControllerTest extends TestCase
             ->assertJsonPath('data.include_club_host_on_pdf', false)
             ->assertJsonPath('data.organizer.id_organizer', $organizer->id_organizer);
 
-        $this->patchJson("/api/v1/manager/events/{$this->event->id_event}", [
+        $this->patchJson("/api/v1/manager/events/{$event->id_event}", [
             'organizer_id' => null,
         ])->assertStatus(200)
             ->assertJsonPath('data.organizer_id', null);
 
         $this->assertDatabaseHas('events', [
-            'id_event' => $this->event->id_event,
+            'id_event' => $event->id_event,
             'organizer_id' => null,
             'include_club_host_on_pdf' => 0,
         ]);
@@ -369,11 +359,11 @@ class EventControllerTest extends TestCase
 
     public function test_edition_branding_is_patchable_after_finalize(): void
     {
-        Sanctum::actingAs($this->manager);
+        [, $location] = $this->actingManagerWithLocation();
 
         $organizer = Organizer::factory()->create();
         $event = PadelEvent::factory()->create([
-            'location_id' => $this->location->id_location,
+            'location_id' => $location->id_location,
             'finalized_at' => time(),
         ]);
         $this->attachCover($event);
@@ -388,11 +378,12 @@ class EventControllerTest extends TestCase
 
     public function test_edition_branding_change_keeps_generated_posters(): void
     {
-        Sanctum::actingAs($this->manager);
+        [$manager, , $event] = $this->managerEventWithCover();
+        Sanctum::actingAs($manager);
 
         $organizer = Organizer::factory()->create();
         $eventDivision = EventDivision::factory()->create([
-            'event_id' => $this->event->id_event,
+            'event_id' => $event->id_event,
         ]);
 
         $poster = new EventDivisionPoster();
@@ -403,7 +394,7 @@ class EventControllerTest extends TestCase
         $poster->generated_path = 'event-division-posters/' . $poster->id_event_division_poster . '/generated/ranking.pdf';
         $poster->save();
 
-        $this->patchJson("/api/v1/manager/events/{$this->event->id_event}", [
+        $this->patchJson("/api/v1/manager/events/{$event->id_event}", [
             'organizer_id' => $organizer->id_organizer,
             'include_club_host_on_pdf' => false,
         ])->assertStatus(200);
@@ -413,7 +404,7 @@ class EventControllerTest extends TestCase
 
     public function test_manager_can_create_edition_with_overnight_closing(): void
     {
-        Sanctum::actingAs($this->manager);
+        [, $location] = $this->actingManagerWithLocation();
 
         $ymd = now()->addDays(10)->format('Y-m-d');
         $window = $this->eventWindow($ymd, '18:00:00', '00:00:00');
@@ -421,7 +412,7 @@ class EventControllerTest extends TestCase
         $response = $this->postJson('/api/v1/manager/events', [
             'name' => 'Night PadelEvent',
             'description' => '<p>Night edition description.</p>',
-            'location_id' => $this->location->id_location,
+            'location_id' => $location->id_location,
             ...$window,
             ...$this->deadlineFieldsForStartsAt($window['event_starts_at']),
         ]);
@@ -436,7 +427,7 @@ class EventControllerTest extends TestCase
         $overnight = $this->postJson('/api/v1/manager/events', [
             'name' => 'Overnight Ed',
             'description' => '<p>Overnight edition description.</p>',
-            'location_id' => $this->location->id_location,
+            'location_id' => $location->id_location,
             ...$overnightWindow,
             ...$this->deadlineFieldsForStartsAt($overnightWindow['event_starts_at']),
         ]);
@@ -450,7 +441,7 @@ class EventControllerTest extends TestCase
         $fullDay = $this->postJson('/api/v1/manager/events', [
             'name' => 'Full Day Ed',
             'description' => '<p>Full day edition description.</p>',
-            'location_id' => $this->location->id_location,
+            'location_id' => $location->id_location,
             ...$fullDayWindow,
             ...$this->deadlineFieldsForStartsAt($fullDayWindow['event_starts_at']),
         ]);
@@ -462,7 +453,7 @@ class EventControllerTest extends TestCase
 
     public function test_manager_cannot_create_edition_with_equal_or_inverted_bounds(): void
     {
-        Sanctum::actingAs($this->manager);
+        [, $location] = $this->actingManagerWithLocation();
 
         $ymd = now()->addDays(10)->format('Y-m-d');
         $startsAt = (int) Carbon::parse($ymd . ' 18:00:00', config('app.timezone'))->timestamp;
@@ -470,7 +461,7 @@ class EventControllerTest extends TestCase
         $this->postJson('/api/v1/manager/events', [
             'name' => 'Bad End',
             'description' => '<p>Bad end.</p>',
-            'location_id' => $this->location->id_location,
+            'location_id' => $location->id_location,
             'event_starts_at' => $startsAt,
             'event_ends_at' => $startsAt,
             ...$this->deadlineFieldsForStartsAt($startsAt),
@@ -480,7 +471,7 @@ class EventControllerTest extends TestCase
         $this->postJson('/api/v1/manager/events', [
             'name' => 'Equal Clocks',
             'description' => '<p>Equal clocks.</p>',
-            'location_id' => $this->location->id_location,
+            'location_id' => $location->id_location,
             'event_starts_at' => $startsAt,
             'event_ends_at' => $startsAt - 60,
             ...$this->deadlineFieldsForStartsAt($startsAt),
@@ -490,7 +481,7 @@ class EventControllerTest extends TestCase
 
     public function test_store_requires_non_empty_description_and_sanitizes_html(): void
     {
-        Sanctum::actingAs($this->manager);
+        [, $location] = $this->actingManagerWithLocation();
 
         $ymd = now()->addDays(5)->format('Y-m-d');
         $window = $this->eventWindow($ymd);
@@ -498,7 +489,7 @@ class EventControllerTest extends TestCase
 
         $this->postJson('/api/v1/manager/events', [
             'name' => 'No Desc',
-            'location_id' => $this->location->id_location,
+            'location_id' => $location->id_location,
             ...$window,
             ...$deadlines,
         ])->assertStatus(422)
@@ -507,7 +498,7 @@ class EventControllerTest extends TestCase
         $this->postJson('/api/v1/manager/events', [
             'name' => 'Empty Desc',
             'description' => '<p></p><script>alert(1)</script>',
-            'location_id' => $this->location->id_location,
+            'location_id' => $location->id_location,
             ...$window,
             ...$deadlines,
         ])->assertStatus(422)
@@ -516,7 +507,7 @@ class EventControllerTest extends TestCase
         $response = $this->postJson('/api/v1/manager/events', [
             'name' => 'Rich Desc',
             'description' => '<p>Hello <strong>world</strong><script>alert(1)</script></p><a href="https://padeliz.ro" onclick="x()">link</a><img src="x">',
-            'location_id' => $this->location->id_location,
+            'location_id' => $location->id_location,
             ...$window,
             ...$deadlines,
         ]);
@@ -535,10 +526,10 @@ class EventControllerTest extends TestCase
 
     public function test_update_and_patch_require_cover_images(): void
     {
-        Sanctum::actingAs($this->manager);
+        [, $location] = $this->actingManagerWithLocation();
 
         $event = PadelEvent::factory()->create([
-            'location_id' => $this->location->id_location,
+            'location_id' => $location->id_location,
         ]);
 
         $ymd = now()->addDays(10)->format('Y-m-d');
@@ -546,7 +537,7 @@ class EventControllerTest extends TestCase
         $payload = [
             'name' => 'Needs Cover',
             'description' => '<p>Needs cover.</p>',
-            'location_id' => $this->location->id_location,
+            'location_id' => $location->id_location,
             ...$window,
             ...$this->deadlineFieldsForStartsAt($window['event_starts_at']),
         ];

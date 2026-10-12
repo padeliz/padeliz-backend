@@ -17,8 +17,9 @@ use App\Services\Pdf\PosterPdfService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Storage;
 use Laravel\Sanctum\Sanctum;
-use Tests\TestCase;
+use Tests\Support\ManagerEventFixtures;
 use Tests\Support\UnixEventFactory;
+use Tests\TestCase;
 
 final class EventPosterControllerTest extends TestCase
 {
@@ -33,12 +34,12 @@ final class EventPosterControllerTest extends TestCase
         parent::setUp();
 
         Storage::fake(config('filesystems.user_uploads_disk', 'public'));
+    }
 
-        $this->manager = User::factory()->manager()->create([
-            'user_types' => ['player', 'manager'],
-        ]);
-
-        $this->event = PadelEvent::factory()->create([
+    private function seedPosterEvent(): void
+    {
+        $this->manager = ManagerEventFixtures::manager();
+        $this->event = ManagerEventFixtures::event([
             'name' => 'Poster PadelEvent',
             ...UnixEventFactory::eventBounds('2026-06-15'),
         ]);
@@ -46,6 +47,7 @@ final class EventPosterControllerTest extends TestCase
 
     public function test_merged_file_returns_422_when_no_posters_exist(): void
     {
+        $this->seedPosterEvent();
         Sanctum::actingAs($this->manager);
         EventDivision::factory()->create(['event_id' => $this->event->id_event]);
 
@@ -57,6 +59,7 @@ final class EventPosterControllerTest extends TestCase
 
     public function test_attendance_generate_and_download(): void
     {
+        $this->seedPosterEvent();
         Sanctum::actingAs($this->manager);
 
         $this->seedEventDivisionsWithParticipations(1);
@@ -76,6 +79,7 @@ final class EventPosterControllerTest extends TestCase
 
     public function test_attendance_generate_persists_poster_file(): void
     {
+        $this->seedPosterEvent();
         Sanctum::actingAs($this->manager);
 
         $this->seedEventDivisionsWithParticipations(1);
@@ -91,6 +95,7 @@ final class EventPosterControllerTest extends TestCase
 
     public function test_attendance_preview_returns_html_with_content(): void
     {
+        $this->seedPosterEvent();
         Sanctum::actingAs($this->manager);
 
         $seed = $this->seedEventDivisionsWithParticipations(2);
@@ -118,6 +123,7 @@ final class EventPosterControllerTest extends TestCase
 
     public function test_attendance_preview_uses_public_avatar_urls(): void
     {
+        $this->seedPosterEvent();
         Sanctum::actingAs($this->manager);
 
         $this->seedEventDivisionsWithParticipations(1);
@@ -137,6 +143,7 @@ final class EventPosterControllerTest extends TestCase
 
     public function test_attendance_preview_does_not_create_attendance_poster_row(): void
     {
+        $this->seedPosterEvent();
         Sanctum::actingAs($this->manager);
 
         $this->seedEventDivisionsWithParticipations(1);
@@ -170,6 +177,7 @@ final class EventPosterControllerTest extends TestCase
 
     public function test_attendance_preview_allowed_when_finalized(): void
     {
+        $this->seedPosterEvent();
         Sanctum::actingAs($this->manager);
 
         $this->seedEventDivisionsWithParticipations(1);
@@ -186,14 +194,13 @@ final class EventPosterControllerTest extends TestCase
 
     public function test_attendance_preview_requires_authentication(): void
     {
-        $this->seedEventDivisionsWithParticipations(1);
-
-        $this->getJson("/api/v1/manager/events/{$this->event->id_event}/posters/attendance/preview")
+        $this->getJson('/api/v1/manager/events/1/posters/attendance/preview')
             ->assertUnauthorized();
     }
 
     public function test_index_lists_edition_level_posters(): void
     {
+        $this->seedPosterEvent();
         Sanctum::actingAs($this->manager);
 
         $attendance = new EventDivisionPoster();
@@ -223,6 +230,7 @@ final class EventPosterControllerTest extends TestCase
 
     public function test_finalized_edition_blocks_attendance_generate_but_allows_download(): void
     {
+        $this->seedPosterEvent();
         Sanctum::actingAs($this->manager);
 
         $attendance = new EventDivisionPoster();

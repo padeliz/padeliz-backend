@@ -15,12 +15,12 @@ class EventDivisionFactory extends Factory
 
     public function definition()
     {
-        $division = Division::factory()->create();
-
         return [
             'event_id' => PadelEvent::factory(),
-            'division_id' => $division->id_division,
-            'division_title' => $division->name,
+            'division_id' => Division::factory(),
+            'division_title' => fn (array $attributes) => Division::query()
+                ->whereKey($attributes['division_id'])
+                ->value('name') ?? 'Division',
             'players_limit' => $this->faker->numberBetween(8, 16),
             'entry_fee' => 55,
             'skill_order' => 0,

@@ -6,7 +6,7 @@ namespace Tests\Unit\Services\EventSlug;
 
 use App\Services\EventSlug\EventSlugGenerator;
 use PHPUnit\Framework\Attributes\DataProvider;
-use Tests\TestCase;
+use PHPUnit\Framework\TestCase;
 
 final class EventSlugGeneratorTest extends TestCase
 {

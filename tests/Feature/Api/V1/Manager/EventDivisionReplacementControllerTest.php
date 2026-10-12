@@ -18,6 +18,7 @@ use App\Models\PadelEvent;
 use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
+use Tests\Support\ManagerEventFixtures;
 use Tests\TestCase;
 
 class EventDivisionReplacementControllerTest extends TestCase
@@ -40,12 +41,13 @@ class EventDivisionReplacementControllerTest extends TestCase
     protected function setUp(): void
     {
         parent::setUp();
+        $this->createReplacementMatchContext();
+    }
 
-        $this->manager = User::factory()->manager()->create([
-            'user_types' => ['player', 'manager'],
-        ]);
-
-        $this->event = PadelEvent::factory()->create();
+    private function createReplacementMatchContext(): void
+    {
+        $this->manager = ManagerEventFixtures::manager();
+        $this->event = ManagerEventFixtures::event();
         $division = Division::factory()->create();
 
         $this->eventDivision = EventDivision::factory()->create([

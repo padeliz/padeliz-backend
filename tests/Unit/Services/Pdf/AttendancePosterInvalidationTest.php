@@ -6,7 +6,7 @@ namespace Tests\Unit\Services\Pdf;
 
 use App\Models\EventParticipation;
 use App\Services\Pdf\AttendancePosterInvalidation;
-use Tests\TestCase;
+use PHPUnit\Framework\TestCase;
 
 final class AttendancePosterInvalidationTest extends TestCase
 {

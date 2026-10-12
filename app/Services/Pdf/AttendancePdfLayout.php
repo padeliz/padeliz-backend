@@ -97,21 +97,31 @@ final class AttendancePdfLayout
     /**
      * Attendance PDF header date: ordinal single day, or compact multi-day range.
      */
-    public static function formatAttendanceHeaderDate(int $eventStartsAt, int $eventEndsAt, int $eventNrOfDays): string
-    {
+    public static function formatAttendanceHeaderDate(
+        int $eventStartsAt,
+        int $eventEndsAt,
+        int $eventNrOfDays,
+        ?string $timezone = null,
+    ): string {
         if ($eventNrOfDays <= 1) {
-            return self::formatOrdinalHeaderDate(EventCalendarTiming::dayYmd($eventStartsAt));
+            return self::formatOrdinalHeaderDate(
+                EventCalendarTiming::dayYmd($eventStartsAt, $timezone),
+                $timezone,
+            );
         }
 
-        return self::formatCompactHeaderDateRange($eventStartsAt, $eventEndsAt);
+        return self::formatCompactHeaderDateRange($eventStartsAt, $eventEndsAt, $timezone);
     }
 
     /**
      * Compact multi-day range (short months Jan..Dec, Europe/Bucharest).
      */
-    public static function formatCompactHeaderDateRange(int $eventStartsAt, int $eventEndsAt): string
-    {
-        $tz = EventCalendarTiming::timezone();
+    public static function formatCompactHeaderDateRange(
+        int $eventStartsAt,
+        int $eventEndsAt,
+        ?string $timezone = null,
+    ): string {
+        $tz = $timezone ?? EventCalendarTiming::timezone();
         $start = Carbon::createFromTimestamp($eventStartsAt, $tz);
         $end = Carbon::createFromTimestamp($eventEndsAt, $tz);
 
@@ -133,15 +143,20 @@ final class AttendancePdfLayout
         return sprintf('%d %s %d - %d %s %d', $startDay, $startMon, $startYear, $endDay, $endMon, $endYear);
     }
 
-    public static function formatAttendanceHeaderTimes(int $eventStartsAt, int $eventEndsAt): string
-    {
-        return EventCalendarTiming::formatHi($eventStartsAt) . ' – ' . EventCalendarTiming::formatHi($eventEndsAt);
+    public static function formatAttendanceHeaderTimes(
+        int $eventStartsAt,
+        int $eventEndsAt,
+        ?string $timezone = null,
+    ): string {
+        return EventCalendarTiming::formatHi($eventStartsAt, $timezone)
+            . ' – '
+            . EventCalendarTiming::formatHi($eventEndsAt, $timezone);
     }
 
-    public static function formatOrdinalHeaderDate(string $date): string
+    public static function formatOrdinalHeaderDate(string $date, ?string $timezone = null): string
     {
         try {
-            $dt = Carbon::createFromFormat('Y-m-d', $date, EventCalendarTiming::timezone());
+            $dt = Carbon::createFromFormat('Y-m-d', $date, $timezone ?? EventCalendarTiming::timezone());
         } catch (\Throwable) {
             return $date;
         }

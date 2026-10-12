@@ -9,13 +9,14 @@ use App\Models\EventDivision;
 use App\Models\EventParticipation;
 use App\Models\EventRegistration;
 use App\Models\PadelEvent;
-use App\Models\User;
 use App\Models\PlayerLevel;
 use App\Models\PlayerStudentProof;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
-use Tests\TestCase;
+use Tests\Support\ManagerEventFixtures;
 use Tests\Support\UnixEventFactory;
+use Tests\TestCase;
 use Carbon\Carbon;
 
 class EventRegistrationControllerTest extends TestCase
@@ -32,20 +33,7 @@ class EventRegistrationControllerTest extends TestCase
     {
         parent::setUp();
 
-        $this->player = User::factory()->playerOnly()->create();
-        $this->event = PadelEvent::factory()->create([
-            ...UnixEventFactory::eventBounds(now()->addDays(30)->format('Y-m-d')),
-        ]);
-        $division = Division::factory()->create();
-        $this->eventDivision = EventDivision::factory()->create([
-            'event_id' => $this->event->id_event,
-            'division_id' => $division->id_division,
-            'division_title' => $division->name,
-            'players_limit' => 10,
-            'entry_fee' => 55,
-        ]);
-
-        PlayerLevel::factory()->level('4.50')->create(['player_user_id' => $this->player->id_user]);
+        [$this->player, $this->event, $this->eventDivision] = ManagerEventFixtures::playerRegistrationContext();
     }
 
     public function test_store_rejects_when_registration_deadline_passed(): void

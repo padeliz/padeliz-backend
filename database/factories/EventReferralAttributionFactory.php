@@ -17,13 +17,15 @@ class EventReferralAttributionFactory extends Factory
 
     public function definition()
     {
-        $referralCode = EventReferralCode::factory()->create();
-
         return [
-            'event_id' => $referralCode->event_id,
+            'referral_code_id' => EventReferralCode::factory(),
+            'event_id' => fn (array $attributes) => EventReferralCode::query()
+                ->whereKey($attributes['referral_code_id'])
+                ->value('event_id'),
             'referred_player_user_id' => User::factory(),
-            'referrer_player_user_id' => $referralCode->referrer_player_user_id,
-            'referral_code_id' => $referralCode->id_referral_code,
+            'referrer_player_user_id' => fn (array $attributes) => EventReferralCode::query()
+                ->whereKey($attributes['referral_code_id'])
+                ->value('referrer_player_user_id'),
             'checkout_id' => null,
             'status' => ReferralAttributionStatus::Pending,
             'inserted_at' => $this->faker->numberBetween(time() - (90 * 24 * 60 * 60), time()),
