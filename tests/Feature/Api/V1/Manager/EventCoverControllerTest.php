@@ -149,7 +149,7 @@ final class EventCoverControllerTest extends TestCase
         EventCoverImage::saving(function () {
             throw new QueryException(
                 'mysql',
-                'insert into pm_event_cover_images',
+                'insert into event_cover_images',
                 [],
                 new PDOException('SQLSTATE[42S22]: Column not found')
             );

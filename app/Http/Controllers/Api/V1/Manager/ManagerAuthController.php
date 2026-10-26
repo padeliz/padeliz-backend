@@ -4,14 +4,13 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1\Manager;
 
-use App\Exceptions\InvalidGoogleTokenException;
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
 use App\Http\Resources\UserResource;
 use App\Models\User;
 use App\Models\UserEmail;
 use App\Models\UserIdentity;
 use App\Services\AuthLogger;
-use Google\Client as GoogleClient;
+use App\Services\UserIdentity\GoogleIdTokenVerifier;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
 
@@ -65,22 +64,18 @@ class ManagerAuthController extends V1BaseController
      *     )
      * )
      */
-    public function googleCallback(Request $request, GoogleClient $googleClient)
+    public function googleCallback(Request $request, GoogleIdTokenVerifier $tokenVerifier)
     {
         $request->validate([
             'id_token' => 'required|string',
         ]);
 
         try {
-            $payload = $googleClient->verifyIdToken($request->id_token);
-
-            if (! $payload) {
-                throw new InvalidGoogleTokenException();
-            }
+            $claims = $tokenVerifier->verifyForManager($request->string('id_token')->toString());
 
             $identity = UserIdentity::query()
                 ->where('provider', UserIdentity::PROVIDER_GOOGLE)
-                ->where('provider_subject', (string) $payload['sub'])
+                ->where('provider_subject', $claims['sub'])
                 ->first();
 
             if (! $identity) {

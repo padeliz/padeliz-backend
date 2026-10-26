@@ -11,21 +11,21 @@
   <php>
     <ini name="memory_limit" value="512M"/>
     <server name="APP_ENV" value="testing"/>
+    <server name="APP_TIMEZONE" value="Europe/Bucharest"/>
     <server name="BCRYPT_ROUNDS" value="4"/>
     <server name="CACHE_DRIVER" value="array"/>
-    <server name="REDIS_HOST" value="redis"/>
     <server name="RESPONSE_CACHE_ENABLED" value="false"/>
     <server name="MAIL_MAILER" value="array"/>
     <server name="QUEUE_CONNECTION" value="sync"/>
     <server name="SESSION_DRIVER" value="array"/>
     <server name="TELESCOPE_ENABLED" value="false"/>
     <server name="DB_CONNECTION" value="mysql_testing"/>
-    <server name="DB_HOST" value="db"/>
     <server name="DB_PORT" value="3306"/>
     <server name="DB_DATABASE" value="db_padeliz_testing"/>
     <server name="DB_USERNAME" value="db_user"/>
     <server name="DB_PASSWORD" value="db_pass"/>
-    <server name="GOOGLE_CLIENT_ID" value="test-client-id.apps.googleusercontent.com"/>
+    <server name="GOOGLE_APP_CLIENT_ID" value="test-app-client-id.apps.googleusercontent.com"/>
+    <server name="GOOGLE_MANAGER_CLIENT_ID" value="test-manager-client-id.apps.googleusercontent.com"/>
   </php>
   <source>
     <include>

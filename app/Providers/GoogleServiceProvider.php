@@ -4,21 +4,19 @@ declare(strict_types=1);
 
 namespace App\Providers;
 
-use Google\Client;
 use Illuminate\Support\ServiceProvider;
 
 class GoogleServiceProvider extends ServiceProvider
 {
     /**
      * Register services.
+     *
+     * Google ID token verification builds a Client per audience in
+     * GoogleIdTokenVerifier — no shared Client binding.
      */
     public function register(): void
     {
-        $this->app->singleton(Client::class, function ($app) {
-            return new Client([
-                'client_id' => config('services.google.client_id'),
-            ]);
-        });
+        //
     }
 
     /**
@@ -26,6 +24,6 @@ class GoogleServiceProvider extends ServiceProvider
      */
     public function boot(): void
     {
-
+        //
     }
 }

@@ -12,6 +12,7 @@
         "laravel/framework": "^11.0",
         "laravel/sanctum": "^4.0",
         "laravel/tinker": "^2.9",
+        "league/flysystem-aws-s3-v3": "^3.25.1",
         "mpdf/mpdf": "^8.3",
         "netopia/payment2": "^1.0",
         "setasign/fpdf": "^1.8",

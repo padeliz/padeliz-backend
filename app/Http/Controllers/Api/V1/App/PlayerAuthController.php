@@ -105,7 +105,7 @@ class PlayerAuthController extends V1BaseController
         );
 
         try {
-            $claims = $tokenVerifier->verify($request->string('id_token')->toString());
+            $claims = $tokenVerifier->verifyForApp($request->string('id_token')->toString());
             $subject = $claims['sub'];
             $email = $claims['email'];
             $displayName = $claims['name'];
@@ -283,7 +283,7 @@ class PlayerAuthController extends V1BaseController
         ]);
 
         try {
-            $claims = $tokenVerifier->verify($request->string('id_token')->toString());
+            $claims = $tokenVerifier->verifyForApp($request->string('id_token')->toString());
 
             $identity = UserIdentity::query()
                 ->where('provider', UserIdentity::PROVIDER_GOOGLE)

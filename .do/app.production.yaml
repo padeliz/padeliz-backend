@@ -1,0 +1,209 @@
+# Templated by GitHub Actions: IMAGE_DIGEST is injected at deploy time.
+# Runtime secrets are set in the App Platform UI — do not commit values.
+name: padeliz-backend-prod
+region: fra
+alerts:
+  - rule: DEPLOYMENT_FAILED
+  - rule: DOMAIN_FAILED
+
+domains:
+  - domain: backend.padeliz.ro
+    type: PRIMARY
+
+envs:
+  - key: APP_ENV
+    value: production
+    scope: RUN_AND_BUILD_TIME
+  - key: APP_DEBUG
+    value: "false"
+    scope: RUN_TIME
+  - key: APP_URL
+    value: https://backend.padeliz.ro
+    scope: RUN_TIME
+  - key: APP_TIMEZONE
+    value: Europe/Bucharest
+    scope: RUN_TIME
+  - key: LOG_CHANNEL
+    value: stderr
+    scope: RUN_TIME
+  - key: LOG_LEVEL
+    value: warning
+    scope: RUN_TIME
+  - key: CACHE_DRIVER
+    value: redis
+    scope: RUN_TIME
+  - key: QUEUE_CONNECTION
+    value: redis
+    scope: RUN_TIME
+  - key: SESSION_DRIVER
+    value: redis
+    scope: RUN_TIME
+  - key: REDIS_CLIENT
+    value: phpredis
+    scope: RUN_TIME
+  - key: FILESYSTEM_DRIVER
+    value: s3
+    scope: RUN_TIME
+  - key: USER_UPLOADS_DISK
+    value: s3
+    scope: RUN_TIME
+  - key: AWS_DEFAULT_REGION
+    value: fra1
+    scope: RUN_TIME
+  - key: AWS_ENDPOINT
+    value: https://fra1.digitaloceanspaces.com
+    scope: RUN_TIME
+  - key: AWS_USE_PATH_STYLE_ENDPOINT
+    value: "false"
+    scope: RUN_TIME
+  - key: AWS_BUCKET
+    value: padeliz-prod
+    scope: RUN_TIME
+  - key: CORS_APP_ORIGIN
+    value: https://app.padeliz.ro
+    scope: RUN_TIME
+  - key: CORS_MANAGER_ORIGIN
+    value: https://manager.padeliz.ro
+    scope: RUN_TIME
+  - key: CORS_ADMIN_ORIGIN
+    value: ""
+    scope: RUN_TIME
+  - key: MAIL_MAILER
+    value: smtp
+    scope: RUN_TIME
+  - key: MAIL_HOST
+    value: smtp-relay.gmail.com
+    scope: RUN_TIME
+  - key: MAIL_PORT
+    value: "587"
+    scope: RUN_TIME
+  - key: MAIL_ENCRYPTION
+    value: tls
+    scope: RUN_TIME
+  - key: MAIL_USERNAME
+    value: noreply@padeliz.ro
+    scope: RUN_TIME
+  - key: MAIL_FROM_ADDRESS
+    value: noreply@padeliz.ro
+    scope: RUN_TIME
+  - key: MAIL_FROM_NAME
+    value: Padeliz
+    scope: RUN_TIME
+  - key: NETOPIA_IS_LIVE
+    value: "true"
+    scope: RUN_TIME
+  - key: DB_CONNECTION
+    value: mysql
+    scope: RUN_TIME
+  - key: APP_KEY
+    type: SECRET
+    scope: RUN_TIME
+  - key: DB_HOST
+    type: SECRET
+    scope: RUN_TIME
+  - key: DB_PORT
+    type: SECRET
+    scope: RUN_TIME
+  - key: DB_DATABASE
+    type: SECRET
+    scope: RUN_TIME
+  - key: DB_USERNAME
+    type: SECRET
+    scope: RUN_TIME
+  - key: DB_PASSWORD
+    type: SECRET
+    scope: RUN_TIME
+  - key: REDIS_HOST
+    type: SECRET
+    scope: RUN_TIME
+  - key: REDIS_PORT
+    type: SECRET
+    scope: RUN_TIME
+  - key: REDIS_PASSWORD
+    type: SECRET
+    scope: RUN_TIME
+  - key: AWS_ACCESS_KEY_ID
+    type: SECRET
+    scope: RUN_TIME
+  - key: AWS_SECRET_ACCESS_KEY
+    type: SECRET
+    scope: RUN_TIME
+  - key: AWS_URL
+    type: SECRET
+    scope: RUN_TIME
+  - key: GOOGLE_APP_CLIENT_ID
+    type: SECRET
+    scope: RUN_TIME
+  - key: GOOGLE_MANAGER_CLIENT_ID
+    type: SECRET
+    scope: RUN_TIME
+  - key: MAIL_PASSWORD
+    type: SECRET
+    scope: RUN_TIME
+  - key: NETOPIA_POS_SIGNATURE
+    type: SECRET
+    scope: RUN_TIME
+  - key: NETOPIA_API_KEY
+    type: SECRET
+    scope: RUN_TIME
+  - key: NETOPIA_RETURN_URL
+    type: SECRET
+    scope: RUN_TIME
+  - key: NETOPIA_NOTIFY_URL
+    type: SECRET
+    scope: RUN_TIME
+
+services:
+  - name: web
+    image:
+      registry_type: DOCR
+      repository: padeliz/padeliz-backend
+      digest: ${IMAGE_DIGEST}
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-2gb
+    http_port: 8080
+    run_command: /usr/local/bin/docker-entrypoint.sh web
+    health_check:
+      http_path: /up
+      initial_delay_seconds: 30
+      period_seconds: 10
+      timeout_seconds: 5
+      success_threshold: 1
+      failure_threshold: 6
+
+workers:
+  - name: worker
+    image:
+      registry_type: DOCR
+      repository: padeliz/padeliz-backend
+      digest: ${IMAGE_DIGEST}
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-1gb
+    run_command: /usr/local/bin/docker-entrypoint.sh worker
+
+  - name: scheduler
+    image:
+      registry_type: DOCR
+      repository: padeliz/padeliz-backend
+      digest: ${IMAGE_DIGEST}
+    instance_count: 1
+    instance_size_slug: apps-s-1vcpu-0.5gb
+    run_command: /usr/local/bin/docker-entrypoint.sh scheduler
+
+jobs:
+  - name: migrate
+    kind: PRE_DEPLOY
+    image:
+      registry_type: DOCR
+      repository: padeliz/padeliz-backend
+      digest: ${IMAGE_DIGEST}
+    instance_size_slug: apps-s-1vcpu-1gb
+    run_command: /usr/local/bin/docker-entrypoint.sh deploy
+
+ingress:
+  rules:
+    - component:
+        name: web
+      match:
+        path:
+          prefix: /

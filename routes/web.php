@@ -18,3 +18,7 @@ use Illuminate\Support\Facades\Route;
 Route::get('/', function () {
     return response()->json(['message' => 'Padeliz API']);
 });
+
+Route::get('/up', function () {
+    return response('ok', 200)->header('Content-Type', 'text/plain');
+});

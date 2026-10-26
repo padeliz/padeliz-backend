@@ -36,7 +36,7 @@ final class CollationPreflightServiceTest extends TestCase
 
         $report = (new CollationPreflightService())->formatCollisionReport([
             [
-                'table' => 'pm_users',
+                'table' => 'users',
                 'index' => 'example_unique',
                 'columns' => ['first_name', 'last_name'],
                 'duplicate_count' => 1,
@@ -45,14 +45,14 @@ final class CollationPreflightServiceTest extends TestCase
         ]);
 
         $this->assertStringContainsString('UNIQUE index collisions', $report);
-        $this->assertStringContainsString('pm_users', $report);
+        $this->assertStringContainsString('users', $report);
     }
 
     public function test_format_collision_report_describes_conflicts(): void
     {
         $report = (new CollationPreflightService())->formatCollisionReport([
             [
-                'table' => 'pm_clubs',
+                'table' => 'clubs',
                 'index' => 'clubs_name_unique',
                 'columns' => ['name'],
                 'duplicate_count' => 1,
@@ -61,6 +61,6 @@ final class CollationPreflightServiceTest extends TestCase
         ]);
 
         $this->assertStringContainsString('UNIQUE index collisions', $report);
-        $this->assertStringContainsString('pm_clubs', $report);
+        $this->assertStringContainsString('clubs', $report);
     }
 }

@@ -46,12 +46,14 @@ class EventDivisionScheduleControllerTest extends TestCase
 
         $event = PadelEvent::factory()->create();
         $division = Division::factory()->create();
+        $playingWindow = UnixEventFactory::playingBounds($event, '14:00:00', '17:00:00');
 
         $this->eventDivision = EventDivision::factory()->create([
             'event_id' => $event->id_event,
             'division_id' => $division->id_division,
             'players_limit' => 8,
-            ...UnixEventFactory::playingBounds($event, '14:00:00', '17:00:00'),
+            ...$playingWindow,
+            'check_in_at' => $playingWindow['playing_starts_at'],
         ]);
 
         $this->schedule = EventDivisionSchedule::factory()->create([
@@ -363,6 +365,7 @@ class EventDivisionScheduleControllerTest extends TestCase
         $edId = $this->eventDivision->id_event_division;
         $event = PadelEvent::query()->findOrFail($this->eventDivision->event_id);
         $window = UnixEventFactory::playingBounds($event, '18:00', '00:00');
+        $window['check_in_at'] = $window['playing_starts_at'];
 
         $this->patchJson("/api/v1/manager/event-divisions/{$edId}", $window)->assertOk();
 
