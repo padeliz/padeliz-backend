@@ -21,11 +21,11 @@ return [
 
     'allowed_methods' => ['*'],
 
-    'allowed_origins' => [
+    'allowed_origins' => array_values(array_filter([
         env('CORS_APP_ORIGIN'),
         env('CORS_MANAGER_ORIGIN'),
         env('CORS_ADMIN_ORIGIN'),
-    ],
+    ], static fn ($origin): bool => is_string($origin) && $origin !== '')),
 
     'allowed_origins_patterns' => [],
 

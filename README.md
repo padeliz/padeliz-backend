@@ -347,6 +347,8 @@ php artisan cache:clear
 |-----------|---------|
 | After pulling code; general dev refresh | `backend:refresh` |
 | Production post-release (after `composer install`) | `backend:refresh --deploy` |
+
+Staging/production on DigitalOcean (Docker image, App Platform, GitHub Actions): see [docs/DEPLOY.md](docs/DEPLOY.md). On-demand staging DB/Spaces refresh: [docs/STAGING_DATA_REFRESH.md](docs/STAGING_DATA_REFRESH.md).
 | One metadata schema changed (e.g. Club forms) | `padeliz:cache:invalidate-metadata --schema=Club` |
 | Metadata / OpenAPI overhaul | `padeliz:cache:invalidate-metadata` |
 | Caching code changed; reset all app data cache | `padeliz:cache:invalidate-metadata --scope=application` |

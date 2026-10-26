@@ -38,8 +38,8 @@ class ManagerAuthControllerTest extends TestCase
 
     public function test_google_callback_returns_404_for_new_user()
     {
-        $this->mock(\Google\Client::class, function ($mock) {
-            $mock->shouldReceive('verifyIdToken')
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForManager')
                 ->withAnyArgs()
                 ->andReturn([
                     'sub' => 'google_manager_456',
@@ -62,8 +62,8 @@ class ManagerAuthControllerTest extends TestCase
 
     public function test_google_callback_returns_existing_manager()
     {
-        $this->mock(\Google\Client::class, function ($mock) {
-            $mock->shouldReceive('verifyIdToken')
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForManager')
                 ->andReturn([
                     'sub' => 'google_manager_123',
                     'name' => 'Test Manager',
@@ -115,8 +115,8 @@ class ManagerAuthControllerTest extends TestCase
             'linked_at' => time(),
         ]);
 
-        $this->mock(\Google\Client::class, function ($mock) {
-            $mock->shouldReceive('verifyIdToken')
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForManager')
                 ->andReturn([
                     'sub' => 'google_player_123',
                     'name' => 'Test Player',

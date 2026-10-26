@@ -12,7 +12,7 @@ class NetopiaReturnController extends Controller
     public function handle(Request $request)
     {
         $query = http_build_query($request->query());
-        $target = 'padeliz://payments/netopia/return' . ($query !== '' ? '?' . $query : '');
+        $target = 'padeliz-app://payments/netopia/return' . ($query !== '' ? '?' . $query : '');
 
         return redirect()->away($target);
     }

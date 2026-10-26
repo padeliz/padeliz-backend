@@ -777,7 +777,7 @@ return new class () extends Migration {
             $table->smallInteger('display_order')->default(0);
             $table->integer('inserted_at')->nullable();
             $table->integer('updated_at')->nullable();
-            $table->index('event_id', 'pm_event_lotteries_event_id_foreign');
+            $table->index('event_id', 'event_lotteries_event_id_foreign');
             $table->unique(['event_id', 'name']);
             $table->foreign('event_id')->references('id_event')->on('events');
         });

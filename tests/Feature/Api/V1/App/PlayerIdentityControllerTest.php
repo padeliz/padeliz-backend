@@ -4,13 +4,13 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\App;
 
+use App\Exceptions\InvalidGoogleTokenException;
 use App\Models\User;
 use App\Models\UserEmail;
 use App\Models\UserIdentity;
-use Google\Client as GoogleClient;
+use App\Services\UserIdentity\GoogleIdTokenVerifier;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Laravel\Sanctum\Sanctum;
-use Mockery;
 use Tests\TestCase;
 
 final class PlayerIdentityControllerTest extends TestCase
@@ -19,21 +19,20 @@ final class PlayerIdentityControllerTest extends TestCase
 
     private function mockGoogleToken(array $payload): void
     {
-        $this->app->bind(GoogleClient::class, function () use ($payload) {
-            $mock = Mockery::mock(GoogleClient::class);
-            $mock->shouldReceive('verifyIdToken')->andReturn($payload);
-
-            return $mock;
+        $this->mock(GoogleIdTokenVerifier::class, function ($mock) use ($payload) {
+            $mock->shouldReceive('verifyForApp')->andReturn([
+                'sub' => (string) $payload['sub'],
+                'email' => isset($payload['email']) ? strtolower(trim((string) $payload['email'])) : null,
+                'name' => isset($payload['name']) ? (string) $payload['name'] : null,
+                'picture' => isset($payload['picture']) ? (string) $payload['picture'] : null,
+            ]);
         });
     }
 
     private function mockInvalidGoogleToken(): void
     {
-        $this->app->bind(GoogleClient::class, function () {
-            $mock = Mockery::mock(GoogleClient::class);
-            $mock->shouldReceive('verifyIdToken')->andReturn(false);
-
-            return $mock;
+        $this->mock(GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForApp')->andThrow(new InvalidGoogleTokenException());
         });
     }
 

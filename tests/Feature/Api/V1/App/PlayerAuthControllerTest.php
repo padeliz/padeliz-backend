@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Feature\Api\V1\App;
 
+use App\Exceptions\InvalidGoogleTokenException;
 use App\Models\User;
 use App\Models\UserEmail;
 use App\Models\UserIdentity;
@@ -42,8 +43,8 @@ class PlayerAuthControllerTest extends TestCase
 
     public function test_google_callback_returns_404_for_new_user()
     {
-        $this->mock(\Google\Client::class, function ($mock) {
-            $mock->shouldReceive('verifyIdToken')
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForApp')
                 ->andReturn([
                     'sub' => 'google_player_456',
                     'name' => 'New Player',
@@ -65,8 +66,8 @@ class PlayerAuthControllerTest extends TestCase
 
     public function test_google_callback_returns_existing_player()
     {
-        $this->mock(\Google\Client::class, function ($mock) {
-            $mock->shouldReceive('verifyIdToken')
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForApp')
                 ->andReturn([
                     'sub' => 'google_player_123',
                     'name' => 'Test Player',
@@ -114,8 +115,8 @@ class PlayerAuthControllerTest extends TestCase
 
     public function test_google_callback_refreshes_identity_avatar_url_from_claims()
     {
-        $this->mock(\Google\Client::class, function ($mock) {
-            $mock->shouldReceive('verifyIdToken')
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForApp')
                 ->andReturn([
                     'sub' => 'google_player_123',
                     'name' => 'Test Player',
@@ -136,8 +137,8 @@ class PlayerAuthControllerTest extends TestCase
 
     public function test_google_callback_keeps_avatar_url_when_claims_have_no_picture()
     {
-        $this->mock(\Google\Client::class, function ($mock) {
-            $mock->shouldReceive('verifyIdToken')
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForApp')
                 ->andReturn([
                     'sub' => 'google_player_123',
                     'name' => 'Test Player',
@@ -167,8 +168,8 @@ class PlayerAuthControllerTest extends TestCase
             'linked_at' => time(),
         ]);
 
-        $this->mock(\Google\Client::class, function ($mock) {
-            $mock->shouldReceive('verifyIdToken')
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForApp')
                 ->andReturn([
                     'sub' => 'google_manager_123',
                     'name' => 'Test Manager',
@@ -197,9 +198,9 @@ class PlayerAuthControllerTest extends TestCase
 
     public function test_google_callback_handles_invalid_token()
     {
-        $this->mock(\Google\Client::class, function ($mock) {
-            $mock->shouldReceive('verifyIdToken')
-                ->andReturn(null);
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForApp')
+                ->andThrow(new InvalidGoogleTokenException());
         });
 
         $response = $this->postJson('/api/v1/app/auth/google', [
@@ -330,8 +331,8 @@ class PlayerAuthControllerTest extends TestCase
             ))
             ->create();
 
-        $this->mock(\Google\Client::class, function ($mock) {
-            $mock->shouldReceive('verifyIdToken')
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForApp')
                 ->andReturn([
                     'sub' => 'google_player_123',
                     'name' => 'Test Player',
@@ -355,8 +356,8 @@ class PlayerAuthControllerTest extends TestCase
 
     public function test_rate_limiting_on_google_callback()
     {
-        $this->mock(\Google\Client::class, function ($mock) {
-            $mock->shouldReceive('verifyIdToken')
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForApp')
                 ->andReturn([
                     'sub' => 'google_player_123',
                     'name' => 'Test Player',
@@ -375,8 +376,8 @@ class PlayerAuthControllerTest extends TestCase
 
     public function test_concurrent_requests_handle_properly()
     {
-        $this->mock(\Google\Client::class, function ($mock) {
-            $mock->shouldReceive('verifyIdToken')
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForApp')
                 ->andReturn([
                     'sub' => 'google_player_123',
                     'name' => 'Test Player',
@@ -430,8 +431,8 @@ class PlayerAuthControllerTest extends TestCase
             'verified_at' => null,
         ]);
 
-        $this->mock(\Google\Client::class, function ($mock) {
-            $mock->shouldReceive('verifyIdToken')
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForApp')
                 ->andReturn([
                     'sub' => 'google_player_123',
                     'name' => 'Test Player',
@@ -464,8 +465,8 @@ class PlayerAuthControllerTest extends TestCase
             'expires_at' => time() + 3600,
         ]);
 
-        $this->mock(\Google\Client::class, function ($mock) {
-            $mock->shouldReceive('verifyIdToken')
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForApp')
                 ->andReturn([
                     'sub' => 'google_new_invitee',
                     'name' => 'Invitee',
@@ -519,12 +520,13 @@ class PlayerAuthControllerTest extends TestCase
             'expires_at' => time() + 3600,
         ]);
 
-        $this->mock(\Google\Client::class, function ($mock) {
-            $mock->shouldReceive('verifyIdToken')
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForApp')
                 ->andReturn([
                     'sub' => 'google_player_123',
                     'name' => 'Test Player',
                     'email' => 'player@example.com',
+                    'picture' => null,
                 ]);
         });
 
@@ -552,8 +554,8 @@ class PlayerAuthControllerTest extends TestCase
             'expires_at' => time() + 3600,
         ]);
 
-        $this->mock(\Google\Client::class, function ($mock) {
-            $mock->shouldReceive('verifyIdToken')
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForApp')
                 ->andReturn([
                     'sub' => 'google_player_123',
                     'name' => 'Test Player',
@@ -584,11 +586,13 @@ class PlayerAuthControllerTest extends TestCase
             'expires_at' => time() + 3600,
         ]);
 
-        $this->mock(\Google\Client::class, function ($mock) {
-            $mock->shouldReceive('verifyIdToken')
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForApp')
                 ->andReturn([
                     'sub' => 'google_player_123',
                     'email' => 'someone@example.com',
+                    'name' => null,
+                    'picture' => null,
                 ]);
         });
 
@@ -625,11 +629,13 @@ class PlayerAuthControllerTest extends TestCase
             'expires_at' => time() + 3600,
         ]);
 
-        $this->mock(\Google\Client::class, function ($mock) {
-            $mock->shouldReceive('verifyIdToken')
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForApp')
                 ->andReturn([
                     'sub' => 'google_brand_new_sub',
                     'email' => 'taken@example.com',
+                    'name' => null,
+                    'picture' => null,
                 ]);
         });
 

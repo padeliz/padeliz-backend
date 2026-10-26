@@ -1,0 +1,121 @@
+name: Deploy production
+
+on:
+  release:
+    types: [published]
+
+concurrency:
+  group: deploy-backend-production
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: root
+          MYSQL_DATABASE: db_padeliz_testing
+          MYSQL_USER: db_user
+          MYSQL_PASSWORD: db_pass
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h localhost -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+      redis:
+        image: redis:7-alpine
+        ports:
+          - 6379:6379
+        options: >-
+          --health-cmd="redis-cli ping"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=10
+    steps:
+      - uses: actions/checkout@v4
+      - name: Setup PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: "8.2"
+          extensions: mbstring, pdo_mysql, redis, gd, bcmath, pcntl, zip
+          coverage: none
+      - name: Cache Composer
+        uses: actions/cache@v4
+        with:
+          path: vendor
+          key: composer-${{ hashFiles('composer.lock') }}
+          restore-keys: composer-
+      - name: Install dependencies
+        run: composer install --prefer-dist --no-interaction --no-progress
+      - name: Prepare application
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+          php artisan storage:link
+      - name: Run tests
+        env:
+          APP_ENV: testing
+          CACHE_DRIVER: redis
+          QUEUE_CONNECTION: sync
+          DB_CONNECTION: mysql
+          DB_HOST: 127.0.0.1
+          DB_PORT: 3306
+          DB_DATABASE: db_padeliz_testing
+          DB_USERNAME: db_user
+          DB_PASSWORD: db_pass
+          DB_TESTING_HOST: 127.0.0.1
+          DB_TESTING_PORT: 3306
+          DB_TESTING_DATABASE: db_padeliz_testing
+          DB_TESTING_USERNAME: db_user
+          DB_TESTING_PASSWORD: db_pass
+          REDIS_HOST: 127.0.0.1
+          REDIS_PORT: 6379
+        run: php artisan test
+
+  deploy:
+    name: deploy-production
+    needs: test
+    runs-on: ubuntu-latest
+    environment: production
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install doctl
+        uses: digitalocean/action-doctl@v2
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+
+      - name: Log in to DOCR
+        run: doctl registry login --expiry-seconds 1200
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Build and push image
+        id: build
+        uses: docker/build-push-action@v6
+        with:
+          context: .
+          file: Dockerfile
+          push: true
+          tags: |
+            registry.digitalocean.com/padeliz/padeliz-backend:sha-${{ github.sha }}
+            registry.digitalocean.com/padeliz/padeliz-backend:production
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Deploy to App Platform
+        uses: digitalocean/app_action/deploy@v2
+        env:
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+        with:
+          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
+          app_id: d3999831-c1e1-46f4-8dff-ca8787c0981a
+          app_spec_location: .do/app.production.yaml

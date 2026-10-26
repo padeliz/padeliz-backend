@@ -25,7 +25,8 @@
     <server name="DB_DATABASE" value="db_padeliz_testing"/>
     <server name="DB_USERNAME" value="db_user"/>
     <server name="DB_PASSWORD" value="db_pass"/>
-    <server name="GOOGLE_CLIENT_ID" value="test-client-id.apps.googleusercontent.com"/>
+    <server name="GOOGLE_APP_CLIENT_ID" value="test-app-client-id.apps.googleusercontent.com"/>
+    <server name="GOOGLE_MANAGER_CLIENT_ID" value="test-manager-client-id.apps.googleusercontent.com"/>
   </php>
   <source>
     <include>

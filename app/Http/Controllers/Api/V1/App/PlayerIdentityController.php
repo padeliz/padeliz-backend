@@ -92,7 +92,7 @@ class PlayerIdentityController extends V1BaseController
         ]);
 
         try {
-            $claims = $tokenVerifier->verify($request->string('id_token')->toString());
+            $claims = $tokenVerifier->verifyForApp($request->string('id_token')->toString());
         } catch (InvalidGoogleTokenException) {
             return $this->errorResponse('Player authentication failed', 401);
         }

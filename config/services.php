@@ -33,9 +33,10 @@ return [
     ],
 
     'google' => [
-        // Web Client ID for Expo's Google Auth (works on Web, iOS and Android)
+        // Web Client IDs used to verify id_tokens (App vs Manager audiences must not mix)
         // Format: xxxxxx.apps.googleusercontent.com
-        'client_id' => env('GOOGLE_CLIENT_ID'),
+        'app_client_id' => env('GOOGLE_APP_CLIENT_ID'),
+        'manager_client_id' => env('GOOGLE_MANAGER_CLIENT_ID'),
     ],
 
 ];

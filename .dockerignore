@@ -1,114 +1,36 @@
-# Git
 .git
-.gitignore
-.gitattributes
-
-# Documentation (keep README for devcontainer)
-*.md
-!README.md
-docs/
-
-# Development files
+.github
+.devcontainer
+.cursor
+.vscode
+.phpunit.cache
+.php-cs-fixer.cache
+.phpunit.result.cache
+node_modules
+npm-debug.log
+vendor
+tests
+storage/logs/*
+storage/framework/cache/*
+storage/framework/sessions/*
+storage/framework/views/*
+storage/app/public/*
+storage/app/private/*
+bootstrap/cache/*.php
+public/storage
 .env
 .env.*
 !.env.example
+docker/mysql
+*.md
+.phpstan*
+phpstan*
+.php-cs-fixer.php
 .editorconfig
+.wslconfig.example
 .styleci.yml
-.phpunit.result.cache
-
-# IDE and editor files
-.vscode/
-.idea/
-*.swp
-*.swo
-*~
-
-# OS generated files
-.DS_Store
-.DS_Store?
-._*
-.Spotlight-V100
-.Trashes
-ehthumbs.db
-Thumbs.db
-
-# Node.js (if using frontend build tools)
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-package-lock.json
-yarn.lock
-
-# Composer (will be installed in container)
-vendor/
-composer.lock
-composer.phar
-
-# Laravel specific (will be created in container)
-storage/logs/
-storage/framework/cache/
-storage/framework/sessions/
-storage/framework/views/
-storage/app/public/
-bootstrap/cache/
-
-# Testing (keep for development)
-# tests/
-# phpunit.xml
-# .phpunit.result.cache
-# coverage/
-
-# Build artifacts
-public/build/
-public/mix-manifest.json
-public/hot
-
-# Docker (exclude other Docker files)
-Dockerfile*
-docker-compose*
-.dockerignore
-docker/
-
-# CI/CD
-.github/
-.gitlab-ci.yml
-.travis.yml
-.circleci/
-
-# Temporary files
-*.tmp
-*.temp
-*.log
-*.cache
-
-# Backup files
-*.bak
-*.backup
-*.old
-
-# Archives
-*.zip
-*.tar.gz
-*.rar
-*.7z
-
-# Database
-*.sql
-*.sqlite
-*.db
-
-# Application specific
-storage/app/uploads/
-storage/app/backups/
-storage/app/exports/
-
-# DevContainer specific
-.devcontainer/
-
-# WSL2 configuration
-.wslconfig*
-
-# Local development
-docker-compose.override.yml
-docker-compose.local.yml
+webpack.mix.js
+package.json
+server.php
+tools
+scripts
