@@ -1,5 +1,7 @@
-# Templated by GitHub Actions: IMAGE_DIGEST is injected at deploy time.
-# Runtime secrets are set in the App Platform UI — do not commit values.
+# Bootstrap / contract reference for App Platform (not applied by daily CI).
+# GitHub deploys update image digests only; secret values and live plain envs
+# are owned in the App Platform UI. Apply this file only for bootstrap or rare
+# manual/spec sync. Do not commit secret values.
 name: padeliz-backend-prod
 region: fra
 alerts:
@@ -40,6 +42,12 @@ envs:
     scope: RUN_TIME
   - key: REDIS_CLIENT
     value: phpredis
+    scope: RUN_TIME
+  - key: REDIS_SCHEME
+    value: tls
+    scope: RUN_TIME
+  - key: REDIS_USERNAME
+    value: default
     scope: RUN_TIME
   - key: FILESYSTEM_DRIVER
     value: s3
