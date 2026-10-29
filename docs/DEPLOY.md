@@ -5,13 +5,15 @@
 | Trigger | Action |
 |---|---|
 | Pull request | CI tests only |
-| Push to `main` | Test → build/push DOCR → deploy **staging** (image digests only) |
-| GitHub Release published | Build/push DOCR → deploy **production** (image digests only; requires your approval) |
+| Push to `main` | Test → build/push DOCR → live-spec reconcile **staging** |
+| GitHub Release published | Build/push DOCR → live-spec reconcile **production** (requires your approval) |
 
 Images: `registry.digitalocean.com/padeliz/padeliz-backend`  
 Deploy uses an **immutable image digest** (not floating `latest`).
 
-Daily deploys do **not** push [`.do/app.*.yaml`](../.do/). They only update component image digests on the existing App Platform app so encrypted secrets in the DigitalOcean UI are never wiped.
+CI builds `linux/amd64` only with provenance/SBOM attestations disabled on the DOCR push so the tag points at a single image manifest.
+
+Deploy uses `scripts/ci/deploy-app-platform.sh`: fetch the **live** App Platform spec; pin `web` / `worker` / `scheduler` / `migrate` to DOCR `padeliz/padeliz-backend` @ this build’s digest; if any of those components are missing, add them from the checked-in contract (`.do/app.*.yaml`) without copying contract envs or databases; `doctl apps update` and wait for `ACTIVE`. Encrypted secrets and attached DBs stay as configured in DO — git specs are never applied wholesale.
 
 ## App identity
 
