@@ -166,7 +166,7 @@ services:
     image:
       registry_type: DOCR
       repository: padeliz/padeliz-backend
-      digest: ${IMAGE_DIGEST}
+      digest: ${IMAGE_DIGEST_WEB}
     instance_count: 1
     instance_size_slug: apps-s-1vcpu-2gb
     http_port: 8080
@@ -184,7 +184,7 @@ workers:
     image:
       registry_type: DOCR
       repository: padeliz/padeliz-backend
-      digest: ${IMAGE_DIGEST}
+      digest: ${IMAGE_DIGEST_WORKER}
     instance_count: 1
     instance_size_slug: apps-s-1vcpu-1gb
     run_command: /usr/local/bin/docker-entrypoint.sh worker
@@ -193,7 +193,7 @@ workers:
     image:
       registry_type: DOCR
       repository: padeliz/padeliz-backend
-      digest: ${IMAGE_DIGEST}
+      digest: ${IMAGE_DIGEST_SCHEDULER}
     instance_count: 1
     instance_size_slug: apps-s-1vcpu-0.5gb
     run_command: /usr/local/bin/docker-entrypoint.sh scheduler
@@ -204,7 +204,7 @@ jobs:
     image:
       registry_type: DOCR
       repository: padeliz/padeliz-backend
-      digest: ${IMAGE_DIGEST}
+      digest: ${IMAGE_DIGEST_MIGRATE}
     instance_size_slug: apps-s-1vcpu-1gb
     run_command: /usr/local/bin/docker-entrypoint.sh deploy
 

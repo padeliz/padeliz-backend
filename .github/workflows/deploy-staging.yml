@@ -106,6 +106,9 @@ jobs:
           context: .
           file: Dockerfile
           push: true
+          platforms: linux/amd64
+          provenance: false
+          sbom: false
           tags: |
             registry.digitalocean.com/padeliz/padeliz-backend:sha-${{ github.sha }}
             registry.digitalocean.com/padeliz/padeliz-backend:staging
@@ -113,12 +116,12 @@ jobs:
           cache-to: type=gha,mode=max
 
       - name: Deploy to App Platform
-        uses: digitalocean/app_action/deploy@v2
         env:
-          IMAGE_DIGEST_WEB: ${{ steps.build.outputs.digest }}
-          IMAGE_DIGEST_WORKER: ${{ steps.build.outputs.digest }}
-          IMAGE_DIGEST_SCHEDULER: ${{ steps.build.outputs.digest }}
-          IMAGE_DIGEST_MIGRATE: ${{ steps.build.outputs.digest }}
-        with:
-          token: ${{ secrets.DIGITALOCEAN_ACCESS_TOKEN }}
-          app_name: padeliz-backend-staging
+          APP_NAME: padeliz-backend-staging
+          IMAGE_REPOSITORY: padeliz/padeliz-backend
+          IMAGE_DIGEST: ${{ steps.build.outputs.digest }}
+          COMPONENTS: web,worker,scheduler,migrate
+          CONTRACT_SPEC: .do/app.staging.yaml
+        run: |
+          python3 -m pip install --user pyyaml
+          bash scripts/ci/deploy-app-platform.sh
