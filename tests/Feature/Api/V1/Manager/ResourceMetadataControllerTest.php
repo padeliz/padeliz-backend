@@ -192,6 +192,21 @@ class ResourceMetadataControllerTest extends TestCase
             ]);
     }
 
+    public function test_non_metadata_model_returns_404(): void
+    {
+        /** @var User $manager */
+        $manager = User::factory()->create();
+        $manager->addUserType('manager');
+
+        $response = $this->actingAs($manager)
+            ->getJson('/api/v1/manager/metadata/BankTransferSettings');
+
+        $response->assertStatus(404)
+            ->assertJson([
+                'success' => false,
+            ]);
+    }
+
     public function test_missing_openapi_docs_returns_503(): void
     {
         /** @var User $manager */

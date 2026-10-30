@@ -77,7 +77,7 @@ class ResourceMetadataService
      */
     private function getModelClassFromSchema(string $schemaName): string
     {
-        return $this->modelSchemaCatalog->classForSchema($schemaName);
+        return $this->modelSchemaCatalog->classForMetadataSchema($schemaName);
     }
 
     /**

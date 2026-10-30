@@ -279,14 +279,13 @@ class ResourceMetadataServiceTest extends TestCase
     }
 
     /**
-     * Get all model schema basenames from the recursive Models catalog
+     * Get metadata schema basenames (HasResourceMetadata models + Event alias)
+     *
+     * @return list<string>
      */
     private function getAllModels(): array
     {
-        return array_map(
-            static fn (string $class): string => class_basename($class),
-            app(ModelSchemaCatalog::class)->eloquentClasses()
-        );
+        return app(ModelSchemaCatalog::class)->metadataSchemaNames();
     }
 
     /**

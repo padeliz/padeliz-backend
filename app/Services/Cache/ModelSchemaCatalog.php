@@ -37,6 +37,22 @@ final class ModelSchemaCatalog
     }
 
     /**
+     * Resolve a Manager metadata schema name to a model that uses HasResourceMetadata.
+     *
+     * @return class-string<Model>
+     */
+    public function classForMetadataSchema(string $schema): string
+    {
+        $class = $this->classForSchema($schema);
+
+        if (! in_array(HasResourceMetadata::class, class_uses_recursive($class), true)) {
+            throw new InvalidArgumentException("Model class for schema {$schema} not found");
+        }
+
+        return $class;
+    }
+
+    /**
      * @return list<class-string<Model>>
      */
     public function eloquentClasses(): array
@@ -54,7 +70,7 @@ final class ModelSchemaCatalog
     {
         $classes = [];
 
-        foreach ($this->eloquentClasses() as $class) {
+        foreach (array_unique($this->eloquentClasses()) as $class) {
             if (! in_array(HasResourceMetadata::class, class_uses_recursive($class), true)) {
                 continue;
             }
@@ -63,6 +79,29 @@ final class ModelSchemaCatalog
         }
 
         return $classes;
+    }
+
+    /**
+     * Unique schema basenames for metadata models, including HTTP alias Event for PadelEvent.
+     *
+     * @return list<string>
+     */
+    public function metadataSchemaNames(): array
+    {
+        $names = [];
+
+        foreach ($this->metadataClasses() as $class) {
+            $names[] = class_basename($class);
+        }
+
+        if (in_array('PadelEvent', $names, true)) {
+            $names[] = 'Event';
+        }
+
+        $names = array_values(array_unique($names));
+        sort($names);
+
+        return $names;
     }
 
     public function reset(): void

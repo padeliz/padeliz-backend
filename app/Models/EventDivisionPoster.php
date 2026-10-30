@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -47,6 +48,28 @@ use Illuminate\Support\Facades\Storage;
 class EventDivisionPoster extends Model
 {
     use HasFactory;
+    use HasResourceMetadata;
+
+    public static array $searchableFields = [];
+
+    public static array $filterableFields = [
+        'event_id',
+        'event_division_id',
+        'event_division_court_id',
+        'poster_kind',
+    ];
+
+    public static array $sortableFields = [
+        'id_event_division_poster',
+        'event_id',
+        'event_division_id',
+        'event_division_court_id',
+        'poster_kind',
+        'inserted_at',
+        'updated_at',
+    ];
+
+    public static ?string $displayField = null;
 
     protected $table = 'event_division_posters';
 

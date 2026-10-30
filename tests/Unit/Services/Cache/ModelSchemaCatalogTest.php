@@ -116,6 +116,42 @@ class ModelSchemaCatalogTest extends TestCase
         $this->assertNotContains(RootBar::class, $metadata);
     }
 
+    public function test_class_for_metadata_schema_accepts_trait_users(): void
+    {
+        $catalog = $this->fixtureCatalog();
+
+        $this->assertSame(TraitedModel::class, $catalog->classForMetadataSchema('TraitedModel'));
+    }
+
+    public function test_class_for_metadata_schema_rejects_bare_models(): void
+    {
+        $catalog = $this->fixtureCatalog();
+
+        $this->expectException(InvalidArgumentException::class);
+        $this->expectExceptionMessage('Model class for schema BareModel not found');
+
+        $catalog->classForMetadataSchema('BareModel');
+    }
+
+    public function test_production_class_for_metadata_schema_accepts_club_and_event(): void
+    {
+        $catalog = app(ModelSchemaCatalog::class);
+
+        $this->assertSame(Club::class, $catalog->classForMetadataSchema('Club'));
+        $this->assertSame(\App\Models\PadelEvent::class, $catalog->classForMetadataSchema('Event'));
+    }
+
+    public function test_production_metadata_schema_names_include_event_alias(): void
+    {
+        $catalog = app(ModelSchemaCatalog::class);
+        $names = $catalog->metadataSchemaNames();
+
+        $this->assertContains('Club', $names);
+        $this->assertContains('PadelEvent', $names);
+        $this->assertContains('Event', $names);
+        $this->assertNotContains('BankTransferSettings', $names);
+    }
+
     public function test_memoization_and_reset(): void
     {
         $root = sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'padeliz_schema_memo_' . uniqid('', true);
