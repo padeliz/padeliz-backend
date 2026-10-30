@@ -81,10 +81,22 @@ Staging mail uses `MAIL_MAILER=log` (no SMTP password).
 
 | Component | Command |
 |---|---|
-| `web` | nginx + php-fpm |
-| `worker` | `queue:work redis` |
-| `scheduler` | `schedule:work` |
-| `migrate` (PRE_DEPLOY) | `backend:refresh --deploy` |
+| `web` | `deploy:optimize` then nginx + php-fpm |
+| `worker` | `deploy:optimize` then `queue:work redis` |
+| `scheduler` | `deploy:optimize` then `schedule:work` |
+| `migrate` (PRE_DEPLOY) | `deploy:release` (`migrate --force` + `queue:restart`) |
+
+### Why not generate docs / Laravel caches in PRE_DEPLOY
+
+App Platform PRE_DEPLOY runs in an ephemeral container. Files written there (e.g. `storage/api-docs`, `bootstrap/cache`) never reach web/worker/scheduler.
+
+| Artifact | Where it is produced |
+|---|---|
+| OpenAPI (`storage/api-docs/api-docs-*.json`) | Docker **image build** (`php artisan api:docs:generate-all`) |
+| `config` / `route` / `event` / `view` caches | Each runtime container via **`deploy:optimize`** (needs live App Platform env) |
+| Migrations + queue restart signal | **`deploy:release`** in PRE_DEPLOY (shared MySQL / Redis) |
+
+Local/dev: `php artisan backend:refresh` still clears optimize state and regenerates API docs on the same container you use.
 
 ## Rollback
 

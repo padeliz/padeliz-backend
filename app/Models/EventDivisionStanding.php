@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -25,6 +26,27 @@ use Illuminate\Database\Eloquent\Relations\BelongsTo;
 class EventDivisionStanding extends Model
 {
     use HasFactory;
+    use HasResourceMetadata;
+
+    public static array $searchableFields = [];
+
+    public static array $filterableFields = [
+        'event_division_id',
+        'participation_id',
+    ];
+
+    public static array $sortableFields = [
+        'id_standing',
+        'event_division_id',
+        'participation_id',
+        'points_total',
+        'wins',
+        'rank',
+        'inserted_at',
+        'updated_at',
+    ];
+
+    public static ?string $displayField = null;
 
     protected $table = 'event_division_standings';
 

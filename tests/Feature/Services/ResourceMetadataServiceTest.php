@@ -9,14 +9,14 @@ use App\Models\Division;
 use App\Models\EventParticipation;
 use App\Models\Location;
 use App\Models\PadelEvent;
-use App\Models\User;
 use App\Models\PlayerLevelAssessment;
 use App\Models\Prize;
+use App\Models\User;
 use App\Services\Cache\ModelSchemaCatalog;
 use App\Services\ResourceMetadataService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use Tests\Support\UnixEventFactory;
+use Tests\TestCase;
 
 class ResourceMetadataServiceTest extends TestCase
 {
@@ -671,14 +671,13 @@ class ResourceMetadataServiceTest extends TestCase
     }
 
     /**
-     * Get all model schema basenames from the recursive Models catalog
+     * Get metadata schema basenames (HasResourceMetadata models + Event alias)
+     *
+     * @return list<string>
      */
     private function getAllModels(): array
     {
-        return array_map(
-            static fn (string $class): string => class_basename($class),
-            app(ModelSchemaCatalog::class)->eloquentClasses()
-        );
+        return app(ModelSchemaCatalog::class)->metadataSchemaNames();
     }
 
     /**

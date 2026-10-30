@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Models;
 
+use App\Traits\HasResourceMetadata;
 use Illuminate\Database\Eloquent\Builder;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
@@ -28,6 +29,27 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 class PlayerInvite extends Model
 {
     use HasFactory;
+    use HasResourceMetadata;
+
+    public static array $searchableFields = [];
+
+    public static array $filterableFields = [
+        'player_user_id',
+        'created_by_manager_user_id',
+    ];
+
+    public static array $sortableFields = [
+        'id_invite',
+        'player_user_id',
+        'created_by_manager_user_id',
+        'expires_at',
+        'accepted_at',
+        'revoked_at',
+        'inserted_at',
+        'updated_at',
+    ];
+
+    public static ?string $displayField = null;
 
     protected $table = 'player_invites';
 

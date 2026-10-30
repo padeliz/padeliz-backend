@@ -8,15 +8,13 @@ use Illuminate\Console\Command;
 
 class BackendRefreshCommand extends Command
 {
-    protected $signature = 'backend:refresh {--deploy : Run production post-deploy steps}';
+    protected $signature = 'backend:refresh';
 
-    protected $description = 'Clear stale bootstrap/Redis state and regenerate API docs (deploy: migrate + rebuild caches + queue restart)';
+    protected $description = 'Clear stale bootstrap/Redis state and regenerate API docs (local/dev)';
 
     public function handle(): int
     {
-        $deploy = (bool) $this->option('deploy');
-
-        foreach ($this->steps($deploy) as [$command, $parameters]) {
+        foreach ($this->steps() as [$command, $parameters]) {
             $exitCode = $this->call($command, $parameters);
 
             if ($exitCode !== self::SUCCESS) {
@@ -26,7 +24,7 @@ class BackendRefreshCommand extends Command
             }
         }
 
-        $this->info($deploy ? 'Backend deploy refresh completed.' : 'Backend refresh completed.');
+        $this->info('Backend refresh completed.');
 
         return self::SUCCESS;
     }
@@ -34,25 +32,11 @@ class BackendRefreshCommand extends Command
     /**
      * @return list<array{0: string, 1: array<string, mixed>}>
      */
-    protected function steps(bool $deploy): array
+    protected function steps(): array
     {
-        $steps = [];
-
-        if ($deploy) {
-            $steps[] = ['migrate', ['--force' => true]];
-        }
-
-        $steps[] = ['optimize:clear', []];
-
-        if ($deploy) {
-            $steps[] = ['config:cache', []];
-            $steps[] = ['route:cache', []];
-            $steps[] = ['event:cache', []];
-            $steps[] = ['queue:restart', []];
-        }
-
-        $steps[] = ['api:docs:generate-all', []];
-
-        return $steps;
+        return [
+            ['optimize:clear', []],
+            ['api:docs:generate-all', []],
+        ];
     }
 }

@@ -27,7 +27,7 @@ class GenerateAllApiDocumentation extends Command
     /**
      * Execute the console command.
      */
-    public function handle()
+    public function handle(): int
     {
         $this->info('Generating API documentation for all versions...');
 
@@ -38,26 +38,43 @@ class GenerateAllApiDocumentation extends Command
         $versions = $this->getApiVersions();
 
         if (empty($versions)) {
-            $this->warn('No API versions found in routes/api directory.');
+            $this->error('No API versions found in routes/api directory.');
 
-            return;
+            return self::FAILURE;
         }
 
         $this->info('Found API versions: ' . implode(', ', $versions));
+
+        $failed = false;
 
         // Generate documentation for each version
         foreach ($versions as $version) {
             $this->info("Generating documentation for {$version}...");
 
             try {
-                Artisan::call('l5-swagger:generate', [
+                $exitCode = Artisan::call('l5-swagger:generate', [
                     'documentation' => $version,
                 ]);
+
+                if ($exitCode !== self::SUCCESS) {
+                    $this->error("✗ Failed to generate documentation for {$version} (exit {$exitCode})");
+                    $this->line(Artisan::output());
+                    $failed = true;
+
+                    continue;
+                }
 
                 $this->info("✓ Documentation generated for {$version}");
             } catch (\Exception $e) {
                 $this->error("✗ Failed to generate documentation for {$version}: " . $e->getMessage());
+                $failed = true;
             }
+        }
+
+        if ($failed) {
+            $this->error('API documentation generation failed.');
+
+            return self::FAILURE;
         }
 
         $this->info('API documentation generation completed!');
@@ -66,6 +83,8 @@ class GenerateAllApiDocumentation extends Command
         foreach ($versions as $version) {
             $this->line("  - {$version}: /api/documentation/{$version}");
         }
+
+        return self::SUCCESS;
     }
 
     /**

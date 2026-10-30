@@ -11,6 +11,7 @@ npm-debug.log
 vendor
 tests
 storage/logs/*
+storage/api-docs
 storage/framework/cache/*
 storage/framework/sessions/*
 storage/framework/views/*

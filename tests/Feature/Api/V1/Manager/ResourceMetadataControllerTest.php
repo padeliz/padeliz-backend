@@ -9,12 +9,12 @@ use App\Models\Division;
 use App\Models\EventParticipation;
 use App\Models\Location;
 use App\Models\PadelEvent;
-use App\Models\User;
 use App\Models\PlayerLevelAssessment;
 use App\Models\Prize;
+use App\Models\User;
 use Illuminate\Foundation\Testing\RefreshDatabase;
-use Tests\TestCase;
 use Tests\Support\UnixEventFactory;
+use Tests\TestCase;
 
 class ResourceMetadataControllerTest extends TestCase
 {
@@ -190,6 +190,50 @@ class ResourceMetadataControllerTest extends TestCase
             ->assertJson([
                 'success' => false,
             ]);
+    }
+
+    public function test_non_metadata_model_returns_404(): void
+    {
+        /** @var User $manager */
+        $manager = User::factory()->create();
+        $manager->addUserType('manager');
+
+        $response = $this->actingAs($manager)
+            ->getJson('/api/v1/manager/metadata/BankTransferSettings');
+
+        $response->assertStatus(404)
+            ->assertJson([
+                'success' => false,
+            ]);
+    }
+
+    public function test_missing_openapi_docs_returns_503(): void
+    {
+        /** @var User $manager */
+        $manager = User::factory()->create();
+        $manager->addUserType('manager');
+
+        $swaggerFile = storage_path('api-docs/api-docs-v1.json');
+        $backup = $swaggerFile . '.bak-test';
+        $this->assertFileExists($swaggerFile);
+        rename($swaggerFile, $backup);
+
+        try {
+            $this->artisan('padeliz:cache:invalidate-metadata', ['--schema' => 'Club']);
+
+            $response = $this->actingAs($manager)
+                ->getJson('/api/v1/manager/metadata/Club');
+
+            $response->assertStatus(503)
+                ->assertJson([
+                    'success' => false,
+                ]);
+            $this->assertStringContainsString('OpenAPI', (string) $response->json('message'));
+        } finally {
+            if (is_file($backup)) {
+                rename($backup, $swaggerFile);
+            }
+        }
     }
 
     public function test_invalid_schema_name_returns_422(): void
