@@ -14,7 +14,7 @@
 1. In DigitalOcean: create a **backup/fork** of `padeliz-mysql-prod` or download a logical dump with `doctl` / mysqldump over trusted network.
 2. Restore into `padeliz-mysql-staging` (destructive: wipe staging DB first).
 3. Confirm staging backend still uses staging DB credentials only.
-4. Run `php artisan backend:refresh --deploy` on staging (or trigger a no-op image redeploy) so caches/queues restart cleanly.
+4. Trigger a no-op image redeploy (or run `php artisan deploy:release` in PRE_DEPLOY / Console equivalent) so migrations and `queue:restart` apply; web containers rebuild Laravel caches via `deploy:optimize` on boot.
 
 Example outline (adjust users/hosts from DO UI):
 

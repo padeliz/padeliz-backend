@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Services;
 
+use App\Exceptions\MissingApiDocumentationException;
 use App\Services\Cache\ModelSchemaCatalog;
 use App\Services\Cache\PadelizCache;
 use Illuminate\Database\Eloquent\Model;
@@ -81,24 +82,33 @@ class ResourceMetadataService
 
     /**
      * Get Swagger schema for a model
+     *
+     * @return array<string, mixed>
      */
-    private function getSwaggerSchema(string $schemaName, string $version): ?array
+    private function getSwaggerSchema(string $schemaName, string $version): array
     {
         $swaggerFile = $this->getSwaggerFilePath($version);
 
         if (! File::exists($swaggerFile)) {
-            return null;
+            throw new MissingApiDocumentationException(
+                "OpenAPI documentation file is missing for version {$version} ({$swaggerFile})."
+            );
         }
 
         $swaggerContent = File::get($swaggerFile);
         $swaggerData = json_decode($swaggerContent, true);
         $lookup = $schemaName === 'PadelEvent' ? 'Event' : $schemaName;
 
-        if (! isset($swaggerData['components']['schemas'][$lookup])) {
-            return null;
+        if (! is_array($swaggerData) || ! isset($swaggerData['components']['schemas'][$lookup])) {
+            throw new MissingApiDocumentationException(
+                "OpenAPI schema [{$lookup}] is missing from documentation version {$version}."
+            );
         }
 
-        return $swaggerData['components']['schemas'][$lookup];
+        /** @var array<string, mixed> $schema */
+        $schema = $swaggerData['components']['schemas'][$lookup];
+
+        return $schema;
     }
 
     /**

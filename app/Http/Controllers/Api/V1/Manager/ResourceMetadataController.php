@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1\Manager;
 
+use App\Exceptions\MissingApiDocumentationException;
 use App\Http\Controllers\BaseVersions\V1\V1BaseController;
 use App\Http\Resources\ResourceMetadataResource;
 use App\Services\ResourceMetadataService;
@@ -76,6 +77,11 @@ class ResourceMetadataController extends V1BaseController
      *         response=500,
      *         description="Server error",
      *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
+     *     ),
+     *     @OA\Response(
+     *         response=503,
+     *         description="OpenAPI documentation unavailable for this schema",
+     *         @OA\JsonContent(ref="#/components/schemas/ApiErrorResponse")
      *     )
      * )
      */
@@ -90,6 +96,8 @@ class ResourceMetadataController extends V1BaseController
                 new ResourceMetadataResource($metadata),
                 'Resource metadata retrieved successfully'
             );
+        } catch (MissingApiDocumentationException $e) {
+            return $this->errorResponse($e->getMessage(), 503);
         } catch (\InvalidArgumentException $e) {
             return $this->notFoundResponse($e->getMessage());
         } catch (ValidationException $e) {

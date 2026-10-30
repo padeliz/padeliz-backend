@@ -4,6 +4,7 @@ declare(strict_types=1);
 
 namespace Tests\Unit\Services;
 
+use App\Exceptions\MissingApiDocumentationException;
 use App\Services\Cache\ModelSchemaCatalog;
 use App\Services\ResourceMetadataService;
 use Illuminate\Support\Str;
@@ -298,5 +299,26 @@ class ResourceMetadataServiceTest extends TestCase
                preg_match('/[^s]s$/', $word) ||
                preg_match('/ies$/', $word) ||
                preg_match('/es$/', $word);
+    }
+
+    public function test_get_swagger_schema_throws_when_docs_file_missing(): void
+    {
+        $swaggerFile = storage_path('api-docs/api-docs-v1.json');
+        $backup = $swaggerFile . '.bak-unit-test';
+        $this->assertFileExists($swaggerFile);
+        rename($swaggerFile, $backup);
+
+        try {
+            $reflection = new ReflectionClass($this->metadataService);
+            $method = $reflection->getMethod('getSwaggerSchema');
+            $method->setAccessible(true);
+
+            $this->expectException(MissingApiDocumentationException::class);
+            $method->invoke($this->metadataService, 'Club', 'v1');
+        } finally {
+            if (is_file($backup)) {
+                rename($backup, $swaggerFile);
+            }
+        }
     }
 }

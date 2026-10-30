@@ -99,8 +99,9 @@ Once inside the DevContainer, you can use these commands:
 # After pulling code or when things feel stale
 php artisan backend:refresh
 
-# Production post-release (run after composer install)
-php artisan backend:refresh --deploy
+# App Platform only (wired from docker-entrypoint — do not use for local refresh)
+# php artisan deploy:release   # PRE_DEPLOY: migrate + queue:restart
+# php artisan deploy:optimize  # container boot: config/route/event/view cache
 
 php artisan migrate # Run migrations
 
@@ -346,9 +347,10 @@ php artisan cache:clear
 | Situation | Command |
 |-----------|---------|
 | After pulling code; general dev refresh | `backend:refresh` |
-| Production post-release (after `composer install`) | `backend:refresh --deploy` |
+| App Platform PRE_DEPLOY (shared DB/Redis only) | `deploy:release` |
+| App Platform container boot (runtime env caches) | `deploy:optimize` |
 
-Staging/production on DigitalOcean (Docker image, App Platform, GitHub Actions): see [docs/DEPLOY.md](docs/DEPLOY.md). On-demand staging DB/Spaces refresh: [docs/STAGING_DATA_REFRESH.md](docs/STAGING_DATA_REFRESH.md).
+Staging/production on DigitalOcean (Docker image, App Platform, GitHub Actions): see [docs/DEPLOY.md](docs/DEPLOY.md). On-demand staging DB/Spaces refresh: [docs/STAGING_DATA_REFRESH.md](docs/STAGING_DATA_REFRESH.md). OpenAPI JSON is baked into the production image at Docker build time (`storage/api-docs`); do not rely on PRE_DEPLOY to generate docs for web.
 | One metadata schema changed (e.g. Club forms) | `padeliz:cache:invalidate-metadata --schema=Club` |
 | Metadata / OpenAPI overhaul | `padeliz:cache:invalidate-metadata` |
 | Caching code changed; reset all app data cache | `padeliz:cache:invalidate-metadata --scope=application` |

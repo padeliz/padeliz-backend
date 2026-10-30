@@ -65,9 +65,18 @@ RUN chmod +x /usr/local/bin/docker-entrypoint.sh \
 
 COPY --from=vendor --chown=www-data:www-data /app /var/www/html
 
-RUN mkdir -p storage/framework/{cache,sessions,views} storage/logs bootstrap/cache \
+RUN mkdir -p storage/framework/{cache,sessions,views} storage/logs storage/api-docs bootstrap/cache \
     && chown -R www-data:www-data storage bootstrap/cache \
     && chmod -R ug+rwx storage bootstrap/cache
+
+# Bake OpenAPI into the image (gitignored; PRE_DEPLOY filesystem never reaches web).
+RUN cp .env.example .env \
+    && php artisan key:generate --force \
+    && CACHE_DRIVER=array QUEUE_CONNECTION=sync SESSION_DRIVER=array \
+        php artisan api:docs:generate-all \
+    && test -f storage/api-docs/api-docs-v1.json \
+    && rm -f .env \
+    && chown -R www-data:www-data storage/api-docs
 
 ENV PORT=8080
 EXPOSE 8080
