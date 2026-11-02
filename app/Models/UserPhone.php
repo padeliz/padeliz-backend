@@ -17,7 +17,7 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
  *     @OA\Property(property="id_user_phone", type="integer", format="int64", readOnly=true),
  *     @OA\Property(property="user_id", type="integer", format="int64"),
  *     @OA\Property(property="phone", type="string", maxLength=30),
- *     @OA\Property(property="purposes", type="array", @OA\Items(type="string")),
+ *     @OA\Property(property="purposes", type="array", @OA\Items(type="string", enum={"contact", "login"})),
  *     @OA\Property(property="is_primary", type="boolean", default=false),
  *     @OA\Property(property="verified_at", type="integer", format="timestamp", nullable=true),
  *     @OA\Property(property="inserted_at", type="integer", format="timestamp", readOnly=true),

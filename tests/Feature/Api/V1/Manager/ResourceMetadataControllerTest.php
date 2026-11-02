@@ -520,7 +520,8 @@ class ResourceMetadataControllerTest extends TestCase
         // Test foreign key relationships
         if (isset($filterableFields['player_user_id']['type']) && $filterableFields['player_user_id']['type'] === 'foreign_key') {
             $this->assertEquals('User', $filterableFields['player_user_id']['related_schema_name']);
-            $this->assertEquals('first_name', $filterableFields['player_user_id']['related_schema_field']);
+            $this->assertEquals('name', $filterableFields['player_user_id']['related_schema_field']);
+            $this->assertEquals('player', $filterableFields['player_user_id']['related_user_role']);
         }
 
         $this->assertArrayNotHasKey('is_minor', $filterableFields);

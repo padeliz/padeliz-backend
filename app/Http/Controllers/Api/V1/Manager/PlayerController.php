@@ -118,7 +118,15 @@ class PlayerController extends V1BaseController
     public function index(Request $request)
     {
         $payload = $this->cachedManagerIndex('players', $request, [], function () use ($request) {
-            $query = User::query()->directoryPlayers()->with(['participations']);
+            $hasUserType = $this->pullJoinFilter($request, 'has_user_type');
+            $query = User::query()->with(['participations']);
+
+            if ($hasUserType === 'manager') {
+                $query->directoryManagers();
+            } else {
+                // omitted or "player" → player directory (current default)
+                $query->directoryPlayers();
+            }
 
             $this->applyAdvancedPagination(
                 $query,

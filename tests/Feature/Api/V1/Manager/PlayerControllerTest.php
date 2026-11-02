@@ -533,13 +533,92 @@ class PlayerControllerTest extends TestCase
             'first_name' => 'Visible',
             'last_name' => 'Player',
         ]);
+        $playerAndManager = User::factory()->manager()->create([
+            'first_name' => 'Both',
+            'last_name' => 'Roles',
+        ]);
 
         $response = $this->getJson('/api/v1/manager/players');
         $response->assertOk();
         $ids = collect($response->json('data'))->pluck('id_user')->all();
 
         $this->assertContains($playerOnly->id_user, $ids);
+        $this->assertContains($playerAndManager->id_user, $ids);
         $this->assertNotContains($managerOnly->id_user, $ids);
+    }
+
+    public function test_index_has_user_type_manager_returns_managers_only(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $managerOnly = User::factory()->managerOnly()->create([
+            'first_name' => 'Mgr',
+            'last_name' => 'Only',
+        ]);
+        $playerOnly = User::factory()->playerOnly()->create([
+            'first_name' => 'Player',
+            'last_name' => 'Only',
+        ]);
+        $playerAndManager = User::factory()->manager()->create([
+            'first_name' => 'Both',
+            'last_name' => 'Roles',
+        ]);
+
+        $response = $this->getJson('/api/v1/manager/players?filters[has_user_type]=manager');
+        $response->assertOk();
+        $ids = collect($response->json('data'))->pluck('id_user')->all();
+
+        $this->assertContains($managerOnly->id_user, $ids);
+        $this->assertContains($playerAndManager->id_user, $ids);
+        $this->assertContains($this->manager->id_user, $ids);
+        $this->assertNotContains($playerOnly->id_user, $ids);
+    }
+
+    public function test_index_has_user_type_player_matches_default_directory(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $managerOnly = User::factory()->managerOnly()->create([
+            'first_name' => 'Mgr',
+            'last_name' => 'Only',
+        ]);
+        $playerOnly = User::factory()->playerOnly()->create([
+            'first_name' => 'Player',
+            'last_name' => 'Only',
+        ]);
+
+        $response = $this->getJson('/api/v1/manager/players?filters[has_user_type]=player');
+        $response->assertOk();
+        $ids = collect($response->json('data'))->pluck('id_user')->all();
+
+        $this->assertContains($playerOnly->id_user, $ids);
+        $this->assertNotContains($managerOnly->id_user, $ids);
+    }
+
+    public function test_index_manager_directory_search_matches_name_email_phone(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $managerOnly = User::factory()->managerOnly()->withContacts()->create([
+            'first_name' => 'UniqueMgr',
+            'last_name' => 'SearchHit',
+        ]);
+        $playerOnly = User::factory()->playerOnly()->create([
+            'first_name' => 'UniqueMgr',
+            'last_name' => 'PlayerSkip',
+        ]);
+
+        $byName = $this->getJson('/api/v1/manager/players?filters[has_user_type]=manager&q=UniqueMgr');
+        $byName->assertOk();
+        $nameIds = collect($byName->json('data'))->pluck('id_user')->all();
+        $this->assertContains($managerOnly->id_user, $nameIds);
+        $this->assertNotContains($playerOnly->id_user, $nameIds);
+
+        $email = $managerOnly->emails()->first()?->email;
+        $this->assertNotNull($email);
+        $byEmail = $this->getJson('/api/v1/manager/players?filters[has_user_type]=manager&q=' . urlencode($email));
+        $byEmail->assertOk();
+        $this->assertContains($managerOnly->id_user, collect($byEmail->json('data'))->pluck('id_user')->all());
     }
 
     public function test_show_returns_404_for_manager_only_user(): void

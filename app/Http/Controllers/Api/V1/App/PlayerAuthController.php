@@ -290,24 +290,79 @@ class PlayerAuthController extends V1BaseController
                 ->where('provider_subject', $claims['sub'])
                 ->first();
 
-            if (! $identity) {
-                return $this->errorResponse('User not found. Please register first.', 404);
+            if ($identity) {
+                $player = $identity->user;
+
+                if (! $player->hasUserType('player')) {
+                    return $this->errorResponse('User does not have player privileges.', 403);
+                }
+
+                $identityLinker->refreshAvatarUrl($identity, $claims['picture'] ?? null);
+                $identity->touchLastLogin();
+
+                $token = $player->createToken('player-google-token')->plainTextToken;
+
+                return $this->successResponse([
+                    'token' => $token,
+                    'user' => new AppUserResource($player->loadMissing(['identities.email'])),
+                    'user_type' => 'player',
+                ], 'Player authenticated successfully');
             }
 
-            $player = $identity->user;
+            $email = $claims['email'] ?? null;
+            if ($email === null || $email === '') {
+                return $this->errorResponse(
+                    'No player account found for this Google account. Ask an organizer to add your login email, then try again.',
+                    404
+                );
+            }
+
+            if (! ($claims['email_verified'] ?? false)) {
+                return $this->errorResponse(
+                    'This Google email isn\'t verified yet. Verify it in your Google account, then try again.',
+                    422
+                );
+            }
+
+            $emailRow = UserEmail::query()
+                ->where('email', $email)
+                ->whereJsonContains('purposes', 'login')
+                ->first();
+
+            if (! $emailRow) {
+                return $this->errorResponse(
+                    'No player account found for this Google account. Ask an organizer to add your login email, then try again.',
+                    404
+                );
+            }
+
+            $player = $emailRow->user;
 
             if (! $player->hasUserType('player')) {
                 return $this->errorResponse('User does not have player privileges.', 403);
             }
 
-            $identityLinker->refreshAvatarUrl($identity, $claims['picture'] ?? null);
-            $identity->touchLastLogin();
+            try {
+                $identityLinker->link(
+                    player: $player,
+                    provider: UserIdentity::PROVIDER_GOOGLE,
+                    subject: $claims['sub'],
+                    email: $email,
+                    displayName: $claims['name'] ?? null,
+                    avatarUrl: $claims['picture'] ?? null,
+                    asLogin: true,
+                );
+            } catch (IdentityConflictException $e) {
+                return $this->errorResponse($e->getMessage(), 409);
+            } catch (ContactConflictException $e) {
+                return $this->errorResponse($e->getMessage(), 409);
+            }
 
             $token = $player->createToken('player-google-token')->plainTextToken;
 
             return $this->successResponse([
                 'token' => $token,
-                'user' => new AppUserResource($player->loadMissing(['identities.email'])),
+                'user' => new AppUserResource($player->fresh()->loadMissing(['identities.email'])),
                 'user_type' => 'player',
             ], 'Player authenticated successfully');
         } catch (\Exception $e) {
