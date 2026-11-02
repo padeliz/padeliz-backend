@@ -420,6 +420,14 @@ class User extends Authenticatable
         return $query->whereJsonContains('user_types', 'player');
     }
 
+    /**
+     * Users that include the "manager" type (picker directory for manager FKs).
+     */
+    public function scopeDirectoryManagers(Builder $query): Builder
+    {
+        return $query->whereJsonContains('user_types', 'manager');
+    }
+
     public function hasUserType(string $userType): bool
     {
         return in_array($userType, $this->user_types ?? []);

@@ -18,7 +18,7 @@ class GoogleIdTokenVerifier
     }
 
     /**
-     * @return array{sub: string, email: ?string, name: ?string, picture: ?string}
+     * @return array{sub: string, email: ?string, email_verified: bool, name: ?string, picture: ?string}
      *
      * @throws InvalidGoogleTokenException
      * @throws RuntimeException
@@ -32,7 +32,7 @@ class GoogleIdTokenVerifier
     }
 
     /**
-     * @return array{sub: string, email: ?string, name: ?string, picture: ?string}
+     * @return array{sub: string, email: ?string, email_verified: bool, name: ?string, picture: ?string}
      *
      * @throws InvalidGoogleTokenException
      * @throws RuntimeException
@@ -46,7 +46,7 @@ class GoogleIdTokenVerifier
     }
 
     /**
-     * @return array{sub: string, email: ?string, name: ?string, picture: ?string}
+     * @return array{sub: string, email: ?string, email_verified: bool, name: ?string, picture: ?string}
      *
      * @throws InvalidGoogleTokenException
      */
@@ -61,6 +61,7 @@ class GoogleIdTokenVerifier
         return [
             'sub' => (string) $payload['sub'],
             'email' => isset($payload['email']) ? strtolower(trim((string) $payload['email'])) : null,
+            'email_verified' => filter_var($payload['email_verified'] ?? false, FILTER_VALIDATE_BOOLEAN),
             'name' => isset($payload['name']) ? (string) $payload['name'] : null,
             'picture' => isset($payload['picture']) ? (string) $payload['picture'] : null,
         ];

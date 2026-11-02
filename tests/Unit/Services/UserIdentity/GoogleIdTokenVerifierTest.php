@@ -75,9 +75,66 @@ final class GoogleIdTokenVerifierTest extends TestCase
         $this->assertSame([
             'sub' => 'sub-1',
             'email' => 'player@example.com',
+            'email_verified' => false,
             'name' => 'Player One',
             'picture' => 'https://example.com/p.png',
         ], $claims);
+    }
+
+    public function test_verify_for_app_maps_email_verified_true(): void
+    {
+        config(['services.google.app_client_id' => 'app-audience.apps.googleusercontent.com']);
+
+        $googleClient = Mockery::mock(GoogleClient::class);
+        $googleClient->shouldReceive('verifyIdToken')
+            ->once()
+            ->andReturn([
+                'sub' => 'sub-verified',
+                'email' => 'ok@example.com',
+                'email_verified' => true,
+            ]);
+
+        $verifier = new GoogleIdTokenVerifier(fn () => $googleClient);
+        $claims = $verifier->verifyForApp('token');
+
+        $this->assertTrue($claims['email_verified']);
+    }
+
+    public function test_verify_for_app_maps_email_verified_false(): void
+    {
+        config(['services.google.app_client_id' => 'app-audience.apps.googleusercontent.com']);
+
+        $googleClient = Mockery::mock(GoogleClient::class);
+        $googleClient->shouldReceive('verifyIdToken')
+            ->once()
+            ->andReturn([
+                'sub' => 'sub-unverified',
+                'email' => 'no@example.com',
+                'email_verified' => false,
+            ]);
+
+        $verifier = new GoogleIdTokenVerifier(fn () => $googleClient);
+        $claims = $verifier->verifyForApp('token');
+
+        $this->assertFalse($claims['email_verified']);
+    }
+
+    public function test_verify_for_app_treats_absent_email_verified_as_false(): void
+    {
+        config(['services.google.app_client_id' => 'app-audience.apps.googleusercontent.com']);
+
+        $googleClient = Mockery::mock(GoogleClient::class);
+        $googleClient->shouldReceive('verifyIdToken')
+            ->once()
+            ->andReturn([
+                'sub' => 'sub-absent',
+                'email' => 'absent@example.com',
+            ]);
+
+        $verifier = new GoogleIdTokenVerifier(fn () => $googleClient);
+        $claims = $verifier->verifyForApp('token');
+
+        $this->assertFalse($claims['email_verified']);
     }
 
     public function test_verify_for_manager_uses_manager_audience(): void
@@ -109,6 +166,7 @@ final class GoogleIdTokenVerifierTest extends TestCase
         $this->assertSame($managerClientId, $seenAudience);
         $this->assertSame('mgr-1', $claims['sub']);
         $this->assertSame('mgr@example.com', $claims['email']);
+        $this->assertFalse($claims['email_verified']);
         $this->assertNull($claims['name']);
         $this->assertNull($claims['picture']);
     }

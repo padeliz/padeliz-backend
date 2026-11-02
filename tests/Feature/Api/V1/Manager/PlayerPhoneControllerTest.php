@@ -238,4 +238,16 @@ class PlayerPhoneControllerTest extends TestCase
         $this->assertContains('user_id', UserPhone::getFilterableFields());
         $this->assertSame('phone', UserPhone::$displayField);
     }
+
+    public function test_phone_swagger_schema_exposes_purposes_enum(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->getJson('/api/v1/manager/metadata/UserPhone');
+        $response->assertOk();
+
+        $purposes = $response->json('data.swagger_schema.properties.purposes');
+        $this->assertSame('array', $purposes['type'] ?? null);
+        $this->assertSame(['contact', 'login'], $purposes['items']['enum'] ?? null);
+    }
 }

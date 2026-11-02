@@ -49,6 +49,7 @@ class PlayerAuthControllerTest extends TestCase
                     'sub' => 'google_player_456',
                     'name' => 'New Player',
                     'email' => 'newplayer@example.com',
+                    'email_verified' => true,
                     'picture' => 'https://example.com/new-player.jpg',
                 ]);
         });
@@ -60,8 +61,265 @@ class PlayerAuthControllerTest extends TestCase
         $response->assertStatus(404)
             ->assertJson([
                 'success' => false,
-                'message' => 'User not found. Please register first.',
+                'message' => 'No player account found for this Google account. Ask an organizer to add your login email, then try again.',
             ]);
+    }
+
+    public function test_google_callback_claims_player_via_login_purpose_email()
+    {
+        $claimPlayer = User::factory()->playerOnly()->create([
+            'first_name' => 'Claim',
+            'middle_name' => null,
+            'last_name' => 'Me',
+        ]);
+        UserEmail::create([
+            'user_id' => $claimPlayer->id_user,
+            'email' => 'claim.me@example.com',
+            'purposes' => ['contact', 'login'],
+            'is_primary' => true,
+            'verified_at' => time(),
+        ]);
+
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForApp')
+                ->andReturn([
+                    'sub' => 'google_claim_new',
+                    'name' => 'Claim Me',
+                    'email' => 'claim.me@example.com',
+                    'email_verified' => true,
+                    'picture' => 'https://example.com/claim.jpg',
+                ]);
+        });
+
+        $response = $this->postJson('/api/v1/app/auth/google', [
+            'id_token' => 'claim.token',
+        ]);
+
+        $response->assertStatus(200)
+            ->assertJson([
+                'success' => true,
+                'data' => [
+                    'user' => [
+                        'id_user' => $claimPlayer->id_user,
+                    ],
+                    'user_type' => 'player',
+                ],
+            ]);
+
+        $this->assertDatabaseHas('user_identities', [
+            'user_id' => $claimPlayer->id_user,
+            'provider' => 'google',
+            'provider_subject' => 'google_claim_new',
+        ]);
+        $this->assertNotNull(
+            UserIdentity::query()
+                ->where('provider', 'google')
+                ->where('provider_subject', 'google_claim_new')
+                ->value('last_login_at')
+        );
+    }
+
+    public function test_google_callback_claim_rejects_unverified_email()
+    {
+        $claimPlayer = User::factory()->playerOnly()->create();
+        UserEmail::create([
+            'user_id' => $claimPlayer->id_user,
+            'email' => 'unverified@example.com',
+            'purposes' => ['login'],
+            'is_primary' => true,
+            'verified_at' => null,
+        ]);
+
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForApp')
+                ->andReturn([
+                    'sub' => 'google_unverified',
+                    'email' => 'unverified@example.com',
+                    'email_verified' => false,
+                    'name' => null,
+                    'picture' => null,
+                ]);
+        });
+
+        $this->postJson('/api/v1/app/auth/google', ['id_token' => 'tok'])
+            ->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'message' => 'This Google email isn\'t verified yet. Verify it in your Google account, then try again.',
+            ]);
+    }
+
+    public function test_google_callback_claim_rejects_absent_email_verified()
+    {
+        $claimPlayer = User::factory()->playerOnly()->create();
+        UserEmail::create([
+            'user_id' => $claimPlayer->id_user,
+            'email' => 'absent.verified@example.com',
+            'purposes' => ['login'],
+            'is_primary' => true,
+            'verified_at' => null,
+        ]);
+
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForApp')
+                ->andReturn([
+                    'sub' => 'google_absent_verified',
+                    'email' => 'absent.verified@example.com',
+                    'email_verified' => false,
+                    'name' => null,
+                    'picture' => null,
+                ]);
+        });
+
+        $this->postJson('/api/v1/app/auth/google', ['id_token' => 'tok'])
+            ->assertStatus(422)
+            ->assertJson([
+                'message' => 'This Google email isn\'t verified yet. Verify it in your Google account, then try again.',
+            ]);
+    }
+
+    public function test_google_callback_claim_returns_404_when_email_missing()
+    {
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForApp')
+                ->andReturn([
+                    'sub' => 'google_no_email',
+                    'email' => null,
+                    'email_verified' => false,
+                    'name' => null,
+                    'picture' => null,
+                ]);
+        });
+
+        $this->postJson('/api/v1/app/auth/google', ['id_token' => 'tok'])
+            ->assertStatus(404)
+            ->assertJson([
+                'message' => 'No player account found for this Google account. Ask an organizer to add your login email, then try again.',
+            ]);
+    }
+
+    public function test_google_callback_claim_returns_404_for_contact_only_email()
+    {
+        $claimPlayer = User::factory()->playerOnly()->create();
+        UserEmail::create([
+            'user_id' => $claimPlayer->id_user,
+            'email' => 'contact.only@example.com',
+            'purposes' => ['contact'],
+            'is_primary' => true,
+            'verified_at' => time(),
+        ]);
+
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForApp')
+                ->andReturn([
+                    'sub' => 'google_contact_only',
+                    'email' => 'contact.only@example.com',
+                    'email_verified' => true,
+                    'name' => null,
+                    'picture' => null,
+                ]);
+        });
+
+        $this->postJson('/api/v1/app/auth/google', ['id_token' => 'tok'])
+            ->assertStatus(404)
+            ->assertJson([
+                'message' => 'No player account found for this Google account. Ask an organizer to add your login email, then try again.',
+            ]);
+    }
+
+    public function test_google_callback_claim_returns_403_when_user_lacks_player_type()
+    {
+        $managerOnly = User::factory()->create([
+            'user_types' => ['manager'],
+        ]);
+        UserEmail::create([
+            'user_id' => $managerOnly->id_user,
+            'email' => 'manager.only@example.com',
+            'purposes' => ['login'],
+            'is_primary' => true,
+            'verified_at' => time(),
+        ]);
+
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForApp')
+                ->andReturn([
+                    'sub' => 'google_manager_only',
+                    'email' => 'manager.only@example.com',
+                    'email_verified' => true,
+                    'name' => null,
+                    'picture' => null,
+                ]);
+        });
+
+        $this->postJson('/api/v1/app/auth/google', ['id_token' => 'tok'])
+            ->assertStatus(403)
+            ->assertJson([
+                'message' => 'User does not have player privileges.',
+            ]);
+    }
+
+    public function test_google_callback_identity_login_skips_email_verified()
+    {
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForApp')
+                ->andReturn([
+                    'sub' => 'google_player_123',
+                    'name' => 'Test Player',
+                    'email' => 'player@example.com',
+                    'email_verified' => false,
+                    'picture' => 'https://example.com/player-avatar.jpg',
+                ]);
+        });
+
+        $this->postJson('/api/v1/app/auth/google', ['id_token' => 'valid.token'])
+            ->assertStatus(200)
+            ->assertJson([
+                'data' => [
+                    'user' => [
+                        'id_user' => $this->player->id_user,
+                    ],
+                ],
+            ]);
+    }
+
+    public function test_google_callback_claim_adds_second_google_identity_on_same_player()
+    {
+        UserEmail::create([
+            'user_id' => $this->player->id_user,
+            'email' => 'second.google@example.com',
+            'purposes' => ['login'],
+            'is_primary' => true,
+            'verified_at' => time(),
+        ]);
+
+        $this->mock(\App\Services\UserIdentity\GoogleIdTokenVerifier::class, function ($mock) {
+            $mock->shouldReceive('verifyForApp')
+                ->andReturn([
+                    'sub' => 'google_player_second',
+                    'email' => 'second.google@example.com',
+                    'email_verified' => true,
+                    'name' => 'Test Player',
+                    'picture' => null,
+                ]);
+        });
+
+        $this->postJson('/api/v1/app/auth/google', ['id_token' => 'second.token'])
+            ->assertStatus(200)
+            ->assertJson([
+                'data' => [
+                    'user' => [
+                        'id_user' => $this->player->id_user,
+                    ],
+                ],
+            ]);
+
+        $this->assertSame(
+            2,
+            UserIdentity::query()
+                ->where('user_id', $this->player->id_user)
+                ->where('provider', 'google')
+                ->count()
+        );
     }
 
     public function test_google_callback_returns_existing_player()

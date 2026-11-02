@@ -238,4 +238,16 @@ class PlayerEmailControllerTest extends TestCase
         $this->assertContains('user_id', UserEmail::getFilterableFields());
         $this->assertSame('email', UserEmail::$displayField);
     }
+
+    public function test_email_swagger_schema_exposes_purposes_enum(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        $response = $this->getJson('/api/v1/manager/metadata/UserEmail');
+        $response->assertOk();
+
+        $purposes = $response->json('data.swagger_schema.properties.purposes');
+        $this->assertSame('array', $purposes['type'] ?? null);
+        $this->assertSame(['contact', 'login'], $purposes['items']['enum'] ?? null);
+    }
 }

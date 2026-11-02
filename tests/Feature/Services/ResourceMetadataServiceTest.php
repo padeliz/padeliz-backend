@@ -392,9 +392,43 @@ class ResourceMetadataServiceTest extends TestCase
         // Test foreign key relationships
         if (isset($filterableFields['player_user_id']['type']) && $filterableFields['player_user_id']['type'] === 'foreign_key') {
             $this->assertEquals('User', $filterableFields['player_user_id']['related_schema_name']);
-            $this->assertEquals('first_name', $filterableFields['player_user_id']['related_schema_field']);
+            $this->assertEquals('name', $filterableFields['player_user_id']['related_schema_field']);
+            $this->assertEquals('player', $filterableFields['player_user_id']['related_user_role']);
             $this->assertIsObject($filterableFields['player_user_id']['values']);
+            $playerLabel = $filterableFields['player_user_id']['values']->{(string) $player->id_user} ?? null;
+            $this->assertSame($player->name, $playerLabel);
         }
+    }
+
+    public function test_user_fk_metadata_uses_display_field_and_related_user_role(): void
+    {
+        $player = User::factory()->create([
+            'first_name' => 'Ada',
+            'middle_name' => 'Lovelace',
+            'last_name' => 'Byron',
+        ]);
+        $manager = User::factory()->manager()->create([
+            'first_name' => 'Mgr',
+            'middle_name' => null,
+            'last_name' => 'Reviewer',
+        ]);
+
+        $inviteMetadata = $this->metadataService->getMetadata('PlayerInvite', 'v1');
+        $inviteFields = $inviteMetadata['filterable_fields'];
+
+        $this->assertEquals('name', $inviteFields['player_user_id']['related_schema_field']);
+        $this->assertEquals('player', $inviteFields['player_user_id']['related_user_role']);
+        $this->assertEquals('name', $inviteFields['created_by_manager_user_id']['related_schema_field']);
+        $this->assertEquals('manager', $inviteFields['created_by_manager_user_id']['related_user_role']);
+
+        $playerLabel = $inviteFields['player_user_id']['values']->{(string) $player->id_user} ?? null;
+        $this->assertSame('Ada Lovelace Byron', $playerLabel);
+
+        $importMetadata = $this->metadataService->getMetadata('UserImport', 'v1');
+        $importFields = $importMetadata['filterable_fields'];
+        $this->assertEquals('manager', $importFields['imported_by_manager_user_id']['related_user_role']);
+        $managerLabel = $importFields['imported_by_manager_user_id']['values']->{(string) $manager->id_user} ?? null;
+        $this->assertSame('Mgr Reviewer', $managerLabel);
     }
 
     public function test_player_level_assessment_metadata(): void

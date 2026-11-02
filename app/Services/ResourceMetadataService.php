@@ -386,21 +386,42 @@ class ResourceMetadataService
             ? ($relatedModelClass::$searchableFields ?? [])
             : [];
 
-        // Fall back to primary key when related model has no searchable string fields
-        // (e.g. EventLottery used as lottery_id filter on EventLotteryRule).
-        $labelField = ! empty($searchableFields) ? $searchableFields[0] : $primaryKey;
+        $displayField = $this->getDisplayField($relatedModelClass);
+
+        // Prefer logical displayField (may be an accessor) over searchableFields[0].
+        // Fall back to primary key when related model has neither.
+        $labelField = $displayField
+            ?? (! empty($searchableFields) ? $searchableFields[0] : $primaryKey);
 
         $relatedSchema = class_basename($relatedModelClass);
         if ($relatedSchema === 'PadelEvent') {
             $relatedSchema = 'Event';
         }
 
-        return [
+        $metadata = [
             'type' => 'foreign_key',
             'related_schema_name' => $relatedSchema,
             'related_schema_field' => $labelField,
-            'values' => $this->getRelatedModelValuesAsObject($relatedModelClass, $labelField),
+            'values' => $this->getRelatedModelValuesAsObject($relatedModelClass, $labelField, $searchableFields),
         ];
+
+        if ($relatedSchema === 'User') {
+            $metadata['related_user_role'] = $this->resolveRelatedUserRole($field);
+        }
+
+        return $metadata;
+    }
+
+    /**
+     * Player vs manager directory hint for User-related foreign keys.
+     */
+    private function resolveRelatedUserRole(string $field): string
+    {
+        if (str_contains($field, 'manager')) {
+            return 'manager';
+        }
+
+        return 'player';
     }
 
     /**
@@ -502,30 +523,68 @@ class ResourceMetadataService
     }
 
     /**
-     * Get values from related model as object with foreign key IDs as keys
+     * Get values from related model as object with foreign key IDs as keys.
+     *
+     * When $labelField is a real column, select/filter/order by it.
+     * When it is an accessor/append (e.g. User::$displayField = name), select
+     * the primary key plus searchable columns needed to compute the label.
+     *
+     * @param  list<string>  $searchableFields
      */
-    private function getRelatedModelValuesAsObject(string $relatedModelClass, string $searchableField): \stdClass
-    {
+    private function getRelatedModelValuesAsObject(
+        string $relatedModelClass,
+        string $labelField,
+        array $searchableFields = [],
+    ): \stdClass {
         $relatedModel = new $relatedModelClass();
         $primaryKey = $relatedModel->getKeyName();
+        $table = $relatedModel->getTable();
+        $labelIsColumn = Schema::hasColumn($table, $labelField);
 
-        $query = $relatedModelClass::select([$primaryKey, $searchableField])
-            ->whereNotNull($searchableField)
-            ->limit(self::DEFAULT_FILTER_LIMIT);
+        if ($labelIsColumn) {
+            $query = $relatedModelClass::select([$primaryKey, $labelField])
+                ->whereNotNull($labelField)
+                ->limit(self::DEFAULT_FILTER_LIMIT);
 
-        // String labels: skip empty strings. PK / integer labels: no empty-string filter.
-        if ($searchableField !== $primaryKey) {
-            $query->where($searchableField, '!=', '');
+            // String labels: skip empty strings. PK / integer labels: no empty-string filter.
+            if ($labelField !== $primaryKey) {
+                $query->where($labelField, '!=', '');
+            }
+
+            $query->orderBy($labelField);
+
+            $results = $query->get();
+        } else {
+            $selectColumns = [$primaryKey];
+            foreach ($searchableFields as $field) {
+                if (Schema::hasColumn($table, $field)) {
+                    $selectColumns[] = $field;
+                }
+            }
+            $selectColumns = array_values(array_unique($selectColumns));
+
+            $query = $relatedModelClass::select($selectColumns)
+                ->limit(self::DEFAULT_FILTER_LIMIT);
+
+            $orderColumn = collect($searchableFields)
+                ->first(fn (string $field) => Schema::hasColumn($table, $field));
+            if ($orderColumn !== null) {
+                $query->orderBy($orderColumn);
+            } else {
+                $query->orderBy($primaryKey);
+            }
+
+            $results = $query->get();
         }
-
-        $query->orderBy($searchableField);
-
-        $results = $query->get();
 
         $values = new \stdClass();
         foreach ($results as $result) {
+            $label = $result->{$labelField};
+            if ($label === null || $label === '') {
+                continue;
+            }
             // Convert to string to ensure JSON object serialization
-            $values->{(string) $result->{$primaryKey}} = $result->{$searchableField};
+            $values->{(string) $result->{$primaryKey}} = $label;
         }
 
         return $values;
