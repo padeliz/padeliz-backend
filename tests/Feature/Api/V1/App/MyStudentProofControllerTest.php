@@ -113,6 +113,7 @@ final class MyStudentProofControllerTest extends TestCase
             foreach ($proof->files as $index => $file) {
                 $this->assertSame($index, $file->sort_order);
                 $this->disk()->assertExists($file->student_proof_path);
+                $this->assertSame('private', $this->disk()->getVisibility($file->student_proof_path));
             }
             foreach ($response->json('data.files') as $payload) {
                 $this->assertNotEmpty($payload['url']);

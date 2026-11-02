@@ -1040,9 +1040,17 @@ class PosterPdfService
             return null;
         }
 
-        $path = Storage::disk($disk)->path($relative);
+        try {
+            $local = app(\App\Services\Storage\UserUploadsDisk::class)->localPathForRead($relative);
+        } catch (\Throwable) {
+            return null;
+        }
 
-        return is_file($path) ? $path : null;
+        if ($local['delete_after']) {
+            $this->ephemeralTemps[] = $local['path'];
+        }
+
+        return is_file($local['path']) ? $local['path'] : null;
     }
 
     private function matchesFilename(string $title): string

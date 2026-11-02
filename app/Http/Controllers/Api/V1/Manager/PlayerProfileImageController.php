@@ -9,6 +9,7 @@ use App\Models\User;
 use App\Models\PlayerProfileImage;
 use App\Services\PlayerProfileImage\PlayerProfileImagePrimaryService;
 use App\Services\PlayerProfileImage\PlayerProfileImageUploadService;
+use App\Support\UploadFailureMessages;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 
@@ -39,10 +40,7 @@ class PlayerProfileImageController extends \App\Http\Controllers\BaseVersions\V1
                 'error' => $e->getMessage(),
             ]);
 
-            return $this->errorResponse(
-                'The image failed to upload. Please try again with a different image.',
-                422
-            );
+            return $this->errorResponse(UploadFailureMessages::for($e, 'image'), 422);
         }
 
         $player->load('profileImages');

@@ -167,13 +167,13 @@ final class EventCoverControllerTest extends TestCase
                 'message' => 'PadelEvent cover could not be saved.',
             ]);
         $this->assertStringNotContainsString(
-            'different file',
+            'uploaded file',
             (string) $response->json('message')
         );
         $this->assertSame(0, $event->fresh()->coverImages()->count());
     }
 
-    public function test_edition_cover_storage_failure_returns_422_file_message(): void
+    public function test_edition_cover_storage_failure_returns_422_store_message(): void
     {
         [$manager, $event] = $this->managerWithEvent();
         Sanctum::actingAs($manager);
@@ -189,7 +189,48 @@ final class EventCoverControllerTest extends TestCase
         )->assertStatus(422)
             ->assertJson([
                 'success' => false,
-                'message' => 'The cover failed to upload. Please try again with a different file.',
+                'message' => 'Could not store the cover image. Please try again.',
             ]);
+    }
+
+    public function test_edition_cover_dimension_failure_returns_422_dimensions_message(): void
+    {
+        [$manager, $event] = $this->managerWithEvent();
+        Sanctum::actingAs($manager);
+
+        $uploads = \Mockery::mock(\App\Services\Storage\UserUploadsDisk::class);
+        $uploads->shouldReceive('imageSizeFromUpload')
+            ->once()
+            ->andThrow(new \App\Exceptions\UserUploadImageUnreadableException(
+                'Could not read image dimensions from the uploaded file.'
+            ));
+        $this->app->instance(\App\Services\Storage\UserUploadsDisk::class, $uploads);
+
+        $this->post(
+            "/api/v1/manager/events/{$event->id_event}/cover-images",
+            ['file' => $this->createFakeImage('cover.png')],
+            ['Accept' => 'application/json']
+        )->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Could not read image dimensions from the uploaded file.',
+            ]);
+    }
+
+    public function test_edition_cover_upload_stores_public_visibility(): void
+    {
+        [$manager, $event] = $this->managerWithEvent();
+        Sanctum::actingAs($manager);
+
+        $response = $this->post(
+            "/api/v1/manager/events/{$event->id_event}/cover-images",
+            ['file' => $this->createFakeImage('cover.png', 150, 100)],
+            ['Accept' => 'application/json']
+        )->assertStatus(200);
+
+        $path = $event->fresh()->coverImages()->first()?->cover_path;
+        $this->assertNotNull($path);
+        $this->assertSame('public', Storage::disk($this->disk)->getVisibility($path));
+        $this->assertSame(1.5, (float) $response->json('data.cover_images.0.aspect_ratio'));
     }
 }

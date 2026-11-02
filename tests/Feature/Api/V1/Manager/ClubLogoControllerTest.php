@@ -123,4 +123,23 @@ final class ClubLogoControllerTest extends TestCase
             ])
             ->assertJsonPath('data.logo_path', $this->club->fresh()->logo_path);
     }
+
+    public function test_club_logo_storage_failure_returns_clear_store_message(): void
+    {
+        Sanctum::actingAs($this->manager);
+
+        Storage::shouldReceive('disk')->andReturnSelf();
+        Storage::shouldReceive('putFile')->andReturn(false);
+        Storage::shouldReceive('delete')->andReturn(true);
+
+        $this->post(
+            "/api/v1/manager/clubs/{$this->club->id_club}/logo",
+            ['file' => $this->createFakeImage('logo.png')],
+            ['Accept' => 'application/json']
+        )->assertStatus(422)
+            ->assertJson([
+                'success' => false,
+                'message' => 'Could not store the logo. Please try again.',
+            ]);
+    }
 }

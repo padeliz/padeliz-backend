@@ -11,6 +11,7 @@ use App\Models\User;
 use App\Models\UserEmail;
 use App\Models\UserPhone;
 use App\Models\PlayerProfileImage;
+use App\Support\UploadFailureMessages;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
 
@@ -283,10 +284,7 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
                 'file_mime' => $request->file('image')->getMimeType(),
             ]);
 
-            return $this->errorResponse(
-                'The image failed to upload. Please try again with a different image.',
-                422
-            );
+            return $this->errorResponse(UploadFailureMessages::for($e, 'image'), 422);
         } catch (\Throwable $e) {
             Log::error('PlayerController::uploadImage - Error uploading file', [
                 'player_user_id' => $player->id_user,
@@ -296,10 +294,7 @@ class PlayerController extends \App\Http\Controllers\BaseVersions\V1\V1BaseContr
                 'file_mime' => $request->file('image')->getMimeType(),
             ]);
 
-            return $this->errorResponse(
-                'The image failed to upload. Please try again with a different image.',
-                422
-            );
+            return $this->errorResponse(UploadFailureMessages::for($e, 'image'), 422);
         }
 
         $player->load('profileImages');

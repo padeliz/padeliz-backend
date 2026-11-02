@@ -4,10 +4,14 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1\Manager;
 
+use App\Exceptions\UserUploadImageUnreadableException;
+use App\Exceptions\UserUploadStoreException;
 use App\Http\Requests\Manager\ManagerLogoUploadRequest;
 use App\Http\Resources\EventResource;
 use App\Models\EventCoverImage;
 use App\Models\PadelEvent;
+use App\Services\Storage\UserUploadsDisk;
+use App\Support\UploadFailureMessages;
 use Illuminate\Database\QueryException;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
@@ -22,6 +26,11 @@ use Illuminate\Validation\ValidationException;
  */
 class EventCoverController extends \App\Http\Controllers\BaseVersions\V1\V1BaseController
 {
+    public function __construct(
+        private readonly UserUploadsDisk $uploads,
+    ) {
+    }
+
     /**
      * @OA\Post(
      *     path="/api/v1/manager/events/{event}/cover-images",
@@ -49,28 +58,20 @@ class EventCoverController extends \App\Http\Controllers\BaseVersions\V1\V1BaseC
 
         try {
             $file = $request->file('file');
-            $storedPath = Storage::disk($disk)->putFile(
+            [$width, $height] = $this->uploads->imageSizeFromUpload($file);
+
+            $storedPath = $this->uploads->putFile(
                 'events/' . $event->id_event . '/cover',
                 $file,
                 ['visibility' => 'public']
             );
-
-            if ($storedPath === false || $storedPath === null) {
-                throw new \RuntimeException('Could not store the uploaded file.');
-            }
-
-            $absolute = Storage::disk($disk)->path($storedPath);
-            $info = @getimagesize($absolute);
-            if ($info === false || ($info[0] ?? 0) <= 0 || ($info[1] ?? 0) <= 0) {
-                throw new \RuntimeException('Could not read image dimensions.');
-            }
 
             $nextSort = (int) ($event->coverImages()->max('sort_order') ?? -1) + 1;
 
             EventCoverImage::query()->create([
                 'event_id' => $event->id_event,
                 'cover_path' => $storedPath,
-                'aspect_ratio' => ((float) $info[0]) / ((float) $info[1]),
+                'aspect_ratio' => ((float) $width) / ((float) $height),
                 'sort_order' => $nextSort,
             ]);
         } catch (ValidationException $e) {
@@ -84,17 +85,14 @@ class EventCoverController extends \App\Http\Controllers\BaseVersions\V1\V1BaseC
             ]);
 
             return $this->errorResponse('PadelEvent cover could not be saved.', 500);
-        } catch (\Throwable $e) {
+        } catch (UserUploadImageUnreadableException|UserUploadStoreException|\Throwable $e) {
             $this->cleanupStoredCover($disk, $storedPath);
             Log::error('Manager EventCoverController::store failed', [
                 'event_id' => $event->id_event,
                 'error' => $e->getMessage(),
             ]);
 
-            return $this->errorResponse(
-                'The cover failed to upload. Please try again with a different file.',
-                422
-            );
+            return $this->errorResponse(UploadFailureMessages::for($e, 'cover'), 422);
         }
 
         return $this->resourceResponse(

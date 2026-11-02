@@ -99,7 +99,7 @@ class CachedPdfPairImageService
                 $pair->save();
             }
 
-            $absolute = Storage::disk($disk)->path((string) $pair->picture_path);
+            $absolute = $this->localReadablePath((string) $pair->picture_path);
             if ($needsFlip) {
                 return $this->writeTempFlipped($absolute);
             }
@@ -365,6 +365,13 @@ class CachedPdfPairImageService
         }
 
         return $path;
+    }
+
+    private function localReadablePath(string $relative): string
+    {
+        $local = app(\App\Services\Storage\UserUploadsDisk::class)->localPathForRead($relative);
+
+        return $local['path'];
     }
 
     private function writeTempFlipped(string $absolutePath): string

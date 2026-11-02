@@ -85,4 +85,16 @@ return [
 
     'user_uploads_disk' => env('USER_UPLOADS_DISK', 'public'),
 
+    /*
+    |--------------------------------------------------------------------------
+    | Signed URL TTL (private objects)
+    |--------------------------------------------------------------------------
+    |
+    | Lifetime in seconds for temporary URLs of private user-upload objects
+    | (e.g. payment proofs, student proofs) on S3/Spaces.
+    |
+    */
+
+    'signed_url_ttl_seconds' => (int) env('SIGNED_URL_TTL_SECONDS', 900),
+
 ];

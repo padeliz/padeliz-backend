@@ -196,7 +196,7 @@ final class StudentProofService
         $stored = Storage::disk(config('filesystems.user_uploads_disk', 'public'))->putFile(
             'player-student-proofs/' . $proof->getKey() . '/student-proof',
             $file,
-            ['visibility' => 'public']
+            ['visibility' => 'private']
         );
 
         if ($stored === false || $stored === null) {

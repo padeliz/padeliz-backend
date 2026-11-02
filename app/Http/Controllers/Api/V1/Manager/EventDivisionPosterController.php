@@ -11,6 +11,7 @@ use App\Models\EventDivisionCourt;
 use App\Models\EventDivisionPoster;
 use App\Services\Pdf\MissingMatchParticipationException;
 use App\Services\Pdf\PosterPdfService;
+use App\Services\Storage\UserUploadsDisk;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Storage;
@@ -27,6 +28,7 @@ class EventDivisionPosterController extends Controller
 {
     public function __construct(
         private readonly PosterPdfService $posterPdfService,
+        private readonly UserUploadsDisk $uploads,
     ) {
     }
 
@@ -269,12 +271,7 @@ class EventDivisionPosterController extends Controller
         }
 
         $filename = basename((string) $relative);
-        $absolute = Storage::disk($disk)->path($relative);
 
-        return response()->streamDownload(static function () use ($absolute): void {
-            echo file_get_contents($absolute);
-        }, $filename, [
-            'Content-Type' => $contentType,
-        ]);
+        return $this->uploads->streamDownload((string) $relative, $filename, $contentType);
     }
 }

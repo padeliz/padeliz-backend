@@ -161,6 +161,12 @@ class RegistrationPaymentsFlowTest extends TestCase
         ], ['Accept' => 'application/json']);
         $upload->assertStatus(201)->assertJsonPath('data.registration.payment_status', 'awaiting_proof_review');
         $proofId = $upload->json('data.proof.id_payment_proof');
+        $this->assertNotEmpty($upload->json('data.proof.url'));
+
+        $proof = \App\Models\EventRegistrationPaymentProof::query()->findOrFail($proofId);
+        $disk = Storage::disk(config('filesystems.user_uploads_disk', 'public'));
+        $disk->assertExists($proof->proof_path);
+        $this->assertSame('private', $disk->getVisibility($proof->proof_path));
 
         $manager = User::factory()->manager()->create();
         Sanctum::actingAs($manager);

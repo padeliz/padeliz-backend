@@ -37,6 +37,8 @@ aws s3 sync s3://padeliz-prod s3://padeliz-staging \
 
 Use **staging** Spaces keys. `--delete` makes staging a mirror (destructive to staging-only objects).
 
+**ACL:** `aws s3 sync` does **not** reliably copy object ACLs. After sync, re-apply public-read on public media prefixes and keep `registration-payment-proofs/` / `player-student-proofs/` private (see [DEPLOY.md](DEPLOY.md) → Spaces object ACL / App Platform Console tinker). Prefer uploading public media through the Manager app (sets visibility correctly) rather than Cyberduck without Everyone READ.
+
 ## After refresh checklist
 
 - [ ] Staging `APP_URL` / CORS still staging hosts
@@ -44,3 +46,5 @@ Use **staging** Spaces keys. `--delete` makes staging a mirror (destructive to s
 - [ ] `MAIL_MAILER=log`
 - [ ] Login smoke on `https://app.staging.padeliz.ro` and manager staging
 - [ ] Sample upload still hits `padeliz-staging` bucket
+- [ ] Public media CDN URLs open (re-apply public ACL after sync if needed)
+- [ ] Payment / student proof URLs come from API (signed), not permanent public CDN
