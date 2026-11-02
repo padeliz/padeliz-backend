@@ -40,7 +40,8 @@ class BankProofService
 
             $path = Storage::disk($this->disk())->putFile(
                 'registration-payment-proofs/checkout-' . $checkout->id_checkout,
-                $file
+                $file,
+                ['visibility' => 'private']
             );
 
             $proof = EventRegistrationPaymentProof::query()->create([

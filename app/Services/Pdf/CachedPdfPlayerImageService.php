@@ -58,10 +58,17 @@ class CachedPdfPlayerImageService
                 $row->save();
             }
 
-            return Storage::disk($disk)->path((string) $row->picture_path);
+            return $this->localReadablePath((string) $row->picture_path);
         }
 
         return $this->writeTempPng($this->composePng($photoAbsPath, $playerIsCollecting));
+    }
+
+    private function localReadablePath(string $relative): string
+    {
+        $local = app(\App\Services\Storage\UserUploadsDisk::class)->localPathForRead($relative);
+
+        return $local['path'];
     }
 
     public function composePng(string $photoAbsPath, bool $playerIsCollecting = true): string

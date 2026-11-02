@@ -12,6 +12,7 @@ use App\Http\Resources\PlayerStudentProofResource;
 use App\Models\User;
 use App\Models\PlayerStudentProof;
 use App\Services\StudentProof\StudentProofService;
+use App\Support\UploadFailureMessages;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Log;
@@ -123,10 +124,7 @@ class MyStudentProofController extends V1BaseController
                 'error' => $e->getMessage(),
             ]);
 
-            return $this->errorResponse(
-                'The files failed to upload. Please try again with different files.',
-                422
-            );
+            return $this->errorResponse(UploadFailureMessages::for($e, 'files'), 422);
         }
 
         return $this->proofResponse($proof, 'Pending student proof created successfully', 201);
@@ -198,10 +196,7 @@ class MyStudentProofController extends V1BaseController
                 'error' => $e->getMessage(),
             ]);
 
-            return $this->errorResponse(
-                'The file failed to upload. Please try again with a different file.',
-                422
-            );
+            return $this->errorResponse(UploadFailureMessages::for($e, 'file'), 422);
         }
 
         return $this->proofResponse($pending, 'Student proof file added successfully', 201);

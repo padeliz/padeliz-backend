@@ -8,7 +8,6 @@ use App\Enums\Registration\PaymentProofReviewStatus;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -81,9 +80,10 @@ class EventRegistrationPaymentProof extends Model
 
     public function getUrlAttribute(): string
     {
-        /** @var FilesystemAdapter $disk */
-        $disk = Storage::disk($this->storageDisk());
+        if ($this->proof_path === null || $this->proof_path === '') {
+            return '';
+        }
 
-        return $disk->url($this->proof_path);
+        return app(\App\Services\Storage\UserUploadsDisk::class)->temporaryUrl((string) $this->proof_path);
     }
 }

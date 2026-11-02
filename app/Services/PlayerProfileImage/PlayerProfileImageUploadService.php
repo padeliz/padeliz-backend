@@ -62,7 +62,7 @@ final class PlayerProfileImageUploadService
             );
 
             if ($storedPath === false || $storedPath === null) {
-                throw new \RuntimeException('Could not store the uploaded file.');
+                throw new \App\Exceptions\UserUploadStoreException('Could not store the uploaded file.');
             }
 
             $image->update(['profile_path' => $storedPath]);

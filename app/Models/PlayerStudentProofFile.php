@@ -7,7 +7,6 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
-use Illuminate\Filesystem\FilesystemAdapter;
 use Illuminate\Support\Facades\Storage;
 
 /**
@@ -76,9 +75,10 @@ class PlayerStudentProofFile extends Model
 
     public function getUrlAttribute(): string
     {
-        /** @var FilesystemAdapter $disk */
-        $disk = Storage::disk($this->storageDisk());
+        if ($this->student_proof_path === null || $this->student_proof_path === '') {
+            return '';
+        }
 
-        return $disk->url($this->student_proof_path);
+        return app(\App\Services\Storage\UserUploadsDisk::class)->temporaryUrl((string) $this->student_proof_path);
     }
 }

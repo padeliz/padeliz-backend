@@ -105,3 +105,49 @@ Redeploy a previous digest (DO App Platform → Deployments → redeploy, or re-
 ## Health
 
 `GET https://backend…/up` → `ok`
+
+## Spaces object ACL (public vs private)
+
+App uploads set object visibility explicitly:
+
+| Prefix | Visibility | How clients read |
+|---|---|---|
+| `clubs/`, `organizers/`, `events/`, `player-profile-images/`, `prizes/`, `sponsor-prizes/`, `event-division-posters/`, `cached-pdf-player-images/`, `cached-pdf-pair-images/` | **public** (`public-read`) | Permanent CDN / `Storage::url` |
+| `registration-payment-proofs/`, `player-student-proofs/` | **private** | API `url` = temporary signed URL (`SIGNED_URL_TTL_SECONDS`, default **900**) |
+
+Cyberduck (and similar) uploads default to **private**. For public media folders, set Everyone **READ** at upload time, or fix later via App Platform Console (below). Never make payment/student proof objects public.
+
+Optional plain env: `SIGNED_URL_TTL_SECONDS` (default `900`).
+
+### Remediate existing ACLs (App Platform Console)
+
+**Where:** Apps → `padeliz-backend-staging` or `padeliz-backend-prod` → **`web`** → **Console**.
+
+Run **one public prefix per session** (avoids Console timeout):
+
+```bash
+php artisan tinker
+```
+
+```php
+$disk = Storage::disk(config('filesystems.user_uploads_disk'));
+$prefix = 'clubs/'; // then organizers/, player-profile-images/, prizes/,
+          // sponsor-prizes/, event-division-posters/,
+          // cached-pdf-player-images/, cached-pdf-pair-images/, events/
+foreach ($disk->allFiles($prefix) as $path) {
+    $disk->setVisibility($path, 'public');
+    echo "public: {$path}\n";
+}
+```
+
+After deploying temporary-URL code, privatize student proofs (skip if the prefix does not exist):
+
+```php
+$disk = Storage::disk(config('filesystems.user_uploads_disk'));
+foreach ($disk->allFiles('player-student-proofs/') as $path) {
+    $disk->setVisibility($path, 'private');
+    echo "private: {$path}\n";
+}
+```
+
+Optionally enforce the same loop for `registration-payment-proofs/`. Repeat on **staging** and **production**. CDN may cache old `AccessDenied` briefly.

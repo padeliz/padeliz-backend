@@ -20,6 +20,7 @@ use App\Services\PlayerLevel\LevelAssessmentService;
 use App\Services\PlayerLevel\PlayerLevelService;
 use App\Services\PlayerProfileImage\PlayerProfileImagePrimaryService;
 use App\Services\PlayerProfileImage\PlayerProfileImageUploadService;
+use App\Support\UploadFailureMessages;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
@@ -370,10 +371,7 @@ class MyLevelAssessmentController extends V1BaseController
                 'error' => $e->getMessage(),
             ]);
 
-            return $this->errorResponse(
-                'The image failed to upload. Please try again with a different image.',
-                422
-            );
+            return $this->errorResponse(UploadFailureMessages::for($e, 'image'), 422);
         } catch (\Throwable $e) {
             Log::error('MyLevelAssessmentController::storeProfileImage - Error uploading file', [
                 'player_user_id' => $player->id_user,
@@ -381,10 +379,7 @@ class MyLevelAssessmentController extends V1BaseController
                 'error' => $e->getMessage(),
             ]);
 
-            return $this->errorResponse(
-                'The image failed to upload. Please try again with a different image.',
-                422
-            );
+            return $this->errorResponse(UploadFailureMessages::for($e, 'image'), 422);
         }
 
         return $this->assessmentResponse($assessment, 'Image uploaded successfully', 201);

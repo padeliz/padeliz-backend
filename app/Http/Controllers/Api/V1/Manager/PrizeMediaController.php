@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1\Manager;
 
+use App\Exceptions\UserUploadStoreException;
 use App\Http\Requests\Manager\ManagerPrizeMediaUploadRequest;
 use App\Http\Resources\PrizeResource;
 use App\Models\Prize;
+use App\Support\UploadFailureMessages;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -47,7 +49,7 @@ class PrizeMediaController extends \App\Http\Controllers\BaseVersions\V1\V1BaseC
             );
 
             if ($storedPath === false || $storedPath === null) {
-                throw new \RuntimeException('Could not store the uploaded file.');
+                throw new UserUploadStoreException('Could not store the uploaded file.');
             }
 
             $prize->media_path = $storedPath;
@@ -61,10 +63,7 @@ class PrizeMediaController extends \App\Http\Controllers\BaseVersions\V1\V1BaseC
                 'error' => $e->getMessage(),
             ]);
 
-            return $this->errorResponse(
-                'The media failed to upload. Please try again with a different file.',
-                422
-            );
+            return $this->errorResponse(UploadFailureMessages::for($e, 'media'), 422);
         }
 
         return $this->resourceResponse(

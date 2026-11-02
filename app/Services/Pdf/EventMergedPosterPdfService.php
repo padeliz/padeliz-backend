@@ -8,7 +8,7 @@ use App\Models\EventDivision;
 use App\Models\EventDivisionCourt;
 use App\Models\EventDivisionPoster;
 use App\Models\PadelEvent;
-use Illuminate\Support\Facades\Storage;
+use App\Services\Storage\UserUploadsDisk;
 use RuntimeException;
 use setasign\Fpdi\Fpdi;
 
@@ -40,12 +40,14 @@ final class EventMergedPosterPdfService
 
         $attempted = [];
         $pdf = new Fpdi();
+        $temps = [];
 
         try {
             foreach ($files as $file) {
                 $attempted[] = $file;
-                $absolute = $this->absolutePath($file['path']);
-                if (! is_file($absolute)) {
+                try {
+                    $local = $this->localPathForRead($file['path']);
+                } catch (\Throwable) {
                     throw new EventMergedPosterPdfException(
                         'Failed to merge generated posters.',
                         422,
@@ -58,6 +60,10 @@ final class EventMergedPosterPdfService
                             ],
                         ]
                     );
+                }
+                $absolute = $local['path'];
+                if ($local['delete_after']) {
+                    $temps[] = $absolute;
                 }
 
                 try {
@@ -85,8 +91,14 @@ final class EventMergedPosterPdfService
                 }
             }
         } catch (EventMergedPosterPdfException $e) {
+            foreach ($temps as $temp) {
+                @unlink($temp);
+            }
             throw $e;
         } catch (\Throwable $e) {
+            foreach ($temps as $temp) {
+                @unlink($temp);
+            }
             throw new EventMergedPosterPdfException(
                 'Failed to merge generated posters.',
                 422,
@@ -103,6 +115,9 @@ final class EventMergedPosterPdfService
 
         $pageCount = max(0, $pdf->PageNo());
         $bytes = $pdf->Output('S');
+        foreach ($temps as $temp) {
+            @unlink($temp);
+        }
         $filename = sprintf(
             'A2 Hârtie Color Laminat - %s Afișe Terenuri - %d pagini',
             (string) $event->name,
@@ -185,11 +200,12 @@ final class EventMergedPosterPdfService
         return $files;
     }
 
-    private function absolutePath(string $relative): string
+    /**
+     * @return array{path: string, delete_after: bool}
+     */
+    private function localPathForRead(string $relative): array
     {
-        $disk = config('filesystems.user_uploads_disk', 'public');
-
-        return Storage::disk($disk)->path($relative);
+        return app(UserUploadsDisk::class)->localPathForRead($relative);
     }
 }
 

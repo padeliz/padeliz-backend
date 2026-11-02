@@ -11,6 +11,7 @@ use App\Models\PadelEvent;
 use App\Services\Pdf\EventMergedPosterPdfException;
 use App\Services\Pdf\EventMergedPosterPdfService;
 use App\Services\Pdf\PosterPdfService;
+use App\Services\Storage\UserUploadsDisk;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Http\Response;
 use Illuminate\Support\Facades\Storage;
@@ -27,6 +28,7 @@ class EventPosterController extends Controller
     public function __construct(
         private readonly PosterPdfService $posterPdfService,
         private readonly EventMergedPosterPdfService $mergedPosterPdfService,
+        private readonly UserUploadsDisk $uploads,
     ) {
     }
 
@@ -117,12 +119,7 @@ class EventPosterController extends Controller
         }
 
         $filename = basename((string) $relative);
-        $absolute = Storage::disk($disk)->path($relative);
 
-        return response()->streamDownload(static function () use ($absolute): void {
-            echo file_get_contents($absolute);
-        }, $filename, [
-            'Content-Type' => $contentType,
-        ]);
+        return $this->uploads->streamDownload((string) $relative, $filename, $contentType);
     }
 }

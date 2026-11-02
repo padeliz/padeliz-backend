@@ -4,9 +4,11 @@ declare(strict_types=1);
 
 namespace App\Http\Controllers\Api\V1\Manager;
 
+use App\Exceptions\UserUploadStoreException;
 use App\Http\Requests\Manager\ManagerLogoUploadRequest;
 use App\Http\Resources\ClubResource;
 use App\Models\Club;
+use App\Support\UploadFailureMessages;
 use Illuminate\Http\JsonResponse;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Storage;
@@ -46,7 +48,7 @@ class ClubLogoController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
             );
 
             if ($storedPath === false || $storedPath === null) {
-                throw new \RuntimeException('Could not store the uploaded file.');
+                throw new UserUploadStoreException('Could not store the uploaded file.');
             }
 
             $club->logo_path = $storedPath;
@@ -64,10 +66,7 @@ class ClubLogoController extends \App\Http\Controllers\BaseVersions\V1\V1BaseCon
                 'error' => $e->getMessage(),
             ]);
 
-            return $this->errorResponse(
-                'The logo failed to upload. Please try again with a different file.',
-                422
-            );
+            return $this->errorResponse(UploadFailureMessages::for($e, 'logo'), 422);
         }
 
         return $this->resourceResponse(
