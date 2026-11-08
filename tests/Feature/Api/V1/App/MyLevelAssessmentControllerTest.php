@@ -5,6 +5,7 @@ declare(strict_types=1);
 namespace Tests\Feature\Api\V1\App;
 
 use App\Enums\PlayerCustomFieldValueReviewStatus;
+use App\Models\EventParticipation;
 use App\Models\User;
 use App\Models\PlayerCustomField;
 use App\Models\PlayerCustomFieldValue;
@@ -219,6 +220,146 @@ final class MyLevelAssessmentControllerTest extends TestCase
             ->assertOk()
             ->assertJsonPath('data.level', '3.50')
             ->assertJsonPath('data.band_name', 'Division 3 Mid');
+    }
+
+    public function test_progress_requires_authentication(): void
+    {
+        $this->app['auth']->forgetGuards();
+
+        $this->getJson(self::BASE . '/progress')->assertUnauthorized();
+    }
+
+    public function test_progress_returns_empty_items_when_none(): void
+    {
+        $this->getJson(self::BASE . '/progress')
+            ->assertOk()
+            ->assertJsonPath('data.items', []);
+    }
+
+    public function test_progress_nests_assessment_on_level_and_omits_duplicate_assessment_row(): void
+    {
+        $assessment = PlayerLevelAssessment::factory()->forPlayer($this->player)->approved()->create([
+            'inserted_at' => time() - 100,
+        ]);
+        $level = PlayerLevel::factory()
+            ->fromAssessment($assessment)
+            ->level('3.50')
+            ->create([
+                'player_user_id' => $this->player->id_user,
+                'inserted_at' => time() - 50,
+            ]);
+
+        $response = $this->getJson(self::BASE . '/progress')->assertOk();
+        $items = $response->json('data.items');
+
+        $this->assertCount(1, $items);
+        $this->assertSame('player_level', $items[0]['kind']);
+        $this->assertSame($level->id_player_level, $items[0]['player_level']['id_player_level']);
+        $this->assertSame(
+            $assessment->id_player_level_assessment,
+            $items[0]['player_level']['assessment']['id_player_level_assessment']
+        );
+        $this->assertArrayNotHasKey('assessment', $items[0]);
+    }
+
+    public function test_progress_includes_participation_event_name_on_level(): void
+    {
+        $participation = EventParticipation::factory()->create([
+            'player_user_id' => $this->player->id_user,
+        ]);
+        $participation->load('event');
+
+        PlayerLevel::factory()
+            ->fromParticipation($participation)
+            ->level('2.10')
+            ->create([
+                'player_user_id' => $this->player->id_user,
+                'inserted_at' => time() - 10,
+            ]);
+
+        $this->getJson(self::BASE . '/progress')
+            ->assertOk()
+            ->assertJsonPath('data.items.0.kind', 'player_level')
+            ->assertJsonPath(
+                'data.items.0.player_level.participation.event.name',
+                $participation->event->name
+            )
+            ->assertJsonPath(
+                'data.items.0.player_level.participation.id_participation',
+                $participation->id_participation
+            );
+    }
+
+    public function test_progress_keeps_unlinked_pending_beside_linked_level(): void
+    {
+        $approved = PlayerLevelAssessment::factory()->forPlayer($this->player)->approved()->create([
+            'inserted_at' => time() - 200,
+        ]);
+        PlayerLevel::factory()
+            ->fromAssessment($approved)
+            ->level('4.00')
+            ->create([
+                'player_user_id' => $this->player->id_user,
+                'inserted_at' => time() - 150,
+            ]);
+
+        $pending = PlayerLevelAssessment::factory()->forPlayer($this->player)->readyForReview()->create([
+            'inserted_at' => time() - 20,
+        ]);
+
+        $items = $this->getJson(self::BASE . '/progress')->assertOk()->json('data.items');
+
+        $this->assertCount(2, $items);
+        $this->assertSame('level_assessment', $items[0]['kind']);
+        $this->assertSame($pending->id_player_level_assessment, $items[0]['assessment']['id_player_level_assessment']);
+        $this->assertSame('player_level', $items[1]['kind']);
+    }
+
+    public function test_progress_includes_unlinked_rejected_and_discarded_assessments(): void
+    {
+        $rejected = PlayerLevelAssessment::factory()->forPlayer($this->player)->rejected()->create([
+            'inserted_at' => time() - 30,
+        ]);
+        $discarded = PlayerLevelAssessment::factory()->forPlayer($this->player)->discarded()->create([
+            'inserted_at' => time() - 10,
+        ]);
+
+        $items = $this->getJson(self::BASE . '/progress')->assertOk()->json('data.items');
+
+        $this->assertCount(2, $items);
+        $this->assertSame('level_assessment', $items[0]['kind']);
+        $this->assertSame($discarded->id_player_level_assessment, $items[0]['assessment']['id_player_level_assessment']);
+        $this->assertSame('discarded', $items[0]['assessment']['review_status']);
+        $this->assertSame($rejected->id_player_level_assessment, $items[1]['assessment']['id_player_level_assessment']);
+        $this->assertSame('rejected', $items[1]['assessment']['review_status']);
+    }
+
+    public function test_progress_orders_by_inserted_at_desc_then_id_desc(): void
+    {
+        $older = PlayerLevelAssessment::factory()->forPlayer($this->player)->rejected()->create([
+            'inserted_at' => 1_700_000_000,
+        ]);
+        $newerA = PlayerLevelAssessment::factory()->forPlayer($this->player)->discarded()->create([
+            'inserted_at' => 1_700_000_100,
+        ]);
+        $newerB = PlayerLevelAssessment::factory()->forPlayer($this->player)->readyForReview()->create([
+            'inserted_at' => 1_700_000_100,
+        ]);
+
+        $items = $this->getJson(self::BASE . '/progress')->assertOk()->json('data.items');
+        $ids = array_map(
+            static fn (array $item) => $item['assessment']['id_player_level_assessment'],
+            $items
+        );
+
+        $this->assertSame(
+            [
+                max($newerA->id_player_level_assessment, $newerB->id_player_level_assessment),
+                min($newerA->id_player_level_assessment, $newerB->id_player_level_assessment),
+                $older->id_player_level_assessment,
+            ],
+            $ids
+        );
     }
 
     public function test_profile_image_upload_is_linked_to_the_pending_assessment(): void

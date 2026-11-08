@@ -120,6 +120,7 @@ Route::prefix('v1')->group(function () {
             Route::get('status', [\App\Http\Controllers\Api\V1\App\MyLevelAssessmentController::class, 'status']);
             Route::get('latest', [\App\Http\Controllers\Api\V1\App\MyLevelAssessmentController::class, 'latest']);
             Route::get('current-level', [\App\Http\Controllers\Api\V1\App\MyLevelAssessmentController::class, 'currentLevel']);
+            Route::get('progress', [\App\Http\Controllers\Api\V1\App\MyLevelAssessmentController::class, 'progress']);
             Route::get('pending', [\App\Http\Controllers\Api\V1\App\MyLevelAssessmentController::class, 'showPending']);
             Route::post('pending', [\App\Http\Controllers\Api\V1\App\MyLevelAssessmentController::class, 'storePending']);
             Route::patch('pending', [\App\Http\Controllers\Api\V1\App\MyLevelAssessmentController::class, 'patchPending']);

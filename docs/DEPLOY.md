@@ -47,6 +47,7 @@ Set these as **encrypted** env vars on each backend app (staging and production)
 - `GOOGLE_MANAGER_CLIENT_ID` — Google Web client ID for Manager id_tokens
 - `NETOPIA_POS_SIGNATURE`, `NETOPIA_API_KEY`
 - `NETOPIA_RETURN_URL` / `NETOPIA_NOTIFY_URL` — full URLs below (also set notify in Netopia merchant settings)
+- `NOINDEX` — set `true` on **staging and production** (emits `X-Robots-Tag: noindex, nofollow, noarchive, nosnippet, noimageindex`). Only `https://app.padeliz.ro` is search-indexable. `public/robots.txt` Disallows crawlers and known AI user-agents.
 
 ### Plain Redis / Valkey (required on staging and production)
 

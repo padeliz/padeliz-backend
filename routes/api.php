@@ -20,9 +20,11 @@ Route::get('/user', function (Request $request) {
     return $request->user();
 })->middleware('auth:sanctum');
 
-// API Documentation Index
-Route::get('/documentation', [\App\Http\Controllers\ApiDocumentationController::class, 'index'])
-    ->middleware('cacheResponse');
+// API Documentation Index (HTTP UI only; omitted when L5_SWAGGER_UI_ENABLED is false)
+if (config('l5-swagger.ui_enabled')) {
+    Route::get('/documentation', [\App\Http\Controllers\ApiDocumentationController::class, 'index'])
+        ->middleware(['docs.protect', 'cacheResponse']);
+}
 
 // External integrations (isolated from core Padeliz domain)
 Route::prefix('external/bpt-rankedin')->group(function () {

@@ -7,6 +7,7 @@ namespace App\Services\PlayerLevel;
 use App\Models\EventDivision;
 use App\Models\Level;
 use App\Models\PlayerLevel;
+use App\Models\PlayerLevelAssessment;
 use Illuminate\Validation\ValidationException;
 
 final class PlayerLevelService
@@ -23,6 +24,69 @@ final class PlayerLevelService
             ->orderByDesc('inserted_at')
             ->orderByDesc('id_player_level')
             ->first();
+    }
+
+    /**
+     * Timeline of player levels and assessments for My Progress.
+     *
+     * Assessments already represented by a `player_levels.player_level_assessment_id`
+     * are omitted as standalone rows (they appear nested on the level).
+     *
+     * @return list<array{kind: string, inserted_at: int, sort_id: int, player_level?: PlayerLevel, assessment?: PlayerLevelAssessment}>
+     */
+    public function progressItems(int $playerId): array
+    {
+        $levels = PlayerLevel::query()
+            ->where('player_user_id', $playerId)
+            ->with(['assessment', 'participation.event'])
+            ->get();
+
+        $linkedAssessmentIds = $levels
+            ->pluck('player_level_assessment_id')
+            ->filter(static fn ($id) => $id !== null)
+            ->map(static fn ($id) => (int) $id)
+            ->all();
+
+        $assessments = PlayerLevelAssessment::query()
+            ->where('player_user_id', $playerId)
+            ->when(
+                $linkedAssessmentIds !== [],
+                static fn ($query) => $query->whereNotIn('id_player_level_assessment', $linkedAssessmentIds)
+            )
+            ->get();
+
+        $items = [];
+
+        foreach ($levels as $level) {
+            $items[] = [
+                'kind' => 'player_level',
+                'inserted_at' => (int) $level->inserted_at,
+                'sort_id' => (int) $level->id_player_level,
+                'player_level' => $level,
+            ];
+        }
+
+        foreach ($assessments as $assessment) {
+            $items[] = [
+                'kind' => 'level_assessment',
+                'inserted_at' => (int) $assessment->inserted_at,
+                'sort_id' => (int) $assessment->id_player_level_assessment,
+                'assessment' => $assessment,
+            ];
+        }
+
+        usort(
+            $items,
+            static function (array $a, array $b): int {
+                if ($a['inserted_at'] !== $b['inserted_at']) {
+                    return $b['inserted_at'] <=> $a['inserted_at'];
+                }
+
+                return $b['sort_id'] <=> $a['sort_id'];
+            }
+        );
+
+        return $items;
     }
 
     public function upsertForAssessment(int $playerId, int $assessmentId, float|string $level): PlayerLevel

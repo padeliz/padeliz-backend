@@ -23,6 +23,7 @@ class Kernel extends HttpKernel
         \Illuminate\Foundation\Http\Middleware\ValidatePostSize::class,
         \App\Http\Middleware\TrimStrings::class,
         \Illuminate\Foundation\Http\Middleware\ConvertEmptyStringsToNull::class,
+        \App\Http\Middleware\SetNoindexHeader::class,
     ];
 
     /**
@@ -70,5 +71,6 @@ class Kernel extends HttpKernel
         'cache.no-store' => \App\Http\Middleware\SetAuthenticatedApiNoStore::class,
         'cache.etag' => \App\Http\Middleware\SetReferenceResourceEtag::class,
         'cacheResponse' => \Spatie\ResponseCache\Middlewares\CacheResponse::class,
+        'docs.protect' => \App\Http\Middleware\ProtectApiDocumentation::class,
     ];
 }

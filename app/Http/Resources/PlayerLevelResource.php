@@ -28,6 +28,35 @@ class PlayerLevelResource extends JsonResource
             'event_participation_id' => $this->event_participation_id,
             'inserted_at' => $this->inserted_at,
             'updated_at' => $this->updated_at,
+            'assessment' => $this->whenLoaded('assessment', function () {
+                return $this->assessment !== null
+                    ? new PlayerLevelAssessmentResource($this->assessment)
+                    : null;
+            }),
+            'participation' => $this->whenLoaded('participation', function () {
+                if ($this->participation === null) {
+                    return null;
+                }
+
+                $event = $this->participation->relationLoaded('event')
+                    ? $this->participation->event
+                    : null;
+
+                return [
+                    'id_participation' => $this->participation->id_participation,
+                    'event_id' => $this->participation->event_id,
+                    'player_user_id' => $this->participation->player_user_id,
+                    'inserted_at' => $this->participation->inserted_at,
+                    'event' => $event !== null
+                        ? [
+                            'id_event' => $event->id_event,
+                            'name' => $event->name,
+                            'event_starts_at' => $event->event_starts_at,
+                            'event_ends_at' => $event->event_ends_at,
+                        ]
+                        : null,
+                ];
+            }),
         ];
     }
 }

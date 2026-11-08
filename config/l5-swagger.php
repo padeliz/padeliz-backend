@@ -8,6 +8,23 @@ return [
      * based on available API versions detected from route files.
      */
     'default' => null, // (e.g. v1) @see ApiDocumentationServiceProvider
+
+    /**
+     * Whether HTTP documentation routes (UI, assets, parsed docs) are exposed.
+     * Defaults: on for every APP_ENV except production.
+     */
+    'ui_enabled' => env('L5_SWAGGER_UI_ENABLED', env('APP_ENV') !== 'production'),
+
+    /**
+     * HTTP Basic Auth for documentation routes (shared deploy secrets, not app users).
+     * Defaults: on when APP_ENV is staging.
+     */
+    'basic_auth' => [
+        'enabled' => env('L5_SWAGGER_BASIC_AUTH_ENABLED', env('APP_ENV') === 'staging'),
+        'username' => env('L5_SWAGGER_BASIC_AUTH_USER'),
+        'password' => env('L5_SWAGGER_BASIC_AUTH_PASSWORD'),
+    ],
+
     'documentations' => [
         /*
         * @see ApiDocumentationServiceProvider
