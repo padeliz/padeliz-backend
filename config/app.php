@@ -32,6 +32,19 @@ return [
 
     /*
     |--------------------------------------------------------------------------
+    | Search engine noindex
+    |--------------------------------------------------------------------------
+    |
+    | When true, SetNoindexHeader middleware sends X-Robots-Tag with noindex
+    | directives. Set NOINDEX=true on staging and production App Platform —
+    | only https://app.padeliz.ro is search-indexable.
+    |
+    */
+
+    'noindex' => env('NOINDEX', false),
+
+    /*
+    |--------------------------------------------------------------------------
     | Application Debug Mode
     |--------------------------------------------------------------------------
     |

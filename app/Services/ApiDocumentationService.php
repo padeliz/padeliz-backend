@@ -71,27 +71,40 @@ class ApiDocumentationService
         // Get controllers used by this version
         $controllers = $this->getControllersForVersion($version);
 
-        // Configure the version
-        config([
-            $configKey => [
-                'api' => [
-                    'title' => "Padeliz API {$version}",
-                ],
-                'routes' => [
-                    'api' => "api/documentation/{$version}",
-                    'docs' => "api/documentation/{$version}/docs",
-                    'oauth2_callback' => "api/documentation/{$version}/oauth2-callback",
-                ],
-                'paths' => [
-                    'use_absolute_path' => env('L5_SWAGGER_USE_ABSOLUTE_PATH', true),
-                    'swagger_ui_assets_path' => env('L5_SWAGGER_UI_ASSETS_PATH', 'vendor/swagger-api/swagger-ui/dist/'),
-                    'docs_json' => "api-docs-{$version}.json",
-                    'docs_yaml' => "api-docs-{$version}.yaml",
-                    'format_to_use_for_docs' => env('L5_FORMAT_TO_USE_FOR_DOCS', 'json'),
-                    'annotations' => $this->getAnnotationPathsForVersion($version, $controllers),
-                ],
+        $documentation = [
+            'api' => [
+                'title' => "Padeliz API {$version}",
             ],
-        ]);
+            'paths' => [
+                'use_absolute_path' => env('L5_SWAGGER_USE_ABSOLUTE_PATH', true),
+                'swagger_ui_assets_path' => env('L5_SWAGGER_UI_ASSETS_PATH', 'vendor/swagger-api/swagger-ui/dist/'),
+                'docs_json' => "api-docs-{$version}.json",
+                'docs_yaml' => "api-docs-{$version}.yaml",
+                'format_to_use_for_docs' => env('L5_FORMAT_TO_USE_FOR_DOCS', 'json'),
+                'annotations' => $this->getAnnotationPathsForVersion($version, $controllers),
+            ],
+        ];
+
+        // Null overrides package defaults so HTTP routes are not registered.
+        if (! config('l5-swagger.ui_enabled')) {
+            $documentation['routes'] = null;
+        } else {
+            $protect = ['docs.protect'];
+
+            $documentation['routes'] = [
+                'api' => "api/documentation/{$version}",
+                'docs' => "api/documentation/{$version}/docs",
+                'oauth2_callback' => "api/documentation/{$version}/oauth2-callback",
+                'middleware' => [
+                    'api' => $protect,
+                    'docs' => $protect,
+                    'asset' => $protect,
+                    'oauth2_callback' => $protect,
+                ],
+            ];
+        }
+
+        config([$configKey => $documentation]);
     }
 
     /**

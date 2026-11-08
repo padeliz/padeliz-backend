@@ -37,7 +37,7 @@ class PlayerLevelFactory extends Factory
     {
         return $this->state(fn (): array => [
             'player_user_id' => $assessment->player_user_id,
-            'player_level_assessment_id' => $assessment->id_user_level_assessment,
+            'player_level_assessment_id' => $assessment->id_player_level_assessment,
             'event_participation_id' => null,
         ]);
     }

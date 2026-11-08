@@ -326,6 +326,43 @@ class MyLevelAssessmentController extends V1BaseController
     }
 
     /**
+     * @OA\Get(
+     *     path="/api/v1/app/my/level-assessment/progress",
+     *     summary="Get my level progress timeline (levels + assessments)",
+     *     description="Merged player_levels and player_level_assessments ordered by inserted_at DESC. Assessments already linked from a player_level are omitted as standalone rows and nested on the level instead.",
+     *     tags={"🐥 App: My Level Assessment"},
+     *     security={{"sanctum":{}}},
+     *     @OA\Response(response=200, description="Progress timeline")
+     * )
+     */
+    public function progress(Request $request): JsonResponse
+    {
+        $items = [];
+
+        foreach ($this->playerLevels->progressItems((int) $request->user()->id_user) as $item) {
+            if ($item['kind'] === 'player_level') {
+                $items[] = [
+                    'kind' => 'player_level',
+                    'inserted_at' => $item['inserted_at'],
+                    'player_level' => (new PlayerLevelResource($item['player_level']))->resolve(),
+                ];
+                continue;
+            }
+
+            $items[] = [
+                'kind' => 'level_assessment',
+                'inserted_at' => $item['inserted_at'],
+                'assessment' => (new PlayerLevelAssessmentResource($item['assessment']))->resolve(),
+            ];
+        }
+
+        return $this->successResponse(
+            ['items' => $items],
+            'Level progress retrieved successfully'
+        );
+    }
+
+    /**
      * @OA\Post(
      *     path="/api/v1/app/my/level-assessment/pending/profile-image",
      *     summary="Upload a profile image linked to my pending level assessment",

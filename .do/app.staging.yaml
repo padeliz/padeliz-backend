@@ -19,6 +19,9 @@ envs:
   - key: APP_DEBUG
     value: "false"
     scope: RUN_TIME
+  - key: NOINDEX
+    value: "true"
+    scope: RUN_TIME
   - key: APP_URL
     value: https://backend.staging.padeliz.ro
     scope: RUN_TIME
